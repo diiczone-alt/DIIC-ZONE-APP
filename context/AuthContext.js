@@ -53,22 +53,26 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
+        console.log('[AuthContext] login() started');
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password
         });
+        console.log('[AuthContext] signInWithPassword done. error:', error, 'data:', data);
 
         if (error) throw error;
         
-        // El useEffect actualiza el estado y hace el redirect gracias al listende auth, pero podemos forzar el route
+        console.log('[AuthContext] Fetching profile for user', data.user?.id);
         const role = await fetchProfile(data.user.id);
         
+        console.log('[AuthContext] Got role:', role);
         // Eagerly set state to prevent race conditions con layout guards
         const userObj = { ...data.user, role };
         setUser(userObj);
         setSession(data.session);
         localStorage.setItem('user_role', role);
         
+        console.log('[AuthContext] login() completed. Returning role.');
         // Return data and role so the caller (page.js) handles the redirect independently!
         return { data, role };
     };

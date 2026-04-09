@@ -21,22 +21,28 @@ export default function LoginPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log('[LoginPage] handleSubmit starting');
         setError('');
         setLoading(true);
 
         try {
+            console.log('[LoginPage] Calling login()');
             const { role } = await login(email, password);
+            console.log('[LoginPage] login() returned role:', role);
             
             // Redirect happens here, so we DON'T set loading to false. We let it stay 'Verificando...' while router navigates!
             if (role === 'ADMIN') {
+                console.log('[LoginPage] pushing to /admin/strategy/map');
                 router.push('/admin/strategy/map');
             } else if (role === 'CLIENT') {
+                console.log('[LoginPage] pushing to /dashboard');
                 router.push('/dashboard');
             } else {
+                console.log(`[LoginPage] pushing to /dashboard/creative-zone/${role.toLowerCase()}`);
                 router.push(`/dashboard/creative-zone/${role.toLowerCase()}`);
             }
         } catch (err) {
-            console.error('Login failed:', err);
+            console.error('[LoginPage] Login failed:', err);
             setError('Credenciales incorrectas o acceso no autorizado.');
             setLoading(false); // Only stop loading if there was an actual error
         }
