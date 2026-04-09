@@ -63,18 +63,14 @@ export const AuthProvider = ({ children }) => {
         // El useEffect actualiza el estado y hace el redirect gracias al listende auth, pero podemos forzar el route
         const role = await fetchProfile(data.user.id);
         
-        // Eagerly set state to prevent race conditions with layout guards
+        // Eagerly set state to prevent race conditions con layout guards
         const userObj = { ...data.user, role };
         setUser(userObj);
         setSession(data.session);
         localStorage.setItem('user_role', role);
-
-        // Lógica de Redirección basada en Rol Real
-        if (role === 'ADMIN') router.push('/admin/strategy/map');
-        else if (role === 'CLIENT') router.push('/dashboard');
-        else router.push(`/dashboard/creative-zone/${role.toLowerCase()}`);
         
-        return data;
+        // Return data and role so the caller (page.js) handles the redirect independently!
+        return { data, role };
     };
 
     const logout = async () => {

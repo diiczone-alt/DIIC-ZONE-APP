@@ -25,13 +25,20 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            await login(email, password);
-            // La redirección ya la hace internamente el AuthContext basada en el Rol.
+            const { role } = await login(email, password);
+            
+            // Redirect happens here, so we DON'T set loading to false. We let it stay 'Verificando...' while router navigates!
+            if (role === 'ADMIN') {
+                router.push('/admin/strategy/map');
+            } else if (role === 'CLIENT') {
+                router.push('/dashboard');
+            } else {
+                router.push(`/dashboard/creative-zone/${role.toLowerCase()}`);
+            }
         } catch (err) {
             console.error('Login failed:', err);
             setError('Credenciales incorrectas o acceso no autorizado.');
-        } finally {
-            setLoading(false);
+            setLoading(false); // Only stop loading if there was an actual error
         }
     };
 
