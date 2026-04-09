@@ -25,9 +25,7 @@ export default function LoginPage() {
 
         try {
             await login(email, password);
-            // Redirection logic relies on AuthContext detecting the roll and routing, 
-            // but for immediate fallback we just redirect to check auth guard.
-            router.push('/dashboard/hq'); // We'll let layout.js redirect if needed, or AuthContext can route.
+            // La redirección ya la hace internamente el AuthContext basada en el Rol.
         } catch (err) {
             console.error('Login failed:', err);
             setError('Credenciales incorrectas o acceso no autorizado.');
