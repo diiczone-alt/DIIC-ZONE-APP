@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
     Headset, Bot, BookOpen, BarChart2,
-    ChevronRight, ArrowLeft, Search, Bell
+    ChevronRight, ArrowLeft, Search, Bell, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 

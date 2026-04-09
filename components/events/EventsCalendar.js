@@ -1,125 +1,301 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Clock, MapPin, Video, Camera, MoreVertical, Calendar as CalendarIcon, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Search, Plus, MoreHorizontal, List, Trello, Calendar as CalendarIcon, Grid, FileText, UserPlus, ChevronDown, Check, X } from 'lucide-react';
 
 export default function EventsCalendar() {
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [activeView, setActiveView] = useState('schedule');
+    const [selectedEventId, setSelectedEventId] = useState(1);
 
-    // Mock Event Data
-    const events = [
-        { id: 1, title: 'Campaña Nike Air', type: 'video', date: '2025-10-15', time: '09:00', location: 'Estudio A', status: 'confirmed' },
-        { id: 2, title: 'Reunión Creativa', type: 'meeting', date: '2025-10-15', time: '14:00', location: 'Sala Zoom', status: 'pending' },
-        { id: 3, title: 'Edición Vlog', type: 'edit', date: '2025-10-16', time: 'All Day', location: 'Suite 1', status: 'in-progress' },
-        { id: 4, title: 'Entrega Final', type: 'deadline', date: '2025-10-20', time: '18:00', location: 'Drive', status: 'review' },
-        { id: 5, title: 'Sesión Fotográfica', type: 'photo', date: '2025-10-22', time: '10:00', location: 'Locación Ext.', status: 'confirmed' },
+    const views = [
+        { id: 'list', label: 'Lista', icon: List },
+        { id: 'board', label: 'Tablero', icon: Trello },
+        { id: 'schedule', label: 'Schedule', icon: CalendarIcon },
+        { id: 'table', label: 'Tabla', icon: Grid },
+        { id: 'file', label: 'Archivos', icon: FileText },
     ];
 
-    const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-    const firstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+    const days = [
+        { name: 'Mon', num: 8 },
+        { name: 'Tue', num: 9 },
+        { name: 'Wed', num: 10, active: true },
+        { name: 'Thu', num: 11 },
+        { name: 'Fri', num: 12 },
+    ];
 
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const days = daysInMonth(year, month);
-    const startDay = firstDayOfMonth(year, month);
+    const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
 
-    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-
-    const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
-    const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-
-    const getDayEvents = (day) => {
-        const dayStr = day < 10 ? `0${day}` : day;
-        const monthStr = month + 1 < 10 ? `0${month + 1}` : month + 1;
-        const dateKey = `${year}-${monthStr}-${dayStr}`;
-        return events.filter(e => e.date === dateKey); // Simple string match for logic
-    };
-
-    const getEventColor = (type) => {
-        switch (type) {
-            case 'video': return 'bg-violet-600/20 text-violet-300 border-violet-500/30';
-            case 'photo': return 'bg-pink-600/20 text-pink-300 border-pink-500/30';
-            case 'meeting': return 'bg-blue-600/20 text-blue-300 border-blue-500/30';
-            case 'deadline': return 'bg-red-600/20 text-red-300 border-red-500/30';
-            default: return 'bg-gray-700/50 text-gray-300';
+    const events = [
+        { 
+            id: 1, 
+            title: 'Sesión de Rodaje', 
+            timeStr: '08:00 - 10:00',
+            dayIndex: 2, // Wed
+            startHour: 8,
+            duration: 2,
+            bgColor: 'bg-[#B19CFF]',
+            textColor: 'text-white',
+            image: 'https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=2070&auto=format&fit=crop',
+            note: 'Dress code: All black',
+            desc: 'Sesión de grabación principal para la campaña comercial de la marca deportiva en estudio fotográfico.',
+            timeline: [
+                { time: '08:00', title: 'Set Up Equipo', desc: '15 minutos' },
+                { time: '08:15', title: 'Pruebas de Luz', desc: '15 minutos' },
+                { time: '09:15', title: 'Grabación Main', desc: '1 hora' },
+                { time: '10:00', title: 'Wrap up', desc: '10 minutos' },
+            ]
+        },
+        { 
+            id: 2, 
+            title: 'Shopping for prop', 
+            timeStr: '11:00 - 13:00',
+            dayIndex: 0, // Mon
+            startHour: 11.5,
+            duration: 1.5,
+            bgColor: 'bg-[#FF9166]',
+            textColor: 'text-white',
+            image: null
+        },
+        { 
+            id: 3, 
+            title: 'Edición Offline', 
+            timeStr: '12:00 - 14:00',
+            dayIndex: 3, // Thu
+            startHour: 12,
+            duration: 2,
+            bgColor: 'bg-[#98D8C9]',
+            textColor: 'text-[#0E0E18]',
+            image: null
         }
-    };
+    ];
+
+    const selectedEvent = events.find(e => e.id === selectedEventId) || events[0];
 
     return (
-        <div className="h-full flex flex-col p-6 overflow-hidden">
-            {/* Calendar Controls */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-3xl font-black text-white">{monthNames[month]} <span className="text-gray-500 font-medium">{year}</span></h2>
-                    <div className="flex items-center gap-1 bg-white/5 rounded-lg border border-white/5 p-1">
-                        <button onClick={prevMonth} className="p-1 hover:bg-white/10 rounded-md transition-colors text-white"><ChevronLeft className="w-5 h-5" /></button>
-                        <button onClick={nextMonth} className="p-1 hover:bg-white/10 rounded-md transition-colors text-white"><ChevronRight className="w-5 h-5" /></button>
+        <div className="h-full flex flex-col md:flex-row bg-[#0E0E18] text-white overflow-hidden p-6 gap-6 font-sans">
+            
+            {/* Main Calendar Area */}
+            <div className="flex-1 flex flex-col bg-[#161622] rounded-[32px] overflow-hidden border border-white/5 shadow-2xl">
+                
+                {/* Header Superior */}
+                <div className="p-6 border-b border-white/5">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-2xl font-bold tracking-tight">Mi Actividad</h2>
+                            <button className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400">
+                                <MoreHorizontal className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex -space-x-2">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 border-2 border-[#161622] flex items-center justify-center text-[10px] font-bold">
+                                        JD
+                                    </div>
+                                ))}
+                                <div className="w-8 h-8 rounded-full bg-white/10 border-2 border-[#161622] flex items-center justify-center text-[10px] font-bold text-gray-400">
+                                    +5
+                                </div>
+                            </div>
+                            <button className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+                                <Search className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Vistas / Tabs */}
+                    <div className="flex items-center gap-6">
+                        {views.map(view => (
+                            <button 
+                                key={view.id}
+                                onClick={() => setActiveView(view.id)}
+                                className={`flex items-center gap-2 pb-2 text-sm font-medium transition-all ${
+                                    activeView === view.id 
+                                    ? 'text-[#4A85F6]' 
+                                    : 'text-gray-500 hover:text-gray-300'
+                                }`}
+                            >
+                                <view.icon className={`w-4 h-4 ${activeView === view.id ? 'text-[#4A85F6]' : 'text-gray-500'}`} />
+                                {view.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                <div className="flex gap-2">
-                    <button className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium text-white transition-colors border border-white/5">Hoy</button>
-                    <button className="px-4 py-2 bg-primary/20 text-primary border border-primary/20 rounded-xl text-sm font-medium transition-colors">Mes</button>
-                    <button className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium text-gray-400 transition-colors border border-white/5">Semana</button>
+                {/* Grid del Cronograma (Schedule) */}
+                <div className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden p-6 relative">
+                    
+                    {/* Botones Navegación Días */}
+                    <div className="flex px-12 mb-4">
+                        <div className="w-16 flex justify-between pr-4 items-center">
+                            <button className="p-1 hover:bg-white/10 rounded-md text-gray-500"><ChevronLeft className="w-4 h-4" /></button>
+                            <button className="p-1 hover:bg-white/10 rounded-md text-gray-500"><ChevronRight className="w-4 h-4" /></button>
+                        </div>
+                        <div className="flex-1 grid grid-cols-5 text-center">
+                            {days.map((day, i) => (
+                                <div key={i} className={`flex flex-col items-center justify-center space-y-1 pb-4 rounded-t-xl transition-all ${day.active ? 'bg-[#2E3146]/40 text-white' : 'text-gray-500'}`}>
+                                    <span className="text-xl font-medium">{day.num}</span>
+                                    <span className="text-xs font-semibold">{day.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Horarios y Grilla */}
+                    <div className="flex-1 flex relative">
+                        {/* Current Time Indicator Line (Ejemplo: 10:30) */}
+                        <div className="absolute top-[28%] left-12 right-0 border-t-2 border-[#4A85F6] z-20 pointer-events-none">
+                            <div className="absolute -left-2 -top-1.5 w-3 h-3 bg-[#4A85F6] rounded-full shadow-[0_0_10px_#4A85F6]" />
+                        </div>
+
+                        {/* Etiquetas de Horas */}
+                        <div className="w-16 flex flex-col pt-3">
+                            {hours.map(hour => (
+                                <div key={hour} className="h-20 text-xs font-medium text-gray-500">
+                                    {hour}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Cuadrícula (Líneas y Tarjetas Flotantes) */}
+                        <div className="flex-1 relative">
+                            {/* Columnas (Días) */}
+                            <div className="absolute inset-0 grid grid-cols-5 z-0">
+                                {days.map((day, i) => (
+                                    <div key={i} className={`h-full border-l border-white/[0.03] transition-all ${day.active ? 'bg-[#2E3146]/20' : ''}`} />
+                                ))}
+                            </div>
+
+                            {/* Filas (Horas) */}
+                            <div className="absolute inset-0 z-0 flex flex-col pt-3">
+                                {hours.map(hour => (
+                                    <div key={hour} className="h-20 border-t border-white/[0.03] w-full" />
+                                ))}
+                            </div>
+
+                            {/* Tarjetas Flotantes */}
+                            <div className="absolute top-3 left-0 right-0 bottom-0 z-10 grid grid-cols-5">
+                                {events.map(event => {
+                                    // Cálculo simple: cada hora equivale a 80px (h-20), empezamos en index 0 = 08:00
+                                    const topOffset = (event.startHour - 8) * 80;
+                                    const heightPixels = event.duration * 80;
+
+                                    return (
+                                        <div key={event.id} style={{ gridColumnStart: event.dayIndex + 1 }} className="relative h-full pointer-events-none">
+                                            <div 
+                                                onClick={() => setSelectedEventId(event.id)}
+                                                className={`absolute w-[92%] left-[4%] pointer-events-auto rounded-[20px] p-4 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-2xl hover:z-30 flex flex-col justify-between overflow-hidden shadow-lg border border-white/10 ${event.bgColor} ${event.textColor}`}
+                                                style={{ top: `${topOffset}px`, height: `${heightPixels - 8}px` }}
+                                            >
+                                                <div>
+                                                    <h3 className="font-bold text-sm leading-tight mb-1">{event.title}</h3>
+                                                    <p className="text-[10px] font-medium opacity-80">{event.timeStr}</p>
+                                                </div>
+                                                {event.image && (
+                                                    <div className="h-10 mt-2 rounded-xl overflow-hidden shadow-inner">
+                                                        <img src={event.image} alt="preview" className="w-full h-full object-cover" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
-            {/* Calendar Grid */}
-            <div className="flex-1 border border-white/5 rounded-2xl bg-[#0E0E18]/50 overflow-hidden flex flex-col shadow-2xl">
-                {/* Days Header */}
-                <div className="grid grid-cols-7 border-b border-white/5 bg-white/[0.02]">
-                    {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
-                        <div key={day} className="py-3 text-center text-sm font-bold text-gray-500 uppercase tracking-wider">{day}</div>
-                    ))}
+            {/* Sidebar Derecho de Detalles del Evento */}
+            <div className="w-[320px] shrink-0 bg-[#1C1F2E] rounded-[32px] border border-white/5 shadow-2xl p-6 flex flex-col relative overflow-y-auto">
+                {/* Botón Volver */}
+                <button className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 transition-colors">
+                    <X className="w-4 h-4" />
+                </button>
+
+                {/* Header Evento */}
+                <h2 className="text-xl font-bold pr-8 mb-4">Detalle de Sesión</h2>
+                
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#2E3146] text-gray-300 rounded-lg text-xs font-semibold w-fit">
+                    <CalendarIcon className="w-3.5 h-3.5" />
+                    10 Octubre 2026
                 </div>
 
-                {/* Days Grid */}
-                <div className="flex-1 grid grid-cols-7 grid-rows-5 md:grid-rows-6">
-                    {/* Empty Cells for start offset */}
-                    {Array.from({ length: startDay }).map((_, i) => (
-                        <div key={`empty-${i}`} className="border-r border-b border-white/5 bg-white/[0.005]" />
-                    ))}
+                {selectedEvent.note && (
+                    <div className="mt-3 text-xs bg-white/5 p-3 rounded-xl border border-white/5 text-gray-400 font-medium italic">
+                        Nota: {selectedEvent.note}
+                    </div>
+                )}
 
-                    {/* Actual Days */}
-                    {Array.from({ length: days }).map((_, i) => {
-                        const day = i + 1;
-                        const dayEvents = getDayEvents(day);
-                        const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
-
-                        return (
-                            <div key={day} className={`border-r border-b border-white/5 p-3 min-h-[100px] relative transition-colors hover:bg-white/[0.02] group ${isToday ? 'bg-primary/-5' : ''}`}>
-                                <div className={`flex justify-center items-center w-8 h-8 rounded-full mb-2 ${isToday ? 'bg-primary text-white font-bold shadow-lg shadow-primary/30' : 'text-gray-400 font-medium group-hover:text-white'}`}>
-                                    {day}
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    {dayEvents.map(event => (
-                                        <motion.div
-                                            key={event.id}
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            className={`text-xs p-1.5 rounded-md border ${getEventColor(event.type)} cursor-pointer hover:brightness-125 transition-all truncate flex items-center gap-1.5`}
-                                        >
-                                            <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50 shrink-0" />
-                                            <span className="font-medium truncate">{event.title}</span>
-                                        </motion.div>
-                                    ))}
-                                </div>
-
-                                {/* Add button on hover */}
-                                <button className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-white/10 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary hover:text-white">
-                                    <Plus className="w-3 h-3" />
-                                </button>
+                {/* Participantes */}
+                <div className="mt-8">
+                    <h4 className="text-sm font-semibold mb-3">Equipo Técnico</h4>
+                    <div className="flex items-center justify-between">
+                        <div className="flex -space-x-2">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-rose-400 border-2 border-[#1C1F2E] flex items-center justify-center font-bold text-[10px]" />
+                            ))}
+                            <div className="w-8 h-8 rounded-full bg-[#4A85F6] border-2 border-[#1C1F2E] flex items-center justify-center font-bold text-[10px] text-white">
+                                4+
                             </div>
-                        );
-                    })}
-
-                    {/* Remaining Empty Cells to fill grid (optional, but good for borders) */}
-                    {Array.from({ length: 42 - (days + startDay) }).map((_, i) => (
-                        <div key={`end-empty-${i}`} className="border-r border-b border-white/5 bg-white/[0.005]" />
-                    ))}
+                        </div>
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full text-xs font-medium text-gray-300 transition-colors">
+                            Añadir <Plus className="w-3 h-3" />
+                        </button>
+                    </div>
                 </div>
+
+                {/* Descripción */}
+                <div className="mt-8">
+                    <h4 className="text-sm font-semibold mb-2">Descripción</h4>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                        {selectedEvent.desc}
+                    </p>
+                </div>
+
+                {/* Timeline Rundown */}
+                {selectedEvent.timeline && (
+                    <div className="mt-8 flex-1">
+                        <h4 className="text-sm font-semibold mb-4">Línea de Tiempo (Rundown)</h4>
+                        
+                        <div className="space-y-0">
+                            {selectedEvent.timeline.map((item, i) => (
+                                <div key={i} className="flex gap-4 group cursor-pointer">
+                                    <div className="flex flex-col items-center">
+                                        <div className={`w-3 h-3 rounded-full mt-1.5 transition-colors border-2 border-[#1C1F2E] box-content ${i === 0 ? 'bg-[#4A85F6]' : 'bg-gray-600 group-hover:bg-gray-400'}`} />
+                                        {i !== selectedEvent.timeline.length - 1 && (
+                                            <div className="w-[1.5px] h-12 bg-gray-700/50 my-1 group-hover:bg-gray-600 transition-colors" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 pb-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className={`text-xs font-medium ${i === 0 ? 'text-[#4A85F6]' : 'text-gray-300 group-hover:text-white transition-colors'}`}>{item.time}</span>
+                                            <ChevronDown className="w-4 h-4 text-gray-600" />
+                                        </div>
+                                        <div className="mt-1 bg-white/5 border border-white/5 rounded-xl p-3 flex flex-col justify-center min-h-[50px] group-hover:bg-white/10 transition-colors">
+                                            <h5 className="text-xs font-bold text-gray-200">{item.title}</h5>
+                                            <span className="text-[10px] text-gray-500 font-medium">{item.desc}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Acciones */}
+                <div className="mt-8 pt-4 border-t border-white/5 flex gap-3">
+                    <button className="flex-1 py-3.5 bg-[#4A85F6] hover:bg-[#346CE3] transition-colors rounded-xl text-xs font-bold tracking-wide flex items-center justify-center gap-2 text-white">
+                        <Check className="w-4 h-4" /> Unirse a Sesión
+                    </button>
+                    <button className="px-6 py-3.5 bg-white/5 hover:bg-white/10 transition-colors rounded-xl text-xs font-bold tracking-wide text-gray-400">
+                        Ignorar
+                    </button>
+                </div>
+
             </div>
         </div>
     );

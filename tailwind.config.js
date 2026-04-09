@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-// Force cache refresh
+// Force cache refresh: 2026-03-21 21:14 - All Dynamic Shadows Removed
 module.exports = {
     darkMode: ["class"],
     content: [

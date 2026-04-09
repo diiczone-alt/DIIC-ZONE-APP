@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield } from 'lucide-react';
+import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X } from 'lucide-react';
 import { toast } from 'sonner';
+import GrowthPricing from '../growth/GrowthPricing';
 
 export default function ClientAccountSettings() {
     const [isLoading, setIsLoading] = useState(false);
     const [activeSection, setActiveSection] = useState('profile'); // profile, security, billing, notifications
+    const [showPlans, setShowPlans] = useState(false);
 
     const handleSave = () => {
         setIsLoading(true);
@@ -173,10 +175,10 @@ export default function ClientAccountSettings() {
                                 <h3 className="text-xl font-bold text-white mb-1">Plan Business</h3>
                                 <p className="text-blue-200 text-sm mb-4">$499.00 USD / mes</p>
                                 <div className="flex gap-3">
-                                    <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-blue-600/20">
+                                    <button onClick={() => setShowPlans(true)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-blue-600/20 active:scale-95">
                                         Cambiar Plan
                                     </button>
-                                    <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-xs font-bold rounded-lg border border-white/10 transition-colors">
+                                    <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-xs font-bold rounded-lg border border-white/10 transition-colors active:scale-95">
                                         Cancelar Suscripción
                                     </button>
                                 </div>
@@ -220,6 +222,23 @@ export default function ClientAccountSettings() {
                     </button>
                 </div>
             </div>
+
+            {/* Plans Modal Overlay */}
+            {showPlans && (
+                <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 md:p-8 bg-black/90 backdrop-blur-md overflow-y-auto custom-scrollbar">
+                    <div className="relative w-full max-w-7xl bg-[#070710] border border-white/10 rounded-[40px] p-2 md:p-8 shadow-[0_0_100px_rgba(0,0,0,1)] my-auto animate-in fade-in zoom-in-95 duration-300">
+                        <button 
+                            onClick={() => setShowPlans(false)} 
+                            className="absolute top-6 right-6 p-3 rounded-full bg-white/5 hover:bg-rose-500/20 hover:text-rose-400 text-gray-400 transition-colors z-50 group border border-white/5"
+                        >
+                            <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+                        </button>
+                        <div className="w-full h-full overflow-hidden">
+                            <GrowthPricing />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

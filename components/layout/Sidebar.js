@@ -6,7 +6,7 @@ import {
     Home, LayoutGrid, Clapperboard, BarChart3, Settings, LogOut,
     Kanban, GraduationCap, CalendarDays, Share2, Images, Zap, Bot,
     CreditCard, Megaphone, Award, ChevronDown, ChevronRight, Command, ShoppingBag,
-    Network, Box
+    Network, Box, Users, ShieldAlert, Rocket
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
@@ -17,8 +17,7 @@ const MAIN_ITEMS = [
     { name: 'Mi Progreso', icon: Zap, href: '/dashboard/profile', color: 'text-yellow-400' },
     { name: 'Zona Creativa', icon: LayoutGrid, href: '/dashboard/studio', color: 'text-fuchsia-400', glow: true },
     { name: 'Flujo de Contenido', icon: Kanban, href: '/dashboard/pipeline', color: 'text-emerald-400' },
-    { name: 'Calendarios', icon: CalendarDays, href: '/dashboard/calendar', color: 'text-pink-400' },
-    { name: 'Galería', icon: Images, href: '/dashboard/gallery', color: 'text-orange-400' },
+    { name: 'Calendarios', icon: CalendarDays, href: '/dashboard/calendar', color: 'text-rose-400', glow: true },
     { name: 'Proyectos', icon: Clapperboard, href: '/dashboard/projects', color: 'text-indigo-400' },
 ];
 
@@ -39,6 +38,8 @@ const ACCORDION_GROUPS = [
         title: 'Crecimiento Digital',
         icon: BarChart3,
         items: [
+            { name: 'Planes y Crecimiento', icon: Rocket, href: '/dashboard/growth', color: 'text-cyan-400', special: true },
+            { name: 'CRM Inteligente', icon: Users, href: '/dashboard/crm', color: 'text-indigo-400' },
             { name: 'Conectividad & Auto.', icon: Share2, href: '/dashboard/connectivity' },
             { name: 'Ventas & IA', icon: Zap, href: '/dashboard/sales' },
             { name: 'Tienda Online', icon: ShoppingBag, href: '/dashboard/store' },
@@ -182,13 +183,13 @@ export default function Sidebar() {
                 {/* Glow effect behind logo */}
                 <div className="absolute inset-0 bg-indigo-500/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
 
-                <h1 className="ml-3 text-lg font-bold font-display text-white tracking-tight opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-10">
-                    DIIC ZONE
+                <h1 className="ml-3 text-lg font-black font-display text-white tracking-tight opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-10">
+                    CLIENT <span className="text-indigo-500 italic">HUB</span>
                 </h1>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-3 mt-2 overflow-y-auto custom-scrollbar py-2 space-y-1">
+            <nav className="flex-1 px-3 mt-2 overflow-y-auto custom-scrollbar pt-2 pb-4 space-y-1">
 
                 {/* 1. Main Items (Flat List) */}
                 {MAIN_ITEMS.map((item, index) => (
@@ -228,43 +229,53 @@ export default function Sidebar() {
             </nav>
 
             {/* System Footer (Fixed) - Premium User Profile */}
-            <div className="p-4 border-t border-white/5 bg-black/20 shrink-0">
+            <div className="p-4 pb-8 border-t border-white/5 bg-black/20 shrink-0 relative z-50">
                 <div className="relative group/profile">
 
-                    {/* Profile Card */}
-                    <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-white/5">
-                        <div className="relative">
-                            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
-                                CA
+                    {/* Premium Profile Card */}
+                    <div className="flex items-center gap-3 p-2 rounded-2xl bg-indigo-500/5 border border-white/5 group-hover/profile:bg-indigo-500/10 transition-all relative overflow-hidden group/item w-full">
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                        
+                        <div className="relative shrink-0 ml-1.5 group-hover:ml-0 transition-all">
+                            {/* Colorful Avatar Border (Master Admin Style) */}
+                            <div className="w-9 h-9 rounded-xl p-[1.5px] bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-500 shadow-lg shadow-indigo-500/20">
+                                <div className="w-full h-full rounded-[9px] bg-[#050510] flex items-center justify-center text-white font-black text-[10px]">
+                                    CA
+                                </div>
                             </div>
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#050510] rounded-full flex items-center justify-center">
-                                <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full border border-[#050510]" />
+                            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#050510] rounded-full flex items-center justify-center">
+                                <div className="w-2 h-2 bg-emerald-500 rounded-full border border-[#050510] shadow-[0_0_8px_#10b981]" />
                             </div>
                         </div>
 
                         <div className="flex-1 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <h4 className="text-sm font-bold text-white truncate">Carlos Arévalo</h4>
-                            <p className="text-xs text-blue-400 font-medium">Plan Business</p>
+                            <h4 className="text-[10px] font-black text-white truncate uppercase tracking-tight leading-tight">Master Admin</h4>
+                            <p className="text-[8px] text-emerald-400 font-black uppercase tracking-widest opacity-80 leading-none mt-0.5">Online Hub</p>
                         </div>
 
-                        {/* Settings Action */}
-                        <Link href="/dashboard/settings" className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-white/10 rounded-lg" title="Configuración">
-                            <Settings className="w-4 h-4" />
+                        {/* Quick Settings Icon */}
+                        <Link href="/dashboard/settings" title="Configuración" className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-white transition-all shrink-0">
+                            <Settings className="w-3 h-3" />
                         </Link>
                     </div>
 
-                    {/* Quick Actions (Expandable on hover or click - simplified here as direct actions) */}
-                    <div className="mt-2 space-y-1 opacity-0 group-hover:opacity-100 transition-all duration-300 h-0 group-hover:h-auto overflow-hidden">
+                    {/* Integrated Logout Button */}
+                    <div className="mt-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 localStorage.clear();
-                                router.push('/login');
+                                window.location.href = '/login';
                             }}
-                            className="flex items-center gap-3 px-2 py-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all w-full text-left text-xs font-medium"
+                            className="w-full h-11 flex items-center gap-4 px-3 rounded-2xl bg-rose-500/5 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 transition-all group/logout active:scale-95 shadow-xl"
                         >
-                            <LogOut className="w-3.5 h-3.5" />
-                            <span>Cerrar Sesión</span>
+                            <LogOut className="w-4.5 h-4.5 shrink-0 transition-transform group-hover/logout:rotate-12" />
+                            <div className="flex flex-col items-start leading-none gap-1">
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
+                                    Cerrar Sesión
+                                </span>
+                                <span className="text-[7px] font-bold uppercase opacity-60 tracking-widest leading-none">Salir del Hub</span>
+                            </div>
                         </button>
                     </div>
                 </div>

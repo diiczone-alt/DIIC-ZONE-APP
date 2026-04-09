@@ -2,9 +2,9 @@
 
 import { MessageCircle, Phone, MoveRight, DollarSign, Wallet } from 'lucide-react';
 
-export default function LeadCard({ lead, isDragging }) {
+export default function LeadCard({ lead, isDragging, onClick }) {
     return (
-        <div className={`bg-[#151520] p-4 rounded-xl border border-white/5 group hover:border-indigo-500/50 transition-all cursor-grab active:cursor-grabbing shadow-lg ${isDragging ? 'shadow-2xl ring-2 ring-indigo-500 rotate-2 scale-105 z-50' : 'hover:-translate-y-1'}`}>
+        <div onClick={() => onClick && onClick(lead)} className={`bg-[#151520] p-4 rounded-xl border border-white/5 group hover:border-indigo-500/50 transition-all cursor-grab active:cursor-grabbing shadow-lg ${isDragging ? 'shadow-2xl ring-2 ring-indigo-500 rotate-2 scale-105 z-50' : 'hover:-translate-y-1'}`}>
 
             {/* Header: Name & Score */}
             <div className="flex justify-between items-start mb-2">

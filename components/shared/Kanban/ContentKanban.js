@@ -6,7 +6,7 @@ import {
     Plus, MoreHorizontal, User, Calendar,
     MessageSquare, CheckCircle, Share2,
     Megaphone, Eye, ArrowRight, Clock,
-    LayoutGrid, Filter, Search
+    LayoutGrid, Filter, Search, ChevronRight
 } from 'lucide-react';
 
 const STAGES = [
@@ -55,8 +55,8 @@ const MOCK_DATA = [
     }
 ];
 
-export default function ContentKanban({ role = 'cm', clientName = 'Cliente Demo' }) {
-    const [contents, setContents] = useState(MOCK_DATA);
+export default function ContentKanban({ role = 'cm', clientName = 'Cliente Demo', initialContents = null, isEmbedded = false }) {
+    const [contents, setContents] = useState(initialContents || MOCK_DATA);
     const [selectedItem, setSelectedItem] = useState(null);
 
     const isCM = role === 'cm';
@@ -70,20 +70,22 @@ export default function ContentKanban({ role = 'cm', clientName = 'Cliente Demo'
 
     return (
         <div className="h-full flex flex-col space-y-6 overflow-hidden">
-            {/* Header */}
-            <div className="flex justify-between items-center shrink-0">
-                <div>
-                    <h3 className="text-2xl font-black text-white">Producción de Contenidos</h3>
-                    <p className="text-sm text-gray-500">{clientName} • Flujo Unificado</p>
+            {/* Header - Only render if not embedded inside StrategyBoard */}
+            {!isEmbedded && (
+                <div className="flex justify-between items-center shrink-0">
+                    <div>
+                        <h3 className="text-2xl font-black text-white">Producción de Contenidos</h3>
+                        <p className="text-sm text-gray-500">{clientName} • Flujo Unificado</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        {isCM && (
+                            <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
+                                <Plus className="w-4 h-4" /> Nuevo Contenido
+                            </button>
+                        )}
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    {isCM && (
-                        <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
-                            <Plus className="w-4 h-4" /> Nuevo Contenido
-                        </button>
-                    )}
-                </div>
-            </div>
+            )}
 
             {/* Kanban Board */}
             <div className="flex-1 flex gap-6 overflow-x-auto pb-4 custom-scrollbar">
@@ -167,35 +169,201 @@ export default function ContentKanban({ role = 'cm', clientName = 'Cliente Demo'
                 ))}
             </div>
 
-            {/* Modal Simulado para Detalles (Opcional) */}
             <AnimatePresence>
                 {selectedItem && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-end p-4 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedItem(null)}>
+                    <div className="fixed inset-0 z-[1000] flex justify-end overflow-hidden pointer-events-none">
+                        {/* Backdrop with Blur */}
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-[#020205]/80 backdrop-blur-3xl pointer-events-auto" 
+                            onClick={() => setSelectedItem(null)}
+                        />
+                        
+                        {/* Detail Sidebar / Drawer */}
                         <motion.div
-                            initial={{ x: 500, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: 500, opacity: 0 }}
-                            className="bg-[#0E0E18] border-l border-white/10 w-full max-w-xl h-full shadow-2xl p-8"
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="w-full max-w-[600px] h-full bg-[#0A0A0F] border-l border-white/10 shadow-[0_0_100px_rgba(0,0,0,1)] relative flex flex-col pointer-events-auto overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
-                            {/* Simple Detail View */}
-                            <div className="flex justify-between items-start mb-8">
-                                <div>
-                                    <h2 className="text-2xl font-black text-white mb-2">{selectedItem.title}</h2>
-                                    <span className="px-3 py-1 bg-indigo-600/10 border border-indigo-500/20 rounded-full text-xs font-bold text-indigo-400">
-                                        ID: {selectedItem.id}
-                                    </span>
+                            {/* Accent Glow Background */}
+                            <div className="absolute top-0 right-0 w-full h-[500px] bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />
+
+                            {/* Header Section */}
+                            <div className="p-10 pb-6 relative z-10 flex justify-between items-start">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase tracking-widest shadow-lg">
+                                            ID: {selectedItem.id} • {selectedItem.platform}
+                                        </div>
+                                        <div className={`px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${
+                                            selectedItem.priority === 'Alta' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
+                                            selectedItem.priority === 'Media' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                        }`}>
+                                            Prioridad {selectedItem.priority}
+                                        </div>
+                                    </div>
+                                    <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-tight drop-shadow-2xl">
+                                        {selectedItem.title}
+                                    </h2>
+                                    <div className="flex items-center gap-3">
+                                        <StatusBadge status={selectedItem.stage.charAt(0).toUpperCase() + selectedItem.stage.slice(1)} />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/30 animate-pulse" />
+                                        <span className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Motor_Live_V4.2</span>
+                                    </div>
                                 </div>
-                                <button onClick={() => setSelectedItem(null)} className="p-2 bg-white/5 rounded-full text-gray-500 hover:text-white">
-                                    <MoreHorizontal className="w-5 h-5" />
+                                <button 
+                                    onClick={() => setSelectedItem(null)}
+                                    className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white transition-all flex items-center justify-center border border-white/5 shadow-2xl group active:scale-95"
+                                >
+                                    <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             </div>
-                            {/* ... more details could be added here ... */}
-                            <p className="text-gray-400 italic text-sm">Próximamente: Integración con Briefing y Feedback en tiempo real.</p>
+
+                            {/* Scrollable Content Container */}
+                            <div className="flex-1 overflow-y-auto px-10 pb-10 space-y-10 custom-scrollbar relative z-10">
+                                
+                                {/* 📋 METADATA GRID */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    {[
+                                        { label: 'Responsable', value: selectedItem.responsible, icon: User, color: 'text-indigo-400' },
+                                        { label: 'Entrega Final', value: selectedItem.deadline, icon: Calendar, color: 'text-emerald-400' },
+                                        { label: 'Formato / Hook', value: '1080x1920 (9:16)', icon: LayoutGrid, color: 'text-blue-400' },
+                                        { label: 'Modo / Campaña', value: selectedItem.mode, icon: Megaphone, color: 'text-pink-400' }
+                                    ].map((item, idx) => (
+                                        <div key={idx} className="p-4 rounded-3xl bg-white/[0.03] border border-white/5 backdrop-blur-xl group hover:border-white/10 transition-all shadow-inner">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className={`w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center ${item.color} border border-white/5 shadow-lg group-hover:scale-110 transition-transform`}>
+                                                    <item.icon className="w-4 h-4" />
+                                                </div>
+                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{item.label}</span>
+                                            </div>
+                                            <p className="text-sm font-black text-white px-1">{item.value}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* 🎯 STRATEGIC BRIEFING SECTION */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                        <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em]">Briefing Estratégico</h3>
+                                        <button className="text-[10px] font-black text-indigo-400 hover:text-indigo-300">EDIT_BRIEF</button>
+                                    </div>
+                                    <div className="p-8 rounded-[2rem] bg-indigo-500/[0.03] border border-indigo-500/10 relative overflow-hidden group/brief">
+                                        <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/5 blur-3xl rounded-full" />
+                                        <p className="text-gray-300 text-sm leading-relaxed font-bold">
+                                            El objetivo principal de este {selectedItem.type.toLowerCase()} es capturar la atención de la audiencia en los primeros 3 segundos mediante un "Pattern Interrupt" dinámico. 
+                                            Necesitamos que los cortes sean rápidos y la música tenga un beat marcado que acompañe la acción.
+                                        </p>
+                                        <ul className="mt-6 space-y-3">
+                                            {['Llamado a la acción (CTA) directo al perfil', 'Usar subtítulos "Alex Hormozi Style"', 'Filtro de color frío para realzar limpieza'].map((point, i) => (
+                                                <li key={i} className="flex gap-3 text-xs text-gray-500 font-bold group-hover/brief:text-gray-400 transition-colors">
+                                                    <CheckCircle className="w-4 h-4 shrink-0 text-emerald-500" />
+                                                    {point}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {/* 💬 INTERACTIVE FEEDBACK & ACTIVITY */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                        <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em]">Integración & Feedback</h3>
+                                        <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 text-[8px] font-black">2_MSG_LIVE</span>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="flex gap-4 p-5 bg-[#151520] rounded-[1.5rem] border border-white/5 shadow-inner">
+                                            <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-lg font-black">A</div>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-black text-white uppercase tracking-widest">{selectedItem.responsible}</span>
+                                                    <span className="text-[8px] text-gray-700">Hace 1 hora</span>
+                                                </div>
+                                                <p className="text-xs text-gray-400 font-bold leading-relaxed">
+                                                    He subido la primera versión de la edición. Falta pulir el audio del final. ¿Qué opinas?
+                                                </p>
+                                                <button className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 text-[9px] font-black hover:bg-indigo-500/20 transition-all">
+                                                    <Eye className="w-3 h-3" /> VER_REVISIÓN
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-row-reverse gap-4 p-5 bg-white/[0.02] rounded-[1.5rem] border border-white/5 text-right opacity-80 backdrop-blur-sm">
+                                            <div className="w-10 h-10 rounded-2xl bg-gray-800 flex items-center justify-center text-gray-400 shrink-0 border border-white/5 font-black italic">CM</div>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center flex-row-reverse gap-2">
+                                                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Master CM</span>
+                                                    <span className="text-[8px] text-gray-700">Hace 30 min</span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 font-bold leading-relaxed">
+                                                    Se ve muy bien, pero cambia la tipografía del hook al color de la marca.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {/* Quick Reply Input */}
+                                    <div className="relative pt-2">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Escribe un mensaje o feedback rápido..." 
+                                            className="w-full bg-[#151520] border border-white/10 rounded-2xl py-4 pl-5 pr-12 text-xs text-white placeholder:text-gray-700 focus:outline-none focus:border-indigo-500/30 transition-all font-bold shadow-2xl"
+                                        />
+                                        <button className="absolute right-3 top-1/2 -translate-y-[15%] w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-500 transition-all shadow-lg active:scale-95 shadow-indigo-600/20">
+                                            <ArrowRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Sticky Footer Actions */}
+                            <div className="p-10 pt-6 border-t border-white/5 bg-gradient-to-t from-[#050511] to-[#0A0A0F]/80 backdrop-blur-2xl relative z-20">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button 
+                                        className="py-4 border border-white/10 text-gray-400 font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl hover:text-white hover:bg-white/5 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <Clock className="w-4 h-4" /> Solicitar Cambios
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            handleMoveStage(selectedItem.id, 'aprobado');
+                                            setSelectedItem(null);
+                                        }}
+                                        className="py-4 bg-gradient-to-br from-indigo-700 to-indigo-900 border border-indigo-500/30 text-white font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl shadow-[0_15px_30px_rgba(79,70,229,0.3)] hover:brightness-110 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <CheckCircle className="w-4 h-4" /> Aprobar Entrega
+                                    </button>
+                                </div>
+                                <p className="text-center text-[9px] font-black text-gray-800 mt-6 uppercase tracking-[0.5em] opacity-40">
+                                    DIICZONE CONTENT_ARCH v.2.2.1
+                                </p>
+                            </div>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
         </div>
+    );
+}
+
+function StatusBadge({ status }) {
+    const stage = status.toLowerCase();
+    const styles = {
+        'idea': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+        'produccion': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+        'revision': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+        'aprobado': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        'programado': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+        'publicado': 'bg-white/5 text-gray-500 border-white/10',
+        'ads': 'bg-pink-500/10 text-pink-400 border-pink-500/20',
+    };
+
+    return (
+        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${styles[stage] || styles.idea}`}>
+            {status}
+        </span>
     );
 }

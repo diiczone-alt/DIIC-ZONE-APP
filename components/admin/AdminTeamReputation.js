@@ -22,48 +22,57 @@ export default function AdminTeamReputation() {
     const creatives = [
         {
             name: "Fausto R.",
-            role: "Senior Editor",
-            points: { quality: 4, timing: 3, corrections: 3, prof: 3, client: 3 },
-            score: 16,
+            role: "Editor de Video (Senior)",
+            points: { quality: 4, timing: 4, corrections: 3, prof: 3, client: 4 },
+            score: 18,
             level: "ÉLITE",
-            history: "Solicitud de ascenso a Master Node pending",
+            history: "Apoyo principal a Leslie y Andrea",
             color: "purple"
         },
         {
-            name: "Carla M.",
-            role: "Brand Designer",
-            points: { quality: 3, timing: 3, corrections: 2, prof: 2, client: 2 },
-            score: 12,
+            name: "Leslie",
+            role: "Community Manager",
+            points: { quality: 4, timing: 3, corrections: 3, prof: 4, client: 4 },
+            score: 18,
             level: "ÉLITE",
-            history: "Consistencia impecable en branding",
+            history: "Gestiona G.S.T, Innova, Nova, etc.",
             color: "purple"
         },
         {
-            name: "Marcos L.",
-            role: "Web Dev",
-            points: { quality: 3, timing: 2, corrections: 2, prof: 2, client: 2 },
-            score: 11,
+            name: "Andrea",
+            role: "Community Manager",
+            points: { quality: 3, timing: 3, corrections: 2, prof: 3, client: 3 },
+            score: 14,
             level: "PRO",
-            history: "3 proyectos web sin retrasos",
+            history: "Especialista en Agropecuarios Ecuador",
             color: "blue"
         },
         {
-            name: "Samuel T.",
-            role: "Social Content",
-            points: { quality: 1, timing: 1, corrections: 1, prof: 2, client: 1 },
-            score: 6,
+            name: "Jocelyn",
+            role: "Community Manager",
+            points: { quality: 3, timing: 3, corrections: 1, prof: 3, client: 2 },
+            score: 12,
             level: "ACTIVO",
-            history: "Requiere apoyo en narrativa visual",
+            history: "Gestiona Entre Panas y Parcelas",
             color: "emerald"
         },
         {
-            name: "Elena G.",
-            role: "Junior Editor",
-            points: { quality: 1, timing: 1, corrections: 0, prof: 1, client: 1 },
-            score: 4,
-            level: "DESARROLLO",
-            history: "Curva de aprendizaje inicial",
-            color: "yellow"
+            name: "Anthony",
+            role: "Editor de Video",
+            points: { quality: 3, timing: 2, corrections: 2, prof: 2, client: 2 },
+            score: 11,
+            level: "PRO",
+            history: "Producción de Reels y TikToks",
+            color: "blue"
+        },
+        {
+            name: "Jimmy",
+            role: "Editor de Video",
+            points: { quality: 2, timing: 2, corrections: 1, prof: 2, client: 1 },
+            score: 8,
+            level: "ACTIVO",
+            history: "Apoyo en edición básica",
+            color: "emerald"
         }
     ];
 

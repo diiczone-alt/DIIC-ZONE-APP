@@ -17,6 +17,7 @@ export default function CMSidebar() {
 
     const menuItems = [
         { icon: LayoutGrid, label: 'Centro de Mando', path: '/workstation/community-manager' },
+        { icon: Target, label: 'Empresas', path: '/workstation/community-manager?tab=clients' },
         { icon: Calendar, label: 'Calendario Editorial', path: '/workstation/community-manager/calendar' },
         { icon: Users, label: 'Equipo & Carga', path: '/workstation/community-manager/team' },
         { icon: BarChart2, label: 'Reportes de Redes', path: '/workstation/community-manager/reports' },

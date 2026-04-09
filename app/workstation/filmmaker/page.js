@@ -5,9 +5,9 @@ import {
     Calendar as CalendarIcon, MapPin, Camera, UploadCloud,
     CheckSquare, Clock, Film, MoreVertical, Search, Filter,
     ArrowRight, Bell, MessageSquare, PlayCircle, Plus,
-    LayoutKanban, List, Inbox, Video, FileText, Download,
+    Layout, List, Inbox, Video, FileText, Download,
     MoreHorizontal, CheckCircle, AlertCircle, ChevronLeft, ChevronRight,
-    Sparkles, Layout, Grid as GridIcon, X, Users, Send
+    Sparkles, Grid as GridIcon, X, Users, Send
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 
@@ -87,7 +87,7 @@ export default function FilmmakerDashboard() {
                     <h1 className="text-lg font-bold text-white">Estación de Producción</h1>
                     <div className="flex bg-[#0E0E18] p-1 rounded-lg border border-white/10">
                         <button onClick={() => setActiveTab('board')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'board' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-                            <LayoutKanban className="w-3.5 h-3.5" /> Tablero
+                            <Layout className="w-3.5 h-3.5" /> Tablero
                         </button>
                         <button onClick={() => setActiveTab('inbox')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all relative ${activeTab === 'inbox' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                             <Inbox className="w-3.5 h-3.5" /> Solicitudes

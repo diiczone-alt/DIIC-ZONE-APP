@@ -9,6 +9,7 @@ import {
     ChevronLeft, ChevronRight, Palette, Wallet
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { CapacityBar } from '@/components/capacity/CapacityComponents';
 
 export default function DesignerSidebar() {
     const [collapsed, setCollapsed] = useState(true);

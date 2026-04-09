@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
     LayoutDashboard, FolderOpen, Palette, Calendar,
     Share2, MessageSquare, BarChart3, ShieldCheck,
@@ -12,13 +13,37 @@ import { motion, AnimatePresence } from 'framer-motion';
 import StrategyBoard from '../../shared/Strategy/StrategyBoard';
 import ContentKanban from '../../shared/Kanban/ContentKanban';
 import UnifiedCalendar from '../../calendar/UnifiedCalendar';
+import { supabase } from '@/lib/supabase';
 
 
 
 
 export default function CMWorkstationLayout() {
-    const [activeTab, setActiveTab] = useState('dashboard');
+    const searchParams = useSearchParams();
+    const defaultTab = searchParams.get('tab') || 'dashboard';
+
+    const [activeTab, setActiveTab] = useState(defaultTab);
     const [selectedClient, setSelectedClient] = useState(null);
+    const [clients, setClients] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab) setActiveTab(tab);
+        fetchClients();
+    }, [searchParams]);
+
+    const fetchClients = async () => {
+        setLoading(true);
+        // In this workspace, Leslie is the main CM role
+        const { data, error } = await supabase
+            .from('clients')
+            .select('*')
+            .eq('cm', 'Leslie');
+        
+        if (data) setClients(data);
+        setLoading(false);
+    };
 
     const menuItems = selectedClient ? [
         { id: 'dashboard', label: 'Dashboard Cliente', icon: LayoutDashboard },
@@ -32,7 +57,7 @@ export default function CMWorkstationLayout() {
         { id: 'reports', label: 'Generador de Reportes', icon: FileText },
     ] : [
         { id: 'dashboard_cm', label: 'Dashboard CM', icon: LayoutDashboard },
-        { id: 'clients', label: 'Mis Clientes', icon: Users },
+        { id: 'clients', label: 'Empresas', icon: Users },
     ];
 
     return (
@@ -98,7 +123,7 @@ export default function CMWorkstationLayout() {
                             transition={{ duration: 0.2 }}
                             className="h-full"
                         >
-                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab)}
+                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading)}
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -107,10 +132,19 @@ export default function CMWorkstationLayout() {
     );
 }
 
-function renderContent(tab, selectedClient, setSelectedClient, setActiveTab) {
+function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading) {
     if (!selectedClient) {
-        if (tab === 'dashboard_cm') return <CMOverviewDashboard clientsCount={3} />;
-        return <CMSettingsClients onSelectClient={(client) => { setSelectedClient(client); setActiveTab('dashboard'); }} />;
+        if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} />;
+        return (
+            <CMSettingsClients 
+                clients={clients} 
+                loading={loading}
+                onSelectClient={(client) => { 
+                    setSelectedClient(client); 
+                    setActiveTab('dashboard'); 
+                }} 
+            />
+        );
     }
 
     switch (tab) {
@@ -122,7 +156,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab) {
         case 'meta': return <MetaAdsModule client={selectedClient} />;
         case 'calendar': return <UnifiedCalendar role="cm" />;
 
-        case 'strategy': return <StrategyBoard role="cm" />;
+        case 'strategy': return <StrategyBoard role="cm" onClose={() => setActiveTab('dashboard')} />;
 
         case 'team': return <TeamView client={selectedClient} />;
         case 'reports': return <CMReports client={selectedClient} />;
@@ -489,7 +523,7 @@ function CommunicationCenter({ client }) {
 
     const tabs = [
         { id: 'ia', label: 'Asistente IA', icon: Bot },
-        { id: 'human', label: 'Mi Community Manager', icon: MessageSquare },
+        { id: 'empresa', label: 'Chat Empresa / Marca', icon: MessageSquare },
         { id: 'team', label: 'Mi Equipo', icon: Palette },
     ];
 
@@ -523,7 +557,7 @@ function CommunicationCenter({ client }) {
                         className="flex-1 overflow-y-auto custom-scrollbar p-6"
                     >
                         {subTab === 'ia' && <AIChatView />}
-                        {subTab === 'human' && <HumanChatView CMName="Leslie" />}
+                        {subTab === 'empresa' && <EnterpriseChatView client={client} />}
                         {subTab === 'team' && <TeamChatView client={client} onSend={() => setShowContextModal(true)} />}
                     </motion.div>
                 </AnimatePresence>
@@ -557,13 +591,15 @@ function AIChatView() {
     return (
         <div className="space-y-6">
             <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-700 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0">
                     <Bot className="w-6 h-6" />
                 </div>
                 <div className="space-y-4 max-w-[85%]">
-                    <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 rounded-tl-none">
-                        <p className="text-sm text-gray-300 leading-relaxed text-balance">
-                            ¡Hola! Soy tu **Estratega IA**. He analizado los datos de tu campaña actual y observo un incremento del 15% en engagement. ¿Quieres que redacte un reporte rápido para el cliente?
+                    <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5 rounded-tl-none backdrop-blur-md">
+                        <p className="text-sm text-gray-300 leading-relaxed">
+                            ¡Hola, Leslie! Soy tu **Estratega IA**. He analizado los datos de **Clínica Dental RM** y observo un incremento del 15% en engagement. 
+                            <br /><br />
+                            Recuerda que esta es tu zona de control: aquí organizamos la estrategia directa con la marca. ¿Quieres que redacte un reporte rápido de desempeño para enviar al cliente ahora mismo?
                         </p>
                     </div>
 
@@ -583,11 +619,24 @@ function AIChatView() {
     );
 }
 
-function HumanChatView({ CMName }) {
+function EnterpriseChatView({ client }) {
     return (
-        <div className="flex flex-col items-center justify-center h-full opacity-40">
-            <MessageSquare className="w-12 h-12 text-gray-500 mb-4" />
-            <p className="text-sm text-gray-500 font-bold italic">Chat directo con {CMName} - Leslie (Online)</p>
+        <div className="flex flex-col items-center justify-center h-full space-y-6">
+            <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-cyan-500/10 blur-2xl rounded-full" />
+                <MessageSquare className="w-10 h-10 text-cyan-400 relative z-10" />
+            </div>
+            <div className="text-center">
+                <h3 className="text-lg font-bold text-white mb-2 italic">Portal de Comunicación Directa</h3>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-[0.2em] mb-4">Canal Privado con {client.name}</p>
+                <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full inline-flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Leslie Online (CM)</span>
+                </div>
+            </div>
+            <p className="text-[11px] text-gray-600 max-w-xs text-center leading-relaxed">
+                Aquí es donde Leslie (Tú) se comunica directamente con la marca para coordinar la ejecución estratégica.
+            </p>
         </div>
     );
 }
@@ -749,24 +798,26 @@ function TeamView({ client }) {
     );
 }
 
-function CMOverviewDashboard({ clientsCount }) {
+function CMOverviewDashboard({ clients, loading }) {
     const stats = [
-        { label: 'Contenidos Activos', value: '12', icon: FileText, color: 'text-cyan-400' },
+        { label: 'Contenidos Activos', value: clients.reduce((acc, c) => acc + (c.projects || 0), 0).toString(), icon: FileText, color: 'text-cyan-400' },
         { label: 'Campañas en Curso', value: '3', icon: Share2, color: 'text-purple-400' },
-        { label: 'Contenidos en Pauta', value: '5', icon: BarChart3, color: 'text-orange-400' },
+        { label: 'Marcas Activas', value: clients.filter(c => c.status === 'active').length.toString(), icon: ShieldCheck, color: 'text-emerald-400' },
         { label: 'Alertas de Hoy', value: '2', icon: AlertTriangle, color: 'text-red-400' },
     ];
+
+    if (loading) return <div className="h-full flex items-center justify-center text-cyan-400 italic">Sincronizando con Admin HQ...</div>;
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-end">
                 <div>
                     <h2 className="text-4xl font-bold text-white mb-2">¡Hola, Leslie!</h2>
-                    <p className="text-gray-500 italic">Aquí tienes el pulso general de tus {clientsCount} clientes asignados.</p>
+                    <p className="text-gray-500 italic">Aquí tienes el pulso general de tus {clients.length} marcas asignadas.</p>
                 </div>
                 <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-balance">Limit: 3/4 Clientes Utilizados</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-balance">Limit: {clients.length}/10 Clientes Capacidad</span>
                 </div>
             </div>
 
@@ -911,18 +962,14 @@ function CMReports({ client }) {
     );
 }
 
-function CMSettingsClients({ onSelectClient }) {
-    const clients = [
-        { id: 1, name: 'Clínica Dental RM', status: 'Activo', projects: 4, nextPost: 'Hoy 18:00', priority: 'ALTA' },
-        { id: 2, name: 'Inmobiliaria City', status: 'Activo', projects: 2, nextPost: 'Mañana', priority: 'MEDIA' },
-        { id: 3, name: 'Restaurante K', status: 'Pausa', projects: 0, nextPost: '-', priority: 'BAJA' },
-    ];
+function CMSettingsClients({ clients, onSelectClient, loading }) {
+    if (loading) return <div className="h-full flex items-center justify-center text-cyan-400 italic font-bold">Conectando con DIIC ADMIN...</div>;
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
-                <h2 className="text-3xl font-bold text-white mb-2">Mis Clientes Asignados</h2>
-                <p className="text-gray-500 italic">Leslie, selecciona un cliente para comenzar a sincronizar.</p>
+                <h2 className="text-3xl font-bold text-white mb-2">Empresas Asignadas</h2>
+                <p className="text-gray-500 italic">Leslie, selecciona una empresa para comenzar a sincronizar.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -946,23 +993,24 @@ function CMSettingsClients({ onSelectClient }) {
                         </div>
 
                         <h3 className="text-xl font-bold text-white mb-1">{client.name}</h3>
-                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-6 ${client.status === 'Activo' ? 'text-emerald-400' : 'text-gray-500'}`}>
-                            ● {client.status}
+                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${client.status === 'active' ? 'text-emerald-400' : 'text-gray-500'}`}>
+                            ● {client.status === 'active' ? 'Activo' : 'En Pausa'}
                         </p>
+                        <p className="text-[9px] text-cyan-400/60 font-black uppercase tracking-widest mb-6 italic">{client.plan || 'Sin Plan Asignado'}</p>
 
                         <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/5">
                             <div>
-                                <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Proyectos</p>
-                                <p className="text-white font-bold">{client.projects}</p>
+                                <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Archivos</p>
+                                <p className="text-white font-bold">{client.projects || 0}</p>
                             </div>
                             <div>
-                                <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Próxima Pub.</p>
-                                <p className="text-white font-bold text-xs truncate">{client.nextPost}</p>
+                                <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Publicación</p>
+                                <p className="text-white font-bold text-xs truncate">{client.nextPost || 'Pendiente'}</p>
                             </div>
                         </div>
 
-                        <div className="mt-8 flex items-center justify-between text-cyan-400 font-bold text-xs group-hover:gap-2 transition-all">
-                            Gestionar Cliente <ChevronRightIcon className="w-4 h-4" />
+                        <div className="mt-8 flex items-center justify-between text-cyan-400 font-bold text-xs group-hover:translate-x-2 transition-all">
+                            Gestionar Estrategia <ChevronRightIcon className="w-4 h-4" />
                         </div>
                     </motion.div>
                 ))}

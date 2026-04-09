@@ -9,6 +9,7 @@ import {
     LogOut, Wallet
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { CapacityBar } from '@/components/capacity/CapacityComponents';
 
 export default function EditorSidebar() {
     const [collapsed, setCollapsed] = useState(true);

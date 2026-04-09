@@ -1,97 +1,123 @@
 'use client';
 
-import {
-    Search, Filter, MoreVertical,
-    Shield, Ban, Edit, Trash2
+import { 
+    Search, Filter, ExternalLink, 
+    MoreVertical, Shield, Ban, 
+    Edit, Trash2, CheckCircle2, 
+    Clock, AlertCircle 
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function AdminUsersPage() {
-    // Mock Data
-    const users = [
-        { id: 1, name: 'Juan Creative', email: 'juan@diic.zone', role: 'Filmmaker', status: 'active', joined: '12 Jan 2025' },
-        { id: 2, name: 'Roberto Client', email: 'roberto@tech.com', role: 'Cliente', status: 'active', joined: '05 Feb 2025' },
-        { id: 3, name: 'Maria Admin', email: 'maria@diic.zone', role: 'Admin', status: 'active', joined: '01 Jan 2025' },
-        { id: 4, name: 'Spam Bot', email: 'bot@spam.com', role: 'User', status: 'banned', joined: 'Today' },
+    const clients = [
+        {
+            status: 'Activos',
+            color: 'emerald',
+            icon: CheckCircle2,
+            list: [
+                { id: 'C1', name: 'Hospital Nova Clínica', plan: 'Plan Anual', contact: 'gerencia@novaclinica.com', joined: '12 Jan 2025' },
+                { id: 'C2', name: 'Global Media Group', plan: 'Plan 6 Meses', contact: 'admin@globalmedia.com', joined: '01 Feb 2025' },
+            ]
+        },
+        {
+            status: 'En Proceso',
+            color: 'blue',
+            icon: Clock,
+            list: [
+                { id: 'C3', name: 'Nova Urology', plan: 'Plan Standard', contact: 'dr.patino@urology.com', joined: '15 Mar 2025' },
+                { id: 'C4', name: 'Tech Solutions Inc', plan: 'Plan 3 Meses', contact: 'sales@techsolutions.io', joined: 'Today' },
+            ]
+        },
+        {
+            status: 'Inactivos',
+            color: 'rose',
+            icon: AlertCircle,
+            list: [
+                { id: 'C5', name: 'Old Partner S.A.', plan: 'Freemium', contact: 'legacy@oldpartner.com', joined: 'Oct 2024' },
+            ]
+        }
     ];
 
     return (
-        <div className="flex-1 overflow-y-auto p-10">
-            <header className="mb-10 flex justify-between items-end">
+        <div className="flex-1 overflow-y-auto p-10 bg-[#050511]">
+            <header className="mb-12 flex justify-between items-end">
                 <div>
-                    <h1 className="text-3xl font-black text-white mb-2">Gestión de Usuarios</h1>
-                    <p className="text-gray-400">Control total de cuentas y permisos.</p>
+                    <h1 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter">Control de Clientes</h1>
+                    <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Ecosistema de Cuentas y Contratos</p>
                 </div>
-                <div className="flex gap-4">
-                    <button className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-xl transition-colors shadow-lg shadow-amber-600/20">
-                        + Crear Usuario
-                    </button>
-                </div>
+                <button 
+                    onClick={() => toast.success('Módulo de Alta de Clientes activado')}
+                    className="h-14 px-8 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-2xl flex items-center gap-3 transition-all shadow-xl shadow-amber-500/20 active:scale-95 text-xs uppercase tracking-widest"
+                >
+                    + Nuevo Registro
+                </button>
             </header>
 
-            <div className="bg-[#0A0A12] border border-white/5 rounded-2xl overflow-hidden">
-                {/* Toolbar */}
-                <div className="p-4 border-b border-white/5 flex gap-4">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                        <input
-                            type="text"
-                            placeholder="Buscar usuarios..."
-                            className="w-full bg-[#15151E] border border-white/5 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
-                        />
-                    </div>
-                </div>
+            <div className="space-y-12">
+                {clients.map((group) => (
+                    <div key={group.status} className="bg-[#0A0A12] border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                        {/* Group Header */}
+                        <div className="px-10 py-8 bg-white/[0.02] border-b border-white/5 flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-xl bg-${group.color}-500/10 flex items-center justify-center text-${group.color}-500`}>
+                                    <group.icon className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-black text-white uppercase tracking-tight">{group.status}</h2>
+                                    <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">{group.list.length} Cuentas vinculadas</p>
+                                </div>
+                            </div>
+                        </div>
 
-                {/* Table */}
-                <table className="w-full text-left text-sm text-gray-400">
-                    <thead className="bg-white/[0.02] text-xs uppercase font-bold text-gray-500">
-                        <tr>
-                            <th className="px-6 py-4">Usuario</th>
-                            <th className="px-6 py-4">Rol</th>
-                            <th className="px-6 py-4">Estado</th>
-                            <th className="px-6 py-4">Fecha Registro</th>
-                            <th className="px-6 py-4 text-right">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                        {users.map((user) => (
-                            <tr key={user.id} className="hover:bg-white/[0.02] transition-colors group">
-                                <td className="px-6 py-4">
-                                    <div>
-                                        <p className="font-bold text-white">{user.name}</p>
-                                        <p className="text-xs text-gray-500">{user.email}</p>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${user.role === 'Admin' ? 'bg-amber-500/10 text-amber-500' : 'bg-white/5 text-gray-400'}`}>
-                                        {user.role}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${user.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                        {user.status}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-xs font-mono">
-                                    {user.joined}
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <div className="flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                        <button className="p-2 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors" title="Editar">
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                        <button className="p-2 hover:bg-amber-500/20 text-amber-500 rounded-lg transition-colors" title="Permisos">
-                                            <Shield className="w-4 h-4" />
-                                        </button>
-                                        <button className="p-2 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors" title="Banear">
-                                            <Ban className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        {/* Table */}
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-white/5">
+                                    <th className="px-10 py-5 text-[10px] font-black text-gray-700 uppercase tracking-widest">ID / Entidad</th>
+                                    <th className="px-10 py-5 text-[10px] font-black text-gray-700 uppercase tracking-widest text-center">Plan Administrativo</th>
+                                    <th className="px-10 py-5 text-[10px] font-black text-gray-700 uppercase tracking-widest">Registro</th>
+                                    <th className="px-10 py-5 text-[10px] font-black text-gray-700 uppercase tracking-widest text-right">Mantenimiento</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {group.list.map((client) => (
+                                    <tr key={client.id} className="hover:bg-white/[0.01] transition-colors group">
+                                        <td className="px-10 py-7">
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-white font-black text-base uppercase tracking-tight group-hover:text-indigo-400 transition-colors">{client.name}</span>
+                                                    <ExternalLink className="w-3 h-3 text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                </div>
+                                                <span className="text-[10px] text-gray-600 font-mono tracking-tight">{client.id} — {client.contact}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-10 py-7 text-center">
+                                            <span className="text-[10px] font-black text-amber-500 bg-amber-500/5 px-3 py-1.5 rounded-lg border border-amber-500/10 uppercase tracking-widest">
+                                                {client.plan}
+                                            </span>
+                                        </td>
+                                        <td className="px-10 py-7 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                            {client.joined}
+                                        </td>
+                                        <td className="px-10 py-7 text-right">
+                                            <div className="flex justify-end gap-3 opacity-30 group-hover:opacity-100 transition-opacity">
+                                                <button className="p-2.5 rounded-xl bg-white/5 hover:bg-indigo-500 hover:text-white transition-all text-gray-400">
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button className="p-2.5 rounded-xl bg-white/5 hover:bg-rose-500 hover:text-white transition-all text-gray-400">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ))}
             </div>
         </div>
     );
 }
+
+

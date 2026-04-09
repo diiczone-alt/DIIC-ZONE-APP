@@ -13,7 +13,7 @@ export default function VideoProductionDashboard() {
     const [showModal, setShowModal] = useState(false);
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 w-full h-full p-8 overflow-y-auto custom-scrollbar relative">
             {/* Header Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <StatCard title="Proyectos Activos" value="12" sub="8 en producción" icon={Clapperboard} color="text-indigo-400" />

@@ -1,9 +1,12 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { FileQuestion, Home, ArrowLeft } from 'lucide-react';
 
 export default function NotFound() {
+    const pathname = usePathname();
+
     return (
         <div className="min-h-screen bg-[#050511] flex items-center justify-center p-6 relative overflow-hidden">
             {/* Background Effects */}
@@ -16,7 +19,11 @@ export default function NotFound() {
 
                 <h1 className="text-4xl font-black text-white mb-4">Página No Encontrada</h1>
                 <p className="text-gray-400 mb-8 leading-relaxed">
-                    Parece que te has perdido en el espacio digital. La ruta que buscas no existe o ha sido movida.
+                    Parece que te has perdido en el espacio digital. La ruta que buscas no existe o ha sido movida:
+                    <br/><br/>
+                    <strong className="text-red-400 p-2 bg-red-500/10 rounded border border-red-500/20 break-all">
+                        Ruta Fallida: {pathname || 'Ruta Desconocida'}
+                    </strong>
                 </p>
 
                 <div className="space-y-4">

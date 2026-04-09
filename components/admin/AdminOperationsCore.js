@@ -17,7 +17,8 @@ import AdminWorkloadManager from './AdminWorkloadManager';
 import AdminClientPrioritization from './AdminClientPrioritization';
 import AdminTalentReputation from './AdminTalentReputation';
 import AdminTalentPayments from './AdminTalentPayments';
-import AdminTalentTraining from './AdminTalentTraining'; // Added import
+import AdminTalentTraining from './AdminTalentTraining';
+import AdminProductionDashboard from './AdminProductionDashboard';
 
 export default function AdminOperationsCore() {
     const [activeTab, setActiveTab] = useState('production');
@@ -56,26 +57,25 @@ export default function AdminOperationsCore() {
             </div>
 
             {/* MODULE NAVIGATION */}
-            <div className="flex gap-2 p-1 bg-white/5 border border-white/10 rounded-2xl w-fit">
+            <div className="flex gap-2 p-1 bg-white/5 border border-white/10 rounded-2xl w-fit overflow-x-auto max-w-full">
                 <TabBtn id="production" label="Producción" active={activeTab} setter={setActiveTab} />
+                <TabBtn id="talent-explorer" label="Explorer Talento" active={activeTab} setter={setActiveTab} />
                 <TabBtn id="capacity" label="Capacidad" active={activeTab} setter={setActiveTab} />
                 <TabBtn id="priority" label="Priorización" active={activeTab} setter={setActiveTab} />
-                <TabBtn id="talent" label="Talento & Reputación" active={activeTab} setter={setActiveTab} />
-                <TabBtn id="payments" label="Contratos & Pagos" active={activeTab} setter={setActiveTab} />
-                <TabBtn id="training" label="Formación" active={activeTab} setter={setActiveTab} /> {/* Added TabBtn */}
-                <TabBtn id="assignment" label="Asignación & Prioridad" active={activeTab} setter={setActiveTab} />
+                <TabBtn id="talent" label="Reputación" active={activeTab} setter={setActiveTab} />
+                <TabBtn id="payments" label="Contratos" active={activeTab} setter={setActiveTab} />
+                <TabBtn id="assignment" label="Asignación Smart" active={activeTab} setter={setActiveTab} />
             </div>
-
             {/* CONTENT AREA */}
             <div className="min-h-[600px]">
                 <AnimatePresence mode="wait">
-                    {activeTab === 'production' && <ProductionModule key="production" />}
+                    {activeTab === 'production' && <AdminProductionDashboard key="production" />}
+                    {activeTab === 'talent-explorer' && <TalentExplorer key="talent-explorer" />}
                     {activeTab === 'capacity' && <AdminWorkloadManager key="capacity" />}
                     {activeTab === 'priority' && <AdminClientPrioritization key="priority" />}
                     {activeTab === 'talent' && <AdminTalentReputation key="talent" />}
                     {activeTab === 'payments' && <AdminTalentPayments key="payments" />}
-                    {activeTab === 'training' && <AdminTalentTraining key="training" />} {/* Added content area condition */}
-                    {activeTab === 'reputation' && <ReputationModule key="reputation" />}
+                    {activeTab === 'training' && <AdminTalentTraining key="training" />}
                     {activeTab === 'assignment' && <AssignmentModule key="assignment" />}
                 </AnimatePresence>
             </div>
@@ -83,91 +83,62 @@ export default function AdminOperationsCore() {
     );
 }
 
-// --- SUB-MODULES ---
+function TalentExplorer() {
+    const [team, setTeam] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-function ProductionModule() {
-    const projects = [
-        { name: "Reel - Dr. Patiño", type: "Reel", start: "26 Ene", due: "28 Ene", load: "70%", status: "on-time", creative: "Fausto" },
-        { name: "Full Branding - Nova", type: "Branding", start: "20 Ene", due: "30 Ene", load: "90%", status: "warning", creative: "Carla" },
-        { name: "Web App - Inmo Elite", type: "Sitio Web", start: "15 Ene", due: "30 Ene", load: "95%", status: "critical", creative: "Marcos" },
-    ];
+    useEffect(() => {
+        const load = async () => {
+            const data = await agencyService.getTeam();
+            setTeam(data);
+            setLoading(false);
+        };
+        load();
+    }, []);
 
     return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
-            {/* TIMINGS & WORKLOAD */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-[#0A0A12] border border-white/10 rounded-3xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-blue-400" /> Tiempos de Entrega & Estado
-                    </h3>
-                    <div className="space-y-3">
-                        <div className="grid grid-cols-5 text-[10px] font-bold text-gray-500 uppercase px-4 pb-2 border-b border-white/5">
-                            <div className="col-span-2">Proyecto / Creativo</div>
-                            <div>Tipo</div>
-                            <div>Entrega</div>
-                            <div className="text-right">Estado</div>
-                        </div>
-                        {projects.map((p, i) => (
-                            <div key={i} className="grid grid-cols-5 items-center p-4 rounded-xl hover:bg-white/5 transition-all text-sm">
-                                <div className="col-span-2">
-                                    <div className="font-bold text-white">{p.name}</div>
-                                    <div className="text-[10px] text-gray-500 uppercase font-black">{p.creative}</div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6 text-left">
+            <div className="bg-[#0A0A12] border border-white/10 rounded-3xl p-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl" />
+                <h3 className="text-xl font-black text-white mb-8 flex items-center gap-3 italic">
+                    <Users className="w-6 h-6 text-blue-500" /> Directorio Global de Talento (Nodos)
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {team.map((m, i) => (
+                        <div key={m.id || i} className="p-6 bg-white/5 border border-white/5 rounded-3xl hover:border-blue-500/30 transition-all group relative">
+                            <div className="absolute top-6 right-6 text-[8px] font-black text-white/20 uppercase tracking-widest">{m.id}</div>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center font-black text-blue-500">
+                                    {m.name.substring(0, 1)}
                                 </div>
-                                <div className="text-gray-400">{p.type}</div>
-                                <div className="text-gray-400 font-bold">{p.due}</div>
-                                <div className="text-right">
-                                    <span className={`px-2 py-1 rounded text-[10px] font-bold border ${p.status === 'on-time' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                                        p.status === 'warning' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
-                                            'bg-red-500/10 text-red-500 border-red-500/20'
-                                        }`}>
-                                        {p.status === 'on-time' ? 'A TIEMPO' : p.status === 'warning' ? 'PRÓXIMO' : 'VENCIDO'}
-                                    </span>
+                                <div>
+                                    <div className="font-black text-white italic group-hover:text-blue-400 transition-colors uppercase">{m.name}</div>
+                                    <div className="text-[10px] text-gray-500 font-bold uppercase">{m.role}</div>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </div>
 
-                <div className="bg-[#0A0A12] border border-white/10 rounded-3xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-purple-400" /> Carga de Trabajo
-                    </h3>
-                    <div className="space-y-6">
-                        <WorkloadRow name="Fausto (Edición)" load={85} projects={12} color="red" />
-                        <WorkloadRow name="Carla (Diseño)" load={60} projects={8} color="blue" />
-                        <WorkloadRow name="Marcos (Web/C)" load={95} projects={6} color="purple" />
-                        <WorkloadRow name="Elena (Social)" load={40} projects={15} color="emerald" />
-                    </div>
-                    <div className="mt-8 p-4 bg-white/5 rounded-xl text-center">
-                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Capacidad Total Red</p>
-                        <div className="text-2xl font-black text-white">72%</div>
-                    </div>
-                </div>
-            </div>
+                            <div className="space-y-3 mb-6">
+                                <div className="flex justify-between items-center text-[10px] font-bold">
+                                    <span className="text-gray-500 uppercase">Ubicación</span>
+                                    <span className="text-white flex items-center gap-1"><MapPin className="w-3 h-3 text-blue-500" /> {m.city}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] font-bold">
+                                    <span className="text-gray-500 uppercase">Nivel</span>
+                                    <span className={`px-2 py-0.5 rounded border ${m.level === 'Pro' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>{m.level?.toUpperCase()}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] font-bold">
+                                    <span className="text-gray-500 uppercase">Carga</span>
+                                    <span className="text-white">{m.activeTasks} Tareas Activas</span>
+                                </div>
+                            </div>
 
-            {/* QUALITY & NODE PERFORMANCE */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-[#0A0A12] border border-white/10 rounded-3xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <Star className="w-5 h-5 text-yellow-400" /> Calidad de Entrega (Métricas)
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <QualityCard label="Revisiones Promedio" value="1.8" icon={MessageSquare} color="blue" />
-                        <QualityCard label="Aprobación 1era" value="82%" icon={CheckCircle2} color="emerald" />
-                        <QualityCard label="NPS Interno" value="9.4" icon={UserCheck} color="purple" />
-                        <QualityCard label="Retrasos Mes" value="2" icon={Clock} color="red" />
-                    </div>
-                </div>
-
-                <div className="bg-[#0A0A12] border border-white/10 rounded-3xl p-6">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <Globe className="w-5 h-5 text-emerald-400" /> Rendimiento de Nodos
-                    </h3>
-                    <div className="space-y-4">
-                        <NodeRow name="Nodo Guayaquil" projects={48} onTime="96%" level="MASTER" />
-                        <NodeRow name="Nodo Quito" projects={22} onTime="88%" level="PRO" />
-                        <NodeRow name="Nodo Manta (Piloto)" projects={8} onTime="100%" level="BASIC" />
-                    </div>
+                            <div className="flex gap-2">
+                                <button className="flex-1 py-3 bg-white/5 border border-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Perfil</button>
+                                <button className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all">Contactar</button>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         </motion.div>
@@ -266,21 +237,125 @@ function ReputationModule() {
 }
 
 function AssignmentModule() {
+    const [tasks, setTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [clients, setClients] = useState([]);
+    
+    // New Task Form State
+    const [newTask, setNewTask] = useState({ title: '', clientId: '', role: 'editor' });
+    const [isCreating, setIsCreating] = useState(false);
+
+    const refreshTasks = async () => {
+        const data = await agencyService.getTasks();
+        setTasks(data.slice(0, 5));
+    };
+
+    useEffect(() => {
+        const loadInitialData = async () => {
+            const [tasksData, clientsData] = await Promise.all([
+                agencyService.getTasks(),
+                agencyService.getClients()
+            ]);
+            setTasks(tasksData.slice(0, 5));
+            setClients(clientsData);
+            setLoading(false);
+        };
+        loadInitialData();
+    }, []);
+
+    const handleCreateIntelligentTask = async (e) => {
+        e.preventDefault();
+        if (!newTask.title || !newTask.clientId) return toast.error("Completa los campos");
+        
+        setIsCreating(true);
+        try {
+            const client = clients.find(c => c.id === newTask.clientId);
+            const taskToCreate = {
+                title: newTask.title,
+                city: client?.city,
+                assigned_role: newTask.role,
+                status: 'todo',
+                priority: 'medium',
+                client_name: client?.name
+            };
+
+            const created = await agencyService.createTask(taskToCreate);
+            toast.success(`Asignado a ${created.assigned_to} por ${created.assignment_reason}`);
+            setNewTask({ title: '', clientId: '', role: 'editor' });
+            await refreshTasks();
+        } catch (error) {
+            toast.error("Error al asignar tarea");
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
     const priorities = [
         { client: "Dr. Pérez - Clínica Dental", level: "critical", score: 14, reason: "Evento Próximo + Plan Premium + Riesgo" },
-        { client: "Restaurante La Paella", level: "medium", score: 6, reason: "Contenido Normal + Plan Básico" },
-        { client: "Nike Latam (Campaña)", level: "high", score: 9, reason: "Impacto Estratégico + Lanzamiento" },
-        { client: "Inmobiliaria Elite", level: "critical", score: 11, reason: "Retrasos Previos + Cliente Insatisfecho" },
-    ];
-
-    const assignments = [
-        { project: "Video Corporativo Elite", assigned: "Fausto R.", motivo: "Score 98 + Especialista + Urgente", complexity: "Premium" },
-        { project: "Diseño Social Nike", assigned: "Carla M.", motivo: "Historial con cliente + Estilo Visual", complexity: "Avanzada" },
-        { project: "Reels Diario Restaurante", assigned: "Samuel T.", motivo: "Disponibilidad + Tipo Básico", complexity: "Básico" },
+        { client: "G.S.T (Campaña)", level: "high", score: 9, reason: "Impacto Estratégico + Lanzamiento" },
+        { client: "Nova Clínica Santa Anita", level: "critical", score: 11, reason: "Retrasos Previos + Cliente Insatisfecho" },
     ];
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6 text-left">
+            
+            {/* 0. INTELLIGENT TASK DISPATCHER FORM */}
+            <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-3xl p-8 relative overflow-hidden mb-8">
+                <div className="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl" />
+                <div className="relative z-10 flex flex-col md:flex-row gap-8 items-end">
+                    <div className="flex-1 space-y-4">
+                        <h3 className="text-xl font-black text-white italic tracking-tighter flex items-center gap-2">
+                             <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" /> Generador de Producción Inteligente
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Título de Tarea</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="Ej: Rodaje Reel Médico"
+                                    value={newTask.title}
+                                    onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Cliente / Ciudad</label>
+                                <select 
+                                    value={newTask.clientId}
+                                    onChange={(e) => setNewTask({...newTask, clientId: e.target.value})}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                                >
+                                    <option value="" className="bg-[#050511]">Seleccionar Cliente</option>
+                                    {clients.map(c => (
+                                        <option key={c.id} value={c.id} className="bg-[#050511]">{c.name} ({c.city})</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Rol Requerido</label>
+                                <select 
+                                    value={newTask.role}
+                                    onChange={(e) => setNewTask({...newTask, role: e.target.value})}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all font-bold"
+                                >
+                                    <option value="editor" className="bg-[#050511]">Editor de Video</option>
+                                    <option value="design" className="bg-[#050511]">Diseñador</option>
+                                    <option value="community" className="bg-[#050511]">Community Manager</option>
+                                    <option value="filmmaker" className="bg-[#050511]">Filmmaker (Logística)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={handleCreateIntelligentTask}
+                        disabled={isCreating}
+                        className="p-4 px-8 bg-indigo-500 hover:bg-indigo-400 text-white font-black rounded-2xl flex items-center gap-2 transition-all shadow-xl shadow-indigo-500/20 disabled:opacity-50"
+                    >
+                        {isCreating ? 'ASIGNANDO...' : 'EJECUTAR DISPATCHER'} <ArrowUpRight className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 1. CUSTOMER PRIORITIZATION (SEMAFORO) */}
                 <div className="bg-[#0A0A12] border border-white/10 rounded-3xl p-6 relative overflow-hidden">
@@ -322,26 +397,46 @@ function AssignmentModule() {
                         <BrainCircuit className="w-5 h-5 text-blue-500" /> Asignación Inteligente
                     </h3>
                     <div className="space-y-4">
-                        {assignments.map((a, i) => (
-                            <div key={i} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all">
+                        {tasks.map((t, i) => (
+                            <div key={t.id || i} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all group/task">
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
-                                        <div className="text-[10px] text-gray-500 font-black uppercase mb-1">PROYECTO: {a.complexity}</div>
-                                        <div className="font-bold text-white">{a.project}</div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="text-[10px] text-gray-500 font-black uppercase">ID: {t.id}</div>
+                                            {t.tags?.includes('Requiere Logística') && (
+                                                <div className="px-2 py-0.5 bg-red-500/20 text-red-500 text-[8px] font-black uppercase rounded-full border border-red-500/20 animate-pulse">
+                                                    Requiere Logística 🚁
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="font-bold text-white group-hover/task:text-blue-400 transition-colors">{t.title}</div>
                                     </div>
-                                    <div className="p-1 px-2 bg-blue-500/20 rounded text-[10px] font-black text-blue-400">DISPATCHED</div>
+                                    <div className={`p-1 px-2 rounded text-[10px] font-black ${t.assignment_reason ? 'bg-indigo-500/20 text-indigo-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                        {t.assignment_reason || 'MANUAL'}
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/5">
-                                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs font-black text-indigo-400">
-                                        {a.assigned.substring(0, 1)}
+                                <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-black text-blue-400">
+                                            {t.assigned_to?.[0] || '?'}
+                                        </div>
+                                        <div>
+                                            <div className="text-xs font-bold text-gray-300">Asignado: <span className="text-white">{t.assigned_to || 'Sin asignar'}</span></div>
+                                            <div className="text-[10px] text-gray-500 italic">Motivo: {t.assignment_reason || 'Definido por Admin'}</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="text-xs font-bold text-gray-300">Asignado a: <span className="text-white">{a.assigned}</span></div>
-                                        <div className="text-[10px] text-gray-500 italic">Motivo: {a.motivo}</div>
+                                    <div className="text-right">
+                                        <div className="text-[10px] text-gray-500 font-bold uppercase">Prioridad</div>
+                                        <div className={`text-[10px] font-black ${t.priority === 'high' ? 'text-red-400' : 'text-emerald-400'}`}>
+                                            {t.priority?.toUpperCase()}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         ))}
+                        {tasks.length === 0 && !loading && (
+                            <div className="text-center py-10 text-gray-600 font-bold italic">No hay tareas inteligentes en cola.</div>
+                        )}
                     </div>
                 </div>
             </div>

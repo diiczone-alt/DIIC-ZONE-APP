@@ -20,7 +20,7 @@ export default function LandingPage() {
                         <Link href="/login" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">
                             Iniciar Sesión
                         </Link>
-                        <Link href="/dashboard">
+                        <Link href="/hub">
                             <button className="px-5 py-2 rounded-full bg-white text-black font-bold text-sm hover:scale-105 transition-transform">
                                 Entrar al Dashboard
                             </button>
@@ -52,15 +52,29 @@ export default function LandingPage() {
                             DIIC ZONE combina IA, automatización y talento humano para escalar tu marca.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link href="/onboarding">
-                                <button className="px-8 py-4 rounded-full bg-gradient-to-r from-primary to-secondary text-white font-bold text-lg shadow-lg shadow-primary/25 hover:scale-105 transition-transform flex items-center gap-2">
-                                    Comenzar Ahora <ArrowRight className="w-5 h-5" />
-                                </button>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                            <motion.div
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="relative group"
+                            >
+                                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient-x" />
+                                <Link 
+                                    href="/onboarding?type=client"
+                                    className="relative flex items-center gap-3 px-10 py-5 rounded-full bg-black text-white font-black text-lg border border-white/10 group-hover:border-white/20 transition-all overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 via-transparent to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    Quiero Crecer Mi Marca 
+                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </Link>
+                            </motion.div>
+                            
+                            <Link 
+                                href="/onboarding?type=creative"
+                                className="px-10 py-5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold text-lg backdrop-blur-md transition-all hover:border-white/20"
+                            >
+                                Únete como Talento 🎥
                             </Link>
-                            <button className="px-8 py-4 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white font-medium text-lg backdrop-blur-sm transition-all">
-                                Ver Demo
-                            </button>
                         </div>
                     </motion.div>
                 </div>
@@ -127,6 +141,53 @@ export default function LandingPage() {
                                 Sube raw, recibe piezas finales. Un flujo de trabajo optimizado para Reels y contenido de alto impacto.
                             </p>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Creative Zone Call to Action */}
+            <section id="creative-zone" className="py-24 bg-gradient-to-b from-[#050510] to-[#0A0A1F] relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]" />
+                <div className="container mx-auto px-6 relative z-10">
+                    <div className="bg-white/[0.02] border border-white/5 rounded-[40px] p-12 md:p-20 text-center">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
+                        >
+                            <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">Ecosistema Profesional</span>
+                            <h2 className="text-4xl md:text-6xl font-black italic tracking-tighter mb-8 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">
+                                ÚNETE A LA ZONA CREATIVA
+                            </h2>
+                            <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-12">
+                                ¿Eres editor, filmmaker, diseñador o community manager? 
+                                Conviértete en un Nodo Certificado y trabaja con las mejores marcas del país.
+                            </p>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-16">
+                                {[
+                                    { name: 'Editors', color: 'text-blue-400' },
+                                    { name: 'Filmmakers', color: 'text-red-400' },
+                                    { name: 'Designers', color: 'text-purple-400' },
+                                    { name: 'CMs', color: 'text-emerald-400' },
+                                    { name: 'Photographers', color: 'text-orange-400' },
+                                    { name: 'Models', color: 'text-pink-400' }
+                                ].map((role, i) => (
+                                    <div key={i} className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all flex flex-col items-center gap-3 group/role">
+                                        <div className={`w-10 h-10 rounded-full bg-white/5 flex items-center justify-center ${role.color} font-bold text-sm group-hover/role:scale-110 transition-transform`}>
+                                            {role.name[0]}
+                                        </div>
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{role.name}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <Link href="/onboarding?type=creative">
+                                <button className="px-10 py-5 rounded-3xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-blue-500/20 transition-all hover:scale-105 flex items-center gap-3 mx-auto">
+                                    Aplicar para ser Nodo <Zap className="w-4 h-4 fill-white" />
+                                </button>
+                            </Link>
+                        </motion.div>
                     </div>
                 </div>
             </section>

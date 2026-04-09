@@ -9,6 +9,20 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
     const router = useRouter();
     const [status, setStatus] = useState('initializing'); // initializing, processing, ready
     const [logs, setLogs] = useState([]);
+    const [identityCode, setIdentityCode] = useState('');
+
+    const roleCodes = {
+        editor: 'EDIT',
+        filmmaker: 'FILM',
+        designer: 'DSGN',
+        audio: 'AUDI',
+        community: 'CMMG',
+        photo: 'PHOT',
+        model: 'MODL',
+        web: 'WEBD',
+        print: 'PRNT',
+        event: 'EVNT'
+    };
 
     useEffect(() => {
         const sequence = [
@@ -24,7 +38,16 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
         sequence.forEach(({ msg, delay, status: endStatus }) => {
             const t = setTimeout(() => {
                 setLogs(prev => [...prev, msg]);
-                if (endStatus) setStatus(endStatus);
+                if (endStatus) {
+                    setStatus(endStatus);
+                    // Generar Código de Identidad al finalizar
+                    if (formData.type === 'creative') {
+                        const role = roleCodes[formData.role] || 'TALN';
+                        const cityPref = (formData.city || 'GEN').substring(0, 3).toUpperCase();
+                        const num = Math.floor(100 + Math.random() * 900); // Num aleatorio 3 cifras
+                        setIdentityCode(`${role}-${cityPref}-${num}`);
+                    }
+                }
             }, delay);
             timeouts.push(t);
         });
@@ -33,8 +56,24 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
     }, []);
 
     const handleEnterDashboard = () => {
-        // Aquí se haría la redirección real
-        router.push('/dashboard');
+        if (formData.type === 'creative') {
+            const roleRoutes = {
+                editor: '/workstation/editor',
+                filmmaker: '/workstation/filmmaker',
+                designer: '/workstation/designer',
+                audio: '/workstation/audio',
+                community: '/workstation/community-manager',
+                photo: '/workstation/photography',
+                model: '/workstation/talent',
+                web: '/workstation/web',
+                print: '/workstation/print',
+                event: '/workstation/event'
+            };
+            const route = roleRoutes[formData.role] || '/dashboard';
+            router.push(route);
+        } else {
+            router.push('/dashboard');
+        }
     };
 
     return (
@@ -78,11 +117,20 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                     </div>
 
                     <div className="space-y-4">
-                        <h2 className="text-4xl font-black text-white">¡Entorno Listo!</h2>
+                        <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">¡Entorno Listo!</h2>
                         <p className="text-gray-400 text-lg">
-                            Ya tienes un equipo digital acompañándote. <br />
-                            Tu sistema de producción, ventas y crecimiento está activo.
+                            {formData.type === 'creative' 
+                                ? `Bienvenido al equipo, ${formData.name || 'Creativo'}. Tu nodo de trabajo está configurado.`
+                                : 'Ya tienes un equipo digital acompañándote. Tu sistema de producción y ventas está activo.'
+                            }
                         </p>
+                        
+                        {identityCode && (
+                            <div className="mt-6 p-6 bg-blue-500/10 border border-blue-500/20 rounded-3xl inline-block">
+                                <p className="text-[10px] text-blue-400 font-black uppercase tracking-[0.2em] mb-2 text-center">Código de Identidad DIIC ZONE</p>
+                                <p className="text-3xl font-black text-white font-mono tracking-widest">{identityCode}</p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-3 gap-4 text-sm text-gray-500 py-6 border-y border-white/5">

@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { agencyService } from '@/services/agencyService';
 import {
     TrendingUp, DollarSign, PieChart, Activity,
     Calendar, ArrowUpRight, ArrowDownRight, Target
@@ -9,6 +11,16 @@ import ROICalculator from './ROICalculator';
 
 export default function FinancialDashboard() {
     const [view, setView] = useState('overview'); // overview, roi-calc
+    const searchParams = useSearchParams();
+    const clientId = searchParams.get('client');
+    const [clientData, setClientData] = useState(null);
+
+    useEffect(() => {
+        if (clientId) {
+            const data = agencyService.getClientById(clientId);
+            if (data) setClientData(data);
+        }
+    }, [clientId]);
 
     return (
         <div className="flex-1 h-full bg-[#050511] overflow-hidden flex flex-col">
@@ -19,7 +31,7 @@ export default function FinancialDashboard() {
                         <Activity className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-white font-bold text-sm">Control Tower Financiera</h2>
+                        <h2 className="text-white font-bold text-sm">Control Tower: {clientData?.name || 'Financiera'}</h2>
                         <div className="flex gap-4 mt-1">
                             <button
                                 onClick={() => setView('overview')}
@@ -48,26 +60,28 @@ export default function FinancialDashboard() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
-                {view === 'overview' ? <OverviewContent /> : <ROICalculator />}
+                {view === 'overview' ? <OverviewContent clientData={clientData} /> : <ROICalculator />}
             </div>
         </div>
     );
 }
 
-function OverviewContent() {
+function OverviewContent({ clientData }) {
+    const monthlyPrice = clientData?.price || 5000;
+    const targetValue = clientData?.target || 28000;
+
     return (
         <div className="space-y-8">
             {/* Big KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <BigCard title="Inversión Total" value="$5,000" sub="Marketing + Ops" color="text-blue-400" />
-                <BigCard title="Ventas Generadas" value="$22,500" sub="Confirmadas" color="text-emerald-400" />
-                <BigCard title="ROI Global" value="350%" sub="Retorno x Inversión" color="text-purple-400" icon={TrendingUp} />
-                <BigCard title="Costo x Cliente" value="$45" sub="CAC Promedio" color="text-orange-400" />
+                <BigCard title="Inversión Mensual" value={`$${monthlyPrice}`} sub="Marketing + Ops" color="text-blue-400" />
+                <BigCard title="Ventas Generadas" value={`$${(monthlyPrice * 4.5).toLocaleString()}`} sub="Confirmadas" color="text-emerald-400" />
+                <BigCard title="ROI Global" value="450%" sub="Retorno x Inversión" color="text-purple-400" icon={TrendingUp} />
+                <BigCard title="Meta Proyectada" value={`$${targetValue.toLocaleString()}`} sub="Objetivo Mensual" color="text-orange-400" />
             </div>
 
             {/* Charts & Tables Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
                 {/* Main Chart (Investment vs Return) */}
                 <div className="lg:col-span-2 bg-[#0E0E18] border border-white/5 rounded-2xl p-6">
                     <div className="flex justify-between items-center mb-6">
@@ -84,7 +98,7 @@ function OverviewContent() {
                             <div key={i} className="flex-1 flex flex-col justify-end gap-1 h-full group cursor-pointer">
                                 {/* Profit Tooltip */}
                                 <div className="hidden group-hover:block absolute top-0 left-1/2 -translate-x-1/2 bg-white text-black text-xs font-bold px-2 py-1 rounded">
-                                    +${h * 20}
+                                    +${Math.round(monthlyPrice / 30 * h * 0.1)}
                                 </div>
                                 <div className="w-full bg-emerald-500/20 hover:bg-emerald-500 transition-colors rounded-t-sm relative" style={{ height: `${h}%` }}>
                                     <div className="absolute bottom-0 w-full bg-blue-500/30 hover:bg-blue-500 transition-colors" style={{ height: `${h * 0.4}%` }}></div>
@@ -99,16 +113,15 @@ function OverviewContent() {
                 <div className="bg-[#0E0E18] border border-white/5 rounded-2xl p-6">
                     <h3 className="text-white font-bold text-lg mb-4">Top Servicios Rentables</h3>
                     <div className="space-y-4">
-                        <ServiceItem name="Paquete Médico Pro" roi="450%" profit="$1,200" />
-                        <ServiceItem name="Video Corporativo" roi="320%" profit="$850" />
-                        <ServiceItem name="Gestión Redes" roi="180%" profit="$400" />
-                        <ServiceItem name="Diseño Web" roi="210%" profit="$600" />
+                        <ServiceItem name="Paquete Médico Pro" roi="450%" profit={`$${Math.round(monthlyPrice * 0.4)}`} />
+                        <ServiceItem name="Video Corporativo" roi="320%" profit={`$${Math.round(monthlyPrice * 0.2)}`} />
+                        <ServiceItem name="Gestión Redes" roi="180%" profit={`$${Math.round(monthlyPrice * 0.1)}`} />
+                        <ServiceItem name="Diseño Web" roi="210%" profit={`$${Math.round(monthlyPrice * 0.15)}`} />
                     </div>
                     <button className="w-full mt-4 py-3 bg-[#151520] hover:bg-white/5 border border-white/5 rounded-xl text-xs font-bold text-gray-400 hover:text-white transition-colors">
                         Ver Reporte Completo
                     </button>
                 </div>
-
             </div>
 
             {/* Projections */}
@@ -117,7 +130,7 @@ function OverviewContent() {
                     <h3 className="text-white font-bold text-lg flex items-center gap-2 mb-1">
                         <Target className="w-5 h-5 text-indigo-400" /> Proyección IA
                     </h3>
-                    <p className="text-gray-400 text-sm">Basado en tu tendencia actual, cerrarás el mes con <span className="text-white font-bold">$28,000</span>.</p>
+                    <p className="text-gray-400 text-sm">Basado en tu tendencia actual, cerrarás el mes con <span className="text-white font-bold">${targetValue.toLocaleString()}</span>.</p>
                 </div>
                 <div className="text-right">
                     <p className="text-xs text-gray-500 uppercase font-bold">Crecimiento Est.</p>

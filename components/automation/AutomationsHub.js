@@ -1,6 +1,7 @@
 'use client';
 
 import { Workflow, Zap, MessageSquare, Calendar } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AutomationsHub() {
     return (
@@ -25,12 +26,12 @@ export default function AutomationsHub() {
             />
 
             {/* Add New Flow */}
-            <div className="border border-dashed border-white/10 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors cursor-pointer min-h-[160px]">
-                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
-                    <Workflow className="w-6 h-6 text-gray-400" />
+            <Link href="/dashboard/automation/flow" className="border border-dashed border-white/10 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors cursor-pointer min-h-[160px] group">
+                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3 group-hover:bg-purple-500/20 group-hover:text-purple-400 transition-colors">
+                    <Workflow className="w-6 h-6 text-gray-400 group-hover:text-purple-400 transition-colors" />
                 </div>
-                <h4 className="font-bold text-white text-sm">Crear Nuevo Flujo</h4>
-            </div>
+                <h4 className="font-bold text-white text-sm group-hover:text-purple-300 transition-colors">Crear Nuevo Flujo</h4>
+            </Link>
         </div>
     );
 }

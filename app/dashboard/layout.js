@@ -3,15 +3,21 @@
 import Sidebar from '../../components/layout/Sidebar';
 import AIAssistant from '../../components/ui/AIAssistant';
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { SidebarProvider, useSidebar } from '@/components/layout/SidebarContext';
+import { useAuth } from '@/context/AuthContext';
 
 function DashboardContent({ children }) {
     const { isExpanded, isSuppressed } = useSidebar();
+    const pathname = usePathname();
+
+    const isHQ = pathname.startsWith('/dashboard/hq');
+    const isCreative = pathname.startsWith('/dashboard/creative-zone');
+    const shouldHideSidebar = isSuppressed || isHQ || isCreative;
 
     return (
         <div className="h-screen bg-[#050511] text-foreground flex overflow-hidden">
-            {!isSuppressed && <Sidebar />}
+            {!shouldHideSidebar && <Sidebar />}
             <main
                 className={`flex-1 flex flex-col min-w-0 h-full relative transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden`}
             >
@@ -23,12 +29,10 @@ function DashboardContent({ children }) {
                     </>
                 )}
 
-                {/* Main Content Area - Padding depends on suppression */}
-                <div className={`relative z-10 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${isSuppressed ? '' : 'p-8'}`}>
+                {/* Main Content Area - Padding depends on suppression or route */}
+                <div className={`relative z-10 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${shouldHideSidebar || pathname === '/dashboard/strategy' ? '' : 'p-8'}`}>
                     {children}
                 </div>
-
-                {!isSuppressed && <AIAssistant />}
             </main>
         </div>
     );
@@ -36,22 +40,36 @@ function DashboardContent({ children }) {
 
 export default function DashboardLayout({ children }) {
     const router = useRouter();
+    const pathname = usePathname();
+    const { user, loading } = useAuth(); // Official Auth
 
     useEffect(() => {
-        // CLIENT GUARD: Only 'client' type allowed here
-        const userType = localStorage.getItem('user_type');
-        const userRole = localStorage.getItem('user_role');
+        if (loading) return; // Wait for auth to initialize
 
-        if (userType === 'creator') {
-            // Redirect to their specific workstation
-            const target = userRole === 'EDITOR' ? '/workstation/editor'
-                : userRole === 'FILMMAKER' ? '/workstation/filmmaker'
-                    : '/workstation/cm';
-            router.push(target);
-        } else if (userType === 'admin') {
-            router.push('/admin');
+        if (!user) {
+            router.push('/login');
+            return;
         }
-    }, []);
+
+        const role = user.role || 'CLIENT';
+        
+        // Guard Logic based on Real Role
+        if (role === 'CREATOR') {
+             // We can check specific workstation roles if encoded in metadata later, 
+             // but for now let's just make sure they go to creative zone.
+             if (!pathname.startsWith('/dashboard/creative-zone') && !pathname.startsWith('/workstation')) {
+                  router.push('/dashboard/creative-zone');
+             }
+        } else if (role === 'ADMIN') {
+            if (!pathname.startsWith('/admin') && !pathname.startsWith('/dashboard/hq')) {
+                router.push('/admin/strategy/map');
+            }
+        }
+    }, [user, loading, pathname, router]);
+
+    if (loading) {
+        return <div className="h-screen bg-[#050511] flex items-center justify-center text-white">Verificando Credenciales...</div>;
+    }
 
     return (
         <SidebarProvider>

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import {
     LayoutDashboard, MessageSquare, Calendar as CalendarIcon, FileText,
-    Users, ChevronRight, Bell, Search, Mic, Send, TrendingUp, AlertCircle, Bot
+    Users, ChevronRight, Bell, Search, Mic, Send, TrendingUp, AlertCircle, Bot, Share2
 } from 'lucide-react';
 
 export default function CommunityDashboard() {

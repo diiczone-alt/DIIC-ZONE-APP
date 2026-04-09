@@ -16,6 +16,7 @@ import { contentService } from '../../services/contentService';
 import { toast } from 'sonner';
 import StoryboardEditor from '../previs/StoryboardEditor';
 import ScriptEditor from '../previs/ScriptEditor';
+import ScriptCampaignSelector from '../previs/ScriptCampaignSelector';
 
 // --- 1. PrevisWelcome (The 3-Path Entry) ---
 const PrevisWelcome = ({ onSelectPath }) => (
@@ -101,6 +102,9 @@ export default function PrevisStudio() {
     ]);
     const [activeSceneId, setActiveSceneId] = useState('sc_01');
     const [showWelcome, setShowWelcome] = useState(true);
+    
+    // Script AI State
+    const [selectedScriptContent, setSelectedScriptContent] = useState(null); // { campaign, node }
 
     const router = useRouter();
 
@@ -139,11 +143,15 @@ export default function PrevisStudio() {
     };
 
     const handleBackToHome = () => {
-        // Direct navigation back to prevent issues with confirm dialogs
-        // if (projectType && !confirm("¿Volver al inicio?")) return; 
+        if (projectType === 'script' && selectedScriptContent) {
+            // If inside a script editor, go back to selector
+            setSelectedScriptContent(null);
+            return;
+        }
 
         setShowWelcome(true);
         setProjectType(null);
+        setSelectedScriptContent(null);
     };
 
     return (
@@ -152,7 +160,7 @@ export default function PrevisStudio() {
             {showWelcome && <PrevisWelcome onSelectPath={handleSelectPath} />}
 
             {/* Header / Navigation */}
-            {!showWelcome && (
+            {(!showWelcome && !(projectType === 'script' && selectedScriptContent)) && (
                 <header className="h-16 border-b border-white/5 bg-[#050511] flex items-center justify-between px-6 shrink-0 print:hidden">
                     <div className="flex items-center gap-4">
                         <button onClick={handleBackToHome} className="group flex items-center gap-2 px-3 py-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-all border border-transparent hover:border-white/10">
@@ -161,9 +169,13 @@ export default function PrevisStudio() {
                         </button>
                         <div className="h-6 w-px bg-white/10"></div>
                         <div>
-                            <h2 className="text-sm font-bold text-white leading-tight">Proyecto Sin Título</h2>
+                            <h2 className="text-sm font-bold text-white leading-tight">
+                                {projectType === 'script' && selectedScriptContent 
+                                    ? `Guión: ${selectedScriptContent.node.data.title}` 
+                                    : 'Estudio Creativo'}
+                            </h2>
                             <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">
-                                {projectType === 'storyboard' ? 'Bosquejo 2D' : projectType === 'script' ? 'Guión AI' : 'Previs 3D'}
+                                {projectType === 'storyboard' ? 'Bosquejo 2D' : projectType === 'script' ? (selectedScriptContent ? selectedScriptContent.campaign.name : 'Selector de Campaña') : 'Previs 3D'}
                             </p>
                         </div>
                     </div>
@@ -181,10 +193,23 @@ export default function PrevisStudio() {
 
             {/* Main Workspace */}
             {!showWelcome && (
-                <main className="flex-1 overflow-hidden p-1 relative">
-                    {projectType === 'storyboard' && <StoryboardEditor />}
-                    {projectType === 'script' && <ScriptEditor />}
-                    {projectType === 'previs' && <PrevisView scenes={scenes} activeSceneId={activeSceneId} />}
+                <main className="flex-1 overflow-hidden relative">
+                    {projectType === 'storyboard' && <div className="p-1 h-full w-full"><StoryboardEditor /></div>}
+                    
+                    {projectType === 'script' && (
+                        !selectedScriptContent ? (
+                            <ScriptCampaignSelector onSelectContent={setSelectedScriptContent} />
+                        ) : (
+                            <ScriptEditor 
+                                campaign={selectedScriptContent.campaign} 
+                                node={selectedScriptContent.node} 
+                                onBack={() => setSelectedScriptContent(null)}
+                                onConvertToProduction={handleConvertToProduction}
+                            />
+                        )
+                    )}
+
+                    {projectType === 'previs' && <div className="p-1 h-full w-full"><PrevisView scenes={scenes} activeSceneId={activeSceneId} /></div>}
                 </main>
             )}
         </div>
