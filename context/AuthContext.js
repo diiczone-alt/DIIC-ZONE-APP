@@ -113,7 +113,8 @@ export const AuthProvider = ({ children }) => {
                     full_name: metadata.full_name || '',
                     role: metadata.role || 'CLIENT',
                     brand: metadata.brand || '',
-                    city: metadata.city || ''
+                    city: metadata.city || '',
+                    ...metadata
                 }
             }
         });

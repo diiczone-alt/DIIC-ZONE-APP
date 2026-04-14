@@ -10,7 +10,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+
 export default function RegistrationHub({ initialType = 'client' }) {
+    const router = useRouter();
+    const { register } = useAuth();
     const [isMounted, setIsMounted] = useState(false);
     const [step, setStep] = useState(1);
     const [type, setType] = useState(initialType); // 'client' or 'creative'
@@ -59,18 +64,32 @@ export default function RegistrationHub({ initialType = 'client' }) {
     const prevStep = () => setStep(step - 1);
 
     const handleSubmit = async () => {
-        toast.promise(
-            new Promise((resolve) => setTimeout(resolve, 2000)),
-            {
-                loading: 'Generando perfil inteligente...',
-                success: '¡Bienvenido al ecosistema DIIC ZONE!',
-                error: 'Error al registrar.',
-            }
-        );
-        // Simulation: Send to agencyService.registerUser(formData, type);
-        setTimeout(() => {
-            window.location.href = type === 'client' ? '/hub' : '/onboarding/success';
-        }, 2200);
+        const id = toast.loading('Sincronizando identidad con el CORE...');
+        
+        try {
+            await register(formData.email, formData.whatsapp, { // Using whatsapp as temporary password or handled by AuthContext
+                full_name: formData.name,
+                city: formData.city,
+                brand: formData.brand,
+                role: type === 'client' ? 'CLIENT' : 'CREATIVE',
+                metadata: {
+                    roles: formData.roles,
+                    businessType: formData.businessType,
+                    objective: formData.objective,
+                    portfolio: formData.portfolio,
+                    cv: formData.cv
+                }
+            });
+
+            toast.success('¡Bienvenido al ecosistema DIIC ZONE!', { id });
+            
+            setTimeout(() => {
+                router.push(type === 'client' ? '/hub' : '/onboarding/success');
+            }, 2000);
+        } catch (err) {
+            console.error('[RegistrationHub] Error:', err);
+            toast.error('Error al registrar: ' + err.message, { id });
+        }
     };
 
     if (!isMounted) return <div className="min-h-screen bg-[#050510] flex items-center justify-center font-black text-indigo-500 animate-pulse uppercase tracking-widest">DIIC ZONE Syncing...</div>;
