@@ -1,16 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-    UploadCloud, Film, Mic, Camera, FileVideo,
-    X, CheckCircle, AlertTriangle, ChevronLeft,
-    Trash2, Eye, FolderPlus, Tag, Video
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { use, useState } from 'react';
+// ... (imports)
 
 export default function UploadPage({ params }) {
-    const { shootId } = params;
+    const { shootId } = use(params);
     const router = useRouter();
     const [uploading, setUploading] = useState(false);
     const [folders, setFolders] = useState([

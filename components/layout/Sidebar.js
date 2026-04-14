@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 // Static Items (Always Visible)
 const MAIN_ITEMS = [
@@ -68,6 +69,7 @@ export default function Sidebar() {
     const [isClientCenterOpen, setIsClientCenterOpen] = useState(false);
     const [openGroup, setOpenGroup] = useState(null); // 'growth' | 'evolution' | null
     const { setIsExpanded } = useSidebar();
+    const { user } = useAuth();
 
     // Auto-expand group if active route is inside
     useEffect(() => {
@@ -240,7 +242,7 @@ export default function Sidebar() {
                             {/* Colorful Avatar Border (Master Admin Style) */}
                             <div className="w-9 h-9 rounded-xl p-[1.5px] bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-500 shadow-lg shadow-indigo-500/20">
                                 <div className="w-full h-full rounded-[9px] bg-[#050510] flex items-center justify-center text-white font-black text-[10px]">
-                                    CA
+                                    {(user?.user_metadata?.full_name || user?.full_name || 'DZ').substring(0, 2).toUpperCase()}
                                 </div>
                             </div>
                             <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#050510] rounded-full flex items-center justify-center">
@@ -249,8 +251,12 @@ export default function Sidebar() {
                         </div>
 
                         <div className="flex-1 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <h4 className="text-[10px] font-black text-white truncate uppercase tracking-tight leading-tight">Master Admin</h4>
-                            <p className="text-[8px] text-emerald-400 font-black uppercase tracking-widest opacity-80 leading-none mt-0.5">Online Hub</p>
+                            <h4 className="text-[10px] font-black text-white truncate uppercase tracking-tight leading-tight">
+                                {user?.user_metadata?.brand || 'DIIC Admin'}
+                            </h4>
+                            <p className="text-[8px] text-emerald-400 font-black uppercase tracking-widest opacity-80 leading-none mt-0.5">
+                                {user?.user_metadata?.city || 'Centro de Mando'}
+                            </p>
                         </div>
 
                         {/* Quick Settings Icon */}
@@ -265,7 +271,7 @@ export default function Sidebar() {
                             onClick={(e) => {
                                 e.stopPropagation();
                                 localStorage.clear();
-                                window.location.href = '/login';
+                                window.location.href = '/';
                             }}
                             className="w-full h-11 flex items-center gap-4 px-3 rounded-2xl bg-rose-500/5 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 transition-all group/logout active:scale-95 shadow-xl"
                         >

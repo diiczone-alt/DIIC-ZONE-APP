@@ -47,7 +47,7 @@ export default function DashboardLayout({ children }) {
         if (loading) return; // Wait for auth to initialize
 
         if (!user) {
-            router.push('/login');
+            router.push('/');
             return;
         }
 
@@ -61,8 +61,8 @@ export default function DashboardLayout({ children }) {
                   router.push('/dashboard/creative-zone');
              }
         } else if (role === 'ADMIN') {
-            if (!pathname.startsWith('/admin') && !pathname.startsWith('/dashboard/hq')) {
-                router.push('/admin/strategy/map');
+            if (!pathname.startsWith('/dashboard/hq') && !pathname.startsWith('/dashboard/strategy')) {
+                router.push('/dashboard/strategy');
             }
         }
     }, [user, loading, pathname, router]);

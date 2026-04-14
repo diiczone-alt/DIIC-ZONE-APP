@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Activity, Clock, Star, Users,
     CheckCircle2, AlertTriangle,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { agencyService } from '@/services/agencyService';
 import AdminWorkloadManager from './AdminWorkloadManager';
 import AdminClientPrioritization from './AdminClientPrioritization';
 import AdminTalentReputation from './AdminTalentReputation';

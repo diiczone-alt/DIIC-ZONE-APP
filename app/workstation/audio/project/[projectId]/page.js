@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     Mic2, Play, Pause, Square, ChevronLeft, UploadCloud,
@@ -10,7 +10,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AudioProjectPage({ params }) {
-    const { projectId } = params;
+    const { projectId } = use(params);
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('studio');
     const [isPlaying, setIsPlaying] = useState(false);

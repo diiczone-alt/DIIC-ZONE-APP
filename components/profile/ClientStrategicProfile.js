@@ -3,16 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { Network, Tag, Target, Users, Search, Target as TargetIcon, Zap, Heart, Link as LinkIcon, Globe, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
+import { aiService } from '@/services/aiService';
 import { toast } from 'sonner';
 
 export default function ClientStrategicProfile() {
-    // Current client ID (defaulting to 1 for demo if no param)
-    const clientId = 1; 
+    const { user } = useAuth();
+    // Current client ID from auth context
+    const clientId = user?.client_id || 1; 
 
     // Basic state for the profile
     const [profile, setProfile] = useState({
-        brandName: '',
+        brandName: user?.user_metadata?.brand || '',
         websiteUrl: '',
         instagramUrl: '',
         linkedinUrl: '',
@@ -28,6 +31,7 @@ export default function ClientStrategicProfile() {
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [isSimulatingScrape, setIsSimulatingScrape] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [analysisMsg, setAnalysisMsg] = useState('');
 
     useEffect(() => {
         const loadClient = async () => {
@@ -69,21 +73,43 @@ export default function ClientStrategicProfile() {
         }
     };
 
-    const handleSimulateSync = () => {
-        if (!profile.websiteUrl && !profile.instagramUrl) return;
+    const handleSimulateSync = async () => {
+        if (!profile.websiteUrl && !profile.instagramUrl) {
+            toast.error("Ingresa una URL para iniciar la investigación");
+            return;
+        }
+
         setIsSimulatingScrape(true);
         setIsPreviewMode(true);
         
-        // Simulating the scraping and AI parsing process
-        setTimeout(() => {
-            setIsSimulatingScrape(false);
+        try {
+            // Get analysis from service
+            const result = await aiService.analyzeStrategicProfile(
+                profile.websiteUrl || profile.instagramUrl, 
+                profile.brandName
+            );
+
+            // simulate the processing steps with delays
+            for (const step of result.steps) {
+                setAnalysisMsg(step.msg);
+                await new Promise(r => setTimeout(r, 1200));
+            }
+
+            // Apply the results
             setProfile(p => ({
                 ...p,
-                brandName: p.brandName || (p.websiteUrl ? p.websiteUrl.replace('https://', '').split('.')[0].toUpperCase() : 'Mi Marca'),
-                whatItDoes: p.whatItDoes || 'Agencia digital detectada por IA basada en links.',
-                targetAudience: p.targetAudience || 'Emprendedores detectados en el contenido scrapeado.',
+                ...result.data
             }));
-        }, 2500);
+            
+            toast.success("Investigación profunda completada con éxito");
+
+        } catch (error) {
+            console.error("AI Analysis error:", error);
+            toast.error("Error durante la investigación profunda");
+        } finally {
+            setIsSimulatingScrape(false);
+            setAnalysisMsg('');
+        }
     };
 
     const renderInput = (label, field, icon, placeholder, isTextarea = false) => {
@@ -196,9 +222,9 @@ export default function ClientStrategicProfile() {
                                             <Zap className="w-6 h-6 text-indigo-400" />
                                         </div>
                                     </div>
-                                    <div className="text-center">
-                                        <p className="text-xs font-black uppercase text-indigo-400 tracking-widest animate-pulse">Analizando Web...</p>
-                                        <p className="text-[10px] text-gray-500 mt-1">Extrayendo keywords y propuesta de valor</p>
+                                    <div className="text-center px-4">
+                                        <p className="text-xs font-black uppercase text-indigo-400 tracking-widest animate-pulse min-h-[1.5em]">{analysisMsg || 'Iniciando Escaneo...'}</p>
+                                        <p className="text-[10px] text-gray-500 mt-2 font-bold uppercase tracking-tighter italic">Investigando como Estratega de Nicho</p>
                                     </div>
                                 </div>
                             ) : isPreviewMode ? (
@@ -248,7 +274,7 @@ export default function ClientStrategicProfile() {
                     )}
                 </AnimatePresence>
 
-                <div className="relative z-10">{renderInput('Nombre de Marca', 'brandName', Tag, 'Ej. John Doe Inc.')}</div>
+                <div className="relative z-10">{renderInput('Nombre de Marca', 'brandName', Tag, user?.user_metadata?.brand || 'Ej. DIIC ZONE INC.')}</div>
                 <div className="relative z-10">{renderInput('¿Qué hace?', 'whatItDoes', Network, 'Ej. Consultoría en Inteligencia Artificial...')}</div>
                 <div className="relative z-10">{renderInput('¿Qué ofrece?', 'whatItOffers', Zap, 'Ej. Asesorías High-Ticket, Cursos, SaaS...', true)}</div>
                 <div className="relative z-10">{renderInput('Público Objetivo', 'targetAudience', Users, 'Ej. Dueños de negocios B2B, edad 30-45...', true)}</div>

@@ -1,6 +1,6 @@
 'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { agencyService } from '@/services/agencyService';
 import {
     Activity, Users, TrendingUp, DollarSign,
     AlertTriangle, Video, Layers, Award,
@@ -21,12 +21,31 @@ import AdminDocumentation from './AdminDocumentation';
 import AdminNodeTraining from './AdminNodeTraining';
 import AdminContinuousImprovement from './AdminContinuousImprovement';
 import AdminBusinessIntelligence from './AdminBusinessIntelligence';
+import AdminMasterIntelligence from './AdminMasterIntelligence';
 import AdminCapacitySystem from './AdminCapacitySystem';
 import AdminDynamicPricing from './AdminDynamicPricing';
 import AdminClientEvolution from './AdminClientEvolution';
+import AdminOperationalGovernance from './AdminOperationalGovernance';
+import AdminDualAudit from './AdminDualAudit';
 
 export default function MasterCommandCenter() {
-    const [view, setView] = useState('global'); // 'global', 'finance', 'risk', 'operations', 'team', 'qa', 'nodes', 'docs', 'training'
+    const [clients, setClients] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [view, setView] = useState('global');
+
+    useEffect(() => {
+        const fetchRealClients = async () => {
+            try {
+                const data = await agencyService.getClients();
+                setClients(data);
+            } catch (err) {
+                console.error("MasterCommandCenter: Error fetching real clients", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchRealClients();
+    }, []);
 
     const handleFeatureClick = (feature) => {
         toast.info(`Accediendo a: ${feature}`, {
@@ -34,16 +53,6 @@ export default function MasterCommandCenter() {
             position: "top-center"
         });
     };
-
-    // --- MOCK DATA ---
-    // ... (rest of mock data remains same)
-    const clients = [
-        { id: 1, name: "Dr. Patiño", niche: "Médico", level: 6, health: "excellent", income: "$2,500" },
-        { id: 2, name: "Nova Clínica", niche: "Salud", level: 7, health: "good", income: "$4,200" },
-        { id: 3, name: "AgroFértil", niche: "Agro", level: 5, health: "warning", income: "$1,800" },
-        { id: 4, name: "Burger King Local", niche: "Restaurante", level: 2, health: "critical", income: "$800" },
-        { id: 5, name: "Inmobiliaria Elite", niche: "Bienes Raíces", level: 4, health: "good", income: "$3,100" },
-    ];
 
     const productionStats = {
         editing: 12,
@@ -104,6 +113,15 @@ export default function MasterCommandCenter() {
                         </button>
                         <button
                             onClick={() => {
+                                setView('governance');
+                                toast.success("Accediendo a Gobernanza Operativa", { description: "Control total de tasas y costos activo." });
+                            }}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'governance' ? 'bg-indigo-600 text-white shadow-lg' : 'text-indigo-400 border border-indigo-500/20 bg-indigo-500/10'}`}
+                        >
+                            Gobernanza
+                        </button>
+                        <button
+                            onClick={() => {
                                 setView('operations');
                                 toast.success("Accediendo a Operaciones Globales", { description: "Control de Producción y Calidad." });
                             }}
@@ -154,8 +172,8 @@ export default function MasterCommandCenter() {
                                 </div>
                             </div>
                             <button
-                                onClick={() => window.location.href = '/dashboard/intelligence'}
-                                className="px-4 py-2 rounded-xl text-xs font-bold transition-all text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20"
+                                onClick={() => setView('bi')}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'bi' ? 'bg-emerald-500 text-black shadow-lg' : 'text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20'}`}
                             >
                                 Inteligencia de Negocio
                             </button>
@@ -187,10 +205,10 @@ export default function MasterCommandCenter() {
                     >
                         {/* 1. GLOBAL KPIs */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <KPICard icon={Users} title="Clientes Activos" value="24" sub="+3 este mes" color="indigo" />
+                            <KPICard icon={Users} title="Clientes Activos" value={clients.filter(c => c.status === 'active').length} sub="+3 este mes" color="indigo" />
                             <KPICard icon={TrendingUp} title="Crecimiento" value="18%" sub="vs mes anterior" color="emerald" />
                             <KPICard icon={AlertTriangle} title="En Riesgo" value="2" sub="Requieren atención" color="red" />
-                            <KPICard icon={DollarSign} title="Ingreso Mensual" value="$12,400" sub="Facturación Total" color="indigo" />
+                            <KPICard icon={DollarSign} title="Ingreso Mensual" value={`$${clients.reduce((acc, c) => acc + (c.price || 0), 0)}`} sub="Facturación Total" color="indigo" />
                         </div>
 
                         {/* 2. STRATEGIC MODULES (REDUNDANT NAV) */}
@@ -256,6 +274,7 @@ export default function MasterCommandCenter() {
                                 desc="Dirección & BI"
                                 icon={Compass}
                                 color="indigo"
+                                active={view === 'bi'}
                                 onClick={() => setView('bi')}
                             />
                             <PillarCard
@@ -300,8 +319,22 @@ export default function MasterCommandCenter() {
                                         <div className="text-right">Ingreso</div>
                                     </div>
                                     {clients.map(client => (
-                                        <ClientRow key={client.id} data={client} />
+                                        <ClientRow key={client.id} data={{
+                                            ...client,
+                                            niche: client.type || 'Socio',
+                                            level: client.plan?.toLowerCase() === 'elite' ? 6 : (client.plan?.toLowerCase() === 'pro' ? 4 : 2),
+                                            health: client.status === 'active' ? 'excellent' : 'warning',
+                                            income: `$${client.price || 0}`
+                                        }} />
                                     ))}
+                                    {clients.length === 0 && !loading && (
+                                        <div className="py-20 text-center text-gray-500 font-bold italic">
+                                            No se encontraron clientes reales en la base de datos.
+                                        </div>
+                                    )}
+                                    {loading && (
+                                        <div className="py-2 text-gray-500 animate-pulse">Sincronizando con Supabase...</div>
+                                    )}
                                 </div>
                             </div>
 
@@ -363,28 +396,28 @@ export default function MasterCommandCenter() {
                                         desc="Manual del Nodo: Protocolos de campo."
                                         icon={Building2}
                                         color="blue"
-                                        onClick={() => handleFeatureClick('Manual del Nodo')}
+                                        onClick={() => setView('docs')}
                                     />
                                     <PillarCard
                                         title="Legal"
                                         desc="Contrato de Representación: Blindaje oficial."
                                         icon={ShieldCheck}
                                         color="indigo"
-                                        onClick={() => handleFeatureClick('Contrato Legal')}
+                                        onClick={() => setView('docs')}
                                     />
                                     <PillarCard
                                         title="Estructura Red"
                                         desc="Manual Operativo Central: Gestión de Nodos."
                                         icon={Globe}
                                         color="purple"
-                                        onClick={() => handleFeatureClick('Estructura de Red')}
+                                        onClick={() => setView('nodes')}
                                     />
                                     <PillarCard
                                         title="Interna"
                                         desc="Organigrama: Jerarquía y responsabilidades."
                                         icon={Users}
                                         color="pink"
-                                        onClick={() => handleFeatureClick('Organigrama')}
+                                        onClick={() => setView('team')}
                                     />
                                     <PillarCard
                                         title="Financiera"
@@ -392,7 +425,7 @@ export default function MasterCommandCenter() {
                                         icon={DollarSign}
                                         color="emerald"
                                         highlight={true}
-                                        onClick={() => handleFeatureClick('Modelo Financiero')}
+                                        onClick={() => setView('finance')}
                                     />
                                 </div>
                             </div>
@@ -471,7 +504,7 @@ export default function MasterCommandCenter() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                     >
-                        <AdminFinancialCore />
+                        <AdminDualAudit />
                     </motion.div>
                 ) : view === 'risk' ? (
                     <motion.div
@@ -552,7 +585,7 @@ export default function MasterCommandCenter() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                     >
-                        <AdminBusinessIntelligence />
+                        <AdminMasterIntelligence />
                     </motion.div>
                 ) : view === 'capacity' ? (
                     <motion.div
@@ -580,6 +613,15 @@ export default function MasterCommandCenter() {
                         exit={{ opacity: 0, y: -20 }}
                     >
                         <AdminClientEvolution />
+                    </motion.div>
+                ) : view === 'governance' ? (
+                    <motion.div
+                        key="governance"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                    >
+                        <AdminOperationalGovernance />
                     </motion.div>
                 ) : null}
             </AnimatePresence>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Tag, Plus, Edit2, Trash2,
@@ -8,9 +8,13 @@ import {
     Palette, Layers, X, User,
     Building2, MapPin, Briefcase, FileText
 } from 'lucide-react';
-import { MOCK_DATA } from '@/lib/mockData';
+import { supabase } from '@/lib/supabase';
 
 export default function HQServicesPage() {
+    const [services, setServices] = useState([]);
+    const [automations, setAutomations] = useState([]);
+    const [rates, setRates] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [selectedExtras, setSelectedExtras] = useState([]);
     const [wizardStep, setWizardStep] = useState(1); // 1: Cards, 2: Profile, 3: Agreement
@@ -20,6 +24,28 @@ export default function HQServicesPage() {
         location: '',
         businessType: ''
     });
+    const [activeCategory, setActiveCategory] = useState('plan'); // 'plan' or 'pack'
+
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const [servRes, autoRes, ratesRes] = await Promise.all([
+                    supabase.from('services').select('*').order('price', { ascending: true }),
+                    supabase.from('automations').select('*'),
+                    supabase.from('production_rates').select('*').order('name', { ascending: true })
+                ]);
+                setServices(servRes.data || []);
+                setAutomations(autoRes.data || []);
+                setRates(ratesRes.data || []);
+            } catch (err) {
+                console.error("Error loading services:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, []);
 
     const toggleExtra = (extraId) => {
         setSelectedExtras(prev => 
@@ -50,16 +76,82 @@ export default function HQServicesPage() {
                 </div>
             </div>
 
-            {/* Pricing Grid - Core 3 Plans */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 relative z-10">
-                {MOCK_DATA.services.map((service, index) => (
-                    <PricingCard
-                        key={service.id}
-                        service={service}
-                        index={index}
-                        onSelect={() => handleSelectPlan(service)}
+            {/* Category Switcher */}
+            <div className="flex justify-center">
+                <div className="bg-white/5 p-1.5 rounded-3xl flex gap-1 border border-white/5">
+                    <button 
+                        onClick={() => setActiveCategory('plan')}
+                        className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === 'plan' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-white'}`}
+                    >
+                        Planes Mensuales
+                    </button>
+                    <button 
+                        onClick={() => setActiveCategory('pack')}
+                        className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === 'pack' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-white'}`}
+                    >
+                         Paquetes Especiales
+                    </button>
+                </div>
+            </div>
+
+            {/* Content Grid */}
+            {loading ? (
+                <div className="flex items-center justify-center p-20 text-indigo-500 font-black animate-pulse uppercase tracking-[0.5em]">
+                    Sincronizando Catálogo...
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 relative z-10">
+                    {services
+                        .filter(s => s.category === activeCategory)
+                        .map((service, index) => (
+                            activeCategory === 'plan' ? (
+                                <PricingCard
+                                    key={service.id}
+                                    service={service}
+                                    index={index}
+                                    onSelect={() => handleSelectPlan(service)}
+                                />
+                            ) : (
+                                <PackCard 
+                                    key={service.id}
+                                    service={service}
+                                    index={index}
+                                    onSelect={() => handleSelectPlan(service)}
+                                />
+                            )
+                        ))
+                    }
+                </div>
+            )}
+
+            {/* Individual Services Catalog - Point 3 of User Request */}
+            <div className="space-y-8 relative z-10">
+                <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-white/5" />
+                    <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em] whitespace-nowrap">Catálogo Individual (Venta por Unidad)</h2>
+                    <div className="h-px flex-1 bg-white/5" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* PRODUCTION CATEGORY */}
+                    <CategoryCard 
+                        title="🎬 Producción" 
+                        items={rates.filter(r => r.id.includes('vid') || r.id.includes('reel') || r.id.includes('podcast'))} 
+                        color="indigo"
                     />
-                ))}
+                    {/* DESIGN CATEGORY */}
+                    <CategoryCard 
+                        title="🎨 Diseño" 
+                        items={rates.filter(r => r.id.includes('post') || r.id.includes('carousel') || r.id.includes('portada'))} 
+                        color="emerald"
+                    />
+                    {/* STRATEGY & SCALE */}
+                    <CategoryCard 
+                        title="🧠 Estrategia & Fotografía" 
+                        items={rates.filter(r => r.id.includes('strategy') || r.id.includes('photo') || r.id.includes('auto'))} 
+                        color="orange"
+                    />
+                </div>
             </div>
 
             {/* Advanced Levels - Automations & Scale */}
@@ -71,7 +163,7 @@ export default function HQServicesPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {MOCK_DATA.automations.map((extra) => (
+                    {automations.map((extra) => (
                         <motion.div
                             key={extra.id}
                             whileHover={{ y: -5 }}
@@ -101,6 +193,44 @@ export default function HQServicesPage() {
                             </div>
                         </motion.div>
                     ))}
+                </div>
+            </div>
+
+            {/* Rules of Business & Key Phrase - Point 5 & Clave of User Request */}
+            <div className="pt-20 pb-10 space-y-12 relative z-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <Shield className="w-5 h-5 text-emerald-500" />
+                            <h4 className="text-[10px] font-black text-white uppercase tracking-[0.4em]">Reglas de Negocio ZONA CREATIVA</h4>
+                        </div>
+                        <ul className="space-y-4">
+                            {[
+                                'Nunca vender por debajo de estos precios',
+                                'Los extras siempre se facturan por separado',
+                                'No aumentar entregables sin reajustar el precio'
+                            ].map((rule, i) => (
+                                <li key={i} className="flex items-center gap-4 text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                    <div className="w-1 h-1 bg-emerald-500 rounded-full" />
+                                    {rule}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <div className="text-right">
+                        <p className="text-[10px] font-black text-indigo-500/50 uppercase tracking-[0.6em] mb-4">Filosofía de Rentabilidad</p>
+                        <h2 className="text-3xl font-black text-white italic leading-tight tracking-tighter uppercase">
+                            “Cada servicio tiene <span className="text-indigo-500">margen</span>, <br />
+                            cada plan tiene <span className="text-indigo-500">utilidad</span>.”
+                        </h2>
+                    </div>
+                </div>
+
+                <div className="pt-10 border-t border-white/5 flex justify-between items-center text-[8px] font-black text-gray-700 uppercase tracking-[0.5em]">
+                    <span>DIIC ZONE OS © 2026</span>
+                    <span>Nivel Empresa Seria v1.0.4</span>
+                    <span>Sincronizado Localmente</span>
                 </div>
             </div>
 
@@ -230,7 +360,7 @@ export default function HQServicesPage() {
                                                     <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Adicionales Seleccionados</p>
                                                     <div className="flex flex-wrap gap-3">
                                                         {selectedExtras.map(id => {
-                                                            const extra = MOCK_DATA.automations.find(a => a.id === id);
+                                                            const extra = automations.find(a => a.id === id);
                                                             return (
                                                                 <div key={id} className="px-5 py-2 bg-black/40 border border-white/20 rounded-xl text-[10px] font-black text-white uppercase tracking-widest">
                                                                     + {extra.name} (A Cotizar)
@@ -249,7 +379,7 @@ export default function HQServicesPage() {
                                             </div>
                                             <div className="bg-black/40 border border-white/5 rounded-[2rem] p-10 text-xs text-gray-500 leading-loose font-medium italic">
                                                 <p className="mb-6 text-white not-italic font-black text-sm uppercase tracking-widest">Base del Acuerdo:</p>
-                                                "Este acuerdo establece la activación inmediata del plan seleccionado ({selectedPlan.name}), detallando la producción de reels, carruseles y la estrategia del equipo filmmaker conforme a los niveles estratégicos DIIC ZONE."
+                                                "Este acuerdo establece la activación inmediata del {selectedPlan?.category === 'pack' ? 'paquete' : 'plan'} seleccionado ({selectedPlan?.name}), detallando la producción conforme a los niveles estratégicos de ZONA CREATIVA."
                                                 <div className="mt-8 h-px bg-white/5 mb-8" />
                                                 <p>
                                                     DIIC ZONE garantiza la entrega de las piezas descritas manteniendo los estándares de calidad cinemática.
@@ -379,9 +509,9 @@ function PricingCard({ service, index, onSelect }) {
 
             {/* Deliverables Grid */}
             <div className="grid grid-cols-3 gap-1 mb-12 border-t border-white/5 pt-8">
-                <DeliverableItem label="REELS" value={service.deliverables.reels} isPopular={isPopular} />
-                <DeliverableItem label="POSTS" value={service.deliverables.posts} isPopular={isPopular} />
-                <DeliverableItem label="STORIES" value={service.deliverables.stories} isPopular={isPopular} />
+                <DeliverableItem label="VIDEOS" value={service.deliverables?.videos} isPopular={isPopular} />
+                <DeliverableItem label="REELS" value={service.deliverables?.reels} isPopular={isPopular} />
+                <DeliverableItem label="POSTS" value={service.deliverables?.posts} isPopular={isPopular} />
             </div>
 
             {/* Action CTA */}
@@ -396,11 +526,94 @@ function PricingCard({ service, index, onSelect }) {
     );
 }
 
+function PackCard({ service, index, onSelect }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="p-10 rounded-[3rem] bg-gradient-to-b from-white/[0.05] to-transparent border border-white/5 flex flex-col h-full relative overflow-hidden group hover:border-indigo-500/50 transition-all duration-500"
+        >
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/10 blur-[50px] group-hover:bg-indigo-500/20 transition-all" />
+            
+            {/* Type Badge */}
+            <div className="mb-8 items-center flex gap-3">
+                <div className="p-3 bg-white/5 rounded-2xl text-indigo-400">
+                    {service.id.includes('design') ? <Palette className="w-6 h-6" /> : <Video className="w-6 h-6" />}
+                </div>
+                <div>
+                    <h3 className="text-lg font-black text-white italic tracking-tight">{service.name}</h3>
+                    <p className="text-[8px] font-black text-indigo-500 uppercase tracking-widest">{service.enfoque}</p>
+                </div>
+            </div>
+
+            {/* Price section */}
+            <div className="mb-10">
+                <p className="text-[10px] font-bold text-gray-700 uppercase tracking-widest mb-1">Inversión Pack</p>
+                <div className="flex items-center gap-3">
+                    <span className="text-5xl font-black text-white tracking-tighter">${service.price}</span>
+                    <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                        <span className="text-[8px] font-black text-emerald-400 tracking-[0.2em] uppercase">Pack Ahorro</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Deliverables List (Pill style) */}
+            <div className="space-y-3 mb-12 flex-1">
+                {service.features?.map((feature, i) => (
+                    <div key={i} className="flex items-center gap-4 text-[10px] font-bold text-gray-500 group-hover:text-gray-300 transition-colors">
+                        <Check className="w-4 h-4 text-indigo-500" />
+                        <span className="uppercase tracking-widest">{feature}</span>
+                    </div>
+                ))}
+            </div>
+
+            <button
+                onClick={onSelect}
+                className="w-full py-5 rounded-2xl bg-white/5 hover:bg-indigo-600 text-white font-black uppercase text-[10px] tracking-widest transition-all border border-white/5 hover:border-indigo-500 shadow-xl"
+            >
+                Adquirir este Pack
+            </button>
+        </motion.div>
+    );
+}
+
 function DeliverableItem({ label, value, isPopular }) {
     return (
         <div className="text-center">
             <p className="text-3xl font-black text-white mb-1">{value}</p>
             <p className={`text-[8px] font-black uppercase tracking-widest ${isPopular ? 'text-white/40' : 'text-gray-700'}`}>{label}</p>
+        </div>
+    );
+}
+
+function CategoryCard({ title, items, color }) {
+    const colorClasses = {
+        indigo: 'text-indigo-400 bg-indigo-500/10',
+        emerald: 'text-emerald-400 bg-emerald-500/10',
+        orange: 'text-orange-400 bg-orange-500/10'
+    };
+
+    return (
+        <div className="bg-[#0E0E18] border border-white/5 p-8 rounded-[2rem] space-y-6">
+            <h3 className={`text-xs font-black uppercase tracking-[0.3em] px-4 py-2 rounded-xl inline-block ${colorClasses[color] || colorClasses.indigo}`}>
+                {title}
+            </h3>
+            <div className="space-y-4">
+                {items.length > 0 ? items.map(item => (
+                    <div key={item.id} className="flex justify-between items-center group">
+                        <span className="text-gray-400 group-hover:text-white transition-colors text-xs font-bold uppercase tracking-wider">{item.name}</span>
+                        <div className="flex items-center gap-2">
+                             <span className="text-[10px] text-gray-600 font-black line-through opacity-0 group-hover:opacity-100 transition-opacity">
+                                ${(item.price_suggested * 1.2).toFixed(0)}
+                             </span>
+                             <span className="text-white font-black text-sm tracking-tighter">${item.price_suggested}</span>
+                        </div>
+                    </div>
+                )) : (
+                    <p className="text-[10px] text-gray-700 italic">Cargando catálogo...</p>
+                )}
+            </div>
         </div>
     );
 }

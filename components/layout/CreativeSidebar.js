@@ -75,7 +75,7 @@ export default function CreativeSidebar({ user }) {
                         <p className="text-xs text-indigo-400 truncate">{user?.role || 'Staff'}</p>
                     </div>
                     <button
-                        onClick={() => router.push('/login')}
+                        onClick={() => router.push('/')}
                         className="p-2 rounded-lg hover:bg-white/5 text-gray-500 hover:text-red-400 transition-colors"
                     >
                         <LogOut className="w-4 h-4" />

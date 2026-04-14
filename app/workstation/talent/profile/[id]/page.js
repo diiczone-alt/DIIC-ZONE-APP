@@ -1,5 +1,6 @@
 'use client';
 
+import { use } from 'react';
 import {
     ChevronLeft, Star, MapPin, CheckCircle,
     Instagram, Twitter, Video, Camera, Calendar
@@ -7,6 +8,7 @@ import {
 import { useRouter } from 'next/navigation';
 
 export default function TalentProfile({ params }) {
+    const { id } = use(params);
     const router = useRouter();
 
     return (

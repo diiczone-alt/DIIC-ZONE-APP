@@ -527,20 +527,18 @@ export default function StrategyBoard({ role, onClose }) {
         
         const { name, startDate, endDate, volume } = config;
         
-        // --- EXPERT GENERATION ENGINE ---
+        // --- EXPERT GENERATION ENGINE (JERARQUÍA PRO) ---
         const newNodes = [];
-        const newEdges = [];
         
-        // Distribution Rules (Strategic Mapping)
-        const DISTRIBUTION_MAP = {
-            video: ['conciencia', 'interés'],
-            reel: ['conciencia', 'interés'],
-            imagen: ['consideración', 'conversión'],
-            post: ['consideración', 'conversión'],
-            carrusel: ['consideración', 'interés'],
-            historia: ['interés', 'retención'],
-            crm: ['conversión'],
-            form: ['conversión']
+        // Distribution Rules (Enriquecido con Áreas y Categorías)
+        const SUBTYPE_MAP = {
+            video: { id: 'v_youtube', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'autoridad'] },
+            reel: { id: 'v_reels', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'] },
+            imagen: { id: 'i_post', areaId: 'creativa', categoryId: 'imagen', levels: ['consideración', 'conversión'] },
+            carrusel: { id: 'i_carrucel', areaId: 'creativa', categoryId: 'imagen', levels: ['conexión', 'autoridad'] },
+            historia: { id: 'i_historias', areaId: 'creativa', categoryId: 'imagen', levels: ['conexión', 'retención'] },
+            crm: { id: 'l3_crm_email', areaId: 'crm', categoryId: 'crm', levels: ['conversión'] },
+            form: { id: 'r_form', areaId: 'conversiones', categoryId: 'recurso', levels: ['conversión'] }
         };
 
         const stageCounts = {
@@ -554,53 +552,54 @@ export default function StrategyBoard({ role, onClose }) {
         Object.entries(volume).forEach(([type, count]) => {
             if (count <= 0) return;
             
-            const possibleStages = DISTRIBUTION_MAP[type] || ['conciencia'];
+            const mapping = SUBTYPE_MAP[type];
+            if (!mapping) return;
+            
+            const possibleLevels = mapping.levels || ['conciencia'];
             
             for (let i = 0; i < count; i++) {
-                const stageId = possibleStages[i % possibleStages.length];
-                const stageIdx = STRATEGIC_COLUMNS.findIndex(col => col.id === stageId);
+                const levelId = possibleLevels[i % possibleLevels.length];
+                const stageIdx = STRATEGIC_COLUMNS.findIndex(col => col.id === levelId);
                 const actualIdx = stageIdx === -1 ? 0 : stageIdx;
                 
                 const targetX = STRATEGIC_RAILS.COLUMNS[actualIdx] + 25;
-                const targetY = 320 + (stageCounts[stageId] * STRATEGIC_RAILS.VERTICAL_PADDING);
-                stageCounts[stageId]++;
+                const targetY = 320 + (stageCounts[levelId] * STRATEGIC_RAILS.VERTICAL_PADDING);
+                stageCounts[levelId]++;
 
                 const nodeId = `node_${type}_${Date.now()}_${i}`;
-                const nodeType = type === 'reel' ? 'reel_viral' : (type === 'video' ? 'educativo' : type);
 
                 newNodes.push({
                     id: nodeId,
-                    type: nodeType,
+                    type: type === 'reel' ? 'reel_viral' : (type === 'video' ? 'educativo' : type),
                     x: targetX,
                     y: targetY,
                     data: {
                         title: `${type.toUpperCase()} #${i + 1}`,
                         status: 'Idea',
-                        funnelLevel: stageId,
+                        funnelLevel: levelId,
+                        areaId: mapping.areaId,
+                        categoryId: mapping.categoryId,
+                        subtype: mapping.id,
                         objective: 'Arquitectura Estratégica',
                         linkedTools: { guion: false, diseño: false, filmacion: false, edicion: false }
                     }
                 });
-
-                // --- MANUAL CONNECTIVITY: No auto-edges ---
             }
         });
 
-        // Add a central Campaign Master Hub
-        // --- MANUAL-ONLY STRATEGY: No automatic hub or edges ---
         updateActiveCampaign(c => ({
             ...c,
             name: name || c.name,
             startDate,
             endDate,
             nodes: newNodes,
-            edges: [] // Clear all edges to start with a fresh manual board
+            edges: [] 
         }));
         
         setIsConfiguring(false);
         setActiveFlow('tablero');
-        toast.success(`Estructura táctica de ${newNodes.length} nodos desplegada.`, {
-            description: `Se han orquestado los activos a lo largo del embudo. Conexión manual habilitada.`
+        toast.success(`Estructura jerárquica de ${newNodes.length} nodos desplegada.`, {
+            description: `Se han orquestado los activos bajo las raíces de Zona Creativa, CRM y Conversiones.`
         });
     }, [activeCampaign, updateActiveCampaign]);
 
@@ -838,7 +837,7 @@ export default function StrategyBoard({ role, onClose }) {
     }, [setDrawings]);
 
     return (
-        <div className={`fixed inset-0 z-[100] w-full flex flex-col overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-[#F8FAFC]'}`}>
+        <div className={`fixed inset-0 z-[100] w-full flex flex-col overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-[#F1F5F9]'}`}>
             {/* 1. TOP BAR */}
             <StrategyTopBar
                 strategyName={strategyData.name}
@@ -875,7 +874,7 @@ export default function StrategyBoard({ role, onClose }) {
 
             <div className="flex-1 flex overflow-hidden relative">
                 {/* 2. SIDEBAR NAVIGATION */}
-                <aside className={`w-16 border-r flex flex-col items-center py-6 gap-4 z-[80] transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0A0A0F] border-white/5' : 'bg-white border-slate-200 shadow-xl shadow-slate-200/20'}`}>
+                <aside className={`w-16 border-r flex flex-col items-center py-6 gap-4 z-[80] transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0A0A0F] border-white/5' : 'bg-white border-slate-300/50 shadow-xl shadow-slate-300/10'}`}>
                     {menuItems.map((item) => {
                         const isActive = activeFlow === item.id;
                         return (
@@ -909,7 +908,7 @@ export default function StrategyBoard({ role, onClose }) {
                         onSave={handleSaveStrategy}
                     />}
 
-                    <div className="flex-1 flex flex-col min-h-0 bg-[#050511] relative overflow-hidden">
+                    <div className={`flex-1 flex flex-col min-h-0 relative overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-[#F1F5F9]'}`}>
                         {activeFlow === 'campañas' && (
                             <StrategyFlowCampanas 
                                 strategyData={strategyData} 
@@ -921,6 +920,7 @@ export default function StrategyBoard({ role, onClose }) {
                                 forceCreate={isCreatingCampaign}
                                 onCreationClose={() => setIsCreatingCampaign(false)}
                                 onConfigureBoard={() => setIsConfiguring(true)}
+                                theme={theme}
                             />
                         )}
 
@@ -975,7 +975,7 @@ export default function StrategyBoard({ role, onClose }) {
 
                         {activeFlow === 'tablero' && (
                             !activeCampaign ? (
-                                <div className={`flex-1 flex flex-col items-center justify-center transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-slate-50'}`}>
+                                <div className={`flex-1 flex flex-col items-center justify-center transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-slate-100'}`}>
                                     <h2 className={`text-xl font-bold mb-2 transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Pizarra No Disponible</h2>
                                 </div>
                             ) : (
@@ -1013,6 +1013,7 @@ export default function StrategyBoard({ role, onClose }) {
                                         <StrategyCanvas
                                             nodes={activeCampaign.nodes}
                                             edges={activeCampaign.edges}
+                                            activeCampaign={activeCampaign}
                                             strategyHealth={strategyHealth}
                                             activeTool={activeTool}
                                             viewMode={viewMode}
@@ -1085,7 +1086,7 @@ export default function StrategyBoard({ role, onClose }) {
                 )}
             </AnimatePresence>
 
-            <footer className={`h-10 border-t flex items-center justify-between px-8 z-50 transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0A0A0F] border-white/5' : 'bg-white border-slate-200'}`}>
+            <footer className={`h-10 border-t flex items-center justify-between px-8 z-50 transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0A0A0F] border-white/5' : 'bg-white border-slate-300/50'}`}>
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2 text-[9px] font-black text-gray-500 uppercase tracking-widest">
                         <Binary className="w-3 h-3 text-indigo-500" />

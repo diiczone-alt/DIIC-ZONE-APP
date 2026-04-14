@@ -3,12 +3,19 @@
 import { useState } from 'react';
 import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 import GrowthPricing from '../growth/GrowthPricing';
 
 export default function ClientAccountSettings() {
+    const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [activeSection, setActiveSection] = useState('profile'); // profile, security, billing, notifications
     const [showPlans, setShowPlans] = useState(false);
+
+    const full_name = user?.user_metadata?.full_name || user?.full_name || 'DIIC User';
+    const initials = full_name.substring(0, 2).toUpperCase();
+    const brand = user?.user_metadata?.brand || 'CEO / Fundador';
+    const email = user?.email || 'usuario@example.com';
 
     const handleSave = () => {
         setIsLoading(true);
@@ -72,8 +79,7 @@ export default function ClientAccountSettings() {
                         <div className="flex items-center gap-6 p-4 bg-white/5 rounded-2xl border border-white/5">
                             <div className="relative group cursor-pointer w-20 h-20">
                                 <div className="w-full h-full rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-blue-500/20 overflow-hidden">
-                                    {/* Image placeholder or Initials */}
-                                    CA
+                                    {initials}
                                 </div>
                                 <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
                                     <Camera className="w-6 h-6 text-white" />
@@ -90,9 +96,9 @@ export default function ClientAccountSettings() {
 
                         {/* Form Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-                            <InputField label="Nombre Completo" placeholder="Carlos Arévalo" icon={User} />
-                            <InputField label="Cargo / Título" placeholder="CEO / Fundador" icon={Shield} />
-                            <InputField label="Correo Electrónico" placeholder="carlos@example.com" type="email" icon={Mail} />
+                            <InputField label="Nombre Completo" placeholder={full_name} defaultValue={full_name} icon={User} />
+                            <InputField label="Cargo / Título" placeholder={brand} defaultValue={brand} icon={Shield} />
+                            <InputField label="Correo Electrónico" placeholder={email} defaultValue={email} type="email" icon={Mail} />
                             <InputField label="Teléfono" placeholder="+52 55 1234 5678" type="tel" icon={Phone} />
                         </div>
 
@@ -134,7 +140,7 @@ export default function ClientAccountSettings() {
                                         <h4 className="text-white font-bold text-sm">Windows PC - Chrome</h4>
                                         <p className="text-xs text-gray-400 flex items-center gap-2">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                            Activo ahora • Ciudad de México
+                                            Activo ahora • {user?.user_metadata?.city || 'Santo Domingo'}
                                         </p>
                                     </div>
                                 </div>
@@ -260,13 +266,14 @@ function NavButton({ id, label, icon: Icon, isActive, onClick }) {
     );
 }
 
-function InputField({ label, placeholder, type = 'text', icon: Icon }) {
+function InputField({ label, placeholder, defaultValue, type = 'text', icon: Icon }) {
     return (
         <div className="space-y-2">
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</label>
             <div className="relative group">
                 <input
                     type={type}
+                    defaultValue={defaultValue}
                     className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:bg-black/40 transition-all placeholder:text-gray-600 group-hover:border-white/20"
                     placeholder={placeholder}
                 />

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Leaf, Compass, Star, Zap, Rocket, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
 
@@ -65,7 +66,8 @@ const LEVELS = [
 ];
 
 export default function ClientGrowthLevel({ initialLevel = 'presencia' }) {
-    const clientId = 1;
+    const { user } = useAuth();
+    const clientId = user?.client_id || 1;
     const [currentLevel, setCurrentLevel] = useState(initialLevel);
     const [isSaving, setIsSaving] = useState(false);
 

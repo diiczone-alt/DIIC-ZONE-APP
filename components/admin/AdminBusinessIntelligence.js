@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     BarChart3, TrendingUp, DollarSign,
     Users, Globe, Compass,
@@ -12,16 +12,76 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { agencyService } from '@/services/agencyService';
 
 export default function AdminBusinessIntelligence() {
     const [scenRatio, setScenRatio] = useState(1); // Scenario Simulator: 1.0 (Current) to 1.5 (+50%)
+    const [loading, setLoading] = useState(true);
+    const [financialData, setFinancialData] = useState(null);
+    const [scaleData, setScaleData] = useState(null);
 
-    const strategicKpis = [
-        { label: "Ingresos Mensuales", value: `$${(24500 * scenRatio).toLocaleString()}`, diff: "+18%", isUp: true, icon: DollarSign, color: "emerald" },
-        { label: "Margen Promedio", value: "62%", diff: "+4%", isUp: true, icon: PieChart, color: "indigo" },
-        { label: "Carga Operativa", value: "78%", diff: "+12%", isUp: false, icon: Briefcase, color: "yellow" },
-        { label: "CSAT (Satis.)", value: "4.6/5", diff: "-0.2", isUp: false, icon: Users, color: "blue" }
-    ];
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [fin, sc] = await Promise.all([
+                    agencyService.getFinancialSummary(),
+                    agencyService.getScaleData()
+                ]);
+                setFinancialData(fin);
+                setScaleData(sc);
+            } catch (error) {
+                console.error("Error fetching BI data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    const strategicKpis = useMemo(() => {
+        if (!financialData || !scaleData) return [
+            { label: "Ingresos Mensuales", value: "-", diff: "0%", isUp: true, icon: DollarSign, color: "emerald" },
+            { label: "Margen Promedio", value: "-", diff: "0%", isUp: true, icon: PieChart, color: "indigo" },
+            { label: "Carga Operativa", value: "-", diff: "0%", isUp: false, icon: Briefcase, color: "yellow" },
+            { label: "CSAT (Satis.)", value: "4.6/5", diff: "0", isUp: false, icon: Users, color: "blue" }
+        ];
+
+        const metrics = financialData.metrics;
+        return [
+            { 
+                label: "Ingresos Mensuales", 
+                value: `$${(metrics.income * scenRatio).toLocaleString()}`, 
+                diff: metrics.income > 0 ? "+100%" : "0%", 
+                isUp: true, 
+                icon: DollarSign, 
+                color: "emerald" 
+            },
+            { 
+                label: "Margen Promedio", 
+                value: `${metrics.gross_margin}%`, 
+                diff: "+2%", 
+                isUp: true, 
+                icon: PieChart, 
+                color: "indigo" 
+            },
+            { 
+                label: "Carga Operativa", 
+                value: `${scaleData?.capacity?.percent || 0}%`, 
+                diff: "+5%", 
+                isUp: (scaleData?.capacity?.percent || 0) > 85, 
+                icon: Briefcase, 
+                color: "yellow" 
+            },
+            { 
+                label: "CSAT (Satis.)", 
+                value: "4.6/5", 
+                diff: "-0.2", 
+                isUp: false, 
+                icon: Users, 
+                color: "blue" 
+            }
+        ];
+    }, [financialData, scaleData, scenRatio]);
 
     const serviceMargins = [
         { name: "Automatizaciones IA", margin: 78, trend: "+12%", color: "bg-emerald-500" },

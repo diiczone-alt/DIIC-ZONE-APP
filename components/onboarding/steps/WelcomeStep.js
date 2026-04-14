@@ -3,7 +3,9 @@
 import { motion } from 'framer-motion';
 import { Bot, Sparkles, ArrowRight } from 'lucide-react';
 
-export default function WelcomeStep({ onNext }) {
+export default function WelcomeStep({ onNext, type = 'client' }) {
+    const isCreative = type === 'creative';
+
     return (
         <div className="space-y-8 text-center h-full flex flex-col items-center justify-center max-w-2xl mx-auto">
             <motion.div
@@ -41,7 +43,10 @@ export default function WelcomeStep({ onNext }) {
                     Soy tu Asistente <span className="text-indigo-400">DIIC ZONE</span>
                 </h2>
                 <p className="text-xl text-gray-400 leading-relaxed max-w-lg mx-auto">
-                    Antes de construir tu entorno creativo, quiero conocerte para diseñar un sistema a tu medida.
+                    {isCreative 
+                        ? "Configuraremos tu perfil profesional para conectarte con las mejores marcas y optimizar tu flujo creativo."
+                        : "Antes de construir tu entorno para escalar tu marca, quiero conocerte para diseñar un sistema a tu medida."
+                    }
                 </p>
             </motion.div>
 

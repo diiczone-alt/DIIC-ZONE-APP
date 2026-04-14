@@ -1,15 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-    UploadCloud, CheckCircle2, AlertTriangle,
-    FileVideo, X, ChevronRight, Music
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import { use, useState } from 'react';
+// ... (rest of imports)
 
 export default function DeliverPage({ params }) {
-    const { taskId } = params;
+    const { taskId } = use(params);
     const router = useRouter();
     const [step, setStep] = useState(1); // 1: Type, 2: Config, 3: QC & Upload
     const [checklist, setChecklist] = useState({

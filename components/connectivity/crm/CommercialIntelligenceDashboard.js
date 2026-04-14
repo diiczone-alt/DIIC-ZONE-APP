@@ -1,13 +1,43 @@
 'use client';
 
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
     DollarSign, Users, TrendingUp, PieChart, Activity,
     ArrowRight, MessageCircle, Video, Image as ImageIcon,
-    Target, Zap, BarChart3, ChevronRight, Rocket
+    Target, Zap, BarChart3, ChevronRight, Rocket,
+    Clock
 } from 'lucide-react';
+import { agencyService } from '@/services/agencyService';
 
 export default function CommercialIntelligenceDashboard({ onOpenLead }) {
+    const [loading, setLoading] = useState(true);
+    const [commercialData, setCommercialData] = useState(null);
+
+    useEffect(() => {
+        const loadCRMData = async () => {
+            try {
+                const data = await agencyService.getCommercialSummary();
+                setCommercialData(data);
+            } catch (error) {
+                console.error("CRM dashboard error:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadCRMData();
+    }, []);
+
+    const metrics = commercialData?.metrics || {
+        sales_month: 0,
+        leads_total: 0,
+        roi_actual: 0,
+        closing_rate: 0,
+        ad_spend: 0
+    };
+
+    const funnel = commercialData?.funnel || [];
+    const recentSales = commercialData?.recent_sales || [];
     return (
         <div className="space-y-8 animate-fade-in-up pb-10">
             {/* Header */}
@@ -27,7 +57,7 @@ export default function CommercialIntelligenceDashboard({ onOpenLead }) {
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <SummaryCard
                     title="Ventas del Mes"
-                    value="$2,350"
+                    value={loading ? "..." : `$${metrics.sales_month.toLocaleString()}`}
                     icon={DollarSign}
                     color="text-green-400"
                     bg="from-green-500/10"
@@ -35,7 +65,7 @@ export default function CommercialIntelligenceDashboard({ onOpenLead }) {
                 />
                 <SummaryCard
                     title="Leads Generados"
-                    value="124"
+                    value={loading ? "..." : metrics.leads_total.toString()}
                     icon={Users}
                     color="text-blue-400"
                     bg="from-blue-500/10"
@@ -43,16 +73,16 @@ export default function CommercialIntelligenceDashboard({ onOpenLead }) {
                 />
                 <SummaryCard
                     title="ROI Actual"
-                    value="360%"
+                    value={loading ? "..." : `${metrics.roi_actual}%`}
                     icon={TrendingUp}
                     color="text-purple-400"
                     bg="from-purple-500/10"
                     trend="Excelente"
-                    footer="Tus campañas generan 3.2x lo que inviertes."
+                    footer={loading ? "Calculando..." : `Tus campañas generan ${(metrics.roi_actual / 100).toFixed(1)}x lo que inviertes.`}
                 />
                 <SummaryCard
                     title="Tasa de Cierre"
-                    value="26%"
+                    value={loading ? "..." : `${metrics.closing_rate}%`}
                     icon={PieChart}
                     color="text-orange-400"
                     bg="from-orange-500/10"
@@ -64,13 +94,13 @@ export default function CommercialIntelligenceDashboard({ onOpenLead }) {
             <section className="bg-[#0A0A12] rounded-2xl border border-white/5 p-6 overflow-hidden relative">
                 <h3 className="text-lg font-bold text-white mb-6">Funnel de Ventas en Tiempo Real</h3>
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 relative z-10">
-                    <FunnelStage label="Leads Entrantes" value="124" color="bg-blue-500" width="w-full md:w-1/4" />
+                    <FunnelStage label="Leads Entrantes" value={funnel.find(s => s.id === 'lead')?.items || 0} color="bg-blue-500" width="w-full md:w-1/4" />
                     <ArrowConnector />
-                    <FunnelStage label="Conversaciones" value="62" color="bg-purple-500" width="w-full md:w-[22%]" />
+                    <FunnelStage label="Conversaciones" value={funnel.find(s => s.id === 'qualifying')?.items || 0} color="bg-purple-500" width="w-full md:w-[22%]" />
                     <ArrowConnector />
-                    <FunnelStage label="Propuestas" value="28" color="bg-orange-500" width="w-full md:w-[20%]" />
+                    <FunnelStage label="Propuestas" value={funnel.find(s => s.id === 'offer')?.items || 0} color="bg-orange-500" width="w-full md:w-[20%]" />
                     <ArrowConnector />
-                    <FunnelStage label="Ventas Cerradas" value="16" color="bg-green-500" width="w-full md:w-[15%]" isFinal />
+                    <FunnelStage label="Ventas Cerradas" value={funnel.find(s => s.id === 'closing')?.items || 0} color="bg-green-500" width="w-full md:w-[15%]" isFinal />
                 </div>
             </section>
 
@@ -88,13 +118,13 @@ export default function CommercialIntelligenceDashboard({ onOpenLead }) {
 
                     <div className="grid grid-cols-2 gap-8">
                         <div className="space-y-6">
-                            <RoiRow label="Inversión en Publicidad" value="$500.00" />
-                            <RoiRow label="Ventas Generadas" value="$2,300.00" highlight />
+                            <RoiRow label="Inversión en Publicidad" value={`$${metrics.ad_spend.toLocaleString()}.00`} />
+                            <RoiRow label="Ventas Generadas" value={`$${metrics.sales_month.toLocaleString()}.00`} highlight />
                         </div>
                         <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-purple-500/10 to-transparent rounded-2xl border border-purple-500/20">
                             <span className="text-gray-400 text-sm font-medium uppercase tracking-wider">ROI Total</span>
-                            <span className="text-5xl font-bold text-white mt-2">360%</span>
-                            <span className="text-purple-400 text-sm font-bold mt-1">+3.2x Exponencial</span>
+                            <span className="text-5xl font-bold text-white mt-2">{loading ? "..." : `${metrics.roi_actual}%`}</span>
+                            <span className="text-purple-400 text-sm font-bold mt-1">+{ (metrics.roi_actual / 100).toFixed(1) }x Rendimiento</span>
                         </div>
                     </div>
 
@@ -147,9 +177,16 @@ export default function CommercialIntelligenceDashboard({ onOpenLead }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5 text-sm">
-                            <TableRow client="Clínica Nova" service="Video Corporativo" value="$800" date="12 Ene" source="Instagram Ads" />
-                            <TableRow client="Dr. Luis" service="Reels Mensuales" value="$350" date="15 Ene" source="WhatsApp" />
-                            <TableRow client="Inmobiliaria H." service="Tour Virtual 360" value="$1,200" date="18 Ene" source="Facebook Ads" />
+                            {recentSales.map((sale, i) => (
+                                <TableRow 
+                                    key={i}
+                                    client={sale.name} 
+                                    service={sale.plan || "Servicio"} 
+                                    value={`$${(Number(sale.price) || 0).toLocaleString()}`} 
+                                    date="Activo" 
+                                    source="Directo" 
+                                />
+                            ))}
                         </tbody>
                     </table>
                 </div>

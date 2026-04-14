@@ -113,7 +113,7 @@ export default function AdminLayout({ children }) {
                     <button 
                         onClick={() => {
                             localStorage.clear();
-                            window.location.href = '/login';
+                            window.location.href = '/';
                         }}
                         className={`w-full py-4 flex flex-col items-center justify-center gap-1 bg-rose-500/5 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/10 rounded-2xl transition-all font-black shadow-2xl group/logout active:scale-95 ${isCollapsed ? 'h-14 py-0' : ''}`}
                     >

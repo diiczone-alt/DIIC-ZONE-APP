@@ -2,33 +2,45 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
     Inbox, Clapperboard, FileText, Folder, CheckCircle,
     Star, GraduationCap, Settings, ChevronLeft, ChevronRight,
     LogOut, Wallet
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 import { CapacityBar } from '@/components/capacity/CapacityComponents';
 
 export default function EditorSidebar() {
-    const [collapsed, setCollapsed] = useState(true);
+    const [collapsed, setCollapsed] = useState(false); // Changed to false for better initial visibility
     const pathname = usePathname();
+    const router = useRouter();
+    const { logout } = useAuth();
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } catch (error) {
+            console.error('Error logging out:', error);
+            window.location.href = '/';
+        }
+    };
 
     const menuItems = [
         { icon: Inbox, label: 'Bandeja', path: '/workstation/editor' },
-        { icon: Clapperboard, label: 'Tareas', path: '/workstation/editor/tasks' }, // Future: Detailed list
+        { icon: Clapperboard, label: 'Tareas', path: '/workstation/editor/task' },
         { icon: FileText, label: 'Guías', path: '/workstation/editor/guides' },
         { icon: Folder, label: 'Archivos', path: '/workstation/editor/files' },
         { icon: CheckCircle, label: 'Entregas', path: '/workstation/editor/deliveries' },
         { icon: Star, label: 'Reputación', path: '/workstation/editor/reputation' },
         { icon: GraduationCap, label: 'Academia', path: '/workstation/editor/academy' },
-        { icon: Wallet, label: 'Mi Wallet', path: '/workstation/finance' },
+        { icon: Wallet, label: 'Mi Wallet', path: '/workstation/editor/finance' },
     ];
 
     return (
         <motion.aside
-            initial={{ width: 80 }}
+            initial={{ width: 240 }}
             animate={{ width: collapsed ? 80 : 240 }}
             className="h-screen bg-[#0E0E18] border-r border-white/5 flex flex-col relative z-20 transition-all duration-300"
         >
@@ -41,20 +53,22 @@ export default function EditorSidebar() {
             </button>
 
             {/* Logo Area */}
-            <div className="h-20 flex items-center justify-center border-b border-white/5">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/20">
-                    ED
+            <Link href="/workstation/editor">
+                <div className="h-20 flex items-center justify-center border-b border-white/5 cursor-pointer hover:bg-white/5 transition-all">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/20">
+                        ED
+                    </div>
+                    {!collapsed && (
+                        <motion.span
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="ml-3 font-bold text-white whitespace-nowrap"
+                        >
+                            Editor OS
+                        </motion.span>
+                    )}
                 </div>
-                {!collapsed && (
-                    <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="ml-3 font-bold text-white whitespace-nowrap"
-                    >
-                        Editor OS
-                    </motion.span>
-                )}
-            </div>
+            </Link>
 
             {/* Menu */}
             <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
@@ -63,11 +77,11 @@ export default function EditorSidebar() {
                     return (
                         <Link key={index} href={item.path}>
                             <div className={`
-                                flex items-center p-3 rounded-xl transition-all duration-200 group relative
-                                ${isActive ? 'bg-purple-600/10 text-purple-400' : 'text-gray-400 hover:text-white hover:bg-white/5'}
+                                flex items-center p-3 rounded-xl transition-all duration-300 group relative
+                                ${isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 border border-white/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}
                                 ${collapsed ? 'justify-center' : ''}
                             `}>
-                                <item.icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-purple-400' : 'group-hover:text-white'}`} />
+                                <item.icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'group-hover:text-white'}`} />
 
                                 {!collapsed && (
                                     <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden">{item.label}</span>
@@ -102,15 +116,15 @@ export default function EditorSidebar() {
                     <Settings className="w-5 h-5 shrink-0" />
                     {!collapsed && <span className="ml-3 text-sm font-medium">Preferencias</span>}
                 </button>
-                <Link href="/login">
-                    <button className={`
+                <button 
+                    onClick={handleLogout}
+                    className={`
                     w-full flex items-center p-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all mt-1
                     ${collapsed ? 'justify-center' : ''}
                 `}>
-                        <LogOut className="w-5 h-5 shrink-0" />
-                        {!collapsed && <span className="ml-3 text-sm font-medium">Cerrar Sesión</span>}
-                    </button>
-                </Link>
+                    <LogOut className="w-5 h-5 shrink-0" />
+                    {!collapsed && <span className="ml-3 text-sm font-medium">Cerrar Sesión</span>}
+                </button>
             </div>
         </motion.aside>
     );

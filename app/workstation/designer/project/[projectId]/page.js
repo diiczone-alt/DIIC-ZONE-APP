@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     Palette, Clock, ChevronLeft, Download, UploadCloud,
@@ -10,7 +10,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProjectDetailPage({ params }) {
-    const { projectId } = params;
+    const { projectId } = use(params);
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('brief');
 

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Home, Clapperboard, MonitorPlay, BarChart2, User, Share2, CreditCard } from 'lucide-react';
+import { Home, Clapperboard, MonitorPlay, BarChart2, User, Share2, CreditCard, MessageSquare, Video, Palette, Mic2, CalendarDays, ShieldAlert, Globe, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Sidebar() {
     const router = useRouter();
+    const { user } = useAuth();
     const [clickCount, setClickCount] = useState(0);
 
     const handleLogoClick = () => {
@@ -61,25 +63,21 @@ export default function Sidebar() {
                     <div className="px-4 pt-4 pb-2">
                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hidden lg:block mb-2">Workstations</p>
                         <div className="space-y-1">
-                            <Link href="/workstation/community-manager" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
-                                <MessageSquare className="w-5 h-5" />
+                            <Link href="/dashboard/community" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
+                                <Share2 className="w-5 h-5 text-indigo-400" />
                                 <span className="font-medium hidden lg:block">Community M.</span>
                             </Link>
-                            <Link href="/workstation/filmmaker" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
-                                <Video className="w-5 h-5" />
+                            <Link href="/dashboard/filmmaker" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
+                                <Clapperboard className="w-5 h-5 text-orange-400" />
                                 <span className="font-medium hidden lg:block">Filmmaker</span>
                             </Link>
-                            <Link href="/workstation/designer" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
-                                <Palette className="w-5 h-5" />
+                            <Link href="/dashboard/design" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
+                                <MonitorPlay className="w-5 h-5 text-fuchsia-400" />
                                 <span className="font-medium hidden lg:block">Designer</span>
                             </Link>
-                            <Link href="/workstation/audio" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
-                                <Mic2 className="w-5 h-5" />
+                            <Link href="/dashboard/audio" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
+                                <BarChart2 className="w-5 h-5 text-blue-400" />
                                 <span className="font-medium hidden lg:block">Audio Studio</span>
-                            </Link>
-                            <Link href="/workstation/event" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
-                                <CalendarDays className="w-5 h-5" />
-                                <span className="font-medium hidden lg:block">Eventos</span>
                             </Link>
                         </div>
                     </div>
@@ -87,7 +85,7 @@ export default function Sidebar() {
                     {/* --- ADMIN CORE --- */}
                     <div className="px-4 pt-4">
                         <p className="text-[10px] font-bold text-red-500/50 uppercase tracking-widest hidden lg:block mb-2">Admin Core</p>
-                        <Link href="/admin/governance" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-red-500/10 text-red-500/60 hover:text-red-400 transition-all text-sm border border-transparent hover:border-red-500/20">
+                        <Link href="/dashboard/hq/control" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-red-500/10 text-red-500/60 hover:text-red-400 transition-all text-sm border border-transparent hover:border-red-500/20">
                             <ShieldAlert className="w-5 h-5" />
                             <span className="font-medium hidden lg:block">Gobernanza</span>
                         </Link>
@@ -105,10 +103,12 @@ export default function Sidebar() {
 
             <div className="p-4">
                 <div className="glass p-4 rounded-xl flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-accent to-primary flex items-center justify-center font-bold text-white">MK</div>
-                    <div className="hidden lg:block">
-                        <div className="text-sm font-bold text-white">Mike Creator</div>
-                        <div className="text-xs text-muted-foreground">Pro Plan</div>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-primary flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+                        {user?.full_name?.substring(0, 2).toUpperCase() || 'DZ'}
+                    </div>
+                    <div className="hidden lg:block overflow-hidden">
+                        <div className="text-sm font-bold text-white truncate">{user?.full_name || 'DIIC User'}</div>
+                        <div className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{user?.role || 'Visitante'}</div>
                     </div>
                 </div>
             </div>

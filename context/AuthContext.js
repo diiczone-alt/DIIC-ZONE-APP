@@ -13,38 +13,68 @@ export const AuthProvider = ({ children }) => {
     const router = useRouter();
 
     const fetchProfile = async (userId) => {
-        const { data, error } = await supabase.from('profiles').select('role').eq('id', userId).single();
-        if (error) console.error('Error fetching profile:', error);
-        return data?.role || 'CLIENT';
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('role, client_id, full_name')
+                .eq('id', userId)
+                .single();
+                
+            if (error) {
+                console.warn('[AuthContext] Profile fetch error:', error.message);
+                return { role: 'CLIENT', client_id: null, full_name: null };
+            }
+            // Return data with fallback values for each field
+            return {
+                role: data?.role || 'CLIENT',
+                client_id: data?.client_id || null,
+                full_name: data?.full_name || null
+            };
+        } catch (err) {
+            console.error('[AuthContext] Unexpected fetchProfile error:', err);
+            return { role: 'CLIENT', client_id: null, full_name: null };
+        }
     };
 
     useEffect(() => {
         const initializeAuth = async () => {
-            // Check active session
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
-            
-            if (session?.user) {
-                const role = await fetchProfile(session.user.id);
-                setUser({ ...session.user, role });
-                localStorage.setItem('user_role', role); // Fallback for components that haven't been updated
-            } else {
+            try {
+                // Check active session
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError) throw sessionError;
+                
+                setSession(session);
+                
+                if (session?.user) {
+                    const profile = await fetchProfile(session.user.id);
+                    setUser({ ...session.user, ...profile });
+                    localStorage.setItem('user_role', profile.role);
+                    if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
+                } else {
+                    setUser(null);
+                }
+            } catch (err) {
+                console.error('[AuthContext] Auth initialization failed:', err);
                 setUser(null);
+                setSession(null);
+            } finally {
+                setLoading(false);
             }
 
             // Listen for changes
             const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
                 setSession(session);
                 if (session?.user) {
-                    const role = await fetchProfile(session.user.id);
-                    setUser({ ...session.user, role });
-                    localStorage.setItem('user_role', role);
+                    const profile = await fetchProfile(session.user.id);
+                    setUser({ ...session.user, ...profile });
+                    localStorage.setItem('user_role', profile.role || 'CLIENT');
+                    if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
                 } else {
                     setUser(null);
+                    localStorage.removeItem('user_role');
+                    localStorage.removeItem('client_id');
                 }
             });
-
-            setLoading(false);
 
             return () => subscription.unsubscribe();
         };
@@ -58,29 +88,95 @@ export const AuthProvider = ({ children }) => {
             email,
             password
         });
-        console.log('[AuthContext] signInWithPassword done. error:', error, 'data:', data);
 
         if (error) throw error;
         
         console.log('[AuthContext] Fetching profile for user', data.user?.id);
-        const role = await fetchProfile(data.user.id);
+        const profile = await fetchProfile(data.user.id);
         
-        console.log('[AuthContext] Got role:', role);
-        // Eagerly set state to prevent race conditions con layout guards
-        const userObj = { ...data.user, role };
+        const userObj = { ...data.user, ...profile };
         setUser(userObj);
         setSession(data.session);
-        localStorage.setItem('user_role', role);
+        localStorage.setItem('user_role', profile.role);
+        if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
         
-        console.log('[AuthContext] login() completed. Returning role.');
-        // Return data and role so the caller (page.js) handles the redirect independently!
-        return { data, role };
+        return { data, role: profile.role };
+    };
+
+    const register = async (email, password, metadata = {}) => {
+        console.log('[AuthContext] register() started');
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: metadata.full_name || '',
+                    role: metadata.role || 'CLIENT',
+                    brand: metadata.brand || '',
+                    city: metadata.city || ''
+                }
+            }
+        });
+
+        if (error) throw error;
+        
+        // Profiles are created by DB trigger
+        // If 'data.session' is null, it means email confirmation is required by Supabase
+        const needsConfirmation = !data.session;
+        
+        if (data.session && data.user) {
+            const profile = await fetchProfile(data.user.id);
+            setUser({ ...data.user, ...profile });
+            setSession(data.session);
+        }
+        
+        return { data, needsConfirmation };
+    };
+
+    const refreshUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        if (session?.user) {
+            const profile = await fetchProfile(session.user.id);
+            setUser({ ...session.user, ...profile });
+        }
+    };
+
+    const signInWithGoogle = async (metadata = {}) => {
+        console.log('[AuthContext] signInWithGoogle() started');
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin + '/dashboard',
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                },
+                data: {
+                    full_name: metadata.full_name || '',
+                    role: metadata.role || 'CLIENT',
+                    brand: metadata.brand || '',
+                    city: metadata.city || ''
+                }
+            }
+        });
+
+        if (error) throw error;
+        return data;
+    };
+
+    const resetPassword = async (email) => {
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/auth/reset-password',
+        });
+        if (error) throw error;
+        return data;
     };
 
     const logout = async () => {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
-        router.push('/login');
+        router.push('/');
     };
 
     const value = {
@@ -88,7 +184,11 @@ export const AuthProvider = ({ children }) => {
         session,
         loading,
         login,
-        logout
+        register,
+        signInWithGoogle,
+        logout,
+        refreshUser,
+        resetPassword
     };
 
     return (

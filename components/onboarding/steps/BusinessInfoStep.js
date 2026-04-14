@@ -56,8 +56,7 @@ export default function BusinessInfoStep({ onNext, updateData }) {
     const [info, setInfo] = useState({
         services: '',
         mainService: '',
-        experience: '',
-        teamSize: ''
+        experience: ''
     });
 
     const experienceOptions = [
@@ -67,14 +66,7 @@ export default function BusinessInfoStep({ onNext, updateData }) {
         { value: '5+', label: 'Más de 5 años' }
     ];
 
-    const teamOptions = [
-        { value: 'solo', label: 'Solo-preneur' },
-        { value: 'small', label: 'Equipo pequeño (2-5)' },
-        { value: 'medium', label: 'Agencia/Empresa (5-20)' },
-        { value: 'large', label: 'Gran Empresa (20+)' }
-    ];
-
-    const isComplete = info.services && info.mainService && info.experience && info.teamSize;
+    const isComplete = info.services && info.mainService && info.experience;
 
     return (
         <div className="flex flex-col h-full max-w-lg mx-auto w-full space-y-6">
@@ -121,23 +113,14 @@ export default function BusinessInfoStep({ onNext, updateData }) {
                     </div>
                 </div>
 
-                {/* Dynamic Selection Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <CustomSelect 
-                        label="Tiempo en el mercado"
-                        value={info.experience}
-                        options={experienceOptions}
-                        onChange={(val) => setInfo({...info, experience: val})}
-                        icon={Box}
-                    />
-                    <CustomSelect 
-                        label="Equipo de trabajo"
-                        value={info.teamSize}
-                        options={teamOptions}
-                        onChange={(val) => setInfo({...info, teamSize: val})}
-                        icon={Users}
-                    />
-                </div>
+                {/* Dynamic Selection */}
+                <CustomSelect 
+                    label="Tiempo en el mercado"
+                    value={info.experience}
+                    options={experienceOptions}
+                    onChange={(val) => setInfo({...info, experience: val})}
+                    icon={Box}
+                />
             </div>
 
             <motion.button

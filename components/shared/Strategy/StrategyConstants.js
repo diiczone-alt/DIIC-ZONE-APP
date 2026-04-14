@@ -3,7 +3,7 @@ import {
     BrainCircuit, Zap, MessageSquare, History, FileText, 
     Megaphone, Calendar, PhoneCall, Workflow, Bot, BarChart3,
     Video, Layout, Search, Layers, Star, 
-    StickyNote, Type, Pencil, Box,
+    StickyNote, Type, Pencil, Box, PenTool,
     Instagram, Facebook, Youtube, Globe, Chrome,
     PlayCircle, CheckCircle2, Clock, Lightbulb, AlertCircle,
     Music, Mic, Send, Smartphone, AtSign, Mail, Globe2, 
@@ -16,6 +16,30 @@ export const STRATEGIC_COLUMNS = [
     { id: 'consideración', label: 'Consideración', desc: 'Educar y confianza' },
     { id: 'conversión', label: 'Conversión', desc: 'Venta y cierre' },
     { id: 'retención', label: 'Retención', desc: 'Fidelización y LTV' }
+];
+
+export const STRATEGIC_AREAS = [
+    { 
+        id: 'creativa', 
+        label: 'Zona Creativa', 
+        color: '#6366f1', 
+        icon: PenTool,
+        categories: ['imagen', 'video', 'audio', 'imprenta']
+    },
+    { 
+        id: 'crm', 
+        label: 'Automatización CRM', 
+        color: '#10b981', 
+        icon: Workflow,
+        categories: ['crm']
+    },
+    { 
+        id: 'conversiones', 
+        label: 'Conversiones y Formularios', 
+        color: '#f43f5e', 
+        icon: Target,
+        categories: ['recurso']
+    }
 ];
 
 export const NODE_CATEGORIES = {
@@ -339,17 +363,18 @@ export const CONTENT_FORMATS = {
 
 // Strategic Formats for the Selection Dropdown
 export const STRATEGIC_FORMATS = [
-    { id: 'v_reels', label: 'Reel (Instagram/FB)', icon: Video, color: '#f43f5e', category: 'video' },
-    { id: 'v_tiktok', label: 'TikTok (9:16)', icon: Chrome, color: '#000000', category: 'video' },
-    { id: 'v_youtube', label: 'YouTube (Horizontal)', icon: Youtube, color: '#FF0000', category: 'video' },
-    { id: 'v_historias', label: 'Video Historia (Full Screen)', icon: Instagram, color: '#E1306C', category: 'video' },
-    { id: 'i_post', label: 'Post Estático (Cuadrado/Retrato)', icon: Layout, color: '#3b82f6', category: 'imagen' },
-    { id: 'i_historias', label: 'Imagen Historia (Vertical)', icon: Instagram, color: '#E1306C', category: 'imagen' },
-    { id: 'i_portadas', label: 'Portada (Cover Photo)', icon: Layout, color: '#fbbf24', category: 'imagen' },
-    { id: 'i_carrucel', label: 'Carrusel de Valor', icon: Layers, color: '#8b5cf6', category: 'imagen' },
-    { id: 'l3_crm_email', label: 'Email Nurturing Flow', icon: Mail, color: '#06b6d4', category: 'crm' },
-    { id: 'l3_crm_scoring', label: 'Lead Scoring Automático', icon: Target, color: '#10b981', category: 'crm' },
-    { id: 'l3_crm_retargeting', label: 'WhatsApp / Retargeting', icon: MessageSquare, color: '#f43f5e', category: 'crm' }
+    { id: 'v_reels', label: 'Reel (Instagram/FB)', icon: Video, color: '#f43f5e', areaId: 'creativa', category: 'video' },
+    { id: 'v_tiktok', label: 'TikTok (9:16)', icon: Zap, color: '#000000', areaId: 'creativa', category: 'video' },
+    { id: 'v_youtube', label: 'YouTube (Horizontal)', icon: Youtube, color: '#FF0000', areaId: 'creativa', category: 'video' },
+    { id: 'v_historias', label: 'Video Historia (Full Screen)', icon: Instagram, color: '#E1306C', areaId: 'creativa', category: 'video' },
+    { id: 'i_post', label: 'Post Estático (Cuadrado/Retrato)', icon: Layout, color: '#3b82f6', areaId: 'creativa', category: 'imagen' },
+    { id: 'i_historias', label: 'Imagen Historia (Vertical)', icon: Instagram, color: '#E1306C', areaId: 'creativa', category: 'imagen' },
+    { id: 'i_portadas', label: 'Portada (Cover Photo)', icon: Layout, color: '#fbbf24', areaId: 'creativa', category: 'imagen' },
+    { id: 'i_carrucel', label: 'Carrusel de Valor', icon: Layers, color: '#8b5cf6', areaId: 'creativa', category: 'imagen' },
+    { id: 'l3_crm_email', label: 'Email Nurturing Flow', icon: Mail, color: '#06b6d4', areaId: 'crm', category: 'crm' },
+    { id: 'l3_crm_scoring', label: 'Lead Scoring Automático', icon: Target, color: '#10b981', areaId: 'crm', category: 'crm' },
+    { id: 'l3_crm_retargeting', label: 'WhatsApp / Retargeting', icon: MessageSquare, color: '#f43f5e', areaId: 'crm', category: 'crm' },
+    { id: 'r_form', label: 'Landing / Formulario', icon: Target, color: '#amber-400', areaId: 'conversiones', category: 'recurso' }
 ];
 
 // Utility: Maps any node to its Strategic Hub/Lane ID
@@ -366,10 +391,17 @@ export const getNodeLaneId = (n) => {
     if ((t.includes('video') || t.includes('historia')) && (title.includes('historia') || sub.includes('historia'))) return 'v_historias';
     if (title.includes('portada') || sub.includes('portada')) return 'i_portadas';
     if (title.includes('carrucel') || sub.includes('carrucel')) return 'i_carrucel';
+    
+    // CRM
     if (title.includes('email') || sub.includes('email')) return 'l3_crm_email';
     if (title.includes('scoring') || sub.includes('scoring')) return 'l3_crm_scoring';
     if (title.includes('retargeting') || sub.includes('retargeting')) return 'l3_crm_retargeting';
     
+    // New mappings
+    if (t.includes('audio') || t.includes('podcast') || sub.includes('audio')) return 'l3_audios';
+    if (t.includes('imprenta') || t.includes('impresion') || sub.includes('imprenta')) return 'l3_imprenta';
+    if (t.includes('form') || t.includes('recurso') || t.includes('landing') || sub.includes('form')) return 'l2_conversion';
+
     // Default mappings for common types
     if (t.includes('post') || t.includes('imagen')) {
         if (title.includes('historia')) return 'i_historias';

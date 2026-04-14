@@ -1,5 +1,6 @@
 'use client';
 
+import { use } from 'react';
 import {
     Phone, Mail, MapPin, Globe,
     Calendar, CheckCircle, Clock, FileText,
@@ -9,9 +10,10 @@ import { InteractionLog } from '@/components/crm/CRMComponents';
 import Link from 'next/link';
 
 export default function ClientDetailPage({ params }) {
+    const { id } = use(params);
     // Mock Data based on ID (In real app, fetch from DB)
     const client = {
-        id: params.id,
+        id: id,
         name: 'Roberto Gómez',
         company: 'Tech Solutions Inc.',
         role: 'CEO',

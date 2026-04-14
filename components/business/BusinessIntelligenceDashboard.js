@@ -1,27 +1,73 @@
 'use client';
 
-import { useState } from 'react';
-import { TrendingUp, DollarSign, Users, Activity, BarChart3, AlertTriangle, ArrowUpRight, Star, Briefcase } from 'lucide-react';
-
-const SERVICE_STATS = [
-    { name: 'Reels Pack', income: 4200, cost: 1200, profit: 3000, trend: '+12%' },
-    { name: 'Web Dev', income: 2800, cost: 1600, profit: 1200, trend: '-5%' },
-    { name: 'IA Chatbots', income: 1900, cost: 300, profit: 1600, trend: '+45%' },
-];
-
-const CLIENT_STATS = [
-    { name: 'Clínica Dental X', income: 1200, profit: 950, margin: 'High' },
-    { name: 'Tech StartUp Y', income: 800, profit: 550, margin: 'Med' },
-    { name: 'Restaurante Z', income: 1200, profit: 250, margin: 'Low', risk: true },
-];
-
-const TEAM_STATS = [
-    { name: 'Fausto (Video)', projects: 14, delays: 0, rating: 5 },
-    { name: 'Luis (Diseño)', projects: 9, delays: 3, rating: 3 },
-    { name: 'Ana (Copy)', projects: 12, delays: 1, rating: 4 },
-];
+import { useState, useEffect, useMemo } from 'react';
+import { TrendingUp, DollarSign, Users, Activity, BarChart3, AlertTriangle, ArrowUpRight, Star, Briefcase, Clock } from 'lucide-react';
+import { agencyService } from '@/services/agencyService';
 
 export default function BusinessIntelligenceDashboard() {
+    const [loading, setLoading] = useState(true);
+    const [clients, setClients] = useState([]);
+    const [team, setTeam] = useState([]);
+    const [financial, setFinancial] = useState(null);
+    const [scale, setScale] = useState(null);
+
+    useEffect(() => {
+        const loadDashboardData = async () => {
+            try {
+                const [cList, tList, fin, sc] = await Promise.all([
+                    agencyService.getClients(),
+                    agencyService.getTeam(),
+                    agencyService.getFinancialSummary(),
+                    agencyService.getScaleData()
+                ]);
+                setClients(cList);
+                setTeam(tList);
+                setFinancial(fin);
+                setScale(sc);
+            } catch (error) {
+                console.error("Dashboard sync error:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadDashboardData();
+    }, []);
+
+    const serviceStats = useMemo(() => {
+        if (!clients.length) return [];
+        const groups = {};
+        clients.forEach(c => {
+            const planKey = c.plan || 'Básico';
+            if (!groups[planKey]) {
+                groups[planKey] = { name: planKey, income: 0, cost: 0, profit: 0, trend: '+0%' };
+            }
+            const income = Number(c.price) || 0;
+            // Simplified cost model: 40% of income is production cost for this view
+            const cost = Math.round(income * 0.4); 
+            groups[planKey].income += income;
+            groups[planKey].cost += cost;
+            groups[planKey].profit += (income - cost);
+        });
+        return Object.values(groups).sort((a, b) => b.income - a.income);
+    }, [clients]);
+
+    const clientMetrics = useMemo(() => {
+        return clients.slice(0, 5).map(c => ({
+            name: c.name,
+            income: Number(c.price) || 0,
+            profit: Math.round((Number(c.price) || 0) * 0.6),
+            risk: c.priority === 'ALTA'
+        }));
+    }, [clients]);
+
+    const teamPerformance = useMemo(() => {
+        return team.slice(0, 5).map(m => ({
+            name: m.name,
+            projects: m.activetasks || 0,
+            delays: m.activetasks > 6 ? 1 : 0,
+            rating: m.activetasks > 4 ? 4 : 5
+        }));
+    }, [team]);
     return (
         <div className="space-y-6 text-white min-h-screen pb-20">
             {/* Header */}
@@ -38,7 +84,9 @@ export default function BusinessIntelligenceDashboard() {
                 <div className="flex gap-2">
                     <div className="bg-[#0F0F1A] border border-white/10 px-4 py-2 rounded-xl text-right">
                         <p className="text-[10px] text-gray-500 uppercase tracking-widest">Utilidad Neta (Mes)</p>
-                        <p className="text-2xl font-bold text-emerald-400">+$8,450</p>
+                        <p className="text-2xl font-bold text-emerald-400">
+                            {loading ? '...' : `+$${financial?.metrics?.gross_profit?.toLocaleString() || '0'}`}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -49,40 +97,52 @@ export default function BusinessIntelligenceDashboard() {
                     <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-5 -mt-5"></div>
                     <div className="flex justify-between items-start mb-2">
                         <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400"><DollarSign className="w-5 h-5" /></div>
-                        <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">+24% <ArrowUpRight className="w-3 h-3" /></span>
+                        <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">Actual <ArrowUpRight className="w-3 h-3" /></span>
                     </div>
                     <p className="text-gray-400 text-xs uppercase tracking-wider">Ingresos Totales</p>
-                    <h3 className="text-2xl font-bold text-white mt-1">$14,500</h3>
+                    <h3 className="text-2xl font-bold text-white mt-1">
+                        {loading ? '...' : `$${financial?.metrics?.income?.toLocaleString() || '0'}`}
+                    </h3>
                 </div>
 
                 <div className="bg-[#13131F] border border-white/5 p-4 rounded-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-5 -mt-5"></div>
                     <div className="flex justify-between items-start mb-2">
                         <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><Users className="w-5 h-5" /></div>
-                        <span className="text-xs font-bold text-blue-400 flex items-center gap-1">+3 New</span>
+                        <span className="text-xs font-bold text-blue-400 flex items-center gap-1">Real Time</span>
                     </div>
                     <p className="text-gray-400 text-xs uppercase tracking-wider">Clientes Activos</p>
-                    <h3 className="text-2xl font-bold text-white mt-1">18</h3>
+                    <h3 className="text-2xl font-bold text-white mt-1">
+                        {loading ? '...' : clients.filter(c => c.status === 'active').length}
+                    </h3>
                 </div>
 
                 <div className="bg-[#13131F] border border-white/5 p-4 rounded-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl -mr-5 -mt-5"></div>
                     <div className="flex justify-between items-start mb-2">
                         <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400"><Briefcase className="w-5 h-5" /></div>
-                        <span className="text-xs font-bold text-purple-400 flex items-center gap-1">85% Cap</span>
+                        <span className="text-xs font-bold text-purple-400 flex items-center gap-1">
+                            {loading ? '...' : `${scale?.capacity?.percent}% Cap`}
+                        </span>
                     </div>
                     <p className="text-gray-400 text-xs uppercase tracking-wider">Carga Operativa</p>
-                    <h3 className="text-2xl font-bold text-white mt-1">Alta</h3>
+                    <h3 className="text-2xl font-bold text-white mt-1">
+                        {loading ? '...' : scale?.capacity?.percent > 70 ? 'Alta' : 'Estable'}
+                    </h3>
                 </div>
 
                 <div className="bg-[#13131F] border border-white/5 p-4 rounded-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl -mr-5 -mt-5"></div>
                     <div className="flex justify-between items-start mb-2">
                         <div className="p-2 bg-orange-500/10 rounded-lg text-orange-400"><AlertTriangle className="w-5 h-5" /></div>
-                        <span className="text-xs font-bold text-orange-400 flex items-center gap-1">2 Alertas</span>
+                        <span className="text-xs font-bold text-orange-400 flex items-center gap-1">
+                            {clients.filter(c => c.priority === 'ALTA').length} Alertas
+                        </span>
                     </div>
                     <p className="text-gray-400 text-xs uppercase tracking-wider">Riesgo Empresarial</p>
-                    <h3 className="text-2xl font-bold text-white mt-1">Bajo</h3>
+                    <h3 className="text-2xl font-bold text-white mt-1">
+                        {clients.filter(c => c.priority === 'ALTA').length > 2 ? 'Crítico' : 'Bajo'}
+                    </h3>
                 </div>
             </div>
 
@@ -107,7 +167,9 @@ export default function BusinessIntelligenceDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="text-sm">
-                                {SERVICE_STATS.map((service, i) => (
+                                {serviceStats.length === 0 ? (
+                                    <tr><td colSpan="5" className="py-8 text-center text-gray-500">Sin datos de servicios activos</td></tr>
+                                ) : serviceStats.map((service, i) => (
                                     <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                                         <td className="py-4 font-bold text-white">{service.name}</td>
                                         <td className="py-4 text-gray-300 font-mono">${service.income}</td>
@@ -172,7 +234,7 @@ export default function BusinessIntelligenceDashboard() {
                         Análisis de Clientes
                     </h3>
                     <div className="space-y-3">
-                        {CLIENT_STATS.map((client, i) => (
+                        {clientMetrics.map((client, i) => (
                             <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                                 <div>
                                     <p className="font-bold text-white text-sm">{client.name}</p>
@@ -199,7 +261,7 @@ export default function BusinessIntelligenceDashboard() {
                         Performance Equipo
                     </h3>
                     <div className="space-y-4">
-                        {TEAM_STATS.map((member, i) => (
+                        {teamPerformance.map((member, i) => (
                             <div key={i} className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center font-bold text-xs text-white border border-white/10">
                                     {member.name.charAt(0)}

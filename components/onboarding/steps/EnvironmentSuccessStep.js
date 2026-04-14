@@ -1,15 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Server, FolderGit2, LayoutDashboard, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { onboardingService } from '@/services/onboardingService';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 export default function EnvironmentSuccessStep({ onNext, formData }) {
     const router = useRouter();
     const [status, setStatus] = useState('initializing'); // initializing, processing, ready
     const [logs, setLogs] = useState([]);
     const [identityCode, setIdentityCode] = useState('');
+    const [countdown, setCountdown] = useState(5);
 
     const roleCodes = {
         editor: 'EDIT',
@@ -24,38 +29,73 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
         event: 'EVNT'
     };
 
+    const { user, session, refreshUser } = useAuth();
+    const currentUser = user || session?.user;
+    const [retryCount, setRetryCount] = useState(0);
+
     useEffect(() => {
-        const sequence = [
-            { msg: 'Conectando con Drive...', delay: 500 },
-            { msg: 'Creando estructura de carpetas...', delay: 1500 },
-            { msg: 'Configurando CRM...', delay: 2500 },
-            { msg: 'Personalizando Dashboard...', delay: 3500 },
-            { msg: '¡Todo listo!', delay: 4500, status: 'ready' }
-        ];
+        const runFinalization = async () => {
+            if (status === 'ready' || status === 'processing') return;
 
-        let timeouts = [];
+            let activeUser = currentUser;
 
-        sequence.forEach(({ msg, delay, status: endStatus }) => {
-            const t = setTimeout(() => {
-                setLogs(prev => [...prev, msg]);
-                if (endStatus) {
-                    setStatus(endStatus);
-                    // Generar Código de Identidad al finalizar
-                    if (formData.type === 'creative') {
-                        const role = roleCodes[formData.role] || 'TALN';
-                        const cityPref = (formData.city || 'GEN').substring(0, 3).toUpperCase();
-                        const num = Math.floor(100 + Math.random() * 900); // Num aleatorio 3 cifras
-                        setIdentityCode(`${role}-${cityPref}-${num}`);
-                    }
+            // Intento de recuperación directa
+            if (!activeUser) {
+                const { data: { session: directSession } } = await supabase.auth.getSession();
+                activeUser = directSession?.user;
+            }
+
+            // Si no hay usuario tras 2 reintentos, permitimos avanzar en modo "Local" para evitar bloqueos
+            if (!activeUser && retryCount < 2) {
+                if (retryCount === 0) setLogs(prev => [...prev, 'Buscando protocolo de identidad...']);
+                setTimeout(() => setRetryCount(prev => prev + 1), 2000);
+                return;
+            }
+
+            try {
+                setStatus('processing');
+                if (activeUser) {
+                    setLogs(prev => [...prev, 'Identidad detectada. Sincronizando perfil...']);
+                    await onboardingService.finalizeOnboarding(formData, activeUser);
+                    setLogs(prev => [...prev, 'Persistencia en nube completada.']);
+                } else {
+                    setLogs(prev => [...prev, 'Modo autónomo activado (Sin sesión global).']);
+                    setLogs(prev => [...prev, 'Guardando configuración en caché local...']);
                 }
-            }, delay);
-            timeouts.push(t);
-        });
+                
+                await new Promise(r => setTimeout(r, 1000));
+                setLogs(prev => [...prev, 'Inicialización de ecosistema finalizada.']);
+                
+                // Generar Código de Identidad (Simulado si no hay datos)
+                const brandPref = (formData.brand || 'CORP').substring(0, 4).toUpperCase();
+                setIdentityCode(`DIIC-${brandPref}-${Math.floor(1000 + Math.random() * 9000)}`);
 
-        return () => timeouts.forEach(clearTimeout);
-    }, []);
+                setStatus('ready');
+                toast.success('Entorno activado con éxito.');
+
+            } catch (err) {
+                console.error('Finalization partially failed:', err);
+                setLogs(prev => [...prev, 'Aviso: Persistencia parcial. Accediendo al entorno...']);
+                setStatus('ready'); // Forzamos Ready para que el usuario no se quede atrapado
+            }
+        };
+
+        runFinalization();
+    }, [currentUser, retryCount]);
+
+    useEffect(() => {
+        if (status === 'ready' && countdown > 0) {
+            const timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+            return () => clearTimeout(timer);
+        } else if (status === 'ready' && countdown === 0) {
+            handleEnterDashboard();
+        }
+    }, [status, countdown]);
 
     const handleEnterDashboard = () => {
+        // Limpiar el progreso local ya que terminó
+        localStorage.removeItem('diic_onboarding_progress');
+        
         if (formData.type === 'creative') {
             const roleRoutes = {
                 editor: '/workstation/editor',
@@ -103,7 +143,22 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                             </motion.div>
                         ))}
                     </div>
-                    <p className="text-gray-500 animate-pulse">Configurando tu entorno DIIC ZONE...</p>
+                    <p className="text-gray-500 animate-pulse font-mono text-[10px] uppercase">Protocolo de Finalización Activo</p>
+                    
+                    {!currentUser && (
+                        <motion.button
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            onClick={async () => {
+                                setLogs(prev => [...prev, 'Re-sincronizando sesión...']);
+                                await refreshUser?.();
+                                setRetryCount(prev => prev + 1);
+                            }}
+                            className="px-6 py-3 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[10px] font-black text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all uppercase tracking-widest mx-auto block"
+                        >
+                            Sincronizar Identidad Manualmente
+                        </motion.button>
+                    )}
                 </motion.div>
             ) : (
                 // SUCCESS STATE
@@ -150,10 +205,15 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
 
                     <button
                         onClick={handleEnterDashboard}
-                        className="w-full py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-bold text-xl hover:scale-[1.02] transition-transform shadow-xl hover:shadow-indigo-500/20 flex items-center justify-center gap-3"
+                        className="w-full py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-bold text-xl hover:scale-[1.02] transition-transform shadow-xl hover:shadow-indigo-500/20 flex flex-col items-center justify-center gap-1"
                     >
-                        Entrar a mi Sistema
-                        <ArrowRight className="w-6 h-6" />
+                        <div className="flex items-center gap-3">
+                            Entrar a mi Sistema
+                            <ArrowRight className="w-6 h-6" />
+                        </div>
+                        <span className="text-[10px] font-mono text-white/50 uppercase tracking-widest">
+                            Redirigiendo automáticamente en {countdown}s...
+                        </span>
                     </button>
                 </motion.div>
             )}

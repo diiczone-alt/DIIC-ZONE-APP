@@ -18,7 +18,7 @@ import {
     Instagram, Facebook, Youtube, Globe, Chrome, Clock, CheckCircle2, PlayCircle, Lightbulb, 
     PenTool, Search, AlertTriangle, Plus, Layers, BrainCircuit, Megaphone, Rocket, ChevronRight, 
     Mic, Printer, Image, Film, Smartphone, Monitor, Maximize2, Box, BarChart3, Filter, Table, List, 
-    RotateCcw, ChevronUp, ChevronLeft, CalendarDays, ShieldCheck
+    RotateCcw, ChevronUp, ChevronLeft, CalendarDays, ShieldCheck, Video, Mail, Workflow, Repeat
 } from 'lucide-react';
 
 
@@ -62,7 +62,8 @@ export default function StrategyCanvas({
     isAuditorActive,
     funnelHealth,
     isCompactMode = false,
-    theme = 'dark'
+    theme = 'dark',
+    activeCampaign = null
 }) {
 
     const canvasRef = useRef(null);
@@ -117,30 +118,30 @@ export default function StrategyCanvas({
     };
  
      const l2Hubs = [
-         { id: 'l2_creativa', label: 'Zona Creativa', parent: 'root', color: '#10b981' },
-         { id: 'l2_crm', label: 'Automatización CRM', parent: 'root', color: '#0ea5e9' },
-         { id: 'l2_conversion', label: 'Conversiones y Formularios', parent: 'root', color: '#6366f1' }
+         { id: 'l2_creativa', label: 'ZONA CREATIVA', parent: 'root', color: '#10b981', icon: PenTool },
+         { id: 'l2_crm', label: 'AUTOMATIZACIÓN CRM', parent: 'root', color: '#0ea5e9', icon: Workflow },
+         { id: 'l2_conversion', label: 'CONVERSIONES', parent: 'root', color: '#6366f1', icon: Target }
      ];
  
      const l3Hubs = [
-         { id: 'l3_imagen', label: 'IMAGEN', parent: 'l2_creativa', color: '#10b981' },
-         { id: 'l3_videos', label: 'Videos', parent: 'l2_creativa', color: '#facc15' },
-         { id: 'l3_audios', label: 'Audios', parent: 'l2_creativa', color: '#fb923c' },
-         { id: 'l3_imprenta', label: 'Imprenta', parent: 'l2_creativa', color: '#f43f5e' },
-         { id: 'l3_crm_email', label: 'Secuencia Email', parent: 'l2_crm', color: '#0ea5e9', isFinal: true, lane: 'crm_email' },
-         { id: 'l3_crm_scoring', label: 'Lead Scoring', parent: 'l2_crm', color: '#0ea5e9', isFinal: true, lane: 'crm_scoring' },
-         { id: 'l3_crm_retargeting', label: 'Retargeting', parent: 'l2_crm', color: '#0ea5e9', isFinal: true, lane: 'crm_retargeting' }
+         { id: 'l3_imagen', label: 'IMAGENES', parent: 'l2_creativa', color: '#10b981', icon: Image },
+         { id: 'l3_videos', label: 'VIDEOS', parent: 'l2_creativa', color: '#facc15', icon: Video },
+         { id: 'l3_audios', label: 'AUDIOS', parent: 'l2_creativa', color: '#fb923c', icon: Mic },
+         { id: 'l3_imprenta', label: 'IMPRENTA', parent: 'l2_creativa', color: '#f43f5e', icon: Printer },
+         { id: 'l3_crm_email', label: 'FLUJOS CRM', parent: 'l2_crm', color: '#0ea5e9', isFinal: true, lane: 'crm_email', icon: Mail },
+         { id: 'l3_crm_scoring', label: 'LEAD SCORING', parent: 'l2_crm', color: '#0ea5e9', isFinal: true, lane: 'crm_scoring', icon: Target },
+         { id: 'l3_crm_retargeting', label: 'RETARGETING', parent: 'l2_crm', color: '#0ea5e9', isFinal: true, lane: 'crm_retargeting', icon: Repeat }
      ];
  
      const hubs = [
-         { parent: 'l3_imagen', lane: 'i_post', id: 'hub_post', label: 'post', color: '#10b981' },
-         { parent: 'l3_imagen', lane: 'i_historias', id: 'hub_st_img', label: 'Historia', color: '#facc15' },
-         { parent: 'l3_imagen', lane: 'i_portadas', id: 'hub_portada', label: 'portada', color: '#fb923c' },
-         { parent: 'l3_imagen', lane: 'i_carrucel', id: 'hub_carrucel', label: 'carrucel', color: '#ef4444' },
-         { parent: 'l3_videos', lane: 'v_reels', id: 'hub_reels', label: 'Reel', color: '#10b981' },
-         { parent: 'l3_videos', lane: 'v_historias', id: 'hub_st_vid', label: 'V. Historia', color: '#facc15' },
-         { parent: 'l3_videos', lane: 'v_tiktok', id: 'hub_tiktok', label: 'TIK TOK', color: '#fb923c' },
-         { parent: 'l3_videos', lane: 'v_youtube', id: 'hub_youtube', label: 'YOUTUBE', color: '#ef4444' },
+         { parent: 'l3_imagen', lane: 'i_post', id: 'hub_post', label: 'POSTS', color: '#10b981', icon: Layout },
+         { parent: 'l3_imagen', lane: 'i_historias', id: 'hub_st_img', label: 'STORIES', color: '#facc15', icon: Instagram },
+         { parent: 'l3_imagen', lane: 'i_portadas', id: 'hub_portada', label: 'PORTADAS', color: '#fb923c', icon: Image },
+         { parent: 'l3_imagen', lane: 'i_carrucel', id: 'hub_carrucel', label: 'CARRUSEL', color: '#ef4444', icon: Layers },
+         { parent: 'l3_videos', lane: 'v_reels', id: 'hub_reels', label: 'REELS', color: '#10b981', icon: PlayCircle },
+         { parent: 'l3_videos', lane: 'v_historias', id: 'hub_st_vid', label: 'V. HISTORIAS', color: '#facc15', icon: Film },
+         { parent: 'l3_videos', lane: 'v_tiktok', id: 'hub_tiktok', label: 'TIK TOK', color: '#fb923c', icon: Video },
+         { parent: 'l3_videos', lane: 'v_youtube', id: 'hub_youtube', label: 'YOUTUBE', color: '#ef4444', icon: Youtube },
      ];
 
     // Handle Mouse Events for Pan and Drag
@@ -415,6 +416,255 @@ export default function StrategyCanvas({
         return `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
     };
 
+    // Dynamic node counting for Ingredient Hubs
+    const hubCounts = React.useMemo(() => {
+        const counts = {};
+        nodes.forEach(node => {
+            const laneId = getNodeLaneId(node);
+            if (laneId) {
+                counts[laneId] = (counts[laneId] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [nodes]);
+
+    // --- NEURAL ROOT ARCHITECTURE HELPERS ---
+    const getBezier = (x1, y1, x2, y2) => {
+        const dx = Math.abs(x2 - x1);
+        const cp1x = x1 + dx * 0.45;
+        const cp2x = x2 - dx * 0.45;
+        return `M ${x1} ${y1} C ${cp1x} ${y1}, ${cp2x} ${y2}, ${x2} ${y2}`;
+    };
+
+    const renderRootEdges = () => {
+        const edges = [];
+        Object.entries(hubHierarchy).forEach(([parent, children]) => {
+            const pPos = hubPositions[parent];
+            if (!pPos) return;
+
+            children.forEach(child => {
+                const cPos = hubPositions[child];
+                if (!cPos) return;
+
+                const hubData = [...l2Hubs, ...l3Hubs, ...hubs].find(h => h.id === child);
+                const color = hubData?.color || '#6366f1';
+                
+                // Offset logic for Ingredient Cards (160x100)
+                const isParentCard = hubs.some(h => h.id === parent);
+                const isChildCard = hubs.some(h => h.id === child);
+                
+                const startX = isParentCard ? pPos.x + 80 : pPos.x;
+                const endX = isChildCard ? cPos.x - 80 : cPos.x;
+
+                const path = getBezier(startX, pPos.y, endX, cPos.y);
+                const isLight = theme === 'light';
+
+                edges.push(
+                    <g key={`root-edge-${parent}-${child}`}>
+                        {/* Glow Layer */}
+                        <motion.path 
+                            initial={{ pathLength: 0, opacity: 0 }}
+                            animate={{ pathLength: 1, opacity: isLight ? 0.35 : 0.15 }}
+                            d={path} 
+                            stroke={color} 
+                            strokeWidth={isLight ? "4" : "8"} 
+                            fill="none" 
+                            filter={isLight ? "" : "url(#glow)"}
+                        />
+                        {/* Solid Core */}
+                        <motion.path 
+                            initial={{ pathLength: 0, opacity: 0 }}
+                            animate={{ pathLength: 1, opacity: isLight ? 0.7 : 0.4 }}
+                            d={path} 
+                            stroke={color} 
+                            strokeWidth={isLight ? "2.5" : "2"} 
+                            fill="none" 
+                        />
+                        {/* Energy Pulse */}
+                        <motion.circle r={isLight ? "4" : "3"} fill={color} filter={isLight ? "" : "url(#glow)"}>
+                             <animateMotion dur="3s" repeatCount="indefinite" path={path} />
+                             <animate attributeName="opacity" values="0;1;1;0" dur="3s" repeatCount="indefinite" />
+                        </motion.circle>
+                    </g>
+                );
+            });
+        });
+        return edges;
+    };
+
+    const renderNodeToHubEdges = () => {
+        const connections = [];
+        nodes.forEach(node => {
+            if (node.data?.isHidden) return;
+            const laneId = getNodeLaneId(node);
+            if (!laneId) return;
+
+            const hub = hubs.find(h => h.id === laneId || h.lane === laneId);
+            const l3Hub = l3Hubs.find(h => h.id === laneId || h.lane === laneId);
+            
+            const targetId = hub?.id || l3Hub?.id;
+            const targetPos = hubPositions[targetId];
+
+            if (targetPos) {
+                // If it's a card hub, offset to the right side
+                const isCard = hubs.some(h => h.id === targetId);
+                const startX = isCard ? targetPos.x + 80 : targetPos.x;
+                
+                const path = getBezier(startX, targetPos.y, node.x, node.y + 38);
+                const color = hub?.color || l3Hub?.color || '#6366f1';
+                
+                connections.push(
+                    <g key={`node-hub-edge-${node.id}`}>
+                        <path 
+                            d={path} 
+                            stroke={color} 
+                            strokeWidth="1.5" 
+                            strokeOpacity="0.2" 
+                            fill="none" 
+                            strokeDasharray="4,4"
+                        />
+                         <motion.circle r="2" fill={color} opacity="0.6">
+                             <animateMotion dur="4s" repeatCount="indefinite" path={path} />
+                        </motion.circle>
+                    </g>
+                );
+            }
+        });
+        return connections;
+    };
+
+    const renderIngredientCard = (id, pos, hubData) => {
+        const isRoot = id === 'root';
+        const color = hubData?.color || (isRoot ? '#818cf8' : '#6366f1');
+        const label = isRoot ? 'ESTRATEGIA MAESTRA' : hubData?.label;
+        const count = hubCounts[hubData?.lane || id] || 0;
+        const Icon = hubData?.icon || (isRoot ? BrainCircuit : Box);
+
+        // Adjust position to center the card on the hub point
+        const cardWidth = 160;
+        const cardHeight = 100;
+
+        return (
+            <g 
+                key={`hub-point-${id}`} 
+                transform={`translate(${pos.x - cardWidth/2}, ${pos.y - cardHeight/2})`}
+                className="cursor-pointer group/hub"
+                onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, id); }}
+            >
+                {/* Glass Background with Glow */}
+                    <rect 
+                        width={cardWidth} 
+                        height={cardHeight} 
+                        rx="12" 
+                        fill={theme === 'dark' ? "rgba(10, 10, 15, 0.95)" : "rgba(255, 255, 255, 0.98)"} 
+                        stroke={color} 
+                        strokeWidth="1.5" 
+                        strokeOpacity={theme === 'dark' ? "0.4" : "0.6"}
+                        filter={theme === 'dark' ? "url(#glow)" : "none"}
+                        className={theme === 'light' ? 'shadow-lg' : ''}
+                    />
+                    
+                    {/* Header Section */}
+                    <g transform="translate(15, 15)">
+                        <Icon size={14} style={{ color: theme === 'dark' ? color : color }} />
+                        <text x="20" y="11" fill={theme === 'dark' ? "white" : "black"} className="text-[9px] font-black uppercase tracking-[0.2em] opacity-80" style={{ fill: theme === 'dark' ? 'white' : '#1e293b' }}>
+                            {label}
+                        </text>
+                    </g>
+
+                    {/* Sub-container for the Number */}
+                    <rect 
+                        x="15" 
+                        y="40" 
+                        width={cardWidth - 30} 
+                        height="45" 
+                        rx="8" 
+                        fill={theme === 'dark' ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.03)"} 
+                        stroke={color} 
+                        strokeWidth="1" 
+                        strokeOpacity="0.1" 
+                    />
+                    
+                    {/* Central Value (Count) */}
+                    <text 
+                        x={cardWidth / 2} 
+                        y="72" 
+                        textAnchor="middle" 
+                        fill={theme === 'dark' ? "white" : "#0f172a"} 
+                        className="text-2xl font-black tracking-tighter"
+                    >
+                        {count}
+                    </text>
+
+                {/* Status Indicator / Connection point glow */}
+                <circle 
+                    cx={cardWidth - 5} 
+                    cy={cardHeight / 2} 
+                    r="3" 
+                    fill={color} 
+                    filter="url(#glow)" 
+                />
+            </g>
+        );
+    };
+
+    const renderRootArchitecture = () => {
+        return (
+            <g className="root-architecture">
+                {renderRootEdges()}
+                {renderNodeToHubEdges()}
+
+                {/* Rendering Hubs Points */}
+                {Object.entries(hubPositions).map(([id, pos]) => {
+                    const hubData = [...l2Hubs, ...l3Hubs, ...hubs].find(h => h.id === id);
+                    const isTacticalHub = hubs.some(h => h.id === id);
+                    const isRoot = id === 'root';
+                    const color = hubData?.color || (isRoot ? '#818cf8' : '#6366f1');
+                    const label = isRoot ? 'ESTRATEGIA MAESTRA' : hubData?.label;
+
+                    if (isTacticalHub) {
+                        return renderIngredientCard(id, pos, hubData);
+                    }
+
+                    return (
+                        <g 
+                            key={`hub-point-${id}`} 
+                            transform={`translate(${pos.x}, ${pos.y})`}
+                            className="cursor-pointer group/hub"
+                            onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, id); }}
+                        >
+                            {isRoot ? (
+                                <g>
+                                    <circle r="60" fill={color} fillOpacity="0.05" filter="url(#glow)" />
+                                    <circle r="15" fill={color} fillOpacity={theme === 'dark' ? "0.8" : "1"} />
+                                    <rect x="-120" y="35" width="240" height="46" rx="23" fill={theme === 'dark' ? "#0A0A0F" : "#FFFFFF"} stroke={color} strokeWidth="1.5" strokeOpacity={theme === 'dark' ? "0.4" : "0.6"} className={theme === 'light' ? 'shadow-xl' : ''} />
+                                    <text y="62" textAnchor="middle" fill={theme === 'dark' ? "white" : "#0f172a"} className="text-[11px] font-black uppercase tracking-[0.4em]">
+                                        {activeCampaign?.name || label}
+                                    </text>
+                                    <BrainCircuit x="-15" y="-15" size={30} className="text-white" />
+                                </g>
+                            ) : (
+                                <g>
+                                    <circle r="20" fill="#0A0A0F" stroke={color} strokeWidth="2" strokeOpacity="0.4" />
+                                    <circle r="7" fill={color} filter="url(#glow)" />
+                                    {/* Label tooltip or static label if important */}
+                                    <text 
+                                        y="-30" 
+                                        textAnchor="middle" 
+                                        fill={color} 
+                                        className="text-[10px] font-black uppercase tracking-widest opacity-80"
+                                    >
+                                        {label}
+                                    </text>
+                                </g>
+                            )}
+                        </g>
+                    );
+                })}
+            </g>
+        );
+    };
+
     const getPreviewPath = () => {
         if (!connectionStart) return '';
         const source = nodes.find(n => n.id === connectionStart);
@@ -448,7 +698,7 @@ export default function StrategyCanvas({
     return (
         <div 
             ref={canvasRef}
-            className={`flex-1 overflow-hidden relative transition-colors duration-700 outline-none ${theme === 'dark' ? 'bg-[#050511]' : 'bg-slate-50'} ${cursorClass}`}
+            className={`flex-1 overflow-hidden relative transition-colors duration-700 outline-none ${theme === 'dark' ? 'bg-[#050511]' : 'bg-[#F1F5F9]'} ${cursorClass}`}
             onWheel={handleWheel}
             onMouseDown={(e) => handleMouseDown(e, null)}
             onDragOver={handleDragOver}
@@ -466,14 +716,16 @@ export default function StrategyCanvas({
                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                        className="fixed z-[300] w-64 p-4 bg-[#0a0a0f]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-5"
+                        className={`fixed z-[300] w-64 p-4 backdrop-blur-2xl border rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-5 ${
+                            theme === 'dark' ? 'bg-[#0a0a0f]/90 border-white/10' : 'bg-white border-slate-200'
+                        }`}
                         style={{ left: contextMenu.x, top: contextMenu.y }}
                         onClick={(e) => e.stopPropagation()}
                     >
 
                         {/* Colors */}
                         <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-white/40 mb-1">
+                            <div className={`flex items-center gap-2 mb-1 ${theme === 'dark' ? 'text-white/40' : 'text-slate-400'}`}>
                                 <Palette className="w-3.5 h-3.5" />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Colores Neón</span>
                             </div>
@@ -500,7 +752,7 @@ export default function StrategyCanvas({
 
                         {/* Line Styles */}
                         <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-white/40 mb-1">
+                            <div className={`flex items-center gap-2 mb-1 ${theme === 'dark' ? 'text-white/40' : 'text-slate-400'}`}>
                                 <Minus className="w-3.5 h-3.5" />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Estilos de Línea</span>
                             </div>
@@ -533,7 +785,7 @@ export default function StrategyCanvas({
 
                         {/* Thickness */}
                         <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-white/40 mb-1">
+                            <div className={`flex items-center gap-2 mb-1 ${theme === 'dark' ? 'text-white/40' : 'text-slate-400'}`}>
                                 <Maximize className="w-3.5 h-3.5" />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Grosor de Trazo</span>
                             </div>
@@ -647,6 +899,9 @@ export default function StrategyCanvas({
                     </defs>
 
                     <rect width="10000" height="5000" fill={theme === 'dark' ? '#05050B' : '#F8FAFC'} />
+
+                    {/* NEURAL TREE ROOT ARCHITECTURE LAYER */}
+                    {renderRootArchitecture()}
 
                     {/* Architectural Columns - Zero Overlap Layout */}
                     {STRATEGIC_COLUMNS.map((col, idx) => (
@@ -904,14 +1159,14 @@ export default function StrategyCanvas({
                                 )}
 
                                 <div className={`relative w-[360px] h-[460px] rounded-[46px] flex flex-col p-10 transition-all duration-500 border-2 ${
-                                    theme === 'dark' ? 'bg-[#0A0A0F]/90 backdrop-blur-3xl border-white/10' : 'bg-white shadow-3xl border-indigo-100'
+                                    theme === 'dark' ? 'bg-[#0A0A0F]/90 backdrop-blur-3xl border-white/10' : 'bg-white shadow-2xl border-indigo-200'
                                 }`}>
                                     {/* Glass Grain Texture */}
                                     <div className="absolute inset-0 opacity-[0.04] pointer-events-none mix-blend-overlay rounded-[46px]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
 
                                     <div className="flex-1 flex flex-col items-center z-10">
                                         <div className="w-full flex justify-center mb-8">
-                                            <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl">
+                                            <div className={`px-5 py-2 rounded-full border backdrop-blur-xl ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-indigo-50 border-indigo-100'}`}>
                                                 <span className={`text-[11px] font-black uppercase tracking-[0.4em] ${theme === 'dark' ? 'text-sky-400/80 shadow-[0_0_10px_rgba(56,189,248,0.3)]' : 'text-indigo-600'}`}>
                                                     VERSION 2.4.1 DISPONIBLE
                                                 </span>
@@ -998,18 +1253,19 @@ export default function StrategyCanvas({
                         hex: 'rounded-2xl',
                         rect: 'rounded-2xl'
                     };
+                    // --- VISTA TÁCTICA (UNIFICADA - ESTILO PRYME) ---
                     return (
                         <motion.div
                             key={node.id}
                             x={node.x}
                             y={node.y}
                             animate={{ scale: 1, opacity: 1, x: node.x, y: node.y }}
-                            whileHover={{ scale: 1.04, boxShadow: `0 0 40px ${nodeColor}50` }}
+                            whileHover={{ scale: 1.04, boxShadow: `0 0 50px ${nodeColor}40` }}
                             transition={{ type: "spring", stiffness: 350, damping: 25 }}
                             onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, node.id); }}
                             className={`absolute flex flex-col items-center group ${isSelected ? 'z-50' : 'z-30'} ${activeTool === 'connect' ? 'cursor-alias' : 'cursor-grab active:cursor-grabbing'}`}
                         >
-                            {/* Orphan Alert Badge (Integrated) */}
+                            {/* Orphan Alert Badge */}
                             {isOrphan && (
                                 <motion.div 
                                     animate={{ y: [0, -5, 0] }}
@@ -1017,129 +1273,101 @@ export default function StrategyCanvas({
                                     className="mb-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500 flex items-center gap-2 backdrop-blur-md"
                                 >
                                     <AlertTriangle className="w-2.5 h-2.5 text-rose-500" />
-                                    <span className="text-[7px] font-[1000] tracking-widest text-rose-500 uppercase">SIN VINCULO</span>
+                                    <span className="text-[7px] font-[1000] tracking-widest text-rose-500 uppercase">DESCONECTADO</span>
                                 </motion.div>
                             )}
 
-                            {/* The Node Chassis - Specialized Expert Styles */}
+                            {/* The Node Chassis - Card Style (180x170) */}
                             <div 
-                                className={`relative h-[76px] min-w-[290px] ${shapeClasses[nodeShape]} flex items-center px-2 transition-all duration-500 border-b-4 border-r-2 overflow-hidden ${
-                                    isSelected ? 'scale-105 z-50' : 'hover:scale-[1.03]'
-                                } ${isAudio ? 'bg-white text-slate-900 border-indigo-100 shadow-2xl' : theme === 'dark' ? (isSelected ? 'bg-[#0A0A0F]/80 backdrop-blur-3xl' : 'bg-[#0A0A0F]/40 backdrop-blur-md') : 'bg-white shadow-2xl shadow-indigo-100/50'}`}
+                                className={`relative w-[180px] h-[170px] rounded-[24px] flex flex-col items-center justify-between p-4 transition-all duration-500 border-2 overflow-hidden ${
+                                    isSelected ? 'scale-105 z-50' : 'hover:scale-[1.02]'
+                                } ${theme === 'dark' ? (isSelected ? 'bg-[#0A0A0F]/90 backdrop-blur-3xl' : 'bg-[#0A0A0F]/45 backdrop-blur-md') : 'bg-white shadow-xl border-slate-200'}`}
                                 style={{ 
-                                    borderColor: isSelected ? nodeColor : (isAudio ? 'rgba(99,102,241,0.1)' : theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'),
+                                    borderColor: isSelected ? nodeColor : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(15, 23, 42, 0.1)'),
                                     boxShadow: isSelected 
-                                        ? `0 0 60px ${nodeGlow}30, inset 0 0 20px ${nodeColor}20` 
-                                        : theme === 'dark' ? `0 10px 40px rgba(0,0,0,0.4)` : `0 10px 30px rgba(99,102,241,0.05)`
+                                        ? `0 0 60px ${nodeGlow}30, inset 0 0 20px ${nodeColor}10` 
+                                        : theme === 'dark' ? `0 10px 40px rgba(0,0,0,0.3)` : `0 10px 30px rgba(0,0,0,0.05)`
                                 }}
                             >
-                                {/* Liquid Glass Shimmer (Only on Selection - Performance Fix) */}
+                                {/* Liquid Glass Shimmer */}
                                 {isSelected && (
                                     <motion.div 
-                                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -z-5 -skew-x-12"
+                                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -z-5"
                                         animate={{ x: ['-200%', '200%'] }}
-                                        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
                                     />
                                 )}
 
-                                {/* Grain Texture Overlay (Expert Feel) */}
-                                <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
-
-                                {/* Platform Icon - Creative Circle with Platform Glow */}
-                                <div 
-                                    className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner shrink-0 transition-all ${isAudio ? 'scale-90 bg-indigo-50 border border-indigo-100' : ''}`}
-                                    style={{ 
-                                        backgroundColor: isAudio ? '#EEF2FF' : nodeColor + '15', 
-                                        border: isAudio ? '1px solid #E0E7FF' : `1px solid ${nodeColor}30`,
-                                        boxShadow: isSelected ? `0 0 30px ${nodeColor}30` : `0 0 20px ${nodeColor}20`
-                                    }}
-                                >
-                                    {node.data?.platform === 'instagram' && <Instagram size={24} style={{ color: nodeColor }} />}
-                                    {node.data?.platform === 'facebook' && <Facebook size={24} style={{ color: nodeColor }} />}
-                                    {node.data?.platform === 'youtube' && <Youtube size={24} style={{ color: nodeColor }} />}
-                                    {node.data?.platform === 'tiktok' && <Globe size={24} style={{ color: nodeColor }} />}
-                                    {!node.data?.platform && (
-                                        isVideo ? <Video size={24} style={{ color: nodeColor }} /> : 
-                                        isAudio ? <Mic size={24} style={{ color: nodeColor }} /> : 
-                                        <Image size={24} style={{ color: nodeColor }} />
-                                    )}
-                                </div>
- 
-                                {/* Content Info & Visualizations */}
-                                <div className="flex-1 px-5 flex flex-col justify-center overflow-hidden">
-                                    <div className="flex items-center justify-between mb-0.5">
-                                        <h4 className={`text-[14px] font-[1000] tracking-wider uppercase truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                                            {node.data?.title || typeConfig.label}
-                                        </h4>
-                                    </div>
- 
-                                    {/* Specialized Visualization Layer */}
-                                    <div className="flex items-center gap-3">
-                                        {isAudio ? (
-                                            /* Waveform Visualization (Advanced) */
-                                            <div className="flex items-center gap-[2px] h-3 pr-4">
-                                                {[0.4, 0.7, 0.5, 0.9, 0.6, 0.3, 0.8, 0.5, 0.4, 0.6, 0.4].map((h, i) => (
-                                                    <motion.div 
-                                                        key={i}
-                                                        animate={{ height: [`${h*100}%`, `${(h*1.5)%1.0*100}%`, `${h*100}%`] }}
-                                                        transition={{ duration: 0.4 + Math.random()*0.4, repeat: Infinity, ease: "easeInOut" }}
-                                                        className="w-[2px] bg-indigo-500 rounded-full"
-                                                    />
-                                                ))}
-                                                <span className="text-[9px] font-black text-indigo-400 ml-2 opacity-80">READY</span>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <motion.button 
-                                                    whileHover={{ scale: 1.05 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={(e) => { e.stopPropagation(); onNodeSelect(node.id); setActiveNodeMenu({ id: node.id, type: 'status' }); }}
-                                                    className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer"
-                                                >
-                                                    <span className={`text-[8px] font-black tracking-widest uppercase ${isAudio ? 'text-indigo-400' : theme === 'dark' ? 'text-white/60' : 'text-slate-500'}`}>
-                                                        {typeConfig.category}
-                                                    </span>
-                                                </motion.button>
-                                                <div className="w-1 h-1 rounded-full bg-current opacity-20" />
-                                                <motion.button 
-                                                    whileHover={{ scale: 1.05 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={(e) => { e.stopPropagation(); onNodeSelect(node.id); setActiveNodeMenu({ id: node.id, type: 'platform' }); }}
-                                                    className={`px-1.5 py-0.5 rounded-md bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer truncate max-w-[80px]`}
-                                                >
-                                                    <span className={`text-[9px] font-black tracking-widest uppercase truncate ${isAudio ? 'text-indigo-400' : theme === 'dark' ? 'text-white/30' : 'text-slate-400'}`}>
-                                                        {node.data?.subtype || 'standard'}
-                                                    </span>
-                                                </motion.button>
-                                            </div>
+                                {/* Top Header: Mini Icon + Title */}
+                                <div className="w-full flex items-center gap-2 px-1 z-10">
+                                    <div 
+                                        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 shadow-sm"
+                                        style={{ backgroundColor: nodeColor + '30', border: `1px solid ${nodeColor}40` }}
+                                    >
+                                        {node.data?.platform === 'instagram' && <Instagram size={12} style={{ color: nodeColor }} />}
+                                        {node.data?.platform === 'facebook' && <Facebook size={12} style={{ color: nodeColor }} />}
+                                        {node.data?.platform === 'youtube' && <Youtube size={12} style={{ color: nodeColor }} />}
+                                        {node.data?.platform === 'tiktok' && <Globe size={12} style={{ color: nodeColor }} />}
+                                        {!node.data?.platform && (
+                                            isVideo ? <Video size={12} style={{ color: nodeColor }} /> : 
+                                            isAudio ? <Mic size={12} style={{ color: nodeColor }} /> : 
+                                            <Image size={12} style={{ color: nodeColor }} />
                                         )}
                                     </div>
-                                </div>
- 
-                                {/* Trailing Action Area (Figma Style) */}
-                                <div className="pr-4 flex items-center gap-3 border-l border-white/5 pl-4 h-10">
-                                    {node.data?.status === 'completed' ? (
-                                        <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400">
-                                            <Check size={12} strokeWidth={4} />
-                                        </div>
-                                    ) : (
-                                        <motion.button 
-                                            whileHover={{ x: 3, scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onNodeSelect(node.id, 'estilo'); // Opens side panel in Style tab
-                                                if (setActiveNodeMenu) setActiveNodeMenu(null); 
-                                            }}
-                                            className="w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/20 hover:text-white/80 hover:border-white/40 transition-all cursor-pointer z-50"
-                                        >
-                                            <ChevronRight size={14} />
-                                        </motion.button>
-                                    )}
+                                    <h4 className={`text-[10px] font-black tracking-[0.2em] uppercase truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                        {node.data?.title || typeConfig.label}
+                                    </h4>
                                 </div>
 
-                                {/* Ready-to-Shoot Progress Bar (Bottom Edge) */}
-                                <div className="absolute bottom-0 left-8 right-8 h-[2px] bg-white/5 rounded-full overflow-hidden">
+                                {/* Central Content Area: Large Symbolic Icon */}
+                                <div className="flex-1 flex items-center justify-center w-full z-0 relative">
+                                    <div 
+                                        className="transition-all duration-700 opacity-[0.08] group-hover:opacity-[0.14]"
+                                        style={{ color: nodeColor }}
+                                    >
+                                        {node.data?.platform === 'instagram' && <Instagram size={84} strokeWidth={1} />}
+                                        {node.data?.platform === 'facebook' && <Facebook size={84} strokeWidth={1} />}
+                                        {node.data?.platform === 'youtube' && <Youtube size={84} strokeWidth={1} />}
+                                        {node.data?.platform === 'tiktok' && <Globe size={84} strokeWidth={1} />}
+                                        {!node.data?.platform && (
+                                            isVideo ? <Video size={84} strokeWidth={1} /> : 
+                                            isAudio ? <Mic size={84} strokeWidth={1} /> : 
+                                            <Image size={84} strokeWidth={1} />
+                                        )}
+                                    </div>
+                                    
+                                    {/* Action Button Overlaid on center (Subtle) */}
+                                    <motion.button 
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onNodeSelect(node.id, 'estilo'); 
+                                            if (setActiveNodeMenu) setActiveNodeMenu(null); 
+                                        }}
+                                        className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20`}
+                                    >
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border ${theme === 'dark' ? 'bg-white/5 border-white/20 text-white' : 'bg-indigo-600/10 border-indigo-600/30 text-indigo-700'}`}>
+                                            <ChevronRight size={18} />
+                                        </div>
+                                    </motion.button>
+                                </div>
+
+                                {/* Bottom Info Bar */}
+                                <div className="w-full flex items-center justify-between pt-2 border-t border-white/5 z-10">
+                                    <span className={`text-[8px] font-black tracking-widest uppercase opacity-40 ${theme === 'dark' ? 'text-white' : 'text-slate-500'}`}>
+                                        {node.data?.status || 'Active'}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${node.data?.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-indigo-400'}`} />
+                                        <span className={`text-[10px] font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                            {node.data?.status === 'completed' ? '100%' : '35%'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Progress Bar (Edge Bottom) */}
+                                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/5 overflow-hidden">
                                     <motion.div 
                                         initial={{ width: 0 }}
                                         animate={{ width: node.data?.status === 'completed' ? '100%' : '35%' }}
@@ -1147,26 +1375,6 @@ export default function StrategyCanvas({
                                         style={{ backgroundColor: nodeColor, boxShadow: `0 0 10px ${nodeColor}80` }}
                                     />
                                 </div>
-
-                                {/* Cinematic Interactive Connection Ports (Input/Output) */}
-                                <div 
-                                    className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full z-[100] cursor-alias transition-all duration-300 opacity-0 group-hover:opacity-100 border-2 bg-[#050511] hover:scale-150 active:scale-95"
-                                    style={{ borderColor: nodeColor, boxShadow: `0 0 15px ${nodeColor}80` }}
-                                    onMouseDown={(e) => { e.stopPropagation(); onConnectionStart(node.id); }}
-                                />
-                                <div 
-                                    className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full z-[100] cursor-alias transition-all duration-300 opacity-0 group-hover:opacity-100 border-2 bg-[#050511] hover:scale-150 active:scale-95"
-                                    style={{ borderColor: nodeColor, boxShadow: `0 0 15px ${nodeColor}80` }}
-                                    onMouseDown={(e) => { e.stopPropagation(); onConnectionStart(node.id); }}
-                                />
-
-                                {/* Stack Effect for Carousel */}
-                                {isImage && (
-                                    <>
-                                        <div className="absolute inset-0 -z-10 translate-x-1 translate-y-1 rounded-full border border-white/5 bg-black/20" />
-                                        <div className="absolute inset-0 -z-20 translate-x-2 translate-y-2 rounded-full border border-white/5 bg-black/10" />
-                                    </>
-                                )}
                             </div>
 
                             {/* Node Interaction HUD Popover */}
@@ -1176,8 +1384,8 @@ export default function StrategyCanvas({
                                         initial={{ opacity: 0, scale: 0.9, y: 15 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.9, y: 15 }}
-                                        className={`absolute -bottom-4 translate-y-full left-1/2 -translate-x-1/2 z-50 p-4 border rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] backdrop-blur-3xl min-w-[280px] ${
-                                            theme === 'dark' ? 'bg-black/95 border-white/10' : 'bg-white/95 border-slate-200'
+                                        className={`absolute -bottom-4 translate-y-full left-1/2 -translate-x-1/2 z-50 p-4 border rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.4)] backdrop-blur-3xl min-w-[280px] ${
+                                            theme === 'dark' ? 'bg-black/95 border-white/10' : 'bg-white border-slate-200'
                                         }`}
                                         onClick={(e) => e.stopPropagation()}
                                     >
@@ -1203,7 +1411,7 @@ export default function StrategyCanvas({
                                                         className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${
                                                             node.data?.status === statusId 
                                                             ? 'bg-indigo-500 border-indigo-400 text-white shadow-xl shadow-indigo-500/20' 
-                                                            : 'bg-white/5 border-white/5 text-white/30 hover:bg-white/10'
+                                                            : (theme === 'dark' ? 'bg-white/5 border-white/5 text-white/30 hover:bg-white/10' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100')
                                                         }`}
                                                     >
                                                         {React.createElement(s.icon || Check, { size: 16 })}
@@ -1213,7 +1421,7 @@ export default function StrategyCanvas({
                                             </div>
 
                                             {/* Color Palette Area */}
-                                            <div className="flex items-center justify-center gap-3 py-2 border-t border-white/5">
+                                            <div className={`flex items-center justify-center gap-3 py-2 border-t ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
                                                 {['#22d3ee', '#10b981', '#f59e0b', '#f43f5e', '#a855f7', '#ffffff'].map(c => (
                                                     <button 
                                                         key={c}

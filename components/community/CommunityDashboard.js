@@ -1,149 +1,275 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
     LayoutDashboard, MessageSquare, Calendar as CalendarIcon, FileText,
-    Users, ChevronRight, Bell, Search, Mic, Send, TrendingUp, AlertCircle, Bot, Share2
+    Users, ChevronRight, Bell, Search, Mic, Send, TrendingUp, AlertCircle, Bot, Share2,
+    Target, Activity, Zap, Shield, Sparkles
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export default function CommunityDashboard() {
+    const { user } = useAuth();
+    const [clients, setClients] = useState([]);
+    const [recentTasks, setRecentTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCMData = async () => {
+            if (!user?.full_name) return;
+            
+            setLoading(true);
+            try {
+                // Fetch only clients assigned to this CM
+                const { data: assignedClients, error: clientsError } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .eq('cm', user.full_name);
+
+                if (clientsError) throw clientsError;
+                setClients(assignedClients || []);
+
+                // Fetch tasks for these specific clients
+                if (assignedClients && assignedClients.length > 0) {
+                    const clientIds = assignedClients.map(c => c.id);
+                    const { data: tasksData, error: tasksError } = await supabase
+                        .from('tasks')
+                        .select('*')
+                        .in('client', clientIds)
+                        .order('created_at', { ascending: false })
+                        .limit(5);
+
+                    if (tasksError) throw tasksError;
+                    setRecentTasks(tasksData || []);
+                }
+            } catch (err) {
+                console.error('Error fetching CM data:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCMData();
+    }, [user?.full_name]);
+
     const STATS = [
-        { label: 'Estado General', value: 'Óptimo', color: 'text-emerald-400', sub: 'Todo en orden' },
-        { label: 'Nivel', value: 'Lvl. 3', color: 'text-indigo-400', sub: 'Crecimiento' },
-        { label: 'Engagement', value: '+15%', color: 'text-fuchsia-400', sub: 'vs mes anterior' },
+        { label: 'Cuentas Activas', value: clients.length.toString(), color: 'text-emerald-400', icon: Shield, trend: '+2 esta semana' },
+        { label: 'Estrategias', value: 'Óptimo', color: 'text-indigo-400', icon: Target, trend: '98% salud' },
+        { label: 'Ritmo Social', value: '+22%', color: 'text-fuchsia-400', icon: Activity, trend: 'Alcance orgánico' },
     ];
 
-    const QUICK_ACTIONS = [
-        { id: 'strategy', icon: Share2, label: 'Estrategia', color: 'bg-emerald-500/10 text-emerald-400' },
-        { id: 'calendar', icon: CalendarIcon, label: 'Calendario', color: 'bg-purple-500/10 text-purple-400' },
-        { id: 'content', icon: LayoutDashboard, label: 'Contenidos', color: 'bg-orange-500/10 text-orange-400' },
-        { id: 'reports', icon: FileText, label: 'Ver Reportes', color: 'bg-blue-500/10 text-blue-400' },
-        { id: 'team', icon: Users, label: 'Equipo', color: 'bg-pink-500/10 text-pink-400' },
-    ];
-
+    if (loading) {
+        return (
+            <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
+                <div className="w-12 h-12 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                <p className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40 animate-pulse">Sincronizando Sistema Estratégico...</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-8">
-            {/* Header & Status */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
-                    <h1 className="text-3xl font-black text-white mb-2">Panel Estratégico</h1>
-                    <p className="text-gray-400 text-sm">Resumen de actividad y estado de cuenta al 24 Oct.</p>
+        <div className="space-y-10 pb-20">
+            {/* Header & Status - High Fidelity UI */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 relative">
+                <div className="relative z-10">
+                    <motion.div 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex items-center gap-3 mb-4"
+                    >
+                        <div className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[9px] font-black text-indigo-400 uppercase tracking-widest">
+                            Command Center v2.0
+                        </div>
+                        <span className="text-[9px] font-black text-white/20 uppercase tracking-widest leading-none">Status: En Línea</span>
+                    </motion.div>
+                    <h1 className="text-5xl md:text-6xl font-black text-white italic tracking-tighter leading-none">
+                        Panel <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">Estratégico.</span>
+                    </h1>
+                    <p className="text-gray-500 text-sm mt-4 font-bold max-w-lg uppercase tracking-widest">
+                        Bienvenido, {user?.full_name || 'Community Manager'}. Gestionando {clients.length} ecosistemas activos.
+                    </p>
                 </div>
-                <div className="flex gap-4">
-                    <button className="p-3 bg-[#0E0E18] border border-white/5 rounded-full text-gray-400 hover:text-white relative">
-                        <Bell className="w-5 h-5" />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-[#0E0E18]"></span>
-                    </button>
+
+                <div className="flex items-center gap-6">
+                    <div className="flex -space-x-4">
+                        {clients.slice(0, 3).map((c, i) => (
+                            <div key={i} className="w-12 h-12 rounded-2xl border-2 border-[#050511] bg-white/5 flex items-center justify-center text-[10px] font-black text-white p-1 hover:translate-y-[-5px] transition-transform cursor-pointer overflow-hidden backdrop-blur-xl">
+                                {c.name.substring(0, 2).toUpperCase()}
+                            </div>
+                        ))}
+                        {clients.length > 3 && (
+                            <div className="w-12 h-12 rounded-2xl border-2 border-[#050511] bg-indigo-600 flex items-center justify-center text-[10px] font-black text-white">
+                                +{clients.length - 3}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </header>
 
-            {/* Top Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Top Metrics Grid - Liquid Glass Style */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {STATS.map((stat, i) => (
-                    <div key={i} className="bg-[#0E0E18] border border-white/5 p-6 rounded-2xl flex items-center justify-between">
-                        <div>
-                            <div className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">{stat.label}</div>
-                            <div className={`text-2xl font-black ${stat.color}`}>{stat.value}</div>
+                    <motion.div 
+                        key={i}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="group bg-white/[0.02] backdrop-blur-3xl border border-white/5 p-8 rounded-[2.5rem] hover:bg-white/[0.05] transition-all hover:scale-[1.02] cursor-pointer relative overflow-hidden"
+                    >
+                        <div className="flex justify-between items-start mb-6">
+                            <div className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">{stat.label}</div>
+                            <stat.icon className={`w-5 h-5 ${stat.color} opacity-50 group-hover:opacity-100 transition-opacity`} />
                         </div>
-                        <div className="text-right">
-                            <div className="text-xs text-gray-600">{stat.sub}</div>
-                        </div>
-                    </div>
+                        <div className={`text-4xl font-black italic tracking-tighter ${stat.color} mb-2`}>{stat.value}</div>
+                        <div className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">{stat.trend}</div>
+                        
+                        {/* Shimmer Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                    </motion.div>
                 ))}
             </div>
 
-            {/* Central Hub: Assistant & Quick Actions */}
+            {/* Central Hub: AI Assistant & Managed Accounts */}
             <div className="grid lg:grid-cols-3 gap-8">
 
-                {/* Assistant Preview (2/3 width) - Now just a preview/link */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-1">
-                        <div className="bg-[#151520] rounded-[20px] p-6 h-[300px] flex flex-col justify-center items-center text-center relative overflow-hidden group hover:bg-[#151520]/80 transition-colors">
-                            <div className="w-16 h-16 rounded-2xl bg-indigo-600/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                <Bot className="w-8 h-8 text-indigo-400" />
+                {/* AI Assistant Hub (2/3 width) */}
+                <div className="lg:col-span-2 space-y-8">
+                    <div className="bg-gradient-to-br from-indigo-600/20 via-purple-600/20 to-transparent border border-white/10 rounded-[3rem] p-1 overflow-hidden group">
+                        <div className="bg-[#0A0A1F]/90 backdrop-blur-xl rounded-[2.8rem] p-10 relative overflow-hidden">
+                            {/* Animated Background */}
+                            <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-indigo-500/10 blur-[100px] rounded-full group-hover:bg-indigo-500/20 transition-all duration-1000" />
+                            
+                            <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+                                <div className="space-y-6 text-center md:text-left flex-1">
+                                    <div className="flex items-center justify-center md:justify-start gap-2">
+                                        <div className="w-8 h-8 rounded-xl bg-indigo-600/20 flex items-center justify-center">
+                                            <Sparkles className="w-4 h-4 text-indigo-400" />
+                                        </div>
+                                        <span className="text-xs font-black uppercase tracking-widest text-indigo-400">Asistente Inteligente</span>
+                                    </div>
+                                    <h3 className="text-4xl font-black text-white italic tracking-tighter">Sinergia Creativa <span className="text-indigo-500">Activada.</span></h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed max-w-sm mx-auto md:mx-0 font-medium">
+                                        Tu copiloto está analizando las métricas de ayer. Hay una oportunidad masiva para <span className="text-white italic">{clients[0]?.name || 'tu marca asignada'}</span> en Reels Educativos.
+                                    </p>
+                                    <Link href="/dashboard/community/agent">
+                                        <button className="w-full md:w-auto px-10 py-4 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform shadow-xl shadow-white/5 flex items-center justify-center gap-3 group/btn">
+                                            Optimizar Estrategias <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-2 transition-transform" />
+                                        </button>
+                                    </Link>
+                                </div>
+
+                                <div className="relative shrink-0 group-hover:rotate-6 transition-transform duration-700">
+                                    <div className="w-48 h-48 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-[3rem] shadow-2xl relative z-10 flex items-center justify-center overflow-hidden">
+                                        <Bot className="w-20 h-20 text-white" />
+                                        <div className="absolute inset-0 bg-white/10 opacity-50 backdrop-blur-xl" />
+                                    </div>
+                                    <div className="absolute -inset-4 bg-white/5 blur-2xl rounded-full -z-10 animate-pulse" />
+                                </div>
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Tu Agente IA está listo</h3>
-                            <p className="text-gray-400 text-sm max-w-sm mb-6">Genera ideas de contenido, redacta copys y analiza tendencias en tiempo real.</p>
-                            <Link href="/dashboard/community/agent">
-                                <button className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-colors shadow-lg shadow-indigo-600/20">
-                                    Abrir Chat Interactivo
-                                </button>
-                            </Link>
                         </div>
                     </div>
 
-                    {/* Recent Alerts / Updates */}
-                    <div>
-                        <h3 className="text-lg font-bold text-white mb-4">Actualizaciones Recientes</h3>
-                        <div className="space-y-3">
-                            {[1, 2].map((i) => (
-                                <div key={i} className="flex items-center gap-4 bg-[#0E0E18] border border-white/5 p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                                    <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                                    <div className="flex-1">
-                                        <div className="text-sm font-bold text-white">Contenido Pendiente de Aprobación</div>
-                                        <div className="text-xs text-gray-500">Hace 2 horas • Campaña Black Friday</div>
+                    {/* Production Feed / Alerts */}
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-4">
+                            <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-2 italic">
+                                <Zap className="w-4 h-4 text-amber-500" /> Alertas de Producción
+                            </h3>
+                            <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest hover:text-white cursor-pointer transition-colors">Ver Todo el Flujo</span>
+                        </div>
+                        <div className="space-y-4">
+                            {recentTasks.map((task, i) => (
+                                <motion.div 
+                                    key={i}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.1 * i }}
+                                    className="flex items-center gap-6 bg-white/[0.02] border border-white/5 p-5 rounded-3xl hover:bg-white/[0.05] transition-all cursor-pointer group"
+                                >
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border border-white/5 ${task.priority === 'high' ? 'bg-amber-500/10 text-amber-500' : 'bg-indigo-500/10 text-indigo-400'}`}>
+                                        <AlertCircle className="w-5 h-5" />
                                     </div>
-                                    <ChevronRight className="w-4 h-4 text-gray-600" />
-                                </div>
+                                    <div className="flex-1">
+                                        <div className="text-sm font-black text-white group-hover:text-indigo-400 transition-colors uppercase italic">{task.title}</div>
+                                        <div className="text-[10px] text-gray-600 font-bold uppercase tracking-widest mt-1">Status: {task.status} • Cliente: {task.client}</div>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-gray-700 group-hover:translate-x-2 transition-transform" />
+                                </motion.div>
                             ))}
                         </div>
                     </div>
                 </div>
 
-                {/* Right: Quick Actions & Team (1/3 width) */}
-                <div className="space-y-6">
-
-                    {/* Quick Nav */}
-                    <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-6">
-                        <h3 className="font-bold text-white mb-4 text-sm uppercase tracking-widest text-gray-500">Accesos Rápidos</h3>
-                        <div className="grid grid-cols-2 gap-3">
-                            {QUICK_ACTIONS.map(action => (
+                {/* Right Panel: Ecosystem Access & Team */}
+                <div className="space-y-8">
+                    {/* Visual Ecosystem Grid */}
+                    <div className="bg-[#0A0A1F] border border-white/5 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
+                        <h3 className="font-black text-white mb-6 text-xs uppercase tracking-[0.3em] text-gray-500 italic">Arquitectura Operativa</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            {[
+                                { id: 'strategy', icon: Share2, label: 'Estrategia', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                                { id: 'calendar', icon: CalendarIcon, label: 'Calendario', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+                                { id: 'content', icon: LayoutDashboard, label: 'Contenidos', color: 'text-orange-400', bg: 'bg-orange-500/10' },
+                                { id: 'reports', icon: FileText, label: 'Reportes', color: 'text-blue-400', bg: 'bg-blue-500/10' }
+                            ].map(item => (
                                 <Link
-                                    key={action.id}
-                                    href={`/dashboard/community/${action.id === 'content' ? 'contenidos' : action.id}`}
-                                    className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 text-center hover:scale-105 transition-transform ${action.color}`}
+                                    key={item.id}
+                                    href={`/dashboard/community/${item.id === 'content' ? 'contenidos' : item.id}`}
+                                    className={`p-6 rounded-[2rem] flex flex-col items-center justify-center gap-3 text-center transition-all hover:scale-105 ${item.bg} border border-white/5 hover:border-white/10 group`}
                                 >
-                                    <action.icon className="w-6 h-6" />
-                                    <span className="text-xs font-bold">{action.label}</span>
+                                    <item.icon className={`w-6 h-6 ${item.color} group-hover:scale-110 transition-transform`} />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-white/60 group-hover:text-white">{item.label}</span>
                                 </Link>
                             ))}
                         </div>
                     </div>
 
-                    {/* Team On Duty */}
-                    <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-white text-sm uppercase tracking-widest text-gray-500">Equipo Activo</h3>
-                            <span className="text-xs text-green-400 font-bold flex items-center gap-1">● Online</span>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" className="w-10 h-10 rounded-full bg-gray-800" alt="Avatar" />
-                                <div>
-                                    <div className="text-sm font-bold text-white">Roberto G.</div>
-                                    <div className="text-xs text-gray-500">Estratega Principal</div>
-                                </div>
-                                <button className="ml-auto p-2 bg-white/5 rounded-lg hover:bg-white/10 text-gray-400"><MessageSquare className="w-4 h-4" /></button>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Ana" className="w-10 h-10 rounded-full bg-gray-800" alt="Avatar" />
-                                <div>
-                                    <div className="text-sm font-bold text-white">Ana M.</div>
-                                    <div className="text-xs text-gray-500">Diseñadora Senior</div>
-                                </div>
-                                <button className="ml-auto p-2 bg-white/5 rounded-lg hover:bg-white/10 text-gray-400"><MessageSquare className="w-4 h-4" /></button>
+                    {/* Team - Online Status */}
+                    <div className="bg-[#0A0A1F] border border-white/5 rounded-[2.5rem] p-8">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="font-black text-white text-xs uppercase tracking-[0.3em] text-gray-500 italic">Nodos Activos</h3>
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Global Link</span>
                             </div>
                         </div>
-                        <Link href="/dashboard/community/team">
-                            <button className="w-full mt-6 py-3 bg-white/5 border border-white/5 rounded-xl text-xs font-bold text-white hover:bg-white/10 transition-colors">
-                                Ver Todo el Equipo
-                            </button>
-                        </Link>
+                        <div className="space-y-6">
+                            {[
+                                { name: 'Roberto G.', role: 'Estratega Senior', img: 'Felix' },
+                                { name: 'Ana M.', role: 'Art Director', img: 'Ana' }
+                            ].map((member, i) => (
+                                <div key={i} className="flex items-center gap-4 group cursor-pointer">
+                                    <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 p-0.5 group-hover:scale-110 transition-transform">
+                                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.img}`} className="w-full h-full rounded-[14px] object-cover" alt="Avatar" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="text-sm font-black text-white group-hover:text-indigo-400 transition-colors uppercase italic">{member.name}</div>
+                                        <div className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">{member.role}</div>
+                                    </div>
+                                    <button className="p-2 bg-white/5 rounded-xl text-gray-600 group-hover:text-indigo-400 group-hover:bg-indigo-500/10 transition-all">
+                                        <MessageSquare className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <button className="w-full mt-8 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-[9px] font-black uppercase tracking-[0.4em] text-gray-600 hover:text-white hover:bg-white/5 transition-all">
+                            Sincronizar Equipo
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
+    );
+}
+
+function ArrowRight({ className }) {
+    return (
+        <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
     );
 }

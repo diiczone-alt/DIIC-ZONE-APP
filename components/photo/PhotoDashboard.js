@@ -6,8 +6,10 @@ import {
     Calendar, MapPin, Camera, Printer, Share2, MoreHorizontal,
     CheckCircle, Aperture, HardDrive, Eye, ArrowUpRight
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function PhotoDashboard({ activeProject, onBack }) {
+    const { user } = useAuth();
 
     // Status Flow
     const STEPS = [
@@ -137,10 +139,12 @@ export default function PhotoDashboard({ activeProject, onBack }) {
                         <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Production Crew</h3>
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-white text-xs font-bold">JD</div>
+                                <div className="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-white text-xs font-bold">
+                                    {(user?.user_metadata?.full_name || 'DZ').substring(0, 2).toUpperCase()}
+                                </div>
                                 <div>
-                                    <div className="text-sm font-bold text-white">John Doe</div>
-                                    <div className="text-[10px] text-pink-400 uppercase font-bold">Lead Photographer</div>
+                                    <div className="text-sm font-bold text-white">{user?.user_metadata?.full_name || 'DIIC Photographer'}</div>
+                                    <div className="text-[10px] text-pink-400 uppercase font-bold">Production Hub</div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">

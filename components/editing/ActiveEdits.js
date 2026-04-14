@@ -1,62 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Clock, Scissors, CheckCircle2, PlayCircle,
     MoreHorizontal, FileVideo, LayoutGrid, List, AlertCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
 
 export default function ActiveEdits({ onNewProject }) {
     const [viewMode, setViewMode] = useState('grid');
     const [filter, setFilter] = useState('all');
+    const [edits, setEdits] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock Data
-    const EDITS = [
-        {
-            id: 1,
-            title: 'Vlog Semanal #42',
-            type: 'YouTube (10-15min)',
-            status: 'editing',
-            version: 'Corte Inicial',
-            date: 'Hoy',
-            progress: 45
-        },
-        {
-            id: 2,
-            title: 'Entrevista Podcast CEO',
-            type: 'Video Podcast',
-            status: 'review',
-            version: 'V2',
-            date: 'Ayer',
-            progress: 90
-        },
-        {
-            id: 3,
-            title: 'Reels Producto X (Pack 3)',
-            type: 'Social Vertical',
-            status: 'queue',
-            version: '-',
-            date: 'Hace 2 días',
-            progress: 0
-        },
-        {
-            id: 4,
-            title: 'Evento Fin de Año',
-            type: 'Aftermovie',
-            status: 'ready',
-            version: 'Final Master',
-            date: 'Semana Pasada',
-            progress: 100
-        }
-    ];
+    useEffect(() => {
+        const fetchEdits = async () => {
+            setLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .eq('assigned_role', 'editor')
+                    .order('created_at', { ascending: false });
+
+                if (data) {
+                    setEdits(data.map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        type: t.client || 'Proyecto Interno',
+                        status: t.status || 'queue',
+                        version: t.priority === 'high' ? 'PRIORIDAD ALTA' : 'Estándar',
+                        date: new Date(t.created_at).toLocaleDateString(),
+                        progress: t.status === 'completed' ? 100 : t.status === 'in-progress' ? 65 : 10
+                    })));
+                }
+            } catch (err) {
+                console.error('Error fetching edits:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEdits();
+    }, []);
 
     const getStatusConfig = (status) => {
         switch (status) {
             case 'queue': return { label: 'En Cola', color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: Clock };
-            case 'editing': return { label: 'En Edición', color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/20', icon: Scissors };
+            case 'editing': 
+            case 'in-progress': return { label: 'En Edición', color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/20', icon: Scissors };
             case 'review': return { label: 'Control Calidad', color: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500/20', icon: AlertCircle };
-            case 'ready': return { label: 'Listo para Revisar', color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/20', icon: CheckCircle2 };
+            case 'ready': 
+            case 'completed': return { label: 'Listo/Entregado', color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/20', icon: CheckCircle2 };
             default: return { label: 'Pendiente', color: 'text-gray-500', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: Clock };
         }
     };
@@ -71,18 +67,21 @@ export default function ActiveEdits({ onNewProject }) {
         </button>
     );
 
-    const filteredEdits = filter === 'all' ? EDITS : EDITS.filter(e => e.status === filter);
+    const filteredEdits = filter === 'all' ? edits : edits.filter(e => e.status === filter);
+
+    if (loading) {
+        return <div className="p-20 text-center text-gray-500 font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando Proyectos...</div>;
+    }
 
     return (
         <div className="space-y-6">
             {/* Header Controls */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                 <div className="flex items-center gap-2 overflow-x-auto w-full pb-2 xl:pb-0 hide-scrollbar">
-                    <StatusTab id="all" label="Todos" count={EDITS.length} active={filter === 'all'} />
-                    <StatusTab id="queue" label="En Cola" count={1} active={filter === 'queue'} />
-                    <StatusTab id="editing" label="En Sala" count={1} active={filter === 'editing'} />
-                    <StatusTab id="review" label="Control Calidad" count={1} active={filter === 'review'} />
-                    <StatusTab id="ready" label="Listos" count={1} active={filter === 'ready'} />
+                    <StatusTab id="all" label="Todos" count={edits.length} active={filter === 'all'} />
+                    <StatusTab id="queue" label="En Cola" count={edits.filter(e => e.status === 'queue').length} active={filter === 'queue'} />
+                    <StatusTab id="editing" label="En Sala" count={edits.filter(e => e.status === 'editing' || e.status === 'in-progress').length} active={filter === 'editing'} />
+                    <StatusTab id="ready" label="Listos" count={edits.filter(e => e.status === 'ready' || e.status === 'completed').length} active={filter === 'ready'} />
                 </div>
 
                 <div className="flex items-center gap-3 w-full xl:w-auto justify-end">
@@ -90,17 +89,20 @@ export default function ActiveEdits({ onNewProject }) {
                         <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-500'}`}><LayoutGrid className="w-4 h-4" /></button>
                         <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-500'}`}><List className="w-4 h-4" /></button>
                     </div>
-                    <button
-                        onClick={onNewProject}
-                        className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-purple-600/20 transition-colors"
-                    >
-                        <Scissors className="w-4 h-4" /> Nuevo Encargo
-                    </button>
                 </div>
             </div>
 
-            {/* Grid View */}
-            {viewMode === 'grid' ? (
+            {filteredEdits.length === 0 ? (
+                <div className="bg-white/[0.02] border border-dashed border-white/10 rounded-[2.5rem] p-20 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-6">
+                        <FileVideo className="w-8 h-8 text-gray-600" />
+                    </div>
+                    <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-2">Sin proyectos en esta área</h3>
+                    <p className="text-sm text-gray-500 font-bold max-w-xs uppercase tracking-widest leading-loose">
+                        No hay tareas de edición asignadas en este momento.
+                    </p>
+                </div>
+            ) : viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {filteredEdits.map((project) => {
                         const status = getStatusConfig(project.status);
@@ -128,7 +130,7 @@ export default function ActiveEdits({ onNewProject }) {
 
                                 <div className="bg-black/30 rounded-xl p-3 border border-white/5 mb-4 space-y-2">
                                     <div className="flex justify-between text-xs text-gray-400">
-                                        <span>Versión Actual</span>
+                                        <span>Estado Operativo</span>
                                         <span className="text-white font-mono">{project.version}</span>
                                     </div>
                                     <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">

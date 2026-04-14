@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     Calendar, MapPin, Clock, ChevronLeft, CheckSquare,
@@ -10,7 +10,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ShootDetailPage({ params }) {
-    const { shootId } = params;
+    const { shootId } = use(params);
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('brief');
 

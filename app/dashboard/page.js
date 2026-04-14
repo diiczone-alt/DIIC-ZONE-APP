@@ -11,8 +11,7 @@ import {
   ChevronRight, TrendingUp, PieChart, Video, 
   Palette, FileText, ArrowRight, Settings, LogOut, User, Shield
 } from 'lucide-react';
-import { agencyService } from '@/services/agencyService';
-import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 // ─── Stat Card Component ─────────────────────────────────────────
 function StatCard({ title, value, delta, icon: Icon, color, chartData }) {
@@ -96,7 +95,7 @@ function ProductionItem({ title, type, progress, color, time, icon: Icon }) {
               <p className="text-sm font-black text-white">{title}</p>
               <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: color }}>{type}</p>
            </div>
-           <span className="text-[10px] font-bold text-gray-600"> Hace {time}</span>
+           <span className="text-[10px] font-bold text-gray-600"> {time}</span>
         </div>
         
         <div className="space-y-1.5">
@@ -149,40 +148,61 @@ function DonutChart({ value, label, color, icon: Icon }) {
 
 // ─── Reverted Dashboard Content ──────────────────────────────────
 function DashboardContent() {
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const clientId = searchParams.get('client');
+  
   const [clientData, setClientData] = useState(null);
   const [production, setProduction] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Header States
-  const [activeDropdown, setActiveDropdown] = useState(null); // 'notif' | 'msg' | 'profile' | null
+  const [activeDropdown, setActiveDropdown] = useState(null);
 
   useEffect(() => {
-    // Resolve client data
-    if (clientId) {
-      const data = agencyService.getClientById(clientId);
-      if (data) setClientData(data);
-    }
-  }, [clientId]);
+    const fetchData = async () => {
+        if (!user) return;
+        setLoading(true);
+        
+        try {
+            // 1. Get Client Info
+            const targetClientId = user.client_id || searchParams.get('client');
+            
+            if (targetClientId) {
+                const { data: client, error: clientErr } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .eq('id', targetClientId)
+                    .single();
+                
+                if (client) setClientData(client);
+            }
 
-  useEffect(() => {
-    const loadProduction = async () => {
-       // In a real scenario, we'd pass the current client ID
-       const data = await agencyService.getTasks('client');
-       setProduction(data.map(t => ({
-          title: t.title,
-          type: t.priority === 'high' ? 'Urgente' : 'Edición',
-          progress: t.status === 'completed' ? 100 : t.status === 'in-progress' ? 65 : 10,
-          color: t.priority === 'high' ? '#f59e0b' : '#3b82f6',
-          time: '2h',
-          icon: Play
-       })));
-       setLoading(false);
+            // 2. Get Tasks (filtered by client if necessary)
+            let taskQuery = supabase.from('tasks').select('*');
+            if (user.role === 'CLIENT' && user.client_id) {
+                taskQuery = taskQuery.eq('client_id', user.client_id);
+            }
+
+            const { data: tasks, error: taskErr } = await taskQuery.order('created_at', { ascending: false });
+
+            if (tasks) {
+                setProduction(tasks.map(t => ({
+                    title: t.title,
+                    type: t.priority === 'high' ? 'Urgente' : 'Edición',
+                    progress: t.status === 'completed' ? 100 : t.status === 'in-progress' ? 65 : 10,
+                    color: t.priority === 'high' ? '#f59e0b' : '#3b82f6',
+                    time: new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    icon: Play
+                })));
+            }
+        } catch (err) {
+            console.error('Error fetching dashboard data:', err);
+        } finally {
+            setLoading(false);
+        }
     };
-    loadProduction();
-  }, []);
+
+    fetchData();
+  }, [user, searchParams]);
 
   const stats = [
     { title: 'Interacciones Totales', value: '24,519', delta: '+12.5%', icon: Activity, color: '#6366f1', chartData: "M 0,35 Q 25,10 50,30 T 100,0" },
@@ -246,8 +266,12 @@ function DashboardContent() {
               className={`flex items-center gap-4 px-2 py-1.5 rounded-2xl cursor-pointer transition-all border ${activeDropdown === 'profile' ? 'bg-white/10 border-white/20' : 'hover:bg-white/5 border-transparent'}`}
             >
                <div className="text-right hidden sm:block">
-                  <p className="text-[9px] font-black text-white uppercase tracking-widest leading-none">Cliente</p>
-                  <p className="text-[7px] font-bold text-emerald-400 uppercase tracking-tighter mt-1 opacity-70">Empresarial</p>
+                  <p className="text-[9px] font-black text-white uppercase tracking-widest leading-none">
+                     {user?.user_metadata?.full_name || user?.full_name || 'Usuario'}
+                  </p>
+                  <p className="text-[7px] font-bold text-emerald-400 uppercase tracking-tighter mt-1 opacity-70">
+                     {user?.user_metadata?.brand || 'Cliente Empresarial'}
+                  </p>
                </div>
                <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/20 p-0.5 bg-gradient-to-br from-indigo-500/20 to-purple-500/20">
                   <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" className="w-full h-full rounded-[8px] object-cover" alt="User" />
@@ -316,11 +340,13 @@ function DashboardContent() {
                     <div className="p-2">
                        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white mb-2 relative overflow-hidden">
                           <div className="relative z-10 space-y-1">
-                             <h3 className="text-lg font-black italic tracking-tighter uppercase">Cliente Elite</h3>
-                             <p className="text-[9px] font-bold opacity-80 uppercase tracking-widest leading-none">ID: CLIENT-001 • GESTIÓN ACTIVA</p>
+                             <h3 className="text-lg font-black italic tracking-tighter uppercase">{user?.user_metadata?.full_name || user?.full_name || 'DIIC User'}</h3>
+                             <p className="text-[9px] font-bold opacity-80 uppercase tracking-widest leading-none">
+                                {user?.role === 'CLIENT' ? `MARCA: ${user?.user_metadata?.brand || 'DIIC ZONE'}` : `TALENTO: ${user?.role || 'PROF'}`} • {user?.user_metadata?.city || 'Global'}
+                             </p>
                              <div className="pt-4 flex items-center gap-2">
                                 <Shield className="w-4 h-4 text-white/60" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Suscripción Pro</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest">{user?.role === 'CLIENT' ? 'CLIENTE PRO' : 'COLABORADOR'}</span>
                              </div>
                           </div>
                           {/* Ambient glow */}
@@ -344,7 +370,7 @@ function DashboardContent() {
                           </button>
                           <div className="my-2 border-t border-white/5 h-0" />
                           <button 
-                             onClick={() => { localStorage.clear(); window.location.href = '/login'; }}
+                             onClick={() => { localStorage.clear(); window.location.href = '/'; }}
                              className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-rose-500/10 transition-all text-rose-500 group"
                           >
                              <LogOut className="w-4 h-4" />
@@ -374,14 +400,14 @@ function DashboardContent() {
             
             <div className="relative">
                <h1 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter leading-none select-none">
-                  Ecosistema <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">{clientData?.name || 'Digital'}.</span>
+                  ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">{(user?.user_metadata?.full_name || user?.full_name || 'Creativo').split(' ')[0]}</span>.
                </h1>
                {/* Subtle title glow */}
                <div className="absolute -top-4 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-[80px] -z-10" />
             </div>
 
             <p className="text-sm md:text-base font-bold text-gray-400 max-w-xl leading-relaxed">
-               Tu centro de mando operativo se encuentra al <span className="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.3)]">98% de salud total</span>. 
+               Bienvenido a tu <span className="text-indigo-400">Ecosistema {clientData?.name || 'Digital'}</span>. Tu centro de mando operativo se encuentra al <span className="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.3)]">98% de salud total</span>. 
                <span className="text-gray-600 block text-xs mt-1 uppercase tracking-widest font-black">Sincronización de nodos completa.</span>
             </p>
          </div>

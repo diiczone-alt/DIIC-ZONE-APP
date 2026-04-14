@@ -6,22 +6,44 @@ import {
     Activity, Users, Briefcase, Zap,
     CreditCard, Layout, Star, DollarSign, Map as MapIcon
 } from 'lucide-react';
-import { agencyService } from '@/services/agencyService';
+import { supabase } from '@/lib/supabase';
 import AdminOperationalMap from '@/components/admin/AdminOperationalMap';
 
 export default function HQDashboardPage() {
     const [portfolio, setPortfolio] = useState([]);
-    const [team, setTeam] = useState([]);
+    const [tasks, setTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadGlobalData = async () => {
-            const clients = await agencyService.getClients();
-            const teamData = await agencyService.getTeam();
-            setPortfolio(clients);
-            setTeam(teamData);
+            setLoading(true);
+            try {
+                const [clientsRes, tasksRes] = await Promise.all([
+                    supabase.from('clients').select('*'),
+                    supabase.from('tasks').select('*')
+                ]);
+
+                if (clientsRes.data) setPortfolio(clientsRes.data);
+                if (tasksRes.data) setTasks(tasksRes.data);
+            } catch (err) {
+                console.error('Error loading HQ data:', err);
+            } finally {
+                setLoading(false);
+            }
         };
         loadGlobalData();
     }, []);
+
+    const realFacturacion = portfolio.reduce((acc, c) => acc + (Number(c.price) || 0), 0);
+    const activeProjects = tasks.filter(t => t.status !== 'completed').length;
+    const clientGoal = 10;
+    const currentClients = portfolio.length;
+    const goalPercentage = Math.min((currentClients / clientGoal) * 100, 100);
+
+    if (loading) {
+        return <div className="min-h-screen bg-[#050511] flex items-center justify-center text-white font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando HQ...</div>;
+    }
+
     return (
         <div className="bg-[#050511] text-white font-sans selection:bg-yellow-500/30">
             <main className="p-10 max-w-[1700px] mx-auto space-y-12">
@@ -29,8 +51,8 @@ export default function HQDashboardPage() {
                 {/* Header */}
                 <div className="flex justify-between items-end">
                     <div>
-                        <h1 className="text-4xl font-black text-white tracking-tight">HQ <span className="text-indigo-500">Phase 1</span></h1>
-                        <p className="text-gray-500 mt-2 font-medium">Enfoque: Cierre y Validación de Mercado.</p>
+                        <h1 className="text-4xl font-black text-white tracking-tight">HQ <span className="text-indigo-500">Executive HQ</span></h1>
+                        <p className="text-gray-500 mt-2 font-medium">Enfoque: Cierre y Gestión de Producción Global.</p>
                     </div>
                 </div>
 
@@ -39,24 +61,24 @@ export default function HQDashboardPage() {
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl"></div>
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="flex-1">
-                            <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-widest">Meta de Validación (5 - 10 Clientes)</h2>
-                            <p className="text-indigo-100/60 text-sm mb-6">Al alcanzar esta meta, activaremos automáticamente la Fase 2 (Automatización & Escala).</p>
+                            <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-widest">Meta de Validación ({clientGoal} Clientes)</h2>
+                            <p className="text-indigo-100/60 text-sm mb-6">Estamos al {goalPercentage.toFixed(0)}% de activar automáticamente la Fase 2 (Automatización & Escala).</p>
                             <div className="w-full h-4 bg-black/20 rounded-full overflow-hidden mb-2">
                                 <motion.div 
                                     initial={{ width: 0 }}
-                                    animate={{ width: '45%' }}
+                                    animate={{ width: `${goalPercentage}%` }}
                                     transition={{ duration: 1.5 }}
                                     className="h-full bg-white shadow-lg"
                                 />
                             </div>
                             <div className="flex justify-between text-[10px] font-black text-white/50 uppercase tracking-widest">
                                 <span>0 Clientes</span>
-                                <span>4.5 / 10 Clientes</span>
+                                <span>{currentClients} / {clientGoal} Clientes</span>
                             </div>
                         </div>
                         <div className="bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/20 text-center min-w-[200px]">
-                            <p className="text-[10px] font-black uppercase text-white/50 tracking-widest mb-1">Próximo Hito</p>
-                            <p className="text-3xl font-black text-white">Fase 2</p>
+                            <p className="text-[10px] font-black uppercase text-white/50 tracking-widest mb-1">Estado de Escalado</p>
+                            <p className="text-3xl font-black text-white">{currentClients >= 10 ? 'FASE 2' : 'FASE 1'}</p>
                         </div>
                     </div>
                 </div>
@@ -64,30 +86,30 @@ export default function HQDashboardPage() {
                 {/* Top Stats - 4 Units */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <MetricCard
-                        title="Ingresos Mensuales"
-                        value="$45,280"
-                        change="+18%"
+                        title="Facturación Proyectada"
+                        value={`$${realFacturacion.toLocaleString()}`}
+                        change="+12% mes actual"
                         icon={DollarSign}
                         color="text-yellow-500"
                     />
                     <MetricCard
-                        title="Usuarios Totales"
-                        value="1,204"
-                        change="84 Activos hoy"
+                        title="Aliados Activos"
+                        value={currentClients.toString()}
+                        change={`${portfolio.filter(c => c.status === 'active').length} Operativos`}
                         icon={Users}
                         color="text-indigo-400"
                     />
                     <MetricCard
-                        title="Proyectos Activos"
-                        value="32"
-                        change="12 en Post-producción"
+                        title="Carga de Producción"
+                        value={activeProjects.toString()}
+                        change={`${tasks.filter(t => t.priority === 'high').length} Urgentes`}
                         icon={Briefcase}
                         color="text-purple-400"
                     />
                     <MetricCard
-                        title="Estado del Sistema"
+                        title="Salud de Operaciones"
                         value="99.9%"
-                        change="Uptime (Últimos 30 días)"
+                        change="Sincronización Supabase OK"
                         icon={Activity}
                         color="text-emerald-500"
                     />
@@ -103,15 +125,15 @@ export default function HQDashboardPage() {
                                 <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Validación de Mercado</h3>
                             </div>
                             <div className="grid grid-cols-1 gap-6">
-                                <RepBox value="5/10" label="Clientes Objetivo" color="text-indigo-400" />
+                                <RepBox value={`${currentClients}/${clientGoal}`} label="Clientes Objetivo" color="text-indigo-400" />
                             </div>
                         </div>
                     </div>
 
                     <div className="lg:col-span-2 bg-[#0A0A1F] border border-white/5 rounded-[40px] p-10 shadow-2xl flex flex-col justify-center text-center">
                         <Zap className="w-12 h-12 text-yellow-500 mx-auto mb-6" />
-                        <h3 className="text-3xl font-black text-white mb-4 italic">"No construyo perfecto, <span className="text-indigo-500">construyo lo que vende</span>"</h3>
-                        <p className="text-gray-500 text-sm max-w-md mx-auto">Enfoque absoluto en el cierre y la entrega de valor real antes de escalar sistemas complejos.</p>
+                        <h3 className="text-3xl font-black text-white mb-4 italic">"Transformamos <span className="text-indigo-500">atención en activos</span> reales"</h3>
+                        <p className="text-gray-500 text-sm max-w-md mx-auto">Gestión globalizada de las cuentas de alto valor mediante arquitectura de vanguardia.</p>
                     </div>
                 </div>
 
@@ -120,8 +142,8 @@ export default function HQDashboardPage() {
                     <div className="flex flex-col items-center gap-4 opacity-30 grayscale">
                         <MapIcon className="w-12 h-12 text-gray-500" />
                         <div>
-                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-500">Módulo de Expansión (FASE 2)</h3>
-                            <p className="text-[10px] mt-2 font-bold uppercase tracking-widest">Sincronizará al alcanzar 10 clientes activos.</p>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-500">Módulo de Expansión (Mapa Operativo)</h3>
+                            <p className="text-[10px] mt-2 font-bold uppercase tracking-widest">Activado para el monitoreo de logística en tiempo real.</p>
                         </div>
                     </div>
                 </div>

@@ -13,12 +13,12 @@ export default function HQSidebar() {
     const pathname = usePathname();
 
     const menuItems = [
-        { icon: Layout, label: 'God Mode', href: '/dashboard/hq', color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
+        { icon: Layout, label: 'GOD MODE', href: '/dashboard/hq', color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
         { icon: Users, label: 'Clientes', href: '/dashboard/hq/clients', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
         { icon: DollarSign, label: 'Finanzas', href: '/dashboard/hq/payments', color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
         { icon: Shield, label: 'Equipo', href: '/dashboard/hq/team', color: 'text-rose-400', bg: 'bg-rose-400/10' },
         { icon: Package, label: 'Servicios', href: '/dashboard/hq/services', color: 'text-purple-400', bg: 'bg-purple-400/10' },
-        { icon: Activity, label: 'Control', href: '/dashboard/hq/control', color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
+        { icon: Activity, label: 'Control Maestro', href: '/dashboard/hq/control', color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
     ];
 
     return (
@@ -59,6 +59,22 @@ export default function HQSidebar() {
                 })}
             </nav>
 
+            {/* System Status - Migrated from Legacy Admin */}
+            <div className="px-6 mb-4">
+                <div className="bg-black/20 rounded-2xl p-4 border border-white/5 relative overflow-hidden group/load">
+                    <div className="flex justify-between items-center mb-3">
+                        <span className="text-[9px] text-gray-500 uppercase font-black tracking-[0.2em]">System Core</span>
+                        <span className="text-[9px] text-emerald-400 font-black uppercase tracking-[0.2em] flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Online
+                        </span>
+                    </div>
+                    <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full w-[12%] bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+                    </div>
+                </div>
+            </div>
+
             {/* User Profile / Logout */}
             <div className="p-6 border-t border-white/5 bg-black/20 pb-10">
                 <div className="flex items-center gap-3 w-full px-4 py-3 mb-2">
@@ -74,7 +90,7 @@ export default function HQSidebar() {
                 <button
                     onClick={() => {
                         localStorage.clear();
-                        window.location.href = '/login';
+                        window.location.href = '/';
                     }}
                     className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all group font-black uppercase text-[10px] tracking-[0.2em] border border-rose-500/20"
                 >

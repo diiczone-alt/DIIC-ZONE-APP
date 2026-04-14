@@ -11,13 +11,15 @@ import { motion } from 'framer-motion';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { login } = useAuth();
+    const { login, signInWithGoogle, resetPassword } = useAuth();
     
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -30,21 +32,59 @@ export default function LoginPage() {
             const { role } = await login(email, password);
             console.log('[LoginPage] login() returned role:', role);
             
-            // Redirect happens here, so we DON'T set loading to false. We let it stay 'Verificando...' while router navigates!
-            if (role === 'ADMIN') {
-                console.log('[LoginPage] pushing to /admin/strategy/map');
-                router.push('/admin/strategy/map');
-            } else if (role === 'CLIENT') {
-                console.log('[LoginPage] pushing to /dashboard');
+            // Redirect logic aligned with production routes
+            // Defensive role check
+            const safeRole = role || 'CLIENT';
+            const lowerRole = safeRole.toLowerCase();
+            
+            if (safeRole === 'ADMIN') {
+                console.log('[LoginPage] Redirecting to Agency HQ');
+                router.push('/dashboard/hq');
+            } else if (safeRole === 'CLIENT') {
+                console.log('[LoginPage] Redirecting to Client Dashboard');
                 router.push('/dashboard');
+            } else if (['community', 'filmmaker', 'design', 'editing', 'audio'].includes(lowerRole)) {
+                console.log(`[LoginPage] Redirecting to ${safeRole} Workstation`);
+                router.push(`/dashboard/${lowerRole}`);
             } else {
-                console.log(`[LoginPage] pushing to /dashboard/creative-zone/${role.toLowerCase()}`);
-                router.push(`/dashboard/creative-zone/${role.toLowerCase()}`);
+                console.log('[LoginPage] Redirecting to generic Dashboard');
+                router.push('/dashboard');
             }
         } catch (err) {
             console.error('[LoginPage] Login failed:', err);
             setError('Credenciales incorrectas o acceso no autorizado.');
-            setLoading(false); // Only stop loading if there was an actual error
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResetPassword = async () => {
+        if (!email) {
+            setError('Por favor, ingresa tu correo electrónico.');
+            return;
+        }
+        setError('');
+        setSuccess('');
+        setResetLoading(true);
+        try {
+            await resetPassword(email);
+            setSuccess('Se ha enviado un enlace de recuperación a tu correo.');
+        } catch (err) {
+            console.error('Reset failed:', err);
+            setError('Error al enviar el correo de recuperación.');
+        } finally {
+            setResetLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        try {
+            await signInWithGoogle();
+        } catch (err) {
+            console.error('Google login failed:', err);
+            setError('Error al conectar con Google.');
+            setLoading(false);
         }
     };
 
@@ -69,6 +109,12 @@ export default function LoginPage() {
                         {error && (
                             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-medium text-center">
                                 {error}
+                            </div>
+                        )}
+
+                        {success && (
+                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm font-medium text-center">
+                                {success}
                             </div>
                         )}
                         
@@ -107,6 +153,17 @@ export default function LoginPage() {
                             </button>
                         </div>
 
+                        <div className="flex justify-end mt-2">
+                            <button
+                                type="button"
+                                onClick={handleResetPassword}
+                                disabled={resetLoading}
+                                className="text-[10px] font-bold text-gray-500 hover:text-indigo-400 uppercase tracking-widest transition-all"
+                            >
+                                {resetLoading ? 'Enviando...' : '¿Olvidaste tu contraseña?'}
+                            </button>
+                        </div>
+
                         <button 
                             type="submit" 
                             disabled={loading}
@@ -114,6 +171,36 @@ export default function LoginPage() {
                         >
                             {loading ? 'Verificando...' : 'Acceder al Sistema'} <ArrowRight className="w-4 h-4" />
                         </button>
+
+                        <div className="relative py-4">
+                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
+                            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#0E0E18] px-2 text-gray-600 font-bold tracking-widest">O continúa con</span></div>
+                        </div>
+
+                        <button 
+                            type="button"
+                            onClick={handleGoogleLogin}
+                            disabled={loading}
+                            className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-4 py-3.5 font-bold transition-all flex items-center justify-center gap-3 group"
+                        >
+                            <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                                <path fill="#EA4335" d="M12 5.04c1.94 0 3.14.83 3.88 1.52l2.84-2.84C16.96 2.11 14.7 1 12 1 7.48 1 3.66 3.62 1.88 7.37l3.37 2.61C6.07 7.02 8.81 5.04 12 5.04z" />
+                                <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58l3.71 2.88c2.16-1.99 3.71-4.92 3.71-8.7z" />
+                                <path fill="#FBBC05" d="M5.25 14.76c-.26-.76-.41-1.57-.41-2.41s.15-1.65.41-2.41L1.88 7.37C1.21 8.78.82 10.35.82 12s.39 3.22 1.06 4.63l3.37-2.61z" />
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.71-2.88c-1.01.68-2.31 1.08-3.57 1.08-3.19 0-5.93-1.98-6.91-4.93l-3.37 2.61C3.66 20.38 7.48 23 12 23z" />
+                            </svg>
+                            Ingresar con Google
+                        </button>
+
+                        <div className="pt-4 border-t border-white/5 mt-4 text-center">
+                            <button
+                                type="button"
+                                onClick={() => router.push('/onboarding?type=client')}
+                                className="text-gray-500 hover:text-indigo-400 text-xs font-black uppercase tracking-widest transition-all"
+                            >
+                                ¿Sin cuenta? Crear Nueva Identidad
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>

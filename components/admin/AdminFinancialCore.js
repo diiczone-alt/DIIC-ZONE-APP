@@ -1,17 +1,36 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     DollarSign, TrendingUp, PieChart, BarChart3,
     ArrowUpRight, ArrowDownRight, Wallet,
     CreditCard, Users, Briefcase, Cpu,
-    ShieldCheck, Calendar, Filter, Download
+    ShieldCheck, Calendar, Filter, Download,
+    Target, Zap, Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { agencyService } from '@/services/agencyService';
 
 export default function AdminFinancialCore() {
     const [activeTab, setActiveTab] = useState('revenue');
+    const [financial, setFinancial] = useState(null);
+    const [scale, setScale] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const [fin, sc] = await Promise.all([
+                agencyService.getFinancialSummary(),
+                agencyService.getScaleData()
+            ]);
+            setFinancial(fin);
+            setScale(sc);
+            setLoading(false);
+        };
+        fetchData();
+    }, []);
+
+    const metrics = financial?.metrics || { income: 0, variable_costs: 0, gross_profit: 0, gross_margin: 0 };
+    const netProfit = scale?.net_profit || 0;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 text-left">
@@ -21,24 +40,24 @@ export default function AdminFinancialCore() {
                     <h2 className="text-2xl font-black text-white flex items-center gap-2">
                         <Wallet className="w-7 h-7 text-emerald-500" /> Núcleo Financiero Admin
                     </h2>
-                    <p className="text-gray-400 text-sm">Control total de flujo, splits y rentabilidad de DIIC ZONE</p>
+                    <p className="text-gray-400 text-sm">Control total de flujo, sueldos y rentabilidad de DIIC ZONE</p>
                 </div>
                 <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-gray-300 hover:bg-white/10 transition-all">
+                    <button onClick={() => toast.info("Generando reporte...")} className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-gray-300 hover:bg-white/10 transition-all">
                         <Download className="w-4 h-4" /> Exportar Reporte
                     </button>
                     <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-black rounded-xl text-xs font-black hover:bg-emerald-400 transition-all">
-                        <Filter className="w-4 h-4" /> Periodo: Enero 2026
+                        <Filter className="w-4 h-4" /> Periodo: Real-Time
                     </button>
                 </div>
             </div>
 
             {/* QUICK STATS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <FinCard label="Ingresos Totales" value="$18,450" trend="+15.2%" up={true} icon={DollarSign} color="emerald" />
-                <FinCard label="Costos Operativos" value="$4,200" trend="-2.4%" up={false} icon={ArrowDownRight} color="red" />
-                <FinCard label="Utilidad Neta" value="$14,250" trend="+18.1%" up={true} icon={TrendingUp} color="blue" />
-                <FinCard label="Margen Promedio" value="77.2%" trend="+3.5%" up={true} icon={PieChart} color="purple" />
+                <FinCard label="Ingresos Totales (MRR)" value={`$${metrics.income?.toLocaleString()}`} trend="Real" up={true} icon={DollarSign} color="emerald" />
+                <FinCard label="Costos Operativos" value={`$${metrics.variable_costs?.toLocaleString()}`} trend="Production" up={false} icon={ArrowDownRight} color="red" />
+                <FinCard label="Utilidad Neta Real" value={`$${netProfit?.toLocaleString()}`} trend="Net" up={netProfit > 0} icon={TrendingUp} color="blue" />
+                <FinCard label="Margen Bruto" value={`${metrics.gross_margin}%`} trend="Target 50%" up={metrics.gross_margin >= 50} icon={PieChart} color="purple" />
             </div>
 
             {/* MODULE NAVIGATION */}
@@ -53,11 +72,11 @@ export default function AdminFinancialCore() {
             {/* CONTENT AREA */}
             <div className="min-h-[500px]">
                 <AnimatePresence mode="wait">
-                    {activeTab === 'revenue' && <RevenueModule key="revenue" />}
+                    {activeTab === 'revenue' && <RevenueModule key="revenue" data={financial?.transactions || []} />}
                     {activeTab === 'distribution' && <DistributionModule key="dist" />}
-                    {activeTab === 'costs' && <CostsModule key="costs" />}
-                    {activeTab === 'profit' && <ProfitModule key="profit" />}
-                    {activeTab === 'projection' && <ProjectionModule key="proj" />}
+                    {activeTab === 'costs' && <CostsModule key="costs" scale={scale} />}
+                    {activeTab === 'profit' && <ProfitModule key="profit" metrics={metrics} scale={scale} />}
+                    {activeTab === 'projection' && <ProjectionModule key="proj" scale={scale} />}
                 </AnimatePresence>
             </div>
         </div>
@@ -231,87 +250,96 @@ function ProfitModule() {
     );
 }
 
-function ProjectionModule() {
-    const goals = [
-        {
-            time: "1 AÑO",
-            phase: "Fundación",
-            status: "current",
-            color: "emerald",
-            objectives: ["App funcional & CRM", "Validar Nodos Piloto", "Breakeven Operativo"]
-        },
-        {
-            time: "3 AÑOS",
-            phase: "Expansión",
-            status: "upcoming",
-            color: "indigo",
-            objectives: ["Escala de Red Nacional", "IA Administrativa Pro", "Utilidad de Reinversión"]
-        },
-        {
-            time: "5 AÑOS",
-            phase: "Sistema",
-            status: "vision",
-            color: "purple",
-            objectives: ["Plataforma SaaS Líder", "Infraestructura Nacional", "Máximo Margen Neto"]
-        }
-    ];
+function ProjectionModule({ scale }) {
+    if (!scale) return null;
+
+    const breakEvenPercent = Math.min((scale.net_profit / scale.fixed_total) * 100 + 100, 100);
+    const capacityPercent = scale.capacity?.percent || 0;
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
-            <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-3xl p-10 text-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-transparent pointer-events-none" />
-                <div className="relative z-10">
-                    <TrendingUp className="w-16 h-16 text-indigo-500 mx-auto mb-6" />
-                    <h2 className="text-3xl font-black text-white mb-4">Hoja de Ruta Estratégica</h2>
-                    <p className="text-gray-400 max-w-2xl mx-auto mb-10">
-                        Evolución de Productora a Sistema Global de Infraestructura Creativa.
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-                        {goals.map((goal, i) => (
-                            <div key={i} className={`p-6 rounded-3xl border ${goal.status === 'current' ? `border-${goal.color}-500/40 bg-${goal.color}-500/5` : 'border-white/10 bg-white/5'} relative`}>
-                                {goal.status === 'current' && (
-                                    <span className="absolute -top-3 left-6 px-3 py-1 bg-emerald-500 text-black text-[10px] font-black rounded-full uppercase">Fase Actual</span>
-                                )}
-                                <div className="text-xs font-black text-gray-500 mb-1 uppercase tracking-widest">{goal.time}</div>
-                                <div className={`text-xl font-black text-${goal.color}-400 mb-4`}>{goal.phase}</div>
-                                <ul className="space-y-3">
-                                    {goal.objectives.map((obj, j) => (
-                                        <li key={j} className="flex items-start gap-2 text-xs text-gray-400">
-                                            <div className={`w-1.5 h-1.5 rounded-full mt-1.5 bg-${goal.color}-500`} />
-                                            {obj}
-                                        </li>
-                                    ))}
-                                </ul>
+            <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-[2.5rem] p-10 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent pointer-events-none" />
+                
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
+                    {/* BREAK-EVEN CALCULATOR */}
+                    <div className="col-span-2 space-y-6">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-3 bg-emerald-500/10 rounded-2xl">
+                                <Target className="w-6 h-6 text-emerald-500" />
                             </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Simulador de Escala</h3>
+                                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Punto de Equilibrio & Payroll</p>
+                            </div>
+                        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-[#0A0A12] border border-white/10 rounded-3xl p-8">
-                    <h3 className="text-lg font-bold text-white mb-4">Punto de Equilibrio (Breakeven)</h3>
-                    <div className="space-y-4">
-                        <div className="flex justify-between text-xs font-bold">
-                            <span className="text-gray-500">PROGRESO HACIA META Q1</span>
-                            <span className="text-emerald-400">72%</span>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-white/5 border border-white/5 p-6 rounded-3xl">
+                                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Costo Fijo Mensual (Payroll + SW)</div>
+                                <div className="text-3xl font-black text-white">${scale.fixed_total?.toLocaleString()}</div>
+                                <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-widest">Break-even MRR: <span className="text-emerald-500">${scale.break_even?.toLocaleString()}</span></p>
+                            </div>
+                            <div className="bg-white/5 border border-white/5 p-6 rounded-3xl">
+                                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Salud del Punto de Equilibrio</div>
+                                <div className="flex items-end gap-2">
+                                    <div className={`text-3xl font-black ${scale.net_profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        {scale.net_profit >= 0 ? 'Operativo' : 'Infragasto'}
+                                    </div>
+                                    <div className="text-[10px] text-gray-500 font-bold mb-1">({Math.round(breakEvenPercent)}%)</div>
+                                </div>
+                                <div className="mt-4 h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                                    <motion.div initial={{ width: 0 }} animate={{ width: `${breakEvenPercent}%` }} className={`h-full ${scale.net_profit >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                </div>
+                            </div>
                         </div>
-                        <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
-                            <motion.div initial={{ width: 0 }} animate={{ width: '72%' }} transition={{ duration: 2 }} className="h-full bg-emerald-500" />
+
+                        <div className="bg-[#0A0A12]/50 border border-white/5 p-6 rounded-3xl">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-purple-500" /> Gatillos de Contratación
+                            </h4>
+                            <div className="space-y-3">
+                                <div className={`flex justify-between items-center p-3 rounded-2xl border ${capacityPercent > 80 ? 'bg-rose-500/10 border-rose-500/20' : 'bg-white/5 border-transparent'}`}>
+                                    <span className="text-[10px] font-bold text-gray-300">Saturación de Equipo Actual</span>
+                                    <span className={`text-xs font-black ${capacityPercent > 80 ? 'text-rose-500' : 'text-white'}`}>{capacityPercent}%</span>
+                                </div>
+                                {capacityPercent > 70 ? (
+                                    <p className="text-[10px] text-rose-400 font-bold italic px-2">
+                                        ⚠️ Advertencia: Estás llegando al límite de producción. Recomendado abrir vacante de Editor o CM.
+                                    </p>
+                                ) : (
+                                    <p className="text-[10px] text-gray-500 font-bold italic px-2">
+                                        ✓ Capacidad óptima. Puedes absorber hasta {(scale.capacity?.total - scale.capacity?.used)} proyectos más.
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        <p className="text-xs text-gray-500 italic mt-2">
-                            * Los ingresos por nodos piloto en Enero han acelerado el Roadmap en 45 días.
-                        </p>
                     </div>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-3xl p-8 flex items-center justify-between">
-                    <div>
-                        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Valuación Proyectada (5Y)</div>
-                        <div className="text-4xl font-black text-white">$2.5M - $5M</div>
-                    </div>
-                    <div className="p-4 bg-indigo-500/10 rounded-2xl">
-                        <BarChart3 className="w-10 h-10 text-indigo-400" />
+
+                    {/* GROWTH MILESTONES */}
+                    <div className="bg-white/5 border border-white/5 p-8 rounded-[2.5rem] space-y-6">
+                        <div className="flex items-center gap-2 mb-2">
+                            <TrendingUp className="w-5 h-5 text-indigo-400" />
+                            <h4 className="text-sm font-black text-white uppercase tracking-widest italic">Hitos de Crecimiento</h4>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
+                                <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Scale Stage 1</div>
+                                <div className="text-sm font-bold text-white mb-1">Nómina de 11 miembros</div>
+                                <p className="text-[10px] text-gray-500">Break-even superado. Foco en captación masiva.</p>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-white/5 border border-white/5 opacity-50">
+                                <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-1">Scale Stage 2</div>
+                                <div className="text-sm font-bold text-gray-400 mb-1">Nómina de 20+ miembros</div>
+                                <p className="text-[10px] text-gray-600">Requerido MRR de $35k+</p>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 mt-auto">
+                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Valuación DIIC ZONE</div>
+                            <div className="text-3xl font-black text-white">$250k <span className="text-xs text-indigo-500">(PRE-SEED)</span></div>
+                        </div>
                     </div>
                 </div>
             </div>

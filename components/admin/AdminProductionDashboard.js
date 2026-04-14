@@ -13,7 +13,7 @@ export default function AdminProductionDashboard() {
     useEffect(() => {
         const loadData = async () => {
             const teamData = await agencyService.getTeam();
-            const ratesData = agencyService.getProductionRates();
+            const ratesData = await agencyService.getProductionRates();
             setTeam(teamData);
             setRates(ratesData);
             setLoading(false);

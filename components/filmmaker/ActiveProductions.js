@@ -1,50 +1,57 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Calendar, Video, Clock, CheckCircle2,
     MoreHorizontal, PlayCircle, FileEdit, LayoutGrid, List, Kanban
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
 
 export default function ActiveProductions({ onNewProject }) {
     const [viewMode, setViewMode] = useState('grid'); // grid, list, kanban
+    const [productions, setProductions] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock Data for Active Productions
-    const PRODUCTIONS = [
-        {
-            id: 1,
-            title: 'Campaña Lanzamiento Q1',
-            type: 'Video Corporativo',
-            status: 'rodaje', // rodaje, edicion, revision, aprobado, agenda
-            date: '12 Ene 2026',
-            progress: 35
-        },
-        {
-            id: 2,
-            title: 'Reels Educativos (Pack 5)',
-            type: 'Contenido Redes',
-            status: 'edicion',
-            date: '10 Ene 2026',
-            progress: 60
-        },
-        {
-            id: 3,
-            title: 'Testimonio Cliente Principal',
-            type: 'Entrevista',
-            status: 'revision',
-            date: '08 Ene 2026',
-            progress: 90
-        }
-    ];
+    useEffect(() => {
+        const fetchProductions = async () => {
+            setLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .eq('assigned_role', 'filmmaker')
+                    .order('created_at', { ascending: false });
+
+                if (data) {
+                    setProductions(data.map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        type: t.client || 'Producción',
+                        status: t.status || 'todo',
+                        date: new Date(t.created_at).toLocaleDateString(),
+                        progress: t.status === 'completed' ? 100 : t.status === 'in-progress' ? 50 : 10
+                    })));
+                }
+            } catch (err) {
+                console.error('Error fetching production data:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProductions();
+    }, []);
 
     const getStatusConfig = (status) => {
         switch (status) {
+            case 'todo': 
             case 'agenda': return { label: 'Por Confirmar', color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: Calendar };
-            case 'rodaje': return { label: 'En Rodaje', color: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500/20', icon: Video };
+            case 'rodaje': 
+            case 'in-progress': return { label: 'En Rodaje', color: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500/20', icon: Video };
             case 'edicion': return { label: 'En Edición', color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/20', icon: FileEdit };
-            case 'revision': return { label: 'En Revisión (Cliente)', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: Clock };
-            case 'aprobado': return { label: 'Aprobado', color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/20', icon: CheckCircle2 };
+            case 'revision': 
+            case 'review': return { label: 'En Revisión', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: Clock };
+            case 'aprobado': 
+            case 'completed': return { label: 'Completado', color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/20', icon: CheckCircle2 };
             default: return { label: 'Pendiente', color: 'text-gray-500', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: Calendar };
         }
     };
@@ -56,6 +63,10 @@ export default function ActiveProductions({ onNewProject }) {
         </div>
     );
 
+    if (loading) {
+        return <div className="p-20 text-center text-gray-400 font-extrabold uppercase tracking-[0.4em] animate-pulse">Sincronizando Rodajes...</div>;
+    }
+
     return (
         <div className="space-y-6">
             {/* Top Stats Bar & Actions */}
@@ -63,15 +74,13 @@ export default function ActiveProductions({ onNewProject }) {
 
                 {/* Stats */}
                 <div className="flex items-center gap-2 overflow-x-auto w-full xl:w-auto pb-2 xl:pb-0 hide-scrollbar">
-                    <StatusCard count={1} label="Pendientes" />
+                    <StatusCard count={productions.length} label="Total" />
                     <div className="w-px h-8 bg-white/10 mx-2"></div>
-                    <StatusCard count={1} label="Por Confirmar" />
+                    <StatusCard count={productions.filter(p => p.status === 'todo' || p.status === 'agenda').length} label="Por Confirmar" />
                     <div className="w-px h-8 bg-white/10 mx-2"></div>
-                    <StatusCard count={1} label="En Edición" active />
+                    <StatusCard count={productions.filter(p => p.status === 'rodaje' || p.status === 'in-progress').length} label="En Rodaje" active />
                     <div className="w-px h-8 bg-white/10 mx-2"></div>
-                    <StatusCard count={1} label="Por Revisar" />
-                    <div className="w-px h-8 bg-white/10 mx-2"></div>
-                    <StatusCard count={24} label="Aprobados" />
+                    <StatusCard count={productions.filter(p => p.status === 'completed' || p.status === 'aprobado').length} label="Completados" />
                 </div>
 
                 {/* Controls */}
@@ -109,11 +118,11 @@ export default function ActiveProductions({ onNewProject }) {
 
             {/* Content Area */}
             {viewMode === 'kanban' ? (
-                <KanbanView productions={PRODUCTIONS} getStatusConfig={getStatusConfig} />
+                <KanbanView productions={productions} getStatusConfig={getStatusConfig} />
             ) : viewMode === 'list' ? (
-                <ListView productions={PRODUCTIONS} getStatusConfig={getStatusConfig} />
+                <ListView productions={productions} getStatusConfig={getStatusConfig} />
             ) : (
-                <GridView productions={PRODUCTIONS} getStatusConfig={getStatusConfig} />
+                <GridView productions={productions} getStatusConfig={getStatusConfig} />
             )}
         </div>
     );

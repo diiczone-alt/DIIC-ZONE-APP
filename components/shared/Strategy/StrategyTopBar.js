@@ -68,7 +68,7 @@ export default function StrategyTopBar({
                         <button 
                             onClick={() => {
                                 localStorage.clear();
-                                window.location.href = '/login';
+                                window.location.href = '/';
                             }}
                             className="p-3 bg-rose-500/10 border border-white/5 text-rose-400 hover:bg-rose-500 hover:text-white rounded-2xl transition-all shadow-lg active:scale-95 group/logout"
                             title="Cerrar Sesión"
