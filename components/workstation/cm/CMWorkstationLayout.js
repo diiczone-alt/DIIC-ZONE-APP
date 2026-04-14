@@ -199,10 +199,9 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
             />
         );
     }
-   }
 
     switch (tab) {
-        case 'dashboard': return <CMDashboard client={selectedClient} />;
+        case 'dashboard': return <CMDashboard client={selectedClient} user={user} />;
         case 'projects': return <CMProjects client={selectedClient} tasks={clientTasks} loading={loadingTasks} />;
         case 'contents': return <ContentKanban role="cm" />;
         case 'chat': return <CommunicationCenter client={selectedClient} />;
@@ -215,7 +214,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
     }
 }
 
-function CMDashboard({ client }) {
+function CMDashboard({ client, user }) {
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
