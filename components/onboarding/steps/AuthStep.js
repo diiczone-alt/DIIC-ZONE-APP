@@ -49,7 +49,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
             await signInWithGoogle({
                 full_name: formData.full_name || '',
                 brand: formData.brand,
-                city: formData.city
+                city: formData.city,
+                role: type === 'creative' ? 'CREATOR' : 'CLIENT'
             });
         } catch (err) {
             toast.error('Error al conectar con Google: ' + err.message);
@@ -68,7 +69,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
             const result = await register(formData.email, formData.password, { 
                 full_name: formData.full_name,
                 brand: formData.brand,
-                city: formData.city
+                city: formData.city,
+                role: type === 'creative' ? 'CREATOR' : 'CLIENT'
             });
 
             updateData({ 

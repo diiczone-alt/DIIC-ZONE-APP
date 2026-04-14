@@ -43,12 +43,27 @@ export default function LoginPage() {
             } else if (safeRole === 'CLIENT') {
                 console.log('[LoginPage] Redirecting to Client Dashboard');
                 router.push('/dashboard');
-            } else if (['community', 'filmmaker', 'design', 'editing', 'audio'].includes(lowerRole)) {
-                console.log(`[LoginPage] Redirecting to ${safeRole} Workstation`);
-                router.push(`/dashboard/${lowerRole}`);
             } else {
-                console.log('[LoginPage] Redirecting to generic Dashboard');
-                router.push('/dashboard');
+                const roleRoutes = {
+                    editor: '/workstation/editor',
+                    filmmaker: '/workstation/filmmaker',
+                    designer: '/workstation/designer',
+                    audio: '/workstation/audio',
+                    community: '/workstation/community-manager',
+                    photo: '/workstation/photography',
+                    model: '/workstation/talent',
+                    web: '/workstation/web',
+                    print: '/workstation/print',
+                    event: '/workstation/event'
+                };
+                
+                if (roleRoutes[lowerRole]) {
+                    console.log(`[LoginPage] Redirecting to ${safeRole} Workstation`);
+                    router.push(roleRoutes[lowerRole]);
+                } else {
+                    console.log('[LoginPage] Redirecting to generic Dashboard');
+                    router.push('/dashboard');
+                }
             }
         } catch (err) {
             console.error('[LoginPage] Login failed:', err);

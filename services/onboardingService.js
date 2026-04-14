@@ -68,7 +68,7 @@ export const onboardingService = {
                 .from('profiles')
                 .update({
                     full_name: fullName,
-                    role: profileType.toUpperCase(),
+                    role: profileType === 'creative' ? (formData.role || 'CREATIVE').toUpperCase() : profileType.toUpperCase(),
                     client_id: clientId,
                 })
                 .eq('id', user.id);
