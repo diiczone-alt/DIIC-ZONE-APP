@@ -87,6 +87,7 @@ export default function AdminOperationsCore() {
 function TalentExplorer() {
     const [team, setTeam] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedProfile, setSelectedProfile] = useState(null);
 
     useEffect(() => {
         const load = async () => {
@@ -100,7 +101,7 @@ function TalentExplorer() {
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6 text-left">
             <div className="bg-[#0A0A12] border border-white/10 rounded-3xl p-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
                 <h3 className="text-xl font-black text-white mb-8 flex items-center gap-3 italic">
                     <Users className="w-6 h-6 text-blue-500" /> Directorio Global de Talento (Nodos)
                 </h3>
@@ -134,14 +135,78 @@ function TalentExplorer() {
                                 </div>
                             </div>
 
-                            <div className="flex gap-2">
-                                <button className="flex-1 py-3 bg-white/5 border border-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Perfil</button>
+                            <div className="flex gap-2 relative z-10">
+                                <button onClick={() => setSelectedProfile(m)} className="flex-1 py-3 bg-white/5 border border-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Perfil</button>
                                 <button className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all">Contactar</button>
                             </div>
                         </div>
                     ))}
                 </div>
             </div>
+
+            {/* Modal de Perfil */}
+            <AnimatePresence>
+                {selectedProfile && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            onClick={() => setSelectedProfile(null)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                        />
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+                            animate={{ opacity: 1, scale: 1, y: 0 }} 
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+                            className="w-full max-w-md bg-[#0A0A12] border border-white/10 rounded-3xl p-8 relative z-10 shadow-2xl overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+                            
+                            <div className="flex justify-between items-start mb-8 relative">
+                                <div className="flex items-center gap-5">
+                                    <div className="w-16 h-16 rounded-3xl bg-blue-500/10 flex items-center justify-center font-black text-3xl text-blue-500 shadow-inner">
+                                        {selectedProfile.name.substring(0, 1)}
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-black text-white uppercase italic">{selectedProfile.name}</h2>
+                                        <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">{selectedProfile.role}</div>
+                                    </div>
+                                </div>
+                                <button onClick={() => setSelectedProfile(null)} className="text-gray-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full">
+                                    ✕
+                                </button>
+                            </div>
+                            
+                            <div className="space-y-4 mb-8">
+                                <div className="flex justify-between items-center p-4 bg-white/5 border border-white/5 rounded-2xl">
+                                    <span className="text-[11px] font-black tracking-widest text-gray-500 uppercase">Nodo Operativo</span>
+                                    <span className="text-sm font-bold text-white flex items-center gap-1"><MapPin className="w-4 h-4 text-blue-500" /> {selectedProfile.city}</span>
+                                </div>
+                                <div className="flex justify-between items-center p-4 bg-white/5 border border-white/5 rounded-2xl">
+                                    <span className="text-[11px] font-black tracking-widest text-gray-500 uppercase">Clasificación</span>
+                                    <span className={`px-3 py-1 rounded text-[11px] font-black uppercase tracking-widest ${selectedProfile.level === 'Pro' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-white/5 text-gray-400 border border-white/10'}`}>
+                                        LEVEL: {selectedProfile.level}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center p-4 bg-white/5 border border-white/5 rounded-2xl">
+                                    <span className="text-[11px] font-black tracking-widest text-gray-500 uppercase">Carga Actual</span>
+                                    <span className="text-sm font-bold text-white flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> 
+                                        {selectedProfile.activeTasks} Tareas Activas
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 pt-4 border-t border-white/5">
+                                <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
+                                    <MessageSquare className="w-4 h-4" /> Mensaje Directo
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 }
