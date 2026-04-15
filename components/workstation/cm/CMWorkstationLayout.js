@@ -7,7 +7,7 @@ import {
     Share2, MessageSquare, BarChart3, ShieldCheck,
     CheckCircle2, Clock, AlertTriangle, Plus,
     Send, Eye, MoreHorizontal, ChevronRight as ChevronRightIcon,
-    Bot, Users, FileText
+    Bot, Users, FileText, Database
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StrategyBoard from '../../shared/Strategy/StrategyBoard';
