@@ -246,7 +246,7 @@ function CMDashboard({ client, user }) {
                     </h3>
                     <div className="space-y-4">
                         <ActivityItem text="Andrés Vera subió 'Reel Pro Clínica RM'" time="Hace 10 min" />
-                        <ActivityItem text={`${user?.full_name.split(' ')[0] || 'CM'} aprobó 'Video Intro Branding'`} time="Hace 2h" />
+                        <ActivityItem text={`${user?.full_name?.split(' ')[0] || 'CM'} aprobó 'Video Intro Branding'`} time="Hace 2h" />
                         <ActivityItem text="Mateo G. reportó 'Grabación Completada'" time="Ayer" />
                     </div>
                 </div>
@@ -407,7 +407,8 @@ function ActivityItem({ text, time }) {
     );
 }
 
-\n    const { user } = useAuth();
+
+    const { user } = useAuth();
     return (
         <div className="space-y-12">
             <div>
@@ -438,7 +439,7 @@ function ActivityItem({ text, time }) {
                 <div className="flex justify-between items-end mb-6">
                     <div>
                         <h3 className="text-xl font-bold text-white mb-1">Centro de Tickets (Visión Creativo)</h3>
-                        <p className="text-xs text-gray-500 italic">Mensajes filtrados por {user?.full_name.split(' ')[0] || 'el CM'} antes de llegar al workstation creativo.</p>
+                        <p className="text-xs text-gray-500 italic">Mensajes filtrados por {user?.full_name?.split(' ')[0] || 'el CM'} antes de llegar al workstation creativo.</p>
                     </div>
                 </div>
 
@@ -567,7 +568,8 @@ function CommunicationCenter({ client }) {
     );
 }
 
-\n    const { user } = useAuth();
+
+    const { user } = useAuth();
     return (
         <div className="space-y-6">
             <div className="flex gap-4">
@@ -577,7 +579,7 @@ function CommunicationCenter({ client }) {
                 <div className="space-y-4 max-w-[85%]">
                     <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5 rounded-tl-none backdrop-blur-md">
                         <p className="text-sm text-gray-300 leading-relaxed">
-                            ¡Hola, {user?.full_name.split(' ')[0] || 'Estratega'}! Soy tu **Estratega IA**. He analizado los datos y observo un flujo constante en la producción. 
+                            ¡Hola, {user?.full_name?.split(' ')[0] || 'Estratega'}! Soy tu **Estratega IA**. He analizado los datos y observo un flujo constante en la producción. 
                             <br /><br />
                             Recuerda que esta es tu zona de control: aquí organizamos la estrategia directa con la marca. ¿Quieres que redacte un reporte rápido de desempeño para enviar al cliente ahora mismo?
                         </p>
@@ -599,7 +601,8 @@ function CommunicationCenter({ client }) {
     );
 }
 
-\n    const { user } = useAuth();
+
+    const { user } = useAuth();
     return (
         <div className="flex flex-col items-center justify-center h-full space-y-6">
             <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center relative">
@@ -611,11 +614,11 @@ function CommunicationCenter({ client }) {
                 <p className="text-xs text-gray-500 font-bold uppercase tracking-[0.2em] mb-4">Canal Privado con {client.name}</p>
                 <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full inline-flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{user?.full_name.split(' ')[0] || 'CM'} Online</span>
+                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{user?.full_name?.split(' ')[0] || 'CM'} Online</span>
                 </div>
             </div>
             <p className="text-[11px] text-gray-600 max-w-xs text-center leading-relaxed">
-                Aquí es donde {user?.full_name.split(' ')[0] || 'el CM'} se comunica directamente con la marca para coordinar la ejecución estratégica.
+                Aquí es donde {user?.full_name?.split(' ')[0] || 'el CM'} se comunica directamente con la marca para coordinar la ejecución estratégica.
             </p>
         </div>
     );
@@ -676,7 +679,8 @@ function TeamChatView({ client, onSend }) {
     );
 }
 
-\n    const { user } = useAuth();
+
+    const { user } = useAuth();
     const contexts = [
         { id: 'proj', label: 'Proyecto', icon: FolderOpen },
         { id: 'task', label: 'Tarea', icon: CheckCircle2 },
@@ -696,7 +700,7 @@ function TeamChatView({ client, onSend }) {
             >
                 <div className="p-8 border-b border-white/5">
                     <h3 className="text-2xl font-bold text-white mb-2">¿Sobre qué es este mensaje?</h3>
-                    <p className="text-gray-500 text-sm italic">Para que no sea caos, {user?.full_name.split(' ')[0] || 'el CM'} necesita contexto antes de enviar.</p>
+                    <p className="text-gray-500 text-sm italic">Para que no sea caos, {user?.full_name?.split(' ')[0] || 'el CM'} necesita contexto antes de enviar.</p>
                 </div>
 
                 <div className="p-8 grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto custom-scrollbar">
@@ -794,7 +798,8 @@ function TeamView({ client, tasks }) {
     );
 }
 
-\n    const { user } = useAuth();
+
+    const { user } = useAuth();
     const stats = [
         { label: 'Contenidos Activos', value: clients.reduce((acc, c) => acc + (c.projects || 0), 0).toString(), icon: FileText, color: 'text-cyan-400' },
         { label: 'Campañas en Curso', value: '3', icon: Share2, color: 'text-purple-400' },
@@ -808,7 +813,7 @@ function TeamView({ client, tasks }) {
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-end">
                 <div>
-                    <h2 className="text-4xl font-bold text-white mb-2">¡Hola, {user?.full_name.split(' ')[0] || 'Estratega'}!</h2>
+                    <h2 className="text-4xl font-bold text-white mb-2">¡Hola, {user?.full_name?.split(' ')[0] || 'Estratega'}!</h2>
                     <p className="text-gray-500 italic">Aquí tienes el pulso general de tus {clients.length} marcas asignadas.</p>
                 </div>
                 <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3">
@@ -913,7 +918,8 @@ function MetaAdsModule({ client }) {
     );
 }
 
-\n    const { user } = useAuth();
+
+    const { user } = useAuth();
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
@@ -956,7 +962,8 @@ function MetaAdsModule({ client }) {
     );
 }
 
-\n    const { user } = useAuth();
+
+    const { user } = useAuth();
     if (loading) return (
         <div className="h-full flex flex-col items-center justify-center gap-6">
             <div className="relative">
