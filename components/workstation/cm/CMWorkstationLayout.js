@@ -407,7 +407,7 @@ function ActivityItem({ text, time }) {
     );
 }
 
-
+function CreativeCoordination() {
     const { user } = useAuth();
     return (
         <div className="space-y-12">
@@ -568,7 +568,7 @@ function CommunicationCenter({ client }) {
     );
 }
 
-
+function AIChatView() {
     const { user } = useAuth();
     return (
         <div className="space-y-6">
@@ -601,8 +601,8 @@ function CommunicationCenter({ client }) {
     );
 }
 
-
-    const { user } = useAuth();
+function EnterpriseChatView({
+    const { user } = useAuth(); client }) {
     return (
         <div className="flex flex-col items-center justify-center h-full space-y-6">
             <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center relative">
@@ -679,8 +679,8 @@ function TeamChatView({ client, onSend }) {
     );
 }
 
-
-    const { user } = useAuth();
+function MessageContextModal({
+    const { user } = useAuth(); onClose }) {
     const contexts = [
         { id: 'proj', label: 'Proyecto', icon: FolderOpen },
         { id: 'task', label: 'Tarea', icon: CheckCircle2 },
@@ -798,8 +798,8 @@ function TeamView({ client, tasks }) {
     );
 }
 
-
-    const { user } = useAuth();
+function CMOverviewDashboard({
+    const { user } = useAuth(); clients, loading }) {
     const stats = [
         { label: 'Contenidos Activos', value: clients.reduce((acc, c) => acc + (c.projects || 0), 0).toString(), icon: FileText, color: 'text-cyan-400' },
         { label: 'Campañas en Curso', value: '3', icon: Share2, color: 'text-purple-400' },
@@ -918,8 +918,8 @@ function MetaAdsModule({ client }) {
     );
 }
 
-
-    const { user } = useAuth();
+function CMReports({
+    const { user } = useAuth(); client }) {
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
@@ -962,8 +962,8 @@ function MetaAdsModule({ client }) {
     );
 }
 
-
-    const { user } = useAuth();
+function CMSettingsClients({
+    const { user } = useAuth(); clients, onSelectClient, loading, userMissingProfile }) {
     if (loading) return (
         <div className="h-full flex flex-col items-center justify-center gap-6">
             <div className="relative">
