@@ -506,14 +506,39 @@ export default function StrategyCanvas({
     // Dynamic node counting for Ingredient Hubs
     const hubCounts = React.useMemo(() => {
         const counts = {};
+        
+        // 1. Initialize with Strategic Targets (from Architecture Wizard)
+        if (activeCampaign?.strategyIngredients) {
+            const si = activeCampaign.strategyIngredients;
+            const mapping = {
+                'video': 'hub_youtube', // Default to youtube for video
+                'reel': 'hub_reels',
+                'tiktok': 'hub_tiktok',
+                'imagen': 'hub_post',
+                'historia': 'hub_st_img', // hub_st_img is STORIES
+                'carrusel': 'hub_carrucel',
+                'crm': 'l3_crm_email',
+                'form': 'l2_conversion'
+            };
+            Object.entries(si).forEach(([key, val]) => {
+                const laneId = mapping[key];
+                if (laneId) counts[laneId] = val;
+            });
+        }
+
+        // 2. Count actual nodes (Tactical reality)
+        // If we want to show BOTH, we could return an object { target, actual }
+        // For now, as per user request, we reflect the architecture values.
+        // But we must also ensure active hubs are detected if nodes are added manually.
         nodes.forEach(node => {
             const laneId = getNodeLaneId(node);
-            if (laneId) {
+            if (laneId && !counts[laneId]) {
                 counts[laneId] = (counts[laneId] || 0) + 1;
             }
         });
+
         return counts;
-    }, [nodes]);
+    }, [nodes, activeCampaign?.strategyIngredients]);
 
     // --- NEURAL AUTO-PRUNING LOGIC ---
     const activeHubs = React.useMemo(() => {

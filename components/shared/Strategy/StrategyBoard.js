@@ -534,6 +534,7 @@ export default function StrategyBoard({ role, onClose }) {
         const SUBTYPE_MAP = {
             video: { id: 'v_youtube', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'autoridad'] },
             reel: { id: 'v_reels', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'] },
+            tiktok: { id: 'v_tiktok', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'] },
             imagen: { id: 'i_post', areaId: 'creativa', categoryId: 'imagen', levels: ['consideración', 'conversión'] },
             carrusel: { id: 'i_carrucel', areaId: 'creativa', categoryId: 'imagen', levels: ['conexión', 'autoridad'] },
             historia: { id: 'i_historias', areaId: 'creativa', categoryId: 'imagen', levels: ['conexión', 'retención'] },
@@ -592,6 +593,7 @@ export default function StrategyBoard({ role, onClose }) {
             name: name || c.name,
             startDate,
             endDate,
+            strategyIngredients: volume, // Store the architecture definition
             nodes: newNodes,
             edges: [] 
         }));

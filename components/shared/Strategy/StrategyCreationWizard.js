@@ -27,6 +27,7 @@ export default function StrategyCreationWizard({ onComplete, onCancel }) {
             carrusel: 4,
             historia: 12,
             reel: 4,
+            tiktok: 4,
             crm: 2,
             form: 1
         }
@@ -279,6 +280,7 @@ export default function StrategyCreationWizard({ onComplete, onCancel }) {
                                     {[
                                         { id: 'video', label: 'Videos', icon: Video, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
                                         { id: 'reel', label: 'Reels', icon: Zap, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+                                        { id: 'tiktok', label: 'Tik Tok', icon: Video, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
                                         { id: 'imagen', label: 'Posts', icon: Layout, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
                                         { id: 'historia', label: 'Stories', icon: Instagram, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
                                         { id: 'carrusel', label: 'Carousel', icon: Layers, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
