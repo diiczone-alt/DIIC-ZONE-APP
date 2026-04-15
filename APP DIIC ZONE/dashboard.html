@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIIC ZONE | Creator Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        background: '#0B0B15', // Darker background
+                        card: '#12121F',      // Dark card bg
+                        primary: '#8b5cf6',   // Violet
+                        accent: '#06b6d4',    // Cyan
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #05050A;
+            color: #fff;
+        }
+
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60A5FA;
+            border-right: 3px solid #60A5FA;
+        }
+
+        .glass-panel {
+            background: #12121F;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #8b5cf6 0%, #06b6d4 100%);
+        }
+    </style>
+</head>
+
+<body class="h-screen flex overflow-hidden selection:bg-primary/30">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-[#09090F] border-r border-white/5 flex flex-col z-20">
+        <div class="p-8">
+            <h1
+                class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">
+                DIIC</h1>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-1">
+            <a href="#" onclick="switchView('dashboard', this)"
+                class="nav-item active flex items-center gap-3 px-4 py-3.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-all">
+                <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                Dashboard
+            </a>
+            <a href="#" onclick="switchView('strategy', this)"
+                class="nav-item flex items-center gap-3 px-4 py-3.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-all">
+                <i data-lucide="compass" class="w-5 h-5"></i>
+                Estrategia
+            </a>
+            <a href="#" onclick="switchView('studio', this)"
+                class="nav-item flex items-center gap-3 px-4 py-3.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-all">
+                <i data-lucide="video" class="w-5 h-5"></i>
+                Studio
+            </a>
+            <a href="#" onclick="switchView('calendar', this)"
+                class="nav-item flex items-center gap-3 px-4 py-3.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-all">
+                <i data-lucide="calendar" class="w-5 h-5"></i>
+                Calendario
+            </a>
+            <a href="#" onclick="switchView('academia', this)"
+                class="nav-item flex items-center gap-3 px-4 py-3.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-all">
+                <i data-lucide="book-open" class="w-5 h-5"></i>
+                Academia
+            </a>
+            <a href="#" onclick="switchView('social', this)"
+                class="nav-item flex items-center gap-3 px-4 py-3.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-all">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                Analytics
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-white/5">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5">
+                <div
+                    class="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-500 to-purple-500 flex items-center justify-center font-bold text-sm">
+                    MC</div>
+                <div>
+                    <p class="text-sm font-bold">Mike Creator</p>
+                    <p class="text-xs text-gray-500">Pro Plan</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative overflow-hidden">
+        <!-- Background Glow -->
+        <div class="absolute top-0 left-0 w-full h-[500px] bg-purple-900/10 blur-[120px] pointer-events-none"></div>
+
+        <!-- Top Header -->
+        <header class="h-20 px-8 flex justify-between items-center z-10 border-b border-white/5">
+            <div>
+                <h2 class="text-2xl font-bold">Bienvenido, Mike</h2>
+                <p class="text-gray-400 text-sm">Aquí está el resumen de tu ecosistema creativo.</p>
+            </div>
+            <div class="flex items-center gap-4 relative">
+                <button onclick="toggleNotifications()"
+                    class="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white relative">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span class="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+
+                <!-- Notifications Dropdown -->
+                <div id="notifications-dropdown"
+                    class="absolute top-14 right-20 w-80 bg-[#12121F] border border-white/10 rounded-xl shadow-2xl hidden z-50 animate-fade-in">
+                    <div class="p-4 border-b border-white/5 flex justify-between items-center">
+                        <h3 class="font-bold text-sm">Notificaciones</h3>
+                        <span class="text-xs text-primary cursor-pointer hover:underline">Marcar leídas</span>
+                    </div>
+                    <div class="max-h-64 overflow-y-auto">
+                        <div class="p-4 hover:bg-white/5 cursor-pointer border-b border-white/5 transition-colors">
+                            <div class="flex gap-3">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
+                                    <i data-lucide="video" class="w-4 h-4"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-300 font-medium">Video "Lanzamiento" exportado</p>
+                                    <p class="text-[10px] text-gray-500 mt-1">Hace 5 min</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4 hover:bg-white/5 cursor-pointer border-b border-white/5 transition-colors">
+                            <div class="flex gap-3">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center flex-shrink-0">
+                                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-300 font-medium">Diseño Aprobado por Cliente</p>
+                                    <p class="text-[10px] text-gray-500 mt-1">Hace 1 hora</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="document.getElementById('upload-modal').classList.remove('hidden')"
+                    class="px-6 py-2.5 rounded-full bg-primary hover:bg-primary/90 text-white text-sm font-semibold shadow-lg shadow-primary/20 transition-all flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Nuevo Proyecto
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Area -->
+        <div class="flex-1 overflow-auto p-8 space-y-8 z-10 scrollbar-hide">
+
+        </div>
+
+        <!-- STRATEGY VIEW (New) -->
+        <div id="view-strategy" class="hidden animate-fade-in flex-1 flex flex-col h-full">
+            <!-- Top Bar -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h2
+                        class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                        Estrategia de Crecimiento</h2>
+                    <p class="text-gray-400">Tu Hoja de Ruta personalizada: <span
+                            class="text-blue-500 font-bold branch-name">General</span></p>
+                </div>
+                <button class="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white"><i data-lucide="settings"
+                        class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8 h-full">
+                <!-- Sidebar (Stages) -->
+                <div class="w-full lg:w-64 flex flex-col space-y-4">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest ml-2">Escalera de Valor</p>
+
+                    <!-- Stage 1 (Active) -->
+                    <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 relative">
+                        <div class="flex justify-between items-start mb-2">
+                            <span
+                                class="text-[10px] font-bold bg-blue-500 text-white px-2 py-0.5 rounded-full">ACTUAL</span>
+                            <i data-lucide="shield-check" class="w-4 h-4 text-blue-400"></i>
+                        </div>
+                        <h3 class="font-bold text-white">Etapa 1: Identidad</h3>
+                        <p class="text-xs text-blue-200/70 mt-1">Generar Confianza</p>
+                    </div>
+
+                    <!-- Stage 2 (Locked) -->
+                    <div
+                        class="p-4 rounded-xl bg-white/5 border border-transparent opacity-60 hover:opacity-100 transition-opacity cursor-not-allowed group">
+                        <div class="flex justify-between items-start mb-2">
+                            <i data-lucide="lock"
+                                class="w-4 h-4 text-gray-500 group-hover:text-yellow-500 transition-colors"></i>
+                            <span class="text-xs font-bold text-gray-500">$350/mes</span>
+                        </div>
+                        <h3 class="font-bold text-gray-400 group-hover:text-white transition-colors">Etapa 2: Plus</h3>
+                        <p class="text-xs text-gray-500 mt-1">Producción Avanzada</p>
+                    </div>
+                    <!-- Stage 3 (Locked) -->
+                    <div
+                        class="p-4 rounded-xl bg-white/5 border border-transparent opacity-60 hover:opacity-100 transition-opacity cursor-not-allowed group">
+                        <div class="flex justify-between items-start mb-2">
+                            <i data-lucide="lock"
+                                class="w-4 h-4 text-gray-500 group-hover:text-purple-500 transition-colors"></i>
+                            <span class="text-xs font-bold text-gray-500">$570/mes</span>
+                        </div>
+                        <h3 class="font-bold text-gray-400 group-hover:text-white transition-colors">Etapa 3: Premium
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-1">Automatización Total</p>
+                    </div>
+
+                    <!-- TIPS SECTION IN SIDEBAR -->
+                    <div class="mt-8 border-t border-white/5 pt-8">
+                        <h3 class="text-sm font-bold text-white mb-4 flex items-center">
+                            <i data-lucide="lightbulb" class="w-4 h-4 mr-2 text-yellow-400"></i> Tips <span
+                                class="branch-name-tips ml-1 text-blue-400"></span>
+                        </h3>
+                        <div class="space-y-3" id="tips-container">
+                            <!-- Dynamic Tips -->
+                            <p class="text-xs text-gray-500">Selecciona tu nicho para ver tips.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content (Roadmap Goals) -->
+                <div class="flex-1 space-y-4">
+                    <!-- Goal 1: Done -->
+                    <div
+                        class="glass-panel p-0 rounded-xl flex items-center overflow-hidden border border-green-500/30">
+                        <div
+                            class="w-16 h-full bg-green-500/10 flex items-center justify-center self-stretch border-r border-green-500/20">
+                            <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-black">
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div class="p-4 flex-1">
+                            <h4 class="font-bold text-gray-300 line-through decoration-gray-500">Registro de Marca</h4>
+                            <p class="text-sm text-gray-500">Creación de cuenta y perfil básico.</p>
+                        </div>
+                        <div class="pr-6 text-sm font-bold text-green-500">Completado</div>
+                    </div>
+
+                    <!-- Goal 2: Active -->
+                    <div
+                        class="glass-panel p-0 rounded-xl flex items-center overflow-hidden border border-blue-500 bg-blue-900/10 shadow-[0_0_20px_rgba(59,130,246,0.1)] transform scale-[1.02]">
+                        <div
+                            class="w-16 h-full bg-blue-500/20 flex items-center justify-center self-stretch border-r border-blue-500/30">
+                            <div class="w-6 h-6 rounded-full border-2 border-blue-500 flex items-center justify-center">
+                                <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+                        <div class="p-6 flex-1">
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="text-lg font-bold text-white">Identidad Visual (Logo)</h4>
+                                <span
+                                    class="text-xs bg-blue-500 text-white px-2 py-1 rounded font-bold">PRIORIDAD</span>
+                            </div>
+                            <p class="text-sm text-gray-300 mb-4 branch-desc-logo">Sube tu logotipo en alta calidad para
+                                personalizar tus reportes.</p>
+                            <button
+                                class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2">
+                                <i data-lucide="upload-cloud" class="w-4 h-4"></i> Subir Archivos
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Goal 3: Pending -->
+                    <div
+                        class="glass-panel p-0 rounded-xl flex items-center overflow-hidden border border-white/5 opacity-70 hover:opacity-100 transition-opacity">
+                        <div
+                            class="w-16 h-full bg-white/5 flex items-center justify-center self-stretch border-r border-white/5">
+                            <div class="w-6 h-6 rounded-full border-2 border-gray-600"></div>
+                        </div>
+                        <div class="p-4 flex-1">
+                            <h4 class="font-bold text-gray-400">Sesión Fotográfica Inicial</h4>
+                            <p class="text-sm text-gray-500 branch-desc-photo">Agenda tu primera sesión para "Retratos
+                                Corporativos".</p>
+                        </div>
+                        <div class="pr-6">
+                            <button
+                                class="px-4 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs font-bold transition-colors border border-white/10">Agendar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="space-y-8 animate-fade-in">
+            <!-- Stats Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Stat 1 -->
+                <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <p class="text-gray-400 text-sm mb-1">Total Seguidores</p>
+                        <h3 class="text-3xl font-bold text-white mb-2">24.5k</h3>
+                        <div class="flex items-center gap-2 text-green-400 text-xs font-medium">
+                            <i data-lucide="trending-up" class="w-3 h-3"></i>
+                            +12% vs mes anterior
+                        </div>
+                    </div>
+                    <div
+                        class="absolute right-0 top-0 p-24 bg-blue-500/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-blue-500/10 transition-colors">
+                    </div>
+                </div>
+
+                <!-- Stat 2 -->
+                <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <p class="text-gray-400 text-sm mb-1">Alcance de Video</p>
+                        <h3 class="text-3xl font-bold text-white mb-2">850k</h3>
+                        <div class="flex items-center gap-2 text-green-400 text-xs font-medium">
+                            <i data-lucide="trending-up" class="w-3 h-3"></i>
+                            +28% Viral!
+                        </div>
+                    </div>
+                    <div
+                        class="absolute right-0 top-0 p-24 bg-green-500/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-green-500/10 transition-colors">
+                    </div>
+                </div>
+
+                <!-- Stat 3 -->
+                <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <p class="text-gray-400 text-sm mb-1">Tareas Pendientes</p>
+                        <h3 class="text-3xl font-bold text-white mb-2">4</h3>
+                        <div class="flex items-center gap-2 text-gray-400 text-xs font-medium">
+                            2 Revisiones Urgentes
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Metric -->
+                <button
+                    class="glass-panel p-6 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-white hover:bg-white/5 transition-all border-dashed border-2 border-white/10">
+                    <div class="p-3 rounded-full bg-white/5">
+                        <i data-lucide="plus" class="w-6 h-6"></i>
+                    </div>
+                    <span class="text-sm font-medium">Añadir Métrica</span>
+                </button>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                <!-- Producción en Curso (Pipeline List) -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-lg font-bold">Producción en Curso</h3>
+                        <a href="#" onclick="switchView('pipeline', document.querySelector('.nav-item:nth-child(2)'))"
+                            class="text-xs text-primary hover:text-primary/80">Ver Tablero Completo →</a>
+                    </div>
+
+                    <div id="pipeline-list" class="space-y-4">
+                        <!-- Items will be injected here via JS -->
+
+                        <!-- Static Demo Item -->
+                        <div onclick="openProcessModal('Reel: Lanzamiento V2')"
+                            class="glass-panel p-4 rounded-xl flex items-center gap-4 group hover:bg-white/5 transition-colors cursor-pointer">
+                            <div
+                                class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+                                <i data-lucide="play-circle" class="w-6 h-6"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-white">Reel: Lanzamiento V2</h4>
+                                <p class="text-xs text-gray-500">Editado por Sarah • Hace 2h</p>
+                            </div>
+                            <span
+                                class="px-3 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">En
+                                Revisión</span>
+                        </div>
+
+                        <div onclick="openProcessModal('Carrusel Educativo: Tips IA')"
+                            class="glass-panel p-4 rounded-xl flex items-center gap-4 group hover:bg-white/5 transition-colors cursor-pointer">
+                            <div
+                                class="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                                <i data-lucide="image" class="w-6 h-6"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-white">Carrusel Educativo: Tips IA</h4>
+                                <p class="text-xs text-gray-500">Diseño por Alex • Ayer</p>
+                            </div>
+                            <span
+                                class="px-3 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500 border border-green-500/20">Aprobado</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="space-y-8">
+                    <!-- Google Drive Integration (New) -->
+                    <div class="glass-panel p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5 group mb-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg"
+                                        alt="Drive" class="w-6 h-6">
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-white text-sm">Carpeta Digital</h4>
+                                    <p class="text-[10px] text-green-400 font-bold flex items-center gap-1"><span
+                                            class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                        Sincronizado</p>
+                                </div>
+                            </div>
+                            <button
+                                class="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
+                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-3">Sube tus crudos aquí. Nosotros los editamos
+                            automáticamente.</p>
+                        <button
+                            class="w-full py-2 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white text-xs font-bold rounded-lg border border-blue-600/20 transition-all flex items-center justify-center gap-2">
+                            <i data-lucide="folder-open" class="w-4 h-4"></i> Abrir Carpeta Compartida
+                        </button>
+                    </div>
+
+                    <!-- Goal Progress -->
+                    <div class="glass-panel p-6 rounded-2xl">
+                        <h3 class="text-lg font-bold mb-4">Progreso de Meta</h3>
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-gray-400">Objetivo Mensual</span>
+                            <span class="text-white font-bold">75%</span>
+                        </div>
+                        <div class="h-2 w-full bg-white/5 rounded-full overflow-hidden mb-4">
+                            <div class="h-full w-3/4 progress-bar rounded-full"></div>
+                        </div>
+                        <p class="text-xs text-gray-500">Faltan 5 publicaciones para desbloquear "Creator Badge
+                            Silver".</p>
+                    </div>
+
+                    <!-- Recommended Lesson -->
+                    <div
+                        class="glass-panel p-1 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-0">
+                        <div class="bg-[#12121F] p-5 rounded-xl h-full">
+                            <div class="flex items-start gap-3 mb-4">
+                                <i data-lucide="graduation-cap" class="w-5 h-5 text-purple-400"></i>
+                                <div>
+                                    <h4 class="font-bold text-white text-sm">Lección Recomendada</h4>
+                                    <p class="text-xs text-gray-400 mt-1">Cómo mejorar tu retención en 3 pasos</p>
+                                </div>
+                            </div>
+                            <button
+                                class="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold transition-colors">
+                                Ver Clase (5 min)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PIPELINE VIEW (Hidden) -->
+        <div id="view-pipeline" class="space-y-8 hidden animate-fade-in">
+            <h2 class="text-2xl font-bold">Tablero de Producción</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Kanban Columns would go here, reusing the card logic from before -->
+                <p class="text-gray-400">Vista detallada del flujo...</p>
+            </div>
+        </div>
+
+        <!-- CALENDAR VIEW (New) -->
+        <div id="view-calendar" class="space-y-8 hidden animate-fade-in flex-1 flex flex-col h-full">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-3xl font-bold text-white">Calendario Global</h2>
+                    <p class="text-gray-400">Gestiona tus publicaciones, reuniones y entregas.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button
+                        class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-bold border border-white/10">Mes</button>
+                    <button
+                        class="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg text-sm font-bold border border-transparent">Semana</button>
+                    <button
+                        class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold shadow-lg shadow-primary/20 flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Evento
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8 h-full">
+                <!-- Main Calendar Grid -->
+                <div class="flex-1 glass-panel p-6 rounded-2xl flex flex-col">
+                    <!-- Calendar Header (Month Nav) -->
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <button class="p-1 hover:bg-white/10 rounded-full"><i data-lucide="chevron-left"
+                                    class="w-5 h-5"></i></button>
+                            Enero 2026
+                            <button class="p-1 hover:bg-white/10 rounded-full"><i data-lucide="chevron-right"
+                                    class="w-5 h-5"></i></button>
+                        </h3>
+                        <div class="flex gap-4 text-sm font-medium">
+                            <span class="flex items-center gap-1.5 text-blue-400"><span
+                                    class="w-2 h-2 rounded-full bg-blue-500"></span> Publicaciones</span>
+                            <span class="flex items-center gap-1.5 text-purple-400"><span
+                                    class="w-2 h-2 rounded-full bg-purple-500"></span> Reuniones</span>
+                            <span class="flex items-center gap-1.5 text-green-400"><span
+                                    class="w-2 h-2 rounded-full bg-green-500"></span> Entregas</span>
+                        </div>
+                    </div>
+
+                    <!-- Days Header -->
+                    <div
+                        class="grid grid-cols-7 gap-4 mb-4 text-gray-400 text-sm font-bold text-center uppercase tracking-wider">
+                        <div>Dom</div>
+                        <div>Lun</div>
+                        <div>Mar</div>
+                        <div>Mié</div>
+                        <div>Jue</div>
+                        <div>Vie</div>
+                        <div>Sáb</div>
+                    </div>
+
+                    <!-- Calendar Days Grid -->
+                    <div class="grid grid-cols-7 gap-4 flex-1">
+                        <!-- Empty Previous Month Days -->
+                        <div class="p-2 h-32 rounded-xl bg-white/5 opacity-30 border border-white/5"></div>
+                        <div class="p-2 h-32 rounded-xl bg-white/5 opacity-30 border border-white/5"></div>
+                        <div class="p-2 h-32 rounded-xl bg-white/5 opacity-30 border border-white/5"></div>
+
+                        <!-- Sample Day 1 -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">1</span>
+                        </div>
+                        <!-- Day 2 -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">2</span>
+                        </div>
+                        <!-- Day 3 -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">3</span>
+                        </div>
+                        <!-- Day 4 -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">4</span>
+                        </div>
+                        <!-- Day 5 -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">5</span>
+                            <div
+                                class="px-2 py-1 rounded bg-blue-500/20 border border-blue-500/30 mb-1 cursor-pointer hover:bg-blue-500/30">
+                                <p class="text-[10px] font-bold text-blue-300 truncate">Reel: Tips Rápidos</p>
+                            </div>
+                        </div>
+                        <!-- Day 6 -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">6</span>
+                        </div>
+                        <!-- Day 7 -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">7</span>
+                            <div
+                                class="px-2 py-1 rounded bg-purple-500/20 border border-purple-500/30 mb-1 cursor-pointer hover:bg-purple-500/30">
+                                <p class="text-[10px] font-bold text-purple-300 truncate">Zoom: Estrategia</p>
+                            </div>
+                        </div>
+                        <!-- Day 8 -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">8</span>
+                        </div>
+                        <!-- Day 9 -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">9</span>
+                        </div>
+                        <!-- Day 10 -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">10</span>
+                            <div
+                                class="px-2 py-1 rounded bg-green-500/20 border border-green-500/30 mb-1 cursor-pointer hover:bg-green-500/30">
+                                <p class="text-[10px] font-bold text-green-300 truncate">Entrega: Web V1</p>
+                            </div>
+                        </div>
+                        <!-- Day 11 -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span
+                                class="text-white font-bold text-sm block mb-2 bg-primary rounded-full w-6 h-6 flex items-center justify-center">11</span>
+                            <div
+                                class="px-2 py-1 rounded bg-blue-500/20 border border-blue-500/30 mb-1 cursor-pointer hover:bg-blue-500/30">
+                                <p class="text-[10px] font-bold text-blue-300 truncate">TikTok: Viral Trend</p>
+                            </div>
+                        </div>
+                        <!-- Day 12 to 14 placeholder -->
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">12</span>
+                        </div>
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">13</span>
+                        </div>
+                        <div
+                            class="p-2 h-32 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors relative group">
+                            <span class="text-gray-400 font-bold text-sm block mb-2">14</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar: Notes & Agenda -->
+                <div class="w-full lg:w-80 flex flex-col gap-6">
+                    <!-- Today's Agenda -->
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <h3 class="font-bold text-white mb-4">Agenda de Hoy</h3>
+                        <div class="space-y-3">
+                            <div class="flex gap-3 items-start p-3 rounded-xl bg-white/5 border border-white/5">
+                                <div class="text-center min-w-[3rem]">
+                                    <p class="text-xs text-gray-500 font-bold uppercase">ENE</p>
+                                    <p class="text-xl font-bold text-white">11</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-white">Publicar TikTok</p>
+                                    <p class="text-xs text-gray-400">10:00 AM • Programado</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-3 items-start p-3 rounded-xl bg-white/5 border border-white/5">
+                                <div class="text-center min-w-[3rem]">
+                                    <p class="text-xs text-gray-500 font-bold uppercase">ENE</p>
+                                    <p class="text-xl font-bold text-white">11</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-white">Revisión Web</p>
+                                    <p class="text-xs text-gray-400">03:00 PM • Pendiente</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Notes (Notas de Proyecto) -->
+                    <div class="glass-panel p-5 rounded-2xl flex-1 flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-white">Notas Rápidas</h3>
+                            <button class="text-xs text-primary font-bold hover:underline">+ Nueva</button>
+                        </div>
+                        <div class="flex-1 bg-[#12121F] rounded-xl border border-white/10 p-3 mb-3">
+                            <textarea
+                                class="w-full h-full bg-transparent border-0 focus:ring-0 text-sm text-gray-300 resize-none placeholder-gray-600"
+                                placeholder="Escribe notas sobre tu proyecto, ideas para reels o recordatorios..."></textarea>
+                        </div>
+                        <p class="text-[10px] text-gray-500">Estas notas son privadas para tu equipo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACADEMIA VIEW -->
+        <div id="view-academia" class="space-y-10 hidden animate-fade-in">
+            <div class="text-center py-8">
+                <h2
+                    class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-200 to-teal-500 mb-3">
+                    Academia DIIC 🎓</h2>
+                <p class="text-gray-400 text-lg max-w-2xl mx-auto">Potencia tus habilidades con nuestros cursos
+                    exclusivos para creadores.</p>
+            </div>
+
+            <!-- Featured Courses Grid -->
+            <div>
+                <h3 class="text-xl font-bold text-white mb-6 flex items-center">
+                    <i data-lucide="book-open" class="w-5 h-5 mr-2 text-teal-400"></i> Cursos Disponibles
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                    <!-- Course 1: Filmmaker Movil -->
+                    <div
+                        class="glass-panel p-0 rounded-2xl overflow-hidden group hover:scale-[1.02] transition-transform border border-white/5 hover:border-teal-500/50 flex flex-col h-full">
+                        <div class="h-40 bg-gradient-to-br from-red-900/40 to-black relative">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <i data-lucide="smartphone" class="w-12 h-12 text-red-400"></i>
+                            </div>
+                            <div
+                                class="absolute bottom-2 right-2 px-2 py-1 bg-black/60 rounded text-[10px] font-bold text-white">
+                                NIVEL PRO</div>
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-lg font-bold text-white mb-2">Filmmaker Móvil</h4>
+                                <p class="text-sm text-gray-400 mb-4">Aprende a grabar contenido cinematográfico
+                                    usando solo tu teléfono y los recursos que tienes.</p>
+                            </div>
+                            <button
+                                class="w-full py-2 bg-white/5 hover:bg-teal-500 hover:text-white border border-white/10 rounded-lg transition-colors text-sm font-medium">Ver
+                                Temario</button>
+                        </div>
+                    </div>
+
+                    <!-- Course 2: Edición de Video -->
+                    <div
+                        class="glass-panel p-0 rounded-2xl overflow-hidden group hover:scale-[1.02] transition-transform border border-white/5 hover:border-blue-500/50 flex flex-col h-full">
+                        <div class="h-40 bg-gradient-to-br from-blue-900/40 to-black relative">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <i data-lucide="scissors" class="w-12 h-12 text-blue-400"></i>
+                            </div>
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-lg font-bold text-white mb-2">Edición de Video Masterclass</h4>
+                                <p class="text-sm text-gray-400 mb-4">Domina el arte del montaje, corrección de
+                                    color y narrativa visual para retener audiencias.</p>
+                            </div>
+                            <button
+                                class="w-full py-2 bg-white/5 hover:bg-teal-500 hover:text-white border border-white/10 rounded-lg transition-colors text-sm font-medium">Ver
+                                Temario</button>
+                        </div>
+                    </div>
+
+                    <!-- Course 3: Redes & Marketing -->
+                    <div
+                        class="glass-panel p-0 rounded-2xl overflow-hidden group hover:scale-[1.02] transition-transform border border-white/5 hover:border-purple-500/50 flex flex-col h-full">
+                        <div class="h-40 bg-gradient-to-br from-purple-900/40 to-black relative">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <i data-lucide="share-2" class="w-12 h-12 text-purple-400"></i>
+                            </div>
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-lg font-bold text-white mb-2">Gestión de Redes & Marketing</h4>
+                                <p class="text-sm text-gray-400 mb-4">Estrategias de crecimiento orgánico, creación
+                                    de calendarios y gestión de comunidades.</p>
+                            </div>
+                            <button
+                                class="w-full py-2 bg-white/5 hover:bg-teal-500 hover:text-white border border-white/10 rounded-lg transition-colors text-sm font-medium">Ver
+                                Temario</button>
+                        </div>
+                    </div>
+
+                    <!-- Course 4: Trafficker Digital -->
+                    <div
+                        class="glass-panel p-0 rounded-2xl overflow-hidden group hover:scale-[1.02] transition-transform border border-white/5 hover:border-green-500/50 flex flex-col h-full">
+                        <div class="h-40 bg-gradient-to-br from-green-900/40 to-black relative">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <i data-lucide="trending-up" class="w-12 h-12 text-green-400"></i>
+                            </div>
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-lg font-bold text-white mb-2">Trafficker Digital</h4>
+                                <p class="text-sm text-gray-400 mb-4">Aprende a comprar tráfico y crear campañas de
+                                    publicidad efectivas (Ads).</p>
+                            </div>
+                            <button
+                                class="w-full py-2 bg-white/5 hover:bg-teal-500 hover:text-white border border-white/10 rounded-lg transition-colors text-sm font-medium">Ver
+                                Temario</button>
+                        </div>
+                    </div>
+
+                    <!-- Course 5: Automatización & IA -->
+                    <div
+                        class="glass-panel p-0 rounded-2xl overflow-hidden group hover:scale-[1.02] transition-transform border border-white/5 hover:border-cyan-500/50 flex flex-col h-full">
+                        <div class="h-40 bg-gradient-to-br from-cyan-900/40 to-black relative">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <i data-lucide="bot" class="w-12 h-12 text-cyan-400"></i>
+                            </div>
+                            <div
+                                class="absolute bottom-2 right-2 px-2 py-1 bg-cyan-500/20 rounded text-[10px] font-bold text-cyan-400 border border-cyan-500/50">
+                                NUEVO</div>
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-lg font-bold text-white mb-2">Automatizaciones & IA</h4>
+                                <p class="text-sm text-gray-400 mb-4">Implementa chatbots, flujos de trabajo con IA
+                                    y optimiza tu tiempo.</p>
+                            </div>
+                            <button
+                                class="w-full py-2 bg-white/5 hover:bg-teal-500 hover:text-white border border-white/10 rounded-lg transition-colors text-sm font-medium">Ver
+                                Temario</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips & Tricks Section -->
+            <div class="pt-8 border-t border-white/5">
+                <h3 class="text-xl font-bold text-white mb-6 flex items-center">
+                    <i data-lucide="lightbulb" class="w-5 h-5 mr-2 text-yellow-400"></i> Consejos y Tips Rapidos
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="glass-panel p-4 rounded-xl flex items-start gap-4">
+                        <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-400">
+                            <i data-lucide="zap" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Hook de 3 Segundos</h5>
+                            <p class="text-xs text-gray-400 mt-1">Capta la atención visualmente o con una pregunta
+                                impactante en los primeros 3 segundos de tu Reel.</p>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl flex items-start gap-4">
+                        <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                            <i data-lucide="mic" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Audio en Tendencia</h5>
+                            <p class="text-xs text-gray-400 mt-1">Usa audios con la flecha de "Tendencia" en
+                                Instagram, pero asegúrate de bajarlos a volumen bajo si hablas.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center py-8">
+            <h2 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 mb-3">
+                Hola Creativo, ¿qué vamos a crear hoy? 🚀</h2>
+            <p class="text-gray-400 text-lg max-w-2xl mx-auto">Selecciona un departamento, carga tus ideas o
+                archivos, y deja que nuestro equipo de expertos se encargue de la magia.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+            <!-- 1. Community Manager (Core) -->
+            <div
+                class="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer border hover:border-blue-500/50 col-span-1 md:col-span-2 shadow-lg hover:shadow-blue-500/20">
+                <div
+                    class="absolute top-0 right-0 p-40 bg-blue-500/5 rounded-full blur-3xl -mr-20 -mt-20 group-hover:opacity-100 transition-opacity opacity-50">
+                </div>
+                <div class="relative z-10 flex flex-col h-full justify-between">
+                    <div class="flex items-start justify-between mb-4">
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400">
+                            <i data-lucide="users" class="w-6 h-6"></i>
+                        </div>
+                        <span
+                            class="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-[10px] font-bold border border-blue-500/20 uppercase tracking-wider">Estrategia</span>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-white mb-2">Community Manager</h3>
+                        <p class="text-sm text-gray-400 leading-relaxed">Pide reportes actualizados y delega tus
+                            redes sociales. Nosotros nos encargamos de tu comunidad.</p>
+                    </div>
+                    <div
+                        class="mt-6 flex items-center text-blue-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                        Ver Reportes <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. IA & Automatizaciones -->
+            <div
+                class="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer border hover:border-cyan-500/50 col-span-1 md:col-span-2 shadow-lg hover:shadow-cyan-500/20">
+                <div
+                    class="absolute top-0 right-0 p-40 bg-cyan-500/5 rounded-full blur-3xl -mr-20 -mt-20 group-hover:opacity-100 transition-opacity opacity-50">
+                </div>
+                <div class="relative z-10 flex flex-col h-full justify-between">
+                    <div class="flex items-start justify-between mb-4">
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-cyan-500/20 flex items-center justify-center text-cyan-400">
+                            <i data-lucide="sparkles" class="w-6 h-6"></i>
+                        </div>
+                        <span
+                            class="px-3 py-1 bg-cyan-500/10 text-cyan-400 rounded-full text-[10px] font-bold border border-cyan-500/20 uppercase tracking-wider">Eficiencia</span>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-white mb-2">IA & Automatizaciones</h3>
+                        <p class="text-sm text-gray-400 leading-relaxed">Conecta tus ventas y atención al
+                            cliente. Implementamos Chatbots y flujos CRM para que tu negocio funcione 24/7.</p>
+                    </div>
+                    <div
+                        class="mt-6 flex items-center text-cyan-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                        Automatizar Proceso <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Filmmaker -->
+            <div
+                class="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer border hover:border-red-500/50">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center mb-4 text-red-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="clapperboard" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Filmmaker Pro</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Agenda un equipo de rodaje. Nosotros grabamos,
+                    iluminamos y dirigimos tu producción.</p>
+            </div>
+
+            <!-- 4. Diseño Gráfico -->
+            <div
+                class="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer border hover:border-purple-500/50">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center mb-4 text-purple-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="palette" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Diseño Gráfico</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Solicita piezas visuales, logos o
+                    presentaciones. Creatividad entregada a tiempo.</p>
+            </div>
+
+            <!-- 5. Edición de Video (Specific Request) -->
+            <div
+                class="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer border hover:border-orange-500/50 ring-1 ring-orange-500/20">
+                <div
+                    class="absolute top-0 right-0 p-20 bg-orange-500/10 rounded-full blur-2xl -mr-10 -mt-10 animate-pulse">
+                </div>
+                <div class="relative z-10">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center mb-4 text-orange-400 group-hover:scale-110 transition-transform">
+                        <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Edición de Video</h3>
+                    <p class="text-xs text-gray-300 leading-relaxed font-medium">Carga tus archivos "crudos"
+                        aquí. Nuestro equipo profesional los editará por ti.</p>
+                    <button
+                        class="mt-4 w-full py-2 bg-orange-500/10 text-orange-400 text-xs font-bold rounded-lg border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-all">Subir
+                        Material</button>
+                </div>
+            </div>
+
+            <!-- 6. Fotografía -->
+            <div
+                class="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer border hover:border-pink-500/50">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-pink-500/20 flex items-center justify-center mb-4 text-pink-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="camera" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Estudio Foto</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Reserva sesiones corporativas, de producto o
+                    eventos. Calidad de estudio.</p>
+            </div>
+
+            <!-- 7. Desarrollo Web -->
+            <div
+                class="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer border hover:border-emerald-500/50">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center mb-4 text-emerald-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="code-2" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Desarrollo Web</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Lanzamos tu sitio web, Landing Page o App a
+                    medida. Tecnología de punta.</p>
+            </div>
+
+            <!-- 8. Modelos & Presentadoras -->
+            <div
+                class="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer border hover:border-rose-500/50">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-rose-500/20 flex items-center justify-center mb-4 text-rose-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="mic-2" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Talento & Modelos</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Encuentra la cara perfecta para tu marca.
+                    Casting y gestión de talento.</p>
+            </div>
+
+            <!-- 9. Cobertura de Eventos -->
+            <div
+                class="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer border hover:border-yellow-500/50">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-yellow-500/20 flex items-center justify-center mb-4 text-yellow-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="calendar-check" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Cobertura Eventos</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Capturamos los mejores momentos de tus eventos
+                    corporativos o sociales.</p>
+            </div>
+
+            <!-- 10. Imprenta & Branding -->
+            <div
+                class="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer border hover:border-indigo-500/50">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center mb-4 text-indigo-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="printer" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Imprenta & Merch</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Lleva tu marca al mundo físico. Tarjetas,
+                    banners y merchandising.</p>
+            </div>
+
+            <!-- 11. Academia -->
+            <div
+                class="glass-panel p-6 rounded-3xl relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer border hover:border-teal-500/50">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-teal-500/20 flex items-center justify-center mb-4 text-teal-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Academia DIIC</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Capacitación continua para tu equipo. Cursos y
+                    talleres actualizados.</p>
+            </div>
+        </div>
+        </div>
+
+        <!-- SOCIAL VIEW (Hidden) -->
+        <!-- SOCIAL VIEW (Analytics) -->
+        <div id="view-social" class="space-y-8 hidden animate-fade-in">
+            <!-- Header with Pro Report Summary -->
+            <div class="glass-panel p-6 rounded-3xl relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-900/20 to-purple-900/20"></div>
+                <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <span
+                                class="px-3 py-1 bg-green-500/10 text-green-400 rounded-full text-xs font-bold border border-green-500/20">RENDIMIENTO
+                                POSITIVO 🚀</span>
+                            <span class="text-gray-400 text-sm">Semana 15 - 21 Enero</span>
+                        </div>
+                        <h2 class="text-3xl font-bold text-white mb-2">Reporte de Impacto Digital</h2>
+                        <p class="text-gray-300 max-w-2xl">
+                            ¡Hola Creativo! Esta semana tu audiencia ha crecido un <span
+                                class="text-white font-bold">15%</span>.
+                            Tus videos en TikTok están liderando la viralización, mientras que Instagram mantiene una
+                            comunidad fiel.
+                            Te recomendamos seguir con el formato de "Tips Rápidos".
+                        </p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button
+                            class="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-sm font-medium transition-all flex items-center gap-2">
+                            <i data-lucide="download" class="w-4 h-4"></i> Descargar PDF
+                        </button>
+                        <button
+                            class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all">
+                            Ver Detalles Profundos
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Social Connections Grid (4 Platforms) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+
+                <!-- Instagram (Connected) -->
+                <div
+                    class="glass-panel p-6 rounded-3xl border-t-4 border-pink-500 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+                    <div
+                        class="absolute top-0 right-0 p-24 bg-pink-500/5 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-pink-500/10 transition-colors">
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <div
+                                class="w-12 h-12 rounded-2xl bg-pink-500/10 flex items-center justify-center text-pink-500">
+                                <i data-lucide="instagram" class="w-6 h-6"></i>
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 rounded-lg border border-green-500/20">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                <span class="text-[10px] font-bold text-green-400">CONECTADO</span>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-gray-400 text-xs uppercase tracking-wider font-semibold">Seguidores</p>
+                            <h3 class="text-3xl font-bold text-white mt-1">12.8k <span
+                                    class="text-sm text-green-400 font-medium">+120</span></h3>
+                        </div>
+                        <div
+                            class="w-full bg-white/5 h-16 rounded-lg flex items-end justify-between px-2 pb-2 gap-1 mb-4">
+                            <!-- Mock Chart -->
+                            <div class="w-1/6 bg-pink-500/20 h-[40%] rounded-sm"></div>
+                            <div class="w-1/6 bg-pink-500/40 h-[60%] rounded-sm"></div>
+                            <div class="w-1/6 bg-pink-500/60 h-[30%] rounded-sm"></div>
+                            <div class="w-1/6 bg-pink-500/80 h-[80%] rounded-sm"></div>
+                            <div class="w-1/6 bg-pink-500 h-[50%] rounded-sm"></div>
+                            <div class="w-1/6 bg-pink-500 h-[90%] rounded-sm"></div>
+                        </div>
+                        <button
+                            class="w-full py-2 bg-white/5 text-gray-300 text-xs font-bold rounded-lg hover:bg-pink-500 hover:text-white transition-all">Ver
+                            Perfil</button>
+                    </div>
+                </div>
+
+                <!-- TikTok (Connected - Viral) -->
+                <div
+                    class="glass-panel p-6 rounded-3xl border-t-4 border-black/50 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 bg-gradient-to-b from-[#12121F] to-[#1a1a2e]">
+                    <div
+                        class="absolute top-0 right-0 p-24 bg-cyan-500/5 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-cyan-500/10 transition-colors">
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <div
+                                class="w-12 h-12 rounded-2xl bg-gray-800 flex items-center justify-center text-white border border-gray-700">
+                                <i data-lucide="music" class="w-6 h-6"></i>
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 rounded-lg border border-green-500/20">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                <span class="text-[10px] font-bold text-green-400">VIRAL</span>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-gray-400 text-xs uppercase tracking-wider font-semibold">Seguidores</p>
+                            <h3 class="text-3xl font-bold text-white mt-1">45.2k <span
+                                    class="text-sm text-green-400 font-medium">+850</span></h3>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-4">
+                            <div class="bg-white/5 p-2 rounded-lg text-center">
+                                <p class="text-[10px] text-gray-500">Vistas</p>
+                                <p class="text-sm font-bold text-cyan-400">1.2M</p>
+                            </div>
+                            <div class="bg-white/5 p-2 rounded-lg text-center">
+                                <p class="text-[10px] text-gray-500">Likes</p>
+                                <p class="text-sm font-bold text-pink-500">240k</p>
+                            </div>
+                        </div>
+                        <button
+                            class="w-full py-2 bg-white/5 text-gray-300 text-xs font-bold rounded-lg hover:bg-cyan-500 hover:text-black transition-all">Ver
+                            Tendencias</button>
+                    </div>
+                </div>
+
+                <!-- YouTube (Connected) -->
+                <div
+                    class="glass-panel p-6 rounded-3xl border-t-4 border-red-500 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
+                    <div
+                        class="absolute top-0 right-0 p-24 bg-red-500/5 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-red-500/10 transition-colors">
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <div
+                                class="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
+                                <i data-lucide="youtube" class="w-6 h-6"></i>
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 rounded-lg border border-green-500/20">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                <span class="text-[10px] font-bold text-green-400">CONECTADO</span>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-gray-400 text-xs uppercase tracking-wider font-semibold">Suscriptores</p>
+                            <h3 class="text-3xl font-bold text-white mt-1">8.5k <span
+                                    class="text-sm text-red-400 font-medium">NEW</span></h3>
+                        </div>
+                        <div
+                            class="w-full bg-white/5 h-16 rounded-lg flex items-end justify-between px-2 pb-2 gap-1 mb-4">
+                            <div class="w-1/6 bg-red-500/20 h-[30%] rounded-sm"></div>
+                            <div class="w-1/6 bg-red-500/40 h-[40%] rounded-sm"></div>
+                            <div class="w-1/6 bg-red-500/60 h-[50%] rounded-sm"></div>
+                            <div class="w-1/6 bg-red-500/80 h-[45%] rounded-sm"></div>
+                            <div class="w-1/6 bg-red-500 h-[60%] rounded-sm"></div>
+                            <div class="w-1/6 bg-red-500 h-[70%] rounded-sm"></div>
+                        </div>
+                        <button
+                            class="w-full py-2 bg-white/5 text-gray-300 text-xs font-bold rounded-lg hover:bg-red-500 hover:text-white transition-all">Ver
+                            Canal</button>
+                    </div>
+                </div>
+
+                <!-- Facebook (Connect Prompt) -->
+                <div
+                    class="glass-panel p-6 rounded-3xl border-2 border-dashed border-blue-600/30 flex flex-col items-center justify-center text-center group hover:bg-blue-600/5 transition-all cursor-pointer">
+                    <div
+                        class="w-16 h-16 rounded-full bg-blue-600/20 text-blue-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(37,99,235,0.2)]">
+                        <i data-lucide="facebook" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="font-bold text-white mb-2">Conectar Facebook</h3>
+                    <p class="text-xs text-gray-400 mb-6 px-4">Vincula tu Fan Page para acceder a métricas de Meta
+                        Business Suite.</p>
+                    <button
+                        class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-full transition-colors shadow-lg shadow-blue-600/20">
+                        Conectar Ahora +
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Best Content / Highlights -->
+            <div>
+                <div class="flex justify-between items-end mb-6">
+                    <h3 class="text-xl font-bold text-white">🏆 Contenido Destacado</h3>
+                    <a href="#" class="text-xs text-primary font-bold hover:underline">Ver Todo el Historial</a>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Top Video 1 -->
+                    <div
+                        class="glass-panel p-3 rounded-2xl flex gap-4 hover:bg-white/5 transition-colors cursor-pointer group">
+                        <div class="w-24 h-32 bg-gray-800 rounded-xl relative overflow-hidden flex-shrink-0">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                            <div
+                                class="absolute bottom-2 left-2 flex items-center gap-1 text-[10px] font-bold text-white">
+                                <i data-lucide="play" class="w-3 h-3 fill-white"></i> 450k
+                            </div>
+                            <div
+                                class="absolute top-2 right-2 bg-cyan-500 text-black text-[8px] font-bold px-1.5 py-0.5 rounded">
+                                TIKTOK</div>
+                        </div>
+                        <div class="flex flex-col justify-center py-2">
+                            <h4 class="text-sm font-bold text-white mb-1 group-hover:text-primary transition-colors">5
+                                Hacks de Edición</h4>
+                            <p class="text-xs text-gray-500 mb-3">Publicado: Ayer</p>
+                            <div class="flex gap-3">
+                                <div>
+                                    <p class="text-[10px] text-gray-500">Retención</p>
+                                    <p class="text-xs font-bold text-green-400">85%</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-gray-500">Shares</p>
+                                    <p class="text-xs font-bold text-white">1.2k</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Video 2 -->
+                    <div
+                        class="glass-panel p-3 rounded-2xl flex gap-4 hover:bg-white/5 transition-colors cursor-pointer group">
+                        <div class="w-24 h-32 bg-gray-800 rounded-xl relative overflow-hidden flex-shrink-0">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                            <div
+                                class="absolute bottom-2 left-2 flex items-center gap-1 text-[10px] font-bold text-white">
+                                <i data-lucide="heart" class="w-3 h-3 fill-pink-500 text-pink-500"></i> 12k
+                            </div>
+                            <div
+                                class="absolute top-2 right-2 bg-pink-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
+                                INSTA</div>
+                        </div>
+                        <div class="flex flex-col justify-center py-2">
+                            <h4 class="text-sm font-bold text-white mb-1 group-hover:text-primary transition-colors">
+                                Vlog: Backstage</h4>
+                            <p class="text-xs text-gray-500 mb-3">Publicado: Hace 3 días</p>
+                            <div class="flex gap-3">
+                                <div>
+                                    <p class="text-[10px] text-gray-500">Alcance</p>
+                                    <p class="text-xs font-bold text-green-400">45k</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-gray-500">Saves</p>
+                                    <p class="text-xs font-bold text-white">850</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Video 3 -->
+                    <div
+                        class="glass-panel p-3 rounded-2xl flex gap-4 hover:bg-white/5 transition-colors cursor-pointer group">
+                        <div class="w-24 h-32 bg-gray-800 rounded-xl relative overflow-hidden flex-shrink-0">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                            <div
+                                class="absolute bottom-2 left-2 flex items-center gap-1 text-[10px] font-bold text-white">
+                                <i data-lucide="eye" class="w-3 h-3 text-red-500"></i> 5.2k
+                            </div>
+                            <div
+                                class="absolute top-2 right-2 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
+                                YOUTUBE</div>
+                        </div>
+                        <div class="flex flex-col justify-center py-2">
+                            <h4 class="text-sm font-bold text-white mb-1 group-hover:text-primary transition-colors">
+                                Tutorial Completo</h4>
+                            <p class="text-xs text-gray-500 mb-3">Publicado: Semana pasada</p>
+                            <div class="flex gap-3">
+                                <div>
+                                    <p class="text-[10px] text-gray-500">CTR</p>
+                                    <p class="text-xs font-bold text-red-400">12.5%</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-gray-500">Watch Time</p>
+                                    <p class="text-xs font-bold text-white">450h</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        </div>
+    </main>
+
+    <!-- Upload Modal (Hidden Overlay) -->
+    <div id="upload-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#12121F] border border-white/10 rounded-2xl w-full max-w-lg p-6 relative shadow-2xl">
+            <button onclick="document.getElementById('upload-modal').classList.add('hidden')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <h3 class="text-xl font-bold mb-1">Nuevo Proyecto</h3>
+            <p class="text-sm text-gray-400 mb-6">Sube archivos para iniciar el flujo de producción.</p>
+
+            <!-- Type Selector -->
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <button onclick="selectType(this, 'video')"
+                    class="type-btn p-3 rounded-xl bg-white/5 border border-white/10 hover:border-primary/50 text-center transition-all active-type">
+                    <i data-lucide="video" class="w-6 h-6 mx-auto mb-2 text-blue-400"></i>
+                    <span class="text-xs font-medium block">Video/Reel</span>
+                </button>
+                <button onclick="selectType(this, 'design')"
+                    class="type-btn p-3 rounded-xl bg-white/5 border border-white/10 hover:border-primary/50 text-center transition-all">
+                    <i data-lucide="image" class="w-6 h-6 mx-auto mb-2 text-purple-400"></i>
+                    <span class="text-xs font-medium block">Diseño</span>
+                </button>
+                <button onclick="selectType(this, 'audio')"
+                    class="type-btn p-3 rounded-xl bg-white/5 border border-white/10 hover:border-primary/50 text-center transition-all">
+                    <i data-lucide="mic" class="w-6 h-6 mx-auto mb-2 text-pink-400"></i>
+                    <span class="text-xs font-medium block">Audio</span>
+                </button>
+            </div>
+
+            <!-- Dropzone -->
+            <div id="dropzone"
+                class="border-2 border-dashed border-white/10 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors cursor-pointer group mb-6">
+                <div
+                    class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <i data-lucide="upload-cloud" class="w-6 h-6 text-gray-400 group-hover:text-primary"></i>
+                </div>
+                <p class="text-sm font-medium">Click o arrastra archivos</p>
+                <p class="text-xs text-gray-500 mt-1">MP4, PNG, JPG, MP3</p>
+                <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(this)">
+            </div>
+
+            <div class="flex justify-center mb-6">
+                <button
+                    class="text-xs text-gray-400 hover:text-white flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 hover:bg-white/5 transition-all">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg"
+                        alt="Drive" class="w-3 h-3 grayscale opacity-70">
+                    Importar desde Google Drive
+                </button>
+            </div>
+
+            <!-- File List Preview -->
+            <div id="modal-file-list" class="space-y-2 mb-6 hidden"></div>
+
+            <button id="modal-save-btn" onclick="saveUpload()"
+                class="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                <span>Crear Proyecto</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Process Details Modal (New) -->
+    <div id="process-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="bg-[#12121F] border border-white/10 rounded-2xl w-full max-w-2xl p-6 relative shadow-2xl flex flex-col max-h-[90vh]">
+            <button onclick="document.getElementById('process-modal').classList.add('hidden')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="mb-6">
+                <div class="flex items-center gap-3 mb-1">
+                    <span
+                        class="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-[10px] font-bold border border-red-500/30">FILMMAKER
+                        PRO</span>
+                    <p class="text-xs text-gray-500">PROY-2026-001</p>
+                </div>
+                <h3 class="text-2xl font-bold text-white" id="process-title">Reel: Lanzamiento V2</h3>
+            </div>
+
+            <!-- Stepper -->
+            <div class="flex justify-between items-center relative mb-8 px-4">
+                <div class="absolute left-0 right-0 top-1/2 h-0.5 bg-white/10 -z-10"></div>
+
+                <!-- Step 1: Guion -->
+                <div class="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div
+                        class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_10px_rgba(34,197,94,0.4)]">
+                        <i data-lucide="check" class="w-4 h-4 text-black"></i>
+                    </div>
+                    <p class="text-xs font-bold text-green-400">Guion</p>
+                </div>
+
+                <!-- Step 2: Rodaje -->
+                <div class="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div
+                        class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_10px_rgba(34,197,94,0.4)]">
+                        <i data-lucide="check" class="w-4 h-4 text-black"></i>
+                    </div>
+                    <p class="text-xs font-bold text-green-400">Rodaje</p>
+                </div>
+
+                <!-- Step 3: Edición (Active) -->
+                <div class="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div
+                        class="w-10 h-10 rounded-full bg-blue-500 border-4 border-[#12121F] flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.5)] z-10">
+                        <i data-lucide="scissors" class="w-5 h-5 text-white animate-pulse"></i>
+                    </div>
+                    <p class="text-sm font-bold text-blue-400">Edición</p>
+                </div>
+
+                <!-- Step 4: Entrega -->
+                <div class="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div
+                        class="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                        <span class="text-xs text-gray-500">4</span>
+                    </div>
+                    <p class="text-xs font-medium text-gray-500">Entrega</p>
+                </div>
+            </div>
+
+            <!-- Stage Details -->
+            <div class="bg-white/5 rounded-xl p-4 mb-6 border border-white/10 flex-1 overflow-y-auto">
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="font-bold text-white flex items-center gap-2">
+                        <i data-lucide="scissors" class="w-4 h-4 text-blue-400"></i> Etapa Actual: Edición
+                    </h4>
+                    <span
+                        class="text-xs text-yellow-500 font-bold bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20">En
+                        Revisión</span>
+                </div>
+                <p class="text-sm text-gray-300 mb-4">El editor ha subido la versión 2. Por favor revisa el corte final
+                    antes de proceder a colorización.</p>
+
+                <!-- Comments / Feedback -->
+                <div class="space-y-3">
+                    <div class="flex gap-3">
+                        <div
+                            class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-400">
+                            ED</div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-400">Editor</p>
+                            <div
+                                class="bg-black/30 p-2 rounded-lg rounded-tl-none text-xs text-gray-300 border border-white/5">
+                                He ajustado el ritmo de la música como pediste.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 flex-row-reverse">
+                        <div
+                            class="w-8 h-8 rounded-full bg-pink-500/20 flex items-center justify-center text-xs font-bold text-pink-400">
+                            TU</div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-gray-400">Tú</p>
+                            <div
+                                class="bg-blue-500/20 p-2 rounded-lg rounded-tr-none text-xs text-white border border-blue-500/30">
+                                ¡Genial! Solo falta el logo al final.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3 mt-auto">
+                <div class="flex-1 relative">
+                    <input type="text" placeholder="Escribe un comentario..."
+                        class="w-full bg-black/50 border border-white/10 rounded-lg pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500/50">
+                    <button class="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-white"><i
+                            data-lucide="send" class="w-4 h-4"></i></button>
+                </div>
+                <button
+                    class="px-6 py-2 bg-green-500 hover:bg-green-600 text-black font-bold rounded-lg text-sm transition-colors flex items-center gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Aprobar Etapa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Chat (Floating) -->
+    <div class="fixed bottom-6 right-6 z-40">
+        <button onclick="toggleChat()"
+            class="p-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg shadow-purple-500/20 hover:scale-105 transition-transform group">
+            <i data-lucide="sparkles" class="w-6 h-6 text-white group-hover:rotate-12 transition-transform"></i>
+        </button>
+    </div>
+
+    <!-- Chat Window (Hidden) -->
+    <div id="ai-chat"
+        class="fixed bottom-24 right-6 w-96 h-[450px] bg-[#12121F] border border-white/10 rounded-2xl shadow-2xl flex flex-col hidden overflow-hidden z-40 animate-slide-up">
+        <div class="p-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                    <i data-lucide="bot" class="w-4 h-4 text-primary"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-sm">DIIC Copilot</h4>
+                    <p class="text-[10px] text-green-400">Online</p>
+                </div>
+            </div>
+            <button onclick="toggleChat()" class="text-gray-400 hover:text-white"><i data-lucide="x"
+                    class="w-4 h-4"></i></button>
+        </div>
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4">
+            <div class="flex gap-3">
+                <div class="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center"><i
+                        data-lucide="bot" class="w-4 h-4 text-primary"></i></div>
+                <div class="bg-white/5 rounded-2xl rounded-tl-none p-3 text-sm text-gray-200">
+                    Hola Mike 👋. ¿En qué te ayudo con tu contenido hoy?
+                </div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-white/5 bg-black/20">
+            <form onsubmit="sendChat(event)" class="relative">
+                <input id="chat-input" type="text" placeholder="Pregúntame algo..."
+                    class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-colors pr-10">
+                <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let selectedFileType = 'video';
+
+        // Initialize Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const niche = localStorage.getItem('dcz_niche');
+            if (niche) {
+                updateDashboardContent(niche);
+            } else {
+                // Optional: Redirect to onboarding if no niche found
+                // window.location.href = 'index.html'; 
+            }
+        });
+
+        function updateDashboardContent(niche) {
+            const branchNames = document.querySelectorAll('.branch-name');
+            const branchNameTips = document.querySelector('.branch-name-tips');
+            const branchDescLogo = document.querySelector('.branch-desc-logo');
+            const branchDescPhoto = document.querySelector('.branch-desc-photo');
+            const tipsContainer = document.getElementById('tips-container');
+
+            let tipsHTML = '';
+            let niceName = 'General';
+
+            if (niche === 'medical') {
+                niceName = 'Salud & Medicina';
+                if (branchNameTips) branchNameTips.textContent = 'Salud';
+                if (branchDescPhoto) branchDescPhoto.textContent = 'Agenda tu primera sesión para "Retratos Clínicos y Corporativos".';
+                tipsHTML = `
+                    <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400"><i data-lucide="activity" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Muestra el Proceso 🩺</h5>
+                            <p class="text-xs text-gray-400 mt-1">Graba un procedimiento sencillo o explica un diagnóstico común en menos de 60 segundos.</p>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-400"><i data-lucide="zap" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Hook Visual</h5>
+                            <p class="text-xs text-gray-400 mt-1">Empieza tus videos con una pregunta que hacen siempre tus pacientes.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (niche === 'fitness') {
+                niceName = 'Fitness & Deporte';
+                if (branchNameTips) branchNameTips.textContent = 'Fitness';
+                if (branchDescPhoto) branchDescPhoto.textContent = 'Agenda tu sesión de "Instalaciones y Clases en Vivo".';
+                tipsHTML = `
+                    <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-green-500/10 rounded-lg text-green-400"><i data-lucide="dumbbell" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Retos Expres ⏱️</h5>
+                            <p class="text-xs text-gray-400 mt-1">Invita a tu audiencia a hacer 10 repeticiones de algo ahora mismo.</p>
+                        </div>
+                    </div>
+                     <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-400"><i data-lucide="zap" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Energía Alta</h5>
+                            <p class="text-xs text-gray-400 mt-1">Usa música en tendencia con ritmo rápido para tus historias.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (niche === 'food') {
+                niceName = 'Gastronomía';
+                if (branchNameTips) branchNameTips.textContent = 'Gastronomía';
+                if (branchDescPhoto) branchDescPhoto.textContent = 'Agenda tu sesión de "Platos Estrella y Ambiente".';
+                tipsHTML = `
+                     <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-orange-500/10 rounded-lg text-orange-400"><i data-lucide="utensils" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">ASMR de Cocina 🍳</h5>
+                            <p class="text-xs text-gray-400 mt-1">El sonido de freír o cortar es muy satisfactorio. ¡Úsalo sin música!</p>
+                        </div>
+                    </div>
+                     <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-400"><i data-lucide="zap" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Plato Estrella</h5>
+                            <p class="text-xs text-gray-400 mt-1">Haz un close-up extremo de tu mejor plato saliendo de la cocina.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (niche === 'real_estate') {
+                niceName = 'Inmobiliaria';
+                if (branchNameTips) branchNameTips.textContent = 'Inmobiliaria';
+                if (branchDescPhoto) branchDescPhoto.textContent = 'Agenda tu visita para "Tours Virtuales de Propiedades".';
+                tipsHTML = `
+                     <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-purple-500/10 rounded-lg text-purple-400"><i data-lucide="home" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Tour Rápido 🏠</h5>
+                            <p class="text-xs text-gray-400 mt-1">Muestra lo mejor de la propiedad en 15 segundos (House Tour).</p>
+                        </div>
+                    </div>
+                     <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-400"><i data-lucide="zap" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Datos de Valor</h5>
+                            <p class="text-xs text-gray-400 mt-1">Comparte: "¿Cuánto necesitas ganar para comprar esta casa?".</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            branchNames.forEach(el => el.textContent = niceName);
+            if (tipsContainer) tipsContainer.innerHTML = tipsHTML;
+        }
+
+        function switchView(viewName, navEl) {
+            // Update Active Nav State
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active');
+                // Optional: Reset specific colors if needed, but 'active' class handles main styling
+            });
+            if (navEl) navEl.classList.add('active');
+
+            // Hide ALL View Containers
+            const views = ['view-dashboard', 'view-pipeline', 'view-social', 'view-studio', 'view-academia', 'view-strategy', 'view-calendar'];
+            views.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+
+            // Show Selected View
+            const target = document.getElementById('view-' + viewName);
+            if (target) {
+                target.classList.remove('hidden');
+                // Scroll to top when switching
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notifications-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function toggleChat() {
+            document.getElementById('ai-chat').classList.toggle('hidden');
+        }
+
+        // Upload Logic
+        const dropzone = document.getElementById('dropzone');
+        dropzone.addEventListener('click', () => document.getElementById('file-input').click());
+
+        function selectType(btn, type) {
+            document.querySelectorAll('.type-btn').forEach(b => {
+                b.classList.remove('border-primary', 'bg-primary/20');
+                b.classList.add('border-white/10', 'bg-white/5');
+            });
+            btn.classList.remove('border-white/10', 'bg-white/5');
+            btn.classList.add('border-primary', 'bg-primary/20');
+            selectedFileType = type;
+        }
+
+        function handleFileSelect(input) {
+            if (input.files.length > 0) {
+                const file = input.files[0];
+                const list = document.getElementById('modal-file-list');
+                list.classList.remove('hidden');
+                list.innerHTML = `
+                    <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="file" class="w-4 h-4 text-gray-400"></i>
+                            <span class="text-sm font-medium text-white">${file.name}</span>
+                        </div>
+                        <button class="text-gray-500 hover:text-red-400"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        function saveUpload() {
+            const btn = document.getElementById('modal-save-btn');
+            const originalText = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = `<span class="animate-spin mr-2">⏳</span> Procesando...`;
+
+            setTimeout(() => {
+                btn.classList.remove('bg-primary');
+                btn.classList.add('bg-green-500');
+                btn.innerHTML = `<i data-lucide="check" class="w-4 h-4 mr-2"></i> Creado`;
+                lucide.createIcons();
+
+                // Add to Pipeline List (Dashboard View)
+                const fileName = document.querySelector('#modal-file-list span')?.textContent || 'Nuevo Proyecto';
+                const cleanName = fileName.split('.')[0];
+
+                const pipelineList = document.getElementById('pipeline-list');
+                const newItem = document.createElement('div');
+                newItem.className = 'glass-panel p-4 rounded-xl flex items-center gap-4 group hover:bg-white/5 transition-colors cursor-pointer animate-fade-in border-l-2 border-primary';
+                newItem.innerHTML = `
+                    <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <i data-lucide="${selectedFileType === 'video' ? 'play-circle' : 'image'}" class="w-6 h-6"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-bold text-white">${cleanName}</h4>
+                        <p class="text-xs text-gray-500">Agregado hace un momento</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20">Borrador</span>
+                `;
+                pipelineList.prepend(newItem);
+                lucide.createIcons();
+
+                setTimeout(() => {
+                    document.getElementById('upload-modal').classList.add('hidden');
+                    btn.disabled = false;
+                    btn.classList.add('bg-primary');
+                    btn.classList.remove('bg-green-500');
+                    btn.innerHTML = originalText;
+                    document.getElementById('modal-file-list').classList.add('hidden');
+                    document.getElementById('modal-file-list').innerHTML = '';
+
+                    // AI Proactive Message
+                    setTimeout(() => {
+                        const messages = document.getElementById('chat-messages');
+                        const aiMsg = document.createElement('div');
+                        aiMsg.className = 'flex gap-3 animate-fade-in';
+                        aiMsg.innerHTML = `
+                             <div class="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center"><i data-lucide="bot" class="w-4 h-4 text-primary"></i></div>
+                             <div class="bg-white/5 rounded-2xl rounded-tl-none p-3 text-sm text-gray-200">
+                                He notado que subiste <b>"${cleanName}"</b>. ¿Quieres que genere un copy para Instagram o un guion de voz?
+                             </div>
+                        `;
+                        messages.appendChild(aiMsg);
+                        document.getElementById('ai-chat').classList.remove('hidden');
+                        lucide.createIcons();
+                    }, 1500);
+
+                }, 1000);
+            }, 1500);
+        }
+
+        function sendChat(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const messages = document.getElementById('chat-messages');
+
+            // User Msg
+            const userDiv = document.createElement('div');
+            userDiv.className = 'flex gap-3 flex-row-reverse';
+            userDiv.innerHTML = `
+                <div class="bg-primary text-white rounded-2xl rounded-tr-none p-3 text-sm">
+                    ${text}
+                </div>
+            `;
+            messages.appendChild(userDiv);
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+
+            // Simple Auto-Reply
+            setTimeout(() => {
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'flex gap-3 animate-fade-in';
+                aiMsg.innerHTML = `
+                        <div class="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center"><i data-lucide="bot" class="w-4 h-4 text-primary"></i></div>
+                        <div class="bg-white/5 rounded-2xl rounded-tl-none p-3 text-sm text-gray-200">
+                        Entendido. Estoy procesando tu solicitud: "${text}". Dadme un momento...
+                        </div>
+                `;
+                messages.appendChild(aiMsg);
+                messages.scrollTop = messages.scrollHeight;
+                lucide.createIcons();
+            }, 1000);
+        }
+
+        function openProcessModal(title) {
+            const modal = document.getElementById('process-modal');
+            const titleEl = document.getElementById('process-title');
+            if (title) titleEl.textContent = title;
+            modal.classList.remove('hidden');
+        }
+
+        // CSS Animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+            .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+            .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+
+</html>

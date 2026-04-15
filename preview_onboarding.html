@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIIC ZONE | Smart Strategy Onboarding</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&display=swap');
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0B0B15;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .primary-gradient {
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .niche-card.selected {
+            border-color: #3B82F6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        /* Roadmap Steps */
+        .step-connector {
+            position: absolute;
+            top: 2rem;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center relative">
+
+    <!-- Background Elements -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px]">
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div id="main-container"
+        class="w-full max-w-6xl h-[90vh] glass-panel rounded-3xl overflow-hidden flex flex-col transition-all duration-500">
+
+        <!-- STEP 1: WELCOME & NICHE SELECTION -->
+        <div id="step-niche" class="flex-1 flex flex-col p-12 overflow-y-auto animate-fade-in">
+            <div class="text-center mb-12">
+                <div
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-gray-400 mb-6">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Sistema Inteligente Activo
+                </div>
+                <h1
+                    class="text-5xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                    Diseñemos tu Estrategia, <span class="text-blue-500">Dr. Cristian</span>
+                </h1>
+                <p class="text-xl text-gray-400 max-w-2xl mx-auto">
+                    Para crear tu <b>Escalera de Valor</b> personalizada, necesitamos entender el núcleo de tu negocio.
+                </p>
+            </div>
+
+            <h3 class="text-lg font-bold text-white mb-6 text-center">Selecciona tu Industria:</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto w-full">
+                <!-- Card: Medical -->
+                <div onclick="selectNiche(this, 'medical')"
+                    class="niche-card glass-panel p-6 rounded-2xl cursor-pointer hover:-translate-y-2 transition-all group border border-transparent hover:border-blue-500/30">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-4 group-hover:scale-110 transition-transform">
+                        <i data-lucide="stethoscope" class="w-8 h-8"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-2">Salud & Medicina</h4>
+                    <p class="text-sm text-gray-400">Clínicas, Especialistas, Odontología.</p>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <span class="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-300">Pacientes</span>
+                        <span class="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-300">Consultas</span>
+                    </div>
+                </div>
+
+                <!-- Card: Fitness -->
+                <div onclick="selectNiche(this, 'fitness')"
+                    class="niche-card glass-panel p-6 rounded-2xl cursor-pointer hover:-translate-y-2 transition-all group border border-transparent hover:border-green-500/30">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-400 mb-4 group-hover:scale-110 transition-transform">
+                        <i data-lucide="dumbbell" class="w-8 h-8"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-2">Fitness & Sport</h4>
+                    <p class="text-sm text-gray-400">Gimnasios, Crossfit, Entrenadores.</p>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <span class="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-300">Membresías</span>
+                        <span class="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-300">Retos</span>
+                    </div>
+                </div>
+
+                <!-- Card: Food -->
+                <div onclick="selectNiche(this, 'food')"
+                    class="niche-card glass-panel p-6 rounded-2xl cursor-pointer hover:-translate-y-2 transition-all group border border-transparent hover:border-orange-500/30">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-400 mb-4 group-hover:scale-110 transition-transform">
+                        <i data-lucide="utensils" class="w-8 h-8"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-2">Gastronomía</h4>
+                    <p class="text-sm text-gray-400">Restaurantes, Cafeterías, Bares.</p>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <span class="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-300">Reservas</span>
+                        <span class="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-300">Delivery</span>
+                    </div>
+                </div>
+
+                <!-- Card: Real Estate -->
+                <div onclick="selectNiche(this, 'real_estate')"
+                    class="niche-card glass-panel p-6 rounded-2xl cursor-pointer hover:-translate-y-2 transition-all group border border-transparent hover:border-purple-500/30">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-4 group-hover:scale-110 transition-transform">
+                        <i data-lucide="home" class="w-8 h-8"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-white mb-2">Inmobiliaria</h4>
+                    <p class="text-sm text-gray-400">Agentes, Desarrolladoras, Arriendos.</p>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <span class="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-300">Leads Cualificados</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center opacity-0 transition-opacity duration-300 pointer-events-none"
+                id="continue-btn-container">
+                <button onclick="goToDashboard()"
+                    class="px-12 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold rounded-full text-lg shadow-[0_0_20px_rgba(59,130,246,0.5)] transition-all transform hover:scale-105 flex items-center gap-3 mx-auto">
+                    Generar Mi Plan de Crecimiento <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 2: STRATEGY DASHBOARD (Updated UI) -->
+        <div id="step-dashboard" class="flex-1 flex flex-col hidden overflow-hidden">
+            <!-- Top Bar -->
+            <div
+                class="flex items-center justify-between px-8 py-5 border-b border-white/5 bg-[#0B0B15]/50 backdrop-blur-md">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-lg">NU
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold leading-tight">NovaUrología</h2>
+                        <span class="text-xs text-green-400 flex items-center gap-1"><span
+                                class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Plan Activo: Etapa 1</span>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="text-right hidden md:block">
+                        <p class="text-xs text-gray-400">Progreso Global</p>
+                        <div class="w-32 bg-white/10 h-2 rounded-full mt-1 overflow-hidden">
+                            <div class="bg-blue-500 w-[15%] h-full rounded-full"></div>
+                        </div>
+                    </div>
+                    <button class="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white"><i data-lucide="settings"
+                            class="w-5 h-5"></i></button>
+                </div>
+            </div>
+
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Sidebar (Stages) -->
+                <div class="w-64 border-r border-white/5 bg-[#0B0B15]/30 flex flex-col p-6 space-y-2">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 ml-2">Escalera de Valor</p>
+
+                    <!-- Stage 1 (Active) -->
+                    <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 relative">
+                        <div class="flex justify-between items-start mb-2">
+                            <span
+                                class="text-[10px] font-bold bg-blue-500 text-white px-2 py-0.5 rounded-full">ACTUAL</span>
+                            <i data-lucide="shield-check" class="w-4 h-4 text-blue-400"></i>
+                        </div>
+                        <h3 class="font-bold text-white">Etapa 1: Identidad</h3>
+                        <p class="text-xs text-blue-200/70 mt-1">Generar Confianza</p>
+                    </div>
+
+                    <!-- Stage 2 (Locked) -->
+                    <div
+                        class="p-4 rounded-xl bg-white/5 border border-transparent opacity-60 hover:opacity-100 transition-opacity cursor-not-allowed group">
+                        <div class="flex justify-between items-start mb-2">
+                            <i data-lucide="lock"
+                                class="w-4 h-4 text-gray-500 group-hover:text-yellow-500 transition-colors"></i>
+                            <span class="text-xs font-bold text-gray-500">$350/mes</span>
+                        </div>
+                        <h3 class="font-bold text-gray-400 group-hover:text-white transition-colors">Etapa 2: Plus</h3>
+                        <p class="text-xs text-gray-500 mt-1">Producción Avanzada</p>
+                    </div>
+                    <!-- Stage 3 (Locked) -->
+                    <div
+                        class="p-4 rounded-xl bg-white/5 border border-transparent opacity-60 hover:opacity-100 transition-opacity cursor-not-allowed group">
+                        <div class="flex justify-between items-start mb-2">
+                            <i data-lucide="lock"
+                                class="w-4 h-4 text-gray-500 group-hover:text-purple-500 transition-colors"></i>
+                            <span class="text-xs font-bold text-gray-500">$570/mes</span>
+                        </div>
+                        <h3 class="font-bold text-gray-400 group-hover:text-white transition-colors">Etapa 3: Premium
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-1">Automatización Total</p>
+                    </div>
+                </div>
+
+                <!-- Main Content (Roadmap Goals) -->
+                <div class="flex-1 p-8 overflow-y-auto">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="flex items-end justify-between mb-8">
+                            <div>
+                                <h1 class="text-3xl font-bold text-white mb-2">Tu Hoja de Ruta: <span
+                                        class="text-blue-500 branch-name">Salud</span></h1>
+                                <p class="text-gray-400">Completa estas metas para desbloquear el siguiente nivel de
+                                    crecimiento.</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-2xl font-bold text-white">15%</span>
+                                <span class="text-sm text-gray-500 block">Completado</span>
+                            </div>
+                        </div>
+
+                        <!-- Goals List -->
+                        <div class="space-y-4">
+                            <!-- Goal 1: Done -->
+                            <div
+                                class="glass-panel p-0 rounded-xl flex items-center overflow-hidden border border-green-500/30">
+                                <div
+                                    class="w-16 h-full bg-green-500/10 flex items-center justify-center self-stretch border-r border-green-500/20">
+                                    <div
+                                        class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-black">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </div>
+                                </div>
+                                <div class="p-4 flex-1">
+                                    <h4 class="font-bold text-gray-300 line-through decoration-gray-500">Registro de
+                                        Marca</h4>
+                                    <p class="text-sm text-gray-500">Creación de cuenta y perfil básico.</p>
+                                </div>
+                                <div class="pr-6 text-sm font-bold text-green-500">Completado</div>
+                            </div>
+
+                            <!-- Goal 2: Active -->
+                            <div
+                                class="glass-panel p-0 rounded-xl flex items-center overflow-hidden border border-blue-500 bg-blue-900/10 shadow-[0_0_20px_rgba(59,130,246,0.1)] transform scale-[1.02]">
+                                <div
+                                    class="w-16 h-full bg-blue-500/20 flex items-center justify-center self-stretch border-r border-blue-500/30">
+                                    <div
+                                        class="w-6 h-6 rounded-full border-2 border-blue-500 flex items-center justify-center">
+                                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                    </div>
+                                </div>
+                                <div class="p-6 flex-1">
+                                    <div class="flex justify-between items-start mb-1">
+                                        <h4 class="text-lg font-bold text-white">Identidad Visual (Logo)</h4>
+                                        <span
+                                            class="text-xs bg-blue-500 text-white px-2 py-1 rounded font-bold">PRIORIDAD</span>
+                                    </div>
+                                    <p class="text-sm text-gray-300 mb-4 branch-desc-logo">Sube tu logotipo en alta
+                                        calidad para personalizar tus reportes.</p>
+                                    <button
+                                        class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2">
+                                        <i data-lucide="upload-cloud" class="w-4 h-4"></i> Subir Archivos
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Goal 3: Pending -->
+                            <div
+                                class="glass-panel p-0 rounded-xl flex items-center overflow-hidden border border-white/5 opacity-70 hover:opacity-100 transition-opacity">
+                                <div
+                                    class="w-16 h-full bg-white/5 flex items-center justify-center self-stretch border-r border-white/5">
+                                    <div class="w-6 h-6 rounded-full border-2 border-gray-600"></div>
+                                </div>
+                                <div class="p-4 flex-1">
+                                    <h4 class="font-bold text-gray-400">Sesión Fotográfica Inicial</h4>
+                                    <p class="text-sm text-gray-500 branch-desc-photo">Agenda tu primera sesión para
+                                        "Retratos Corporativos".</p>
+                                </div>
+                                <div class="pr-6">
+                                    <button
+                                        class="px-4 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs font-bold transition-colors border border-white/10">
+                                        Agendar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Goal 4: Pending -->
+                            <div
+                                class="glass-panel p-0 rounded-xl flex items-center overflow-hidden border border-white/5 opacity-70 hover:opacity-100 transition-opacity">
+                                <div
+                                    class="w-16 h-full bg-white/5 flex items-center justify-center self-stretch border-r border-white/5">
+                                    <div class="w-6 h-6 rounded-full border-2 border-gray-600"></div>
+                                </div>
+                                <div class="p-4 flex-1">
+                                    <h4 class="font-bold text-gray-400">Conexión de Redes</h4>
+                                    <p class="text-sm text-gray-500">Vincula Instagram y Facebook para métricas.</p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- PERSONALIZED TIPS SECTION -->
+                        <div class="mt-8 border-t border-white/5 pt-8">
+                            <h3 class="text-xl font-bold text-white mb-6 flex items-center">
+                                <i data-lucide="lightbulb" class="w-5 h-5 mr-2 text-yellow-400"></i> Tips de Contenido
+                                para <span class="text-blue-500 ml-1 branch-name-tips">Salud</span>
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="tips-container">
+                                <!-- Dynamic Tips will be injected here -->
+                                <div class="glass-panel p-4 rounded-xl flex items-start gap-4">
+                                    <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-400">
+                                        <i data-lucide="zap" class="w-5 h-5"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="text-white font-bold text-sm">Hook de 3 Segundos</h5>
+                                        <p class="text-xs text-gray-400 mt-1">Capta la atención visualmente o con una
+                                            pregunta impactante en los primeros 3 segundos.</p>
+                                    </div>
+                                </div>
+                                <div class="glass-panel p-4 rounded-xl flex items-start gap-4">
+                                    <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                                        <i data-lucide="video" class="w-5 h-5"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="text-white font-bold text-sm">Muestra el Proceso</h5>
+                                        <p class="text-xs text-gray-400 mt-1">Comparte un "detrás de cámaras" de una
+                                            consulta o procedimiento para generar confianza.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let selectedNiche = null;
+
+        function selectNiche(el, niche) {
+            // Remove active class from all
+            document.querySelectorAll('.niche-card').forEach(card => card.classList.remove('selected', 'active'));
+
+            // Add to clicked
+            el.classList.add('selected');
+            selectedNiche = niche;
+
+            // Show Button
+            const btnContainer = document.getElementById('continue-btn-container');
+            btnContainer.classList.remove('opacity-0', 'pointer-events-none');
+            btnContainer.classList.add('opacity-100', 'pointer-events-auto');
+        }
+
+        function goToDashboard() {
+            const stepNiche = document.getElementById('step-niche');
+            const stepDash = document.getElementById('step-dashboard');
+
+            // Fade Out
+            stepNiche.style.opacity = '0';
+            stepNiche.style.transform = 'translateY(-20px)';
+            stepNiche.style.transition = 'all 0.4s ease';
+
+            setTimeout(() => {
+                stepNiche.classList.add('hidden');
+                stepDash.classList.remove('hidden');
+                stepDash.classList.add('animate-fade-in');
+
+                // Update Content based on Niche
+                updateDashboardContent(selectedNiche);
+                lucide.createIcons();
+            }, 400);
+        }
+
+        function updateDashboardContent(niche) {
+            const branchName = document.querySelector('.branch-name');
+            const branchNameTips = document.querySelector('.branch-name-tips');
+            const branchDescLogo = document.querySelector('.branch-desc-logo');
+            const branchDescPhoto = document.querySelector('.branch-desc-photo');
+            const tipsContainer = document.getElementById('tips-container');
+
+            let tipsHTML = '';
+
+            if (niche === 'medical') {
+                branchName.textContent = 'Salud & Medicina';
+                branchNameTips.textContent = 'Salud';
+                branchDescPhoto.textContent = 'Agenda tu primera sesión para "Retratos Clínicos y Corporativos".';
+                tipsHTML = `
+                    <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400"><i data-lucide="activity" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Muestra el Proceso 🩺</h5>
+                            <p class="text-xs text-gray-400 mt-1">Graba un procedimiento sencillo o explica un diagnóstico común en menos de 60 segundos.</p>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-400"><i data-lucide="zap" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Hook Visual</h5>
+                            <p class="text-xs text-gray-400 mt-1">Empieza tus videos con una pregunta que hacen siempre tus pacientes.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (niche === 'fitness') {
+                branchName.textContent = 'Fitness & Deporte';
+                branchNameTips.textContent = 'Fitness';
+                branchDescPhoto.textContent = 'Agenda tu sesión de "Instalaciones y Clases en Vivo".';
+                tipsHTML = `
+                    <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-green-500/10 rounded-lg text-green-400"><i data-lucide="dumbbell" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Retos Expres ⏱️</h5>
+                            <p class="text-xs text-gray-400 mt-1">Invita a tu audiencia a hacer 10 repeticiones de algo ahora mismo.</p>
+                        </div>
+                    </div>
+                     <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-400"><i data-lucide="zap" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Energía Alta</h5>
+                            <p class="text-xs text-gray-400 mt-1">Usa música en tendencia con ritmo rápido para tus historias.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (niche === 'food') {
+                branchName.textContent = 'Gastronomía';
+                branchNameTips.textContent = 'Gastronomía';
+                branchDescPhoto.textContent = 'Agenda tu sesión de "Platos Estrella y Ambiente".';
+                tipsHTML = `
+                     <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-orange-500/10 rounded-lg text-orange-400"><i data-lucide="utensils" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">ASMR de Cocina 🍳</h5>
+                            <p class="text-xs text-gray-400 mt-1">El sonido de freír o cortar es muy satisfactorio. ¡Úsalo sin música!</p>
+                        </div>
+                    </div>
+                     <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-400"><i data-lucide="zap" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Plato Estrella</h5>
+                            <p class="text-xs text-gray-400 mt-1">Haz un close-up extremo de tu mejor plato saliendo de la cocina.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (niche === 'real_estate') {
+                branchName.textContent = 'Inmobiliaria';
+                branchNameTips.textContent = 'Inmobiliaria';
+                branchDescPhoto.textContent = 'Agenda tu visita para "Tours Virtuales de Propiedades".';
+                tipsHTML = `
+                     <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-purple-500/10 rounded-lg text-purple-400"><i data-lucide="home" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Tour Rápido 🏠</h5>
+                            <p class="text-xs text-gray-400 mt-1">Muestra lo mejor de la propiedad en 15 segundos (House Tour).</p>
+                        </div>
+                    </div>
+                     <div class="glass-panel p-4 rounded-xl flex items-start gap-4 animate-fade-in">
+                        <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-400"><i data-lucide="zap" class="w-5 h-5"></i></div>
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Datos de Valor</h5>
+                            <p class="text-xs text-gray-400 mt-1">Comparte: "¿Cuánto necesitas ganar para comprar esta casa?".</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            tipsContainer.innerHTML = tipsHTML;
+        }
+    </script>
+</body>
+
+</html>
+```

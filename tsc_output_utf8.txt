@@ -1,0 +1,12 @@
+﻿components/previs/StoryboardEditor.js(2885,57): error TS1005: ')' expected.
+components/previs/StoryboardEditor.js(2886,50): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/previs/StoryboardEditor.js(2946,47): error TS17002: Expected corresponding JSX closing tag for 'motion.div'.
+components/previs/StoryboardEditor.js(2947,29): error TS1005: ')' expected.
+components/previs/StoryboardEditor.js(2947,31): error TS17002: Expected corresponding JSX closing tag for 'AnimatePresence'.
+components/previs/StoryboardEditor.js(2948,30): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/previs/StoryboardEditor.js(2949,35): error TS17002: Expected corresponding JSX closing tag for 'div'.
+components/previs/StoryboardEditor.js(2991,27): error TS17002: Expected corresponding JSX closing tag for 'motion.aside'.
+components/previs/StoryboardEditor.js(2992,25): error TS1005: ')' expected.
+components/previs/StoryboardEditor.js(2992,27): error TS17002: Expected corresponding JSX closing tag for 'AnimatePresence'.
+components/previs/StoryboardEditor.js(2993,22): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/previs/StoryboardEditor.js(2994,15): error TS17002: Expected corresponding JSX closing tag for 'div'.

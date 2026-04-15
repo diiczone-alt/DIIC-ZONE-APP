@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIIC ZONE - Virtual Studio (Mobile Preview)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --hue-primary: 260;
+            --hue-secondary: 190;
+            --color-bg-base: hsl(240, 10%, 4%);
+            --color-primary: hsl(var(--hue-primary), 70%, 60%);
+            --color-secondary: hsl(var(--hue-secondary), 80%, 60%);
+            --radius-md: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            background-color: var(--color-bg-base);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            /* App feel */
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- LANFOR (Metal Shutter) --- */
+        .lanfor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+            background-image: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 19px,
+                    rgba(0, 0, 0, 0.5) 20px);
+            box-shadow: inset 0 0 100px black;
+        }
+
+        .lanfor.open {
+            transform: translateY(-100%);
+        }
+
+        .lanfor-handle {
+            width: 100%;
+            height: 60px;
+            background: #333;
+            border-top: 2px solid #555;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            padding-bottom: 20px;
+        }
+
+        .lanfor-text {
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: pulse 2s infinite;
+        }
+
+        /* --- 3D VIEWPORT (Mockup) --- */
+        .viewport-3d {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, #2a1b3d 0%, #050505 100%);
+            perspective: 1000px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        /* Mock Room */
+        .room {
+            width: 300px;
+            height: 300px;
+            transform-style: preserve-3d;
+            transform: rotateX(60deg) rotateZ(45deg);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            animation: float 10s infinite ease-in-out;
+            box-shadow: 0 0 50px rgba(139, 92, 246, 0.1);
+        }
+
+        .character {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 40px;
+            background: var(--color-primary);
+            transform: translate(-50%, -50%) rotateX(-90deg);
+            box-shadow: 0 0 20px var(--color-primary);
+            border-radius: 4px;
+        }
+
+        .department-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--color-secondary);
+            border: 1px solid var(--color-secondary);
+            pointer-events: none;
+        }
+
+        /* --- MIND MAP (Overlay) --- */
+        .mind-map-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 10, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            transform: translateY(90%);
+            /* Hiding most of it */
+            transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px 20px 0 0;
+        }
+
+        .mind-map-container.active {
+            transform: translateY(0);
+        }
+
+        .drag-handle {
+            width: 100%;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .handle-bar {
+            width: 60px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+
+        .mind-map-view {
+            padding: 2rem;
+            height: calc(100% - 40px);
+            position: relative;
+        }
+
+        /* Nodes */
+        .node {
+            position: absolute;
+            background: #111;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.7rem;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+
+        .node.center {
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+        }
+
+        .node:not(.center) {
+            background: #1a1a1a;
+        }
+
+        /* Connector Lines (simulated) */
+        .line {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            transform-origin: 0 50%;
+        }
+
+        /* --- AI ASSISTANT --- */
+        .ai-assistant {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+            z-index: 50;
+            cursor: pointer;
+            border: 2px solid white;
+        }
+
+        .ai-status {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        @keyframes blink {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.5);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes float {
+            0% {
+                transform: rotateX(60deg) rotateZ(45deg) translateZ(0);
+            }
+
+            50% {
+                transform: rotateX(60deg) rotateZ(45deg) translateZ(20px);
+            }
+
+            100% {
+                transform: rotateX(60deg) rotateZ(45deg) translateZ(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 1. THE LANFOR (Shutter) -->
+    <div class="lanfor" id="lanfor" onclick="openShop()">
+        <div style="margin-bottom: 20px; text-align: center;">
+            <h1 style="font-size: 2rem; margin-bottom: 10px;">DIIC ZONE</h1>
+            <p class="lanfor-text">Toque para Abrir el Estudio</p>
+        </div>
+        <div class="lanfor-handle">
+            <div style="width: 80px; height: 6px; background: #666; border-radius: 3px;"></div>
+        </div>
+    </div>
+
+    <!-- 2. 3D VIDEO GAME VIEW (Mockup) -->
+    <div class="viewport-3d">
+        <div class="room">
+            <!-- Simulated 3D Elements -->
+            <div class="character"></div>
+            <div class="department-label" style="top: -20px; left: 0;">Community<br>Manager</div>
+            <div class="department-label" style="bottom: -20px; right: 0;">Edición<br>Video</div>
+
+            <div
+                style="position: absolute; top:50%; left:50%; transform: translate(-50%, -50%); width: 200px; height: 1px; background: rgba(255,255,255,0.1)">
+            </div>
+            <div
+                style="position: absolute; top:50%; left:50%; transform: translate(-50%, -50%); width: 1px; height: 200px; background: rgba(255,255,255,0.1)">
+            </div>
+        </div>
+        <div style="position: absolute; bottom: 120px; text-align: center; opacity: 0.7; font-size: 0.8rem;">
+            <p>Modo Exploración 3D</p>
+            <p style="font-size: 0.7rem; margin-top: 5px;">Desliza hacia arriba para ver Mapa Mental</p>
+        </div>
+    </div>
+
+    <!-- 3. MIND MAP OVERLAY -->
+    <div class="mind-map-container" id="mindMap">
+        <div class="drag-handle" onclick="toggleview()">
+            <div class="handle-bar"></div>
+        </div>
+        <div class="mind-map-view">
+            <h2 style="text-align: center; margin-bottom: 2rem; font-size: 1.2rem;">Mapa de Proyectos</h2>
+
+            <!-- Nodes -->
+            <div class="node center">TU MARCA</div>
+
+            <div class="node" style="top: 20%; left: 20%;">Web</div>
+            <div class="line" style="top: 50%; left: 50%; width: 100px; transform: rotate(135deg);"></div>
+
+            <div class="node" style="top: 20%; right: 20%;">Redes</div>
+            <div class="line" style="top: 50%; left: 50%; width: 100px; transform: rotate(45deg);"></div>
+
+            <div class="node" style="bottom: 20%; left: 50%; transform: translate(-50%, 0);">Ads</div>
+
+            <!-- Floating Data -->
+            <div style="position: absolute; top: 10%; right: 10%; font-size: 0.7rem; color: var(--color-primary);">
+                Progreso: 45%
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. AI -->
+    <div class="ai-assistant" title="AI Assistant">
+        <div class="ai-status"></div>
+    </div>
+
+    <script>
+        function openShop() {
+            document.getElementById('lanfor').classList.add('open');
+        }
+
+        function toggleview() {
+            document.getElementById('mindMap').classList.toggle('active');
+        }
+
+        // Swipe detection (simple)
+        let touchStartY = 0;
+        document.addEventListener('touchstart', e => {
+            touchStartY = e.touches[0].clientY;
+        });
+
+        document.addEventListener('touchend', e => {
+            const touchEndY = e.changedTouches[0].clientY;
+            const diff = touchStartY - touchEndY;
+
+            if (diff > 50) { // Swipe Up
+                document.getElementById('mindMap').classList.add('active');
+            } else if (diff < -50) { // Swipe Down
+                document.getElementById('mindMap').classList.remove('active');
+            }
+        });
+    </script>
+</body>
+
+</html>

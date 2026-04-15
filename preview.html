@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIIC ZONE - Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Color Palette - HSL */
+      --hue-primary: 260;
+      /* Purple */
+      --hue-secondary: 190;
+      /* Cyan */
+      --hue-accent: 330;
+      /* Pink */
+
+      --color-bg-base: hsl(240, 10%, 4%);
+      --color-bg-surface: hsl(240, 10%, 10%);
+      --color-bg-surface-hover: hsl(240, 10%, 15%);
+
+      --color-primary: hsl(var(--hue-primary), 70%, 60%);
+      --color-primary-glow: hsl(var(--hue-primary), 70%, 60%, 0.5);
+
+      --color-secondary: hsl(var(--hue-secondary), 80%, 60%);
+
+      --color-text-main: hsl(0, 0%, 95%);
+      --color-text-muted: hsl(240, 5%, 60%);
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 16px;
+
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      padding: 0;
+      margin: 0;
+    }
+
+    body {
+      background-color: var(--color-bg-base);
+      color: var(--color-text-main);
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* Utilities */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      font-size: 1rem;
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: white;
+      box-shadow: 0 0 15px var(--color-primary-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 25px var(--color-primary-glow);
+      filter: brightness(1.1);
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-lg);
+      color: white;
+    }
+
+    /* Typography */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    h3 {
+      font-size: 1.75rem;
+      font-weight: 600;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Page Styles */
+    .hero {
+      min-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      background: radial-gradient(circle at 50% 50%, rgba(76, 29, 149, 0.2) 0%, rgba(0, 0, 0, 0) 50%);
+    }
+
+    .heroContent {
+      z-index: 2;
+      max-width: 800px;
+    }
+
+    .title {
+      font-size: 5rem;
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      font-size: 1.5rem;
+      color: var(--color-text-muted);
+      margin-bottom: 3rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin: 4rem 0;
+    }
+
+    .card {
+      padding: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: var(--color-primary);
+    }
+
+    .cardTitle {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--color-primary);
+    }
+
+    .section {
+      padding: 8rem 0;
+    }
+
+    .sectionTitle {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50px;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <section class="hero">
+      <div class="container heroContent">
+        <span class="badge">Plataforma SaaS + Productora Audiovisual</span>
+        <h1 class="title">
+          Bienvenido a <br />
+          <span class="gradient-text">DIIC ZONE</span>
+        </h1>
+        <p class="subtitle">
+          El ecosistema donde tu marca evoluciona. Gestiona, produce y escala tu negocio con nuestro Estudio Virtual 3D.
+        </p>
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+          <a href="#" class="btn btn-primary">
+            Comenzar Ahora
+          </a>
+          <button class="btn glass-panel">
+            Explorar Estudio Virtual
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container">
+      <h2 class="sectionTitle">
+        <span class="gradient-text">Departamentos Creativos</span>
+      </h2>
+      <div class="grid">
+        <!-- Item 1 -->
+        <div class="card">
+          <h3 class="cardTitle">Community Manager</h3>
+          <p style="color: var(--color-text-muted)">Estrategia, planificación y reportes.</p>
+        </div>
+        <!-- Item 2 -->
+        <div class="card">
+          <h3 class="cardTitle">Diseño Gráfico</h3>
+          <p style="color: var(--color-text-muted)">Posts, Branding, Flyers.</p>
+        </div>
+        <!-- Item 3 -->
+        <div class="card">
+          <h3 class="cardTitle">Edición de Video</h3>
+          <p style="color: var(--color-text-muted)">Reels, Testimoniales, Corporativos.</p>
+        </div>
+        <!-- Item 4 -->
+        <div class="card">
+          <h3 class="cardTitle">Fotografía</h3>
+          <p style="color: var(--color-text-muted)">Estudio, Eventos, Marca Personal.</p>
+        </div>
+        <!-- Item 5 -->
+        <div class="card">
+          <h3 class="cardTitle">Filmmaker</h3>
+          <p style="color: var(--color-text-muted)">Grabación y Gestión de Material.</p>
+        </div>
+        <!-- Item 6 -->
+        <div class="card">
+          <h3 class="cardTitle">IA & Automatización</h3>
+          <p style="color: var(--color-text-muted)">Chatbots, CRM, Optimizaciones.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="background: var(--color-bg-surface)">
+      <div class="container">
+        <h2 class="sectionTitle">Sistema de Niveles</h2>
+        <div class="grid">
+          <!-- Level 1 -->
+          <div class="card" style="text-align: center">
+            <div style="font-size: 3rem; font-weight: 900; margin-bottom: 0.5rem; color: rgba(255,255,255,0.05)">01
+            </div>
+            <h3>Inicio</h3>
+            <div
+              style="width: 100%; background: rgba(255,255,255,0.1); height: 8px; margin-top: 1.5rem; border-radius: 4px; overflow: hidden">
+              <div style="width: 1%; background: var(--color-primary); height: 100%"></div>
+            </div>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted)">1% Completado</p>
+          </div>
+          <!-- Level 2 -->
+          <div class="card" style="text-align: center">
+            <div style="font-size: 3rem; font-weight: 900; margin-bottom: 0.5rem; color: rgba(255,255,255,0.05)">02
+            </div>
+            <h3>Presencia</h3>
+            <div
+              style="width: 100%; background: rgba(255,255,255,0.1); height: 8px; margin-top: 1.5rem; border-radius: 4px; overflow: hidden">
+              <div style="width: 25%; background: var(--color-primary); height: 100%"></div>
+            </div>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted)">25% Completado</p>
+          </div>
+          <!-- Level 3 -->
+          <div class="card" style="text-align: center">
+            <div style="font-size: 3rem; font-weight: 900; margin-bottom: 0.5rem; color: rgba(255,255,255,0.05)">03
+            </div>
+            <h3>Confianza</h3>
+            <div
+              style="width: 100%; background: rgba(255,255,255,0.1); height: 8px; margin-top: 1.5rem; border-radius: 4px; overflow: hidden">
+              <div style="width: 50%; background: var(--color-primary); height: 100%"></div>
+            </div>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted)">50% Completado</p>
+          </div>
+          <!-- Level 4 -->
+          <div class="card" style="text-align: center">
+            <div style="font-size: 3rem; font-weight: 900; margin-bottom: 0.5rem; color: rgba(255,255,255,0.05)">04
+            </div>
+            <h3>Autoridad</h3>
+            <div
+              style="width: 100%; background: rgba(255,255,255,0.1); height: 8px; margin-top: 1.5rem; border-radius: 4px; overflow: hidden">
+              <div style="width: 75%; background: var(--color-primary); height: 100%"></div>
+            </div>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted)">75% Completado</p>
+          </div>
+          <!-- Level 5 -->
+          <div class="card" style="text-align: center">
+            <div style="font-size: 3rem; font-weight: 900; margin-bottom: 0.5rem; color: rgba(255,255,255,0.05)">05
+            </div>
+            <h3>Escala</h3>
+            <div
+              style="width: 100%; background: rgba(255,255,255,0.1); height: 8px; margin-top: 1.5rem; border-radius: 4px; overflow: hidden">
+              <div style="width: 100%; background: var(--color-primary); height: 100%"></div>
+            </div>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted)">100% Completado</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+
+</html>

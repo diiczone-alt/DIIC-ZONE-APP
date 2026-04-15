@@ -1,0 +1,16 @@
+components/previs/StoryboardEditor.js(2312,38): error TS17008: JSX element 'AnimatePresence' has no corresponding closing tag.
+components/previs/StoryboardEditor.js(2886,65): error TS1005: ')' expected.
+components/previs/StoryboardEditor.js(2945,47): error TS17002: Expected corresponding JSX closing tag for 'motion.div'.
+components/previs/StoryboardEditor.js(2946,45): error TS1005: ')' expected.
+components/previs/StoryboardEditor.js(2947,42): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/previs/StoryboardEditor.js(2949,27): error TS17002: Expected corresponding JSX closing tag for 'motion.aside'.
+components/previs/StoryboardEditor.js(2952,15): error TS17002: Expected corresponding JSX closing tag for 'div'.
+components/previs/StoryboardEditor.js(2986,35): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+components/previs/StoryboardEditor.js(2988,21): error TS1005: ')' expected.
+components/previs/StoryboardEditor.js(2994,1): error TS1005: ')' expected.
+components/previs/StoryboardEditor.js(2995,1): error TS1109: Expression expected.
+components/previs/StoryboardEditor.js(2997,1): error TS1128: Declaration or statement expected.
+components/previs/StoryboardEditor.js(2999,1): error TS2657: JSX expressions must have one parent element.
+components/previs/StoryboardEditor.js(3165,9): error TS1128: Declaration or statement expected.
+components/previs/StoryboardEditor.js(3166,5): error TS1109: Expression expected.
+components/previs/StoryboardEditor.js(3167,1): error TS1128: Declaration or statement expected.
