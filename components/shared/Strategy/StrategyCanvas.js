@@ -122,15 +122,39 @@ export default function StrategyCanvas({
     // --- MAGIC WAND (AUTO-LAYOUT) TRIGGER ---
     useEffect(() => {
         if (activeTool === 'organize') {
-            // Trigger Magic Reorganize
+            // 1. Reset Hubs to defaults
             setHubPositions(DEFAULT_HUB_POSITIONS);
+
+            // 2. Align Tactical Nodes to their Strategic Columns
+            const columnMapping = {
+                'conciencia': 0,
+                'interés': 1,
+                'consideración': 2,
+                'conversión': 3,
+                'retención': 4
+            };
+
+            const updatedNodes = nodes.map(node => {
+                const typeConfig = NODE_TYPES[node.type] || NODE_TYPES.educativo;
+                const colIdx = columnMapping[typeConfig.category];
+                
+                if (colIdx !== undefined) {
+                    const colX = STRATEGIC_RAILS.COLUMNS[colIdx] + 50; // Offset from rail
+                    // Keep existing Y or redistribute? For now, keep Y but move to X column
+                    return { ...node, x: colX };
+                }
+                return node;
+            });
+
+            // Trigger actual update
+            updatedNodes.forEach(node => onNodeMove(node.id, node.x, node.y));
             
             // Re-select tool back to select to avoid loop
             setTimeout(() => {
                 if (onToolChange) onToolChange('select');
             }, 800);
         }
-    }, [activeTool, onToolChange]);
+    }, [activeTool, onToolChange, nodes, onNodeMove]);
 
     const hubHierarchy = {
         'root': ['l2_creativa', 'l2_crm', 'l2_conversion'],
@@ -476,31 +500,18 @@ export default function StrategyCanvas({
         };
     }, [handleMouseMove, handleMouseUp]);
 
-    // Orthogonal (Manhattan) routing for a high-fidelity "Manifold" look
+    // Neural Bezier routing for a fluid, organic look
     const getEdgePath = (sourceId, targetId) => {
         const source = nodes.find(n => n.id === sourceId);
         const target = nodes.find(n => n.id === targetId);
         if (!source || !target) return '';
 
         const startX = source.x + 290; // End of tactical chassis
-        const startY = source.y + 38;  // Vertical center of h-76
+        const startY = source.y + 38;  // Vertical center
         const endX = target.x;
         const endY = target.y + 38;
 
-        // Implementation of Advanced Z-shape Manifold routing
-        const GAP = 30; // Minimum gap for the manifold
-        const isBackwards = endX < startX + GAP;
-        
-        if (isBackwards) {
-            // Complex Z-path to wrap around nodes
-            const midY = startY + (endY - startY) * 0.5;
-            const detoutX = startX + GAP;
-            return `M ${startX} ${startY} L ${detoutX} ${startY} L ${detoutX} ${midY} L ${endX - GAP} ${midY} L ${endX - GAP} ${endY} L ${endX} ${endY}`;
-        }
-
-        // Standard 3-point orthogonal path (Step)
-        const midX = startX + (endX - startX) * 0.5;
-        return `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
+        return getBezier(startX, startY, endX, endY);
     };
 
     // Dynamic node counting for Ingredient Hubs
@@ -1078,17 +1089,10 @@ export default function StrategyCanvas({
                     {/* NEURAL TREE ROOT ARCHITECTURE LAYER */}
                     {renderRootArchitecture()}
 
-                    {/* Architectural Columns - Zero Overlap Layout */}
+                    {/* Architectural Columns - Clean Modern Labels */}
                     {STRATEGIC_COLUMNS.map((col, idx) => (
                         <g key={col.id} transform={`translate(${STRATEGIC_RAILS.COLUMNS[idx]}, 0)`}>
-                            {/* Column Header - Premium Centered Styling */}
-                            <rect 
-                                x="50" y="25" 
-                                width="600" height="50" 
-                                rx="10" 
-                                fill={theme === 'dark' ? 'rgba(30, 41, 59, 0.4)' : 'rgba(255, 255, 255, 0.5)'}
-                                className="backdrop-blur-md border border-white/5 shadow-sm"
-                            />
+                            {/* Simplified Header - Minimalist Style */}
                             <text 
                                 x="350" y="58" 
                                 textAnchor="middle" 
