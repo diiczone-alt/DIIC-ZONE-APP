@@ -1253,12 +1253,12 @@ export default function StrategyCanvas({
                         hex: 'rounded-2xl',
                         rect: 'rounded-2xl'
                     };
-                    // --- VISTA TÁCTICA (UNIFICADA - ESTILO PRYME) ---
+                    // --- VISTA TÁCTICA (UNIFICADA - ESTILO DASHBOARD PREMIUM) ---
+                    const progress = node.data?.status === 'completed' ? 100 : 35;
+                    
                     return (
                         <motion.div
                             key={node.id}
-                            x={node.x}
-                            y={node.y}
                             animate={{ scale: 1, opacity: 1, x: node.x, y: node.y }}
                             whileHover={{ scale: 1.04, boxShadow: `0 0 50px ${nodeColor}40` }}
                             transition={{ type: "spring", stiffness: 350, damping: 25 }}
@@ -1277,32 +1277,36 @@ export default function StrategyCanvas({
                                 </motion.div>
                             )}
 
-                            {/* The Node Chassis - Card Style (180x170) */}
+                            {/* The Node Chassis - Rediseñado Estilo Hub (180x180) */}
                             <div 
-                                className={`relative w-[180px] h-[170px] rounded-[24px] flex flex-col items-center justify-between p-4 transition-all duration-500 border-2 overflow-hidden ${
-                                    isSelected ? 'scale-105 z-50' : 'hover:scale-[1.02]'
-                                } ${theme === 'dark' ? (isSelected ? 'bg-[#0A0A0F]/90 backdrop-blur-3xl' : 'bg-[#0A0A0F]/45 backdrop-blur-md') : 'bg-white shadow-xl border-slate-200'}`}
+                                className={`relative w-[180px] h-[180px] rounded-[24px] flex flex-col p-4 transition-all duration-500 border-2 overflow-hidden shadow-2xl ${
+                                    theme === 'dark' ? 'bg-[#0A0A0F]/95 backdrop-blur-3xl border-transparent' : 'bg-white border-slate-200'
+                                }`}
                                 style={{ 
-                                    borderColor: isSelected ? nodeColor : (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(15, 23, 42, 0.1)'),
+                                    borderColor: isSelected ? nodeColor : (theme === 'dark' ? `${nodeColor}40` : 'rgba(15, 23, 42, 0.1)'),
                                     boxShadow: isSelected 
-                                        ? `0 0 60px ${nodeGlow}30, inset 0 0 20px ${nodeColor}10` 
-                                        : theme === 'dark' ? `0 10px 40px rgba(0,0,0,0.3)` : `0 10px 30px rgba(0,0,0,0.05)`
+                                        ? `0 0 60px ${nodeColor}40, inset 0 0 20px ${nodeColor}10` 
+                                        : theme === 'dark' ? `0 10px 40px rgba(0,0,0,0.5)` : `0 10px 30px rgba(0,0,0,0.05)`
                                 }}
                             >
-                                {/* Liquid Glass Shimmer */}
+                                {/* Inner Shimmer Glow (Consistent with Hub) */}
                                 {isSelected && (
                                     <motion.div 
-                                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -z-5"
-                                        animate={{ x: ['-200%', '200%'] }}
-                                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="absolute inset-0 pointer-events-none"
+                                        style={{ background: `radial-gradient(circle at 50% 0%, ${nodeColor}15, transparent 70%)` }}
                                     />
                                 )}
 
-                                {/* Top Header: Mini Icon + Title */}
-                                <div className="w-full flex items-center gap-2 px-1 z-10">
+                                {/* Glow superior sutil */}
+                                <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ backgroundColor: nodeColor, opacity: isSelected ? 0.8 : 0.2 }} />
+
+                                {/* Header: Icon + Category/Platform */}
+                                <div className="flex items-center gap-2 mb-3 z-10">
                                     <div 
-                                        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 shadow-sm"
-                                        style={{ backgroundColor: nodeColor + '30', border: `1px solid ${nodeColor}40` }}
+                                        className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                                        style={{ backgroundColor: nodeColor + '20', border: `1px solid ${nodeColor}40` }}
                                     >
                                         {node.data?.platform === 'instagram' && <Instagram size={12} style={{ color: nodeColor }} />}
                                         {node.data?.platform === 'facebook' && <Facebook size={12} style={{ color: nodeColor }} />}
@@ -1314,65 +1318,76 @@ export default function StrategyCanvas({
                                             <Image size={12} style={{ color: nodeColor }} />
                                         )}
                                     </div>
-                                    <h4 className={`text-[10px] font-black tracking-[0.2em] uppercase truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                                        {node.data?.title || typeConfig.label}
-                                    </h4>
+                                    <span className="text-[8px] font-black uppercase tracking-[0.25em] opacity-40" style={{ color: theme === 'dark' ? 'white' : 'black' }}>
+                                        {node.data?.platform || typeConfig.label}
+                                    </span>
                                 </div>
 
-                                {/* Central Content Area: Large Symbolic Icon */}
-                                <div className="flex-1 flex items-center justify-center w-full z-0 relative">
-                                    <div 
-                                        className="transition-all duration-700 opacity-[0.08] group-hover:opacity-[0.14]"
-                                        style={{ color: nodeColor }}
-                                    >
-                                        {node.data?.platform === 'instagram' && <Instagram size={84} strokeWidth={1} />}
-                                        {node.data?.platform === 'facebook' && <Facebook size={84} strokeWidth={1} />}
-                                        {node.data?.platform === 'youtube' && <Youtube size={84} strokeWidth={1} />}
-                                        {node.data?.platform === 'tiktok' && <Globe size={84} strokeWidth={1} />}
-                                        {!node.data?.platform && (
-                                            isVideo ? <Video size={84} strokeWidth={1} /> : 
-                                            isAudio ? <Mic size={84} strokeWidth={1} /> : 
-                                            <Image size={84} strokeWidth={1} />
-                                        )}
+                                {/* Title: Uppercase Black (Consistent with StrategyMindMap) */}
+                                <h4 className={`text-[10px] font-[1000] tracking-[0.2em] uppercase leading-tight mb-3 truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                    {node.data?.title || 'Contenido Maestro'}
+                                </h4>
+
+                                {/* CENTRAL VALUE BOX (Para Miniatura/Contenido) */}
+                                <div 
+                                    className={`flex-1 w-full rounded-xl border border-white/5 flex items-center justify-center relative overflow-hidden group/thumb ${
+                                        theme === 'dark' ? 'bg-white/[0.03]' : 'bg-slate-50'
+                                    }`}
+                                    style={{ borderColor: `${nodeColor}15` }}
+                                >
+                                    {/* Miniatura Placeolder (Similar al estilo de los Hubs) */}
+                                    <div className="absolute inset-0 opacity-[0.05] group-hover/thumb:opacity-[0.1] transition-opacity flex items-center justify-center">
+                                        {isVideo ? <Film size={64} /> : <Box size={64} />}
                                     </div>
-                                    
-                                    {/* Action Button Overlaid on center (Subtle) */}
+
+                                    {/* Contenido Visual (Si existe) */}
+                                    {node.data?.thumbnail ? (
+                                        <img src={node.data.thumbnail} className="w-full h-full object-cover z-10" alt="content" />
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-1 z-10">
+                                            <span className="text-[18px] font-black tracking-tighter" style={{ color: nodeColor }}>
+                                                {progress}%
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Action Button Overlay */}
                                     <motion.button 
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onNodeSelect(node.id, 'estilo'); 
-                                            if (setActiveNodeMenu) setActiveNodeMenu(null); 
+                                            onNodeSelect(node.id); 
                                         }}
-                                        className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20`}
+                                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity z-20 bg-black/20 backdrop-blur-[2px]"
                                     >
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border ${theme === 'dark' ? 'bg-white/5 border-white/20 text-white' : 'bg-indigo-600/10 border-indigo-600/30 text-indigo-700'}`}>
-                                            <ChevronRight size={18} />
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${theme === 'dark' ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-slate-200 text-indigo-600 shadow-md'}`}>
+                                            <ChevronRight size={14} />
                                         </div>
                                     </motion.button>
                                 </div>
 
-                                {/* Bottom Info Bar */}
-                                <div className="w-full flex items-center justify-between pt-2 border-t border-white/5 z-10">
-                                    <span className={`text-[8px] font-black tracking-widest uppercase opacity-40 ${theme === 'dark' ? 'text-white' : 'text-slate-500'}`}>
+                                {/* Footer: Metadata & Status (Status Dot like Hub) */}
+                                <div className="flex items-center justify-between mt-3 px-1 z-10">
+                                    <span className="text-[7px] font-black tracking-[0.3em] uppercase opacity-40 italic" style={{ color: theme === 'dark' ? 'white' : 'black' }}>
                                         {node.data?.status || 'Active'}
                                     </span>
-                                    <div className="flex items-center gap-1.5">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${node.data?.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-indigo-400'}`} />
-                                        <span className={`text-[10px] font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                                            {node.data?.status === 'completed' ? '100%' : '35%'}
-                                        </span>
+                                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 border border-white/5 shadow-sm">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${progress === 100 ? 'bg-emerald-500' : 'bg-indigo-400'}`} style={{ boxShadow: `0 0 8px ${progress === 100 ? '#10b981' : '#6366f1'}` }} />
+                                        <span className={`text-[8px] font-black tracking-tighter ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{progress}%</span>
                                     </div>
                                 </div>
 
-                                {/* Progress Bar (Edge Bottom) */}
-                                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/5 overflow-hidden">
+                                {/* Progress Bar Glow (Bottom) */}
+                                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/5">
                                     <motion.div 
                                         initial={{ width: 0 }}
-                                        animate={{ width: node.data?.status === 'completed' ? '100%' : '35%' }}
+                                        animate={{ width: `${progress}%` }}
                                         className="h-full"
-                                        style={{ backgroundColor: nodeColor, boxShadow: `0 0 10px ${nodeColor}80` }}
+                                        style={{ 
+                                            backgroundColor: nodeColor, 
+                                            boxShadow: isSelected ? `0 0 10px ${nodeColor}` : 'none' 
+                                        }}
                                     />
                                 </div>
                             </div>

@@ -55,7 +55,11 @@ export const onboardingService = {
                         status: 'activo',
                         city: city,
                         availability: 'full-time',
-                        activetasks: 0
+                        activetasks: 0,
+                        cv_url: formData.cv_url || '',
+                        cv_summary: formData.cv_summary || '',
+                        skills: formData.skills || [],
+                        whatsapp: formData.whatsapp || ''
                     });
 
                 if (teamError) {
@@ -70,6 +74,10 @@ export const onboardingService = {
                     full_name: fullName,
                     role: profileType === 'creative' ? (formData.role || 'CREATIVE').toUpperCase() : profileType.toUpperCase(),
                     client_id: clientId,
+                    cv_url: formData.cv_url || '',
+                    cv_summary: formData.cv_summary || '',
+                    skills: formData.skills || [],
+                    whatsapp: formData.whatsapp || ''
                 })
                 .eq('id', user.id);
 

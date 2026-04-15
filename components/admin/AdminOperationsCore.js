@@ -9,7 +9,7 @@ import {
     Search, Filter, ArrowUpRight,
     TrendingUp, MessageSquare, ShieldCheck,
     Zap, ListOrdered, CheckSquare, BrainCircuit,
-    AlertCircle, Flame, GraduationCap, MapPin
+    AlertCircle, Flame, GraduationCap, MapPin, ExternalLink, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -193,15 +193,64 @@ function TalentExplorer() {
                                     <span className="text-[11px] font-black tracking-widest text-gray-500 uppercase">Carga Actual</span>
                                     <span className="text-sm font-bold text-white flex items-center gap-2">
                                         <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> 
-                                        {selectedProfile.activeTasks} Tareas Activas
+                                        {selectedProfile.activetasks || 0} Tareas Activas
                                     </span>
+                                </div>
+
+                                {/* CV SECTION */}
+                                <div className="p-5 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="w-4 h-4 text-indigo-400" />
+                                        <span className="text-[10px] font-black tracking-widest text-indigo-400 uppercase">Perfil Profesional / CV</span>
+                                    </div>
+                                    
+                                    {selectedProfile.cv_summary ? (
+                                        <p className="text-xs text-gray-400 leading-relaxed italic">
+                                            "{selectedProfile.cv_summary}"
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-gray-500 italic">No se ha cargado un resumen profesional aún.</p>
+                                    )}
+
+                                    {selectedProfile.skills && selectedProfile.skills.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 pt-2">
+                                            {selectedProfile.skills.map(skill => (
+                                                <span key={skill} className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[9px] font-black rounded-md uppercase border border-indigo-500/10">
+                                                    {skill}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {selectedProfile.cv_url && (
+                                        <a 
+                                            href={selectedProfile.cv_url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 text-[10px] font-black text-indigo-400 hover:text-white transition-colors pt-2 uppercase tracking-tighter"
+                                        >
+                                            <ExternalLink className="w-3" /> Ver Curriculum Original
+                                        </a>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="flex gap-4 pt-4 border-t border-white/5">
-                                <button className="flex-1 py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
-                                    <MessageSquare className="w-4 h-4" /> Mensaje Directo
+                                <button className="flex-1 py-4 bg-white/5 border border-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                                    <MessageSquare className="w-4 h-4" /> Mensate Interno
                                 </button>
+                                {selectedProfile.whatsapp && (
+                                    <button 
+                                        onClick={() => {
+                                            const cleanNum = selectedProfile.whatsapp.replace(/\D/g, '');
+                                            const msg = encodeURIComponent(`Hola ${selectedProfile.name}, tienes una notificación pendiente en tu Workstation de DIIC ZONE. Por favor revisa tus tareas.`);
+                                            window.open(`https://wa.me/${cleanNum}?text=${msg}`, '_blank');
+                                        }}
+                                        className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                                    >
+                                        <Phone className="w-4 h-4" /> Recordatorio WA
+                                    </button>
+                                )}
                             </div>
                         </motion.div>
                     </div>
