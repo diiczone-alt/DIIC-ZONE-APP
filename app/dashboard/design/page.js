@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from 'react';
 import DepartmentWelcome from '@/components/ui/DepartmentWelcome';
 import DesignSelection from '@/components/design/DesignSelection';
