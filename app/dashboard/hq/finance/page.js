@@ -267,7 +267,7 @@ export default function HQFinancePage() {
                                          </div>
                                     </div>
                                 </div>
-                                                 {/* --- EXPENSE DETAIL MODAL (ACTIVATED) --- */}
+                                                 /* --- EXPENSE DETAIL MODAL (ACTIVATED) --- */
                             {activeModal === 'expenses' && (
                                 <div className="space-y-12 max-h-[75vh] overflow-y-auto pr-6 custom-scrollbar">
                                     <div className="flex justify-between items-end border-b border-white/5 pb-10">
@@ -284,7 +284,7 @@ export default function HQFinancePage() {
                                         </div>
                                     </div>
                                     
-                                    {/* ITEMIZED PAYROLL */}
+                                    /* ITEMIZED PAYROLL */
                                     <section className="space-y-6">
                                         <div className="flex items-center justify-between">
                                             <h5 className="text-xs font-black text-indigo-400 uppercase tracking-[0.3em] italic">Desglose de Nómina HQ</h5>
