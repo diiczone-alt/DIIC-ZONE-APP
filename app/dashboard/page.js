@@ -267,10 +267,10 @@ function DashboardContent() {
             >
                <div className="text-right hidden sm:block">
                   <p className="text-[9px] font-black text-white uppercase tracking-widest leading-none">
-                     {user?.user_metadata?.full_name || user?.full_name || 'Usuario'}
+                     {user?.user_metadata?.full_name || user?.full_name || 'Estratega'}
                   </p>
                   <p className="text-[7px] font-bold text-emerald-400 uppercase tracking-tighter mt-1 opacity-70">
-                     {user?.user_metadata?.brand || 'Cliente Empresarial'}
+                     {user?.role === 'ADMIN' ? 'Administrador Master' : (user?.role === 'CREATOR' || user?.role === 'CM' ? 'Estratega de Contenido' : (user?.user_metadata?.brand || 'Cliente Empresarial'))}
                   </p>
                </div>
                <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/20 p-0.5 bg-gradient-to-br from-indigo-500/20 to-purple-500/20">
@@ -359,7 +359,7 @@ function DashboardContent() {
                              className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-white/5 transition-all text-gray-400 hover:text-white group"
                           >
                              <User className="w-4 h-4 group-hover:text-indigo-400" />
-                             <span className="text-[11px] font-bold">Perfil de Empresa</span>
+                             <span className="text-[11px] font-bold">{user?.role === 'CLIENT' ? 'Perfil de Empresa' : 'Configuración de Mi Cuenta'}</span>
                           </button>
                           <button 
                              onClick={() => { setActiveDropdown(null); router.push('/dashboard/settings'); }}
@@ -400,7 +400,7 @@ function DashboardContent() {
             
             <div className="relative">
                <h1 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter leading-none select-none">
-                  ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">{(user?.user_metadata?.full_name || user?.full_name || 'Creativo').split(' ')[0]}</span>.
+                  ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">{(user?.user_metadata?.full_name || user?.full_name || 'Estratega').split(' ')[0]}</span>.
                </h1>
                {/* Subtle title glow */}
                <div className="absolute -top-4 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-[80px] -z-10" />
