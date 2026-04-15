@@ -1081,12 +1081,6 @@ export default function StrategyCanvas({
                     {/* Architectural Columns - Zero Overlap Layout */}
                     {STRATEGIC_COLUMNS.map((col, idx) => (
                         <g key={col.id} transform={`translate(${STRATEGIC_RAILS.COLUMNS[idx]}, 0)`}>
-                            <line 
-                                x1="0" y1="0" x2="0" y2="5000" 
-                                stroke={theme === 'dark' ? "rgba(255,255,255,0.05)" : "rgba(203,213,225,0.5)"} 
-                                strokeWidth="1" 
-                            />
-                            
                             {/* Column Header - Premium Centered Styling */}
                             <rect 
                                 x="50" y="25" 
@@ -1102,15 +1096,6 @@ export default function StrategyCanvas({
                             >
                                 {col.label}
                             </text>
-                            
-                            {/* Structural Rail - Anchor for tactical flow */}
-                            <line 
-                                x1="50" y1="50" x2="650" y2="50"
-                                stroke={theme === 'dark' ? "rgba(255,255,255,0.03)" : "rgba(99,102,241,0.1)"}
-                                strokeWidth="1"
-                                strokeDasharray="4 8"
-                            />
-                            <circle cx="50" cy="50" r="4" className="fill-indigo-500/40" />
                         </g>
                     ))}
 
