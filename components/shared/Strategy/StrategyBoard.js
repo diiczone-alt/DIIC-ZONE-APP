@@ -1049,6 +1049,7 @@ export default function StrategyBoard({ role, onClose }) {
                                             onContextMenuUpdate={setContextMenu}
                                             isAuditorActive={isAuditorActive}
                                             funnelHealth={funnelHealth}
+                                            onToolChange={setActiveTool}
                                             theme={theme}
                                         />
                                     </div>

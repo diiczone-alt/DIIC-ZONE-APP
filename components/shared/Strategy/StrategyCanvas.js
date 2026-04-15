@@ -61,6 +61,7 @@ export default function StrategyCanvas({
     onContextMenuUpdate,
     isAuditorActive,
     funnelHealth,
+    onToolChange,
     isCompactMode = false,
     theme = 'dark',
     activeCampaign = null
@@ -118,6 +119,19 @@ export default function StrategyCanvas({
         }
     }, [hubPositions, activeCampaign?.id]);
 
+    // --- MAGIC WAND (AUTO-LAYOUT) TRIGGER ---
+    useEffect(() => {
+        if (activeTool === 'organize') {
+            // Trigger Magic Reorganize
+            setHubPositions(DEFAULT_HUB_POSITIONS);
+            
+            // Re-select tool back to select to avoid loop
+            setTimeout(() => {
+                if (onToolChange) onToolChange('select');
+            }, 800);
+        }
+    }, [activeTool, onToolChange]);
+
     const hubHierarchy = {
         'root': ['l2_creativa', 'l2_crm', 'l2_conversion'],
         'l2_creativa': ['l3_imagen', 'l3_videos', 'l3_audios', 'l3_imprenta'],
@@ -164,6 +178,58 @@ export default function StrategyCanvas({
          { parent: 'l3_videos', lane: 'v_tiktok', id: 'hub_tiktok', label: 'TIK TOK', color: '#fb923c', icon: Video },
          { parent: 'l3_videos', lane: 'v_youtube', id: 'hub_youtube', label: 'YOUTUBE', color: '#ef4444', icon: Youtube },
      ];
+
+    const DEFAULT_HUB_POSITIONS = {
+        'root': { x: 100, y: 1500 },
+        'l2_creativa': { x: 500, y: 1000 },
+        'l2_crm': { x: 500, y: 2400 },
+        'l2_conversion': { x: 500, y: 3200 },
+        'l3_imagen': { x: 1000, y: 600 },
+        'l3_videos': { x: 1000, y: 1800 },
+        'l3_audios': { x: 1000, y: 2200 },
+        'l3_imprenta': { x: 1000, y: 2500 },
+        'l3_crm_email': { x: 1000, y: 2700 },
+        'l3_crm_scoring': { x: 1000, y: 2900 },
+        'l3_crm_retargeting': { x: 1000, y: 3100 },
+        'hub_post': { x: 1400, y: 300 },
+        'hub_st_img': { x: 1400, y: 650 },
+        'hub_portada': { x: 1400, y: 1000 },
+        'hub_carrucel': { x: 1400, y: 1350 },
+        'hub_reels': { x: 1400, y: 1700 },
+        'hub_st_vid': { x: 1400, y: 2050 },
+        'hub_tiktok': { x: 1400, y: 2400 },
+        'hub_youtube': { x: 1400, y: 2750 }
+    };
+
+    // Shared Drag Handler for Neural Hubs
+    const handleHubDrag = (id, delta) => {
+        setHubPositions(prev => {
+            const latestParentPos = prev[id];
+            if (!latestParentPos) return prev;
+
+            const dx = delta.x;
+            const dy = delta.y;
+
+            const newPositions = { ...prev, [id]: { x: latestParentPos.x + dx, y: latestParentPos.y + dy } };
+            
+            // Smart Move: Move all children recursively by the incremental delta
+            const moveChildren = (parentId) => {
+                const children = hubHierarchy[parentId] || [];
+                children.forEach(childId => {
+                    const currentChildPos = prev[childId];
+                    if (currentChildPos) {
+                        newPositions[childId] = { 
+                            x: currentChildPos.x + dx, 
+                            y: currentChildPos.y + dy 
+                        };
+                        moveChildren(childId);
+                    }
+                });
+            };
+            moveChildren(id);
+            return newPositions;
+        });
+    };
 
     // Handle Mouse Events for Pan and Drag
     const handleMouseDown = (e, id) => {
@@ -626,38 +692,7 @@ export default function StrategyCanvas({
                 animate={{ x: pos.x - cardWidth/2, y: pos.y - cardHeight/2 }}
                 drag
                 dragMomentum={false}
-                onDrag={(e, info) => {
-                    // Update main state for lines to follow
-                    const newX = pos.x + info.delta.x;
-                    const newY = pos.y + info.delta.y;
-                    
-                    setHubPositions(prev => {
-                        const latestParentPos = prev[id];
-                        if (!latestParentPos) return prev;
-
-                        const dx = info.delta.x;
-                        const dy = info.delta.y;
-
-                        const newPositions = { ...prev, [id]: { x: latestParentPos.x + dx, y: latestParentPos.y + dy } };
-                        
-                        // Smart Move: Move all children recursively by the incremental delta
-                        const moveChildren = (parentId) => {
-                            const children = hubHierarchy[parentId] || [];
-                            children.forEach(childId => {
-                                const currentChildPos = prev[childId];
-                                if (currentChildPos) {
-                                    newPositions[childId] = { 
-                                        x: currentChildPos.x + dx, 
-                                        y: currentChildPos.y + dy 
-                                    };
-                                    moveChildren(childId);
-                                }
-                            });
-                        };
-                        moveChildren(id);
-                        return newPositions;
-                    });
-                }}
+                onDrag={(e, info) => handleHubDrag(id, info.delta)}
                 className="cursor-grab active:cursor-grabbing group/hub"
             >
                 {/* Glass Background with Glow */}
@@ -739,11 +774,14 @@ export default function StrategyCanvas({
                     }
 
                     return (
-                        <g 
+                        <motion.g 
                             key={`hub-point-${id}`} 
-                            transform={`translate(${pos.x}, ${pos.y})`}
-                            className="cursor-pointer group/hub"
-                            onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, id); }}
+                            initial={false}
+                            animate={{ x: pos.x, y: pos.y }}
+                            drag
+                            dragMomentum={false}
+                            onDrag={(e, info) => handleHubDrag(id, info.delta)}
+                            className="cursor-grab active:cursor-grabbing group/hub"
                         >
                             {isRoot ? (
                                 <g>
@@ -770,7 +808,7 @@ export default function StrategyCanvas({
                                     </text>
                                 </g>
                             )}
-                        </g>
+                        </motion.g>
                     );
                 })}
             </g>
