@@ -428,6 +428,54 @@ export default function StrategyCanvas({
         return counts;
     }, [nodes]);
 
+    // --- NEURAL AUTO-PRUNING LOGIC ---
+    const activeHubs = React.useMemo(() => {
+        const activeSet = new Set(['root']); // Master Root is always active
+
+        // Helper: Check if a hub ID is considered active based on node count
+        const isTacticalActive = (id) => {
+            const hubData = hubs.find(h => h.id === id);
+            const lane = hubData?.lane || id;
+            return hubCounts[lane] > 0;
+        };
+
+        // Recursive: A hub is active if it has nodes OR any active child hub
+        const checkHubActivity = (hubId) => {
+            // If it's a leaf tactical hub, check counts
+            if (hubs.some(h => h.id === hubId)) {
+                if (isTacticalActive(hubId)) {
+                    activeSet.add(hubId);
+                    return true;
+                }
+                return false;
+            }
+
+            // If it's an L2/L3 hub, check children
+            const children = hubHierarchy[hubId] || [];
+            let hasActiveChild = false;
+            
+            children.forEach(childId => {
+                if (checkHubActivity(childId)) {
+                    hasActiveChild = true;
+                    activeSet.add(childId);
+                }
+            });
+
+            if (hasActiveChild) {
+                activeSet.add(hubId);
+                return true;
+            }
+            return false;
+        };
+
+        // Initialize recursion from Root's immediate children
+        (hubHierarchy['root'] || []).forEach(childId => {
+            checkHubActivity(childId);
+        });
+
+        return activeSet;
+    }, [nodes, hubCounts]);
+
     // --- NEURAL ROOT ARCHITECTURE HELPERS ---
     const getBezier = (x1, y1, x2, y2) => {
         const dx = Math.abs(x2 - x1);
@@ -439,10 +487,16 @@ export default function StrategyCanvas({
     const renderRootEdges = () => {
         const edges = [];
         Object.entries(hubHierarchy).forEach(([parent, children]) => {
+            // Only process if parent is active
+            if (!activeHubs.has(parent)) return;
+
             const pPos = hubPositions[parent];
             if (!pPos) return;
 
             children.forEach(child => {
+                // Only process if child is active
+                if (!activeHubs.has(child)) return;
+
                 const cPos = hubPositions[child];
                 if (!cPos) return;
 
@@ -616,6 +670,9 @@ export default function StrategyCanvas({
 
                 {/* Rendering Hubs Points */}
                 {Object.entries(hubPositions).map(([id, pos]) => {
+                    // Filter out inactive hubs
+                    if (!activeHubs.has(id)) return null;
+
                     const hubData = [...l2Hubs, ...l3Hubs, ...hubs].find(h => h.id === id);
                     const isTacticalHub = hubs.some(h => h.id === id);
                     const isRoot = id === 'root';
