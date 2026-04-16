@@ -32,39 +32,10 @@ export default function LoginPage() {
             const { role } = await login(email, password);
             console.log('[LoginPage] login() returned role:', role);
             
-            // Redirect logic aligned with production routes
-            // Defensive role check
-            const safeRole = role || 'CLIENT';
-            const lowerRole = safeRole.toLowerCase();
-            
-            if (safeRole === 'ADMIN') {
-                console.log('[LoginPage] Redirecting to Agency HQ');
-                router.push('/dashboard/hq');
-            } else if (safeRole === 'CLIENT') {
-                console.log('[LoginPage] Redirecting to Client Dashboard');
-                router.push('/dashboard');
-            } else {
-                const roleRoutes = {
-                    editor: '/workstation/editor',
-                    filmmaker: '/workstation/filmmaker',
-                    designer: '/workstation/designer',
-                    audio: '/workstation/audio',
-                    community: '/workstation/community-manager',
-                    photo: '/workstation/photography',
-                    model: '/workstation/talent',
-                    web: '/workstation/web',
-                    print: '/workstation/print',
-                    event: '/workstation/event'
-                };
-                
-                if (roleRoutes[lowerRole]) {
-                    console.log(`[LoginPage] Redirecting to ${safeRole} Workstation`);
-                    router.push(roleRoutes[lowerRole]);
-                } else {
-                    console.log('[LoginPage] Redirecting to generic Dashboard');
-                    router.push('/dashboard');
-                }
-            }
+            const { getHomeRoute } = useAuth();
+            const home = getHomeRoute(role);
+            console.log(`[LoginPage] Redirecting ${role} to ${home}`);
+            router.push(home);
         } catch (err) {
             console.error('[LoginPage] Login failed:', err);
             setError('Credenciales incorrectas o acceso no autorizado.');

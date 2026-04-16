@@ -177,7 +177,22 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
+        localStorage.clear();
         router.push('/');
+    };
+
+    const getHomeRoute = (role) => {
+        const safeRole = (role || 'CLIENT').toUpperCase();
+        if (safeRole === 'ADMIN') return '/dashboard/hq';
+        if (safeRole === 'CLIENT') return '/dashboard';
+        
+        const roleRoutes = {
+            COMMUNITY: '/workstation/community-manager',
+            EDITOR: '/dashboard/editing',
+            DESIGN: '/dashboard/design',
+            CREATOR: '/dashboard/creative-zone',
+        };
+        return roleRoutes[safeRole] || '/dashboard';
     };
 
     const value = {
@@ -189,7 +204,8 @@ export const AuthProvider = ({ children }) => {
         signInWithGoogle,
         logout,
         refreshUser,
-        resetPassword
+        resetPassword,
+        getHomeRoute
     };
 
     return (

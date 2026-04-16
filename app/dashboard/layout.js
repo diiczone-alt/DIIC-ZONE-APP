@@ -54,16 +54,15 @@ export default function DashboardLayout({ children }) {
         const role = user.role || 'CLIENT';
         
         // Guard Logic based on Real Role
-        if (role === 'CREATOR') {
-             // We can check specific workstation roles if encoded in metadata later, 
-             // but for now let's just make sure they go to creative zone.
-             if (!pathname.startsWith('/dashboard/creative-zone') && !pathname.startsWith('/workstation')) {
-                  router.push('/dashboard/creative-zone');
-             }
-        } else if (role === 'ADMIN') {
-            if (!pathname.startsWith('/dashboard/hq') && !pathname.startsWith('/dashboard/strategy')) {
-                router.push('/dashboard/strategy');
+        // Guard Logic based on Unified Routing
+        if (role === 'ADMIN') {
+            const allowedAdminPaths = ['/dashboard/hq', '/dashboard/strategy', '/dashboard/systemcore'];
+            if (!allowedAdminPaths.some(p => pathname.startsWith(p))) {
+                router.push(home);
             }
+        } else if (pathname === '/dashboard' || pathname === '/dashboard/') {
+             // If they land on generic dashboard but have a specialized role
+             if (home !== '/dashboard') router.push(home);
         }
     }, [user, loading, pathname, router]);
 

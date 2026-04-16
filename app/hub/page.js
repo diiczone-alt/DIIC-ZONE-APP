@@ -18,6 +18,18 @@ const WORKSTATIONS = [
 ];
 
 export default function HubPage() {
+    const { user, loading, getHomeRoute } = useAuth();
+    const router = useRouter();
+
+    // AUTO-GUARD: If already logged in, push to the correct dashboard immediately
+    useEffect(() => {
+        if (!loading && user && getHomeRoute) {
+            router.push(getHomeRoute(user.role));
+        }
+    }, [user, loading, router, getHomeRoute]);
+
+    if (loading) return <div className="min-h-screen bg-[#050511] flex items-center justify-center text-white italic animate-pulse">Sincronizando Accesos...</div>;
+
     return (
         <div className="min-h-screen bg-[#050511] text-white flex flex-col items-center justify-center p-8 font-sans">
             
