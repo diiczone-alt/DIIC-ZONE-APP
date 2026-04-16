@@ -52,6 +52,7 @@ export default function DashboardLayout({ children }) {
         }
 
         const role = user.role || 'CLIENT';
+        const home = getHomeRoute(role);
         
         // Guard Logic based on Real Role
         // Guard Logic based on Unified Routing
