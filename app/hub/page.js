@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 import { Shield, User, Video, Edit3, Image, Music, Users, Camera, Globe, Box, Layout, Clapperboard, Palette, Mic, MessageSquare, UserCheck, Printer } from 'lucide-react';
 import Link from 'next/link';

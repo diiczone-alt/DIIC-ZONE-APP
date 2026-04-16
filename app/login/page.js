@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { login, signInWithGoogle, resetPassword } = useAuth();
+    const { login, signInWithGoogle, resetPassword, getHomeRoute } = useAuth();
     
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -32,7 +32,6 @@ export default function LoginPage() {
             const { role } = await login(email, password);
             console.log('[LoginPage] login() returned role:', role);
             
-            const { getHomeRoute } = useAuth();
             const home = getHomeRoute(role);
             console.log(`[LoginPage] Redirecting ${role} to ${home}`);
             router.push(home);
