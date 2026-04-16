@@ -633,8 +633,9 @@ export default function StrategyCanvas({
     // --- NEURAL ROOT ARCHITECTURE HELPERS ---
     const getBezier = (x1, y1, x2, y2) => {
         const dx = (x2 - x1);
-        const cp1x = x1 + dx * 0.45;
-        const cp2x = x1 + dx * 0.55; 
+        // Clamp control points to be between x1 and x2 to prevent overshoot/loops
+        const cp1x = x1 + dx * 0.4;
+        const cp2x = x1 + dx * 0.6; 
         return `M ${x1} ${y1} C ${cp1x} ${y1}, ${cp2x} ${y2}, ${x2} ${y2}`;
     };
 
@@ -730,10 +731,12 @@ export default function StrategyCanvas({
                 const startY = targetPos.y + verticalFanOffset;
                 
                 // End exactly at the tactical card left edge (x) and vertical center (y+38)
-                // We use node.x directly as cards are 360px wide and were often positioned 
-                // overlapping or close to hubs.
                 const endX = node.x;
                 const endY = node.y + 38;
+
+                // POSITION GUARD: Only render if the hub is reasonably to the left 
+                // of the node to avoid "backwards" messy lines in same-column overlaps.
+                if (startX > endX - 100) return;
 
                 const path = getBezier(startX, startY, endX, endY);
                 const color = hub?.color || l3Hub?.color || '#6366f1';
@@ -1186,8 +1189,9 @@ export default function StrategyCanvas({
                         />
                     )}
 
-                    {/* All connections are now manual via Tactical Ports */}
-
+                    {/* Manual connections disabled as per user request to eliminate broken/dangling lines */}
+                    {/* The strategy flow is now solely represented by high-fidelity neural fibers */}
+                    {/*
                     {edges.filter(edge => {
                         const source = nodes.find(n => n.id === edge.source);
                         const target = nodes.find(n => n.id === edge.target);
@@ -1242,6 +1246,7 @@ export default function StrategyCanvas({
                             </g>
                         );
                     })}
+                    */}
                     {/* Preview Connection (Cinematic Neon) */}
                     {connectionStart && (
                         <g>
