@@ -1191,62 +1191,7 @@ export default function StrategyCanvas({
 
                     {/* Manual connections disabled as per user request to eliminate broken/dangling lines */}
                     {/* The strategy flow is now solely represented by high-fidelity neural fibers */}
-                    {/*
-                    {edges.filter(edge => {
-                        const source = nodes.find(n => n.id === edge.source);
-                        const target = nodes.find(n => n.id === edge.target);
-                        return source && target && !source.data?.isHidden && !target.data?.isHidden;
-                    }).map(edge => {
-                        const isSelected = selectedEdgeId === edge.id;
-                        const path = getEdgePath(edge.source, edge.target);
-                        
-                        // Extract color from source node category
-                        const sourceNode = nodes.find(n => n.id === edge.source);
-                        const typeConfig = NODE_TYPES[sourceNode?.type] || NODE_TYPES.educativo;
-                        const catConfig = NODE_CATEGORIES[typeConfig.category] || NODE_CATEGORIES.conciencia;
-                        const edgeColor = sourceNode?.data?.color || catConfig.color;
 
-                        return (
-                            <g key={edge.id} className="pointer-events-auto cursor-pointer group" onClick={(e) => { 
-                                e.stopPropagation(); 
-                                if (activeTool === 'delete') onDeleteEdge(edge.id);
-                                else onEdgeSelect(edge.id); 
-                            }}>
-                                {/* Click Area */}
-                                <path d={path} stroke="transparent" strokeWidth="20" fill="none" />
-                                
-                                {/* Layer 1: Neon Halo Glow (Persistent) */}
-                                <path 
-                                    d={path} 
-                                    stroke={edgeColor} 
-                                    strokeWidth={isSelected ? 10 : 4} 
-                                    strokeOpacity={isSelected ? 0.3 : 0.08}
-                                    fill="none" 
-                                    filter="url(#glow)"
-                                />
-
-                                {/* Layer 2: Main High-Fidelity Fiber */}
-                                <motion.path 
-                                    initial={{ pathLength: 0, opacity: 0 }}
-                                    animate={{ pathLength: 1, opacity: 1 }}
-                                    d={path} 
-                                    stroke={edgeColor} 
-                                    strokeWidth={isSelected ? 3 : 1.5} 
-                                    strokeOpacity={isSelected ? 1 : 0.8}
-                                    fill="none" 
-                                    className="transition-all duration-500"
-                                    markerEnd={isSelected ? "url(#arrowhead_flow_active)" : "none"}
-                                />
-
-                                {/* Layer 3: Energy Flow Shimmer (Directional Awareness) */}
-                                <circle r={isSelected ? "3" : "1.5"} fill={edgeColor} filter="url(#glow)">
-                                    <animateMotion dur={isSelected ? "1.5s" : "3s"} repeatCount="indefinite" path={path} />
-                                    <animate attributeName="opacity" values="0;1;1;0" dur={isSelected ? "1.5s" : "3s"} repeatCount="indefinite" />
-                                </circle>
-                            </g>
-                        );
-                    })}
-                    */}
                     {/* Preview Connection (Cinematic Neon) */}
                     {connectionStart && (
                         <g>
