@@ -41,7 +41,7 @@ function DashboardContent({ children }) {
 export default function DashboardLayout({ children }) {
     const router = useRouter();
     const pathname = usePathname();
-    const { user, loading } = useAuth(); // Official Auth
+    const { user, loading, getHomeRoute } = useAuth(); // Official Auth
 
     useEffect(() => {
         if (loading) return; // Wait for auth to initialize
