@@ -278,7 +278,7 @@ function DashboardContent() {
                      {user?.user_metadata?.full_name || user?.full_name || 'Estratega'}
                   </p>
                   <p className="text-[7px] font-bold text-emerald-400 uppercase tracking-tighter mt-1 opacity-70">
-                     {user?.role === 'ADMIN' ? 'Administrador Master' : (user?.role === 'CREATOR' || user?.role === 'CM' ? 'Estratega de Contenido' : (user?.user_metadata?.brand || 'Cliente Empresarial'))}
+                     {user?.role === 'ADMIN' ? 'Administrador Master' : (user?.role === 'CREATOR' || user?.role === 'CM' || user?.role === 'COMMUNITY' ? 'Estratega de Contenido' : (user?.user_metadata?.brand || 'Cliente Empresarial'))}
                   </p>
                </div>
                <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/20 p-0.5 bg-gradient-to-br from-indigo-500/20 to-purple-500/20">

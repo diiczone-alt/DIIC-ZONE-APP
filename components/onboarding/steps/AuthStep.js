@@ -46,11 +46,15 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 auth: { method: 'google', timestamp: new Date().toISOString() } 
             });
 
+            const finalRole = type === 'creative' 
+                ? (formData.role === 'community' ? 'COMMUNITY' : 'CREATOR') 
+                : 'CLIENT';
+
             await signInWithGoogle({
                 full_name: formData.full_name || '',
                 brand: formData.brand,
                 city: formData.city,
-                role: type === 'creative' ? 'CREATOR' : 'CLIENT'
+                role: finalRole
             });
         } catch (err) {
             toast.error('Error al conectar con Google: ' + err.message);
@@ -66,11 +70,16 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
         }
         setLoading(true);
         try {
+            // Determinar role final: si es creative y eligió 'community', usar 'COMMUNITY'
+            const finalRole = type === 'creative' 
+                ? (formData.role === 'community' ? 'COMMUNITY' : 'CREATOR') 
+                : 'CLIENT';
+
             const result = await register(formData.email, formData.password, { 
                 full_name: formData.full_name,
                 brand: formData.brand,
                 city: formData.city,
-                role: type === 'creative' ? 'CREATOR' : 'CLIENT'
+                role: finalRole
             });
 
             updateData({ 

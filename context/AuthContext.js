@@ -196,6 +196,7 @@ export const AuthProvider = ({ children }) => {
         
         const roleRoutes = {
             COMMUNITY: '/workstation/community-manager',
+            CM: '/workstation/community-manager',
             EDITOR: '/dashboard/editing',
             DESIGN: '/dashboard/design',
             CREATOR: '/dashboard/creative-zone',

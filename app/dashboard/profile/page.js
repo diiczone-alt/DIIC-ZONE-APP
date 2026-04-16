@@ -18,7 +18,7 @@ export default function ProfilePage() {
             if (role === 'ADMIN') {
                 // Admins belong in the HQ / Strategic board
                 router.replace('/dashboard/strategy');
-            } else if (role === 'CREATOR' || role === 'CM') {
+            } else if (role === 'CREATOR' || role === 'CM' || role === 'COMMUNITY') {
                 // Talent/CMs belong in their Workstations
                 router.replace('/workstation/community-manager');
             } else {
