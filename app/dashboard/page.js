@@ -159,6 +159,13 @@ function DashboardContent() {
   const [activeDropdown, setActiveDropdown] = useState(null);
 
   useEffect(() => {
+    if (!loading && user) {
+        if (user.role === 'ADMIN') {
+            router.push('/dashboard/hq');
+            return;
+        }
+    }
+
     const fetchData = async () => {
         if (!user) return;
         setLoading(true);

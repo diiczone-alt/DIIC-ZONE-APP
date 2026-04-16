@@ -94,7 +94,7 @@ export default function CMWorkstationLayout() {
     ];
 
     // Guard de Autenticación - Si no hay usuario logueado después de cargar, mostramos error de acceso
-    if (!loading && !user) {
+    if (!loading && (!user || user.role !== 'COMMUNITY')) {
         return (
             <div className="h-full flex flex-col items-center justify-center bg-[#050511] text-white p-10 text-center">
                 <div className="w-20 h-20 rounded-3xl bg-red-500/10 flex items-center justify-center mb-8 border border-red-500/20">

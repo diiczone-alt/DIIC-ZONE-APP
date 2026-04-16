@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 import {
     Activity, Users, Briefcase, Zap,
@@ -10,11 +12,18 @@ import { supabase } from '@/lib/supabase';
 import AdminOperationalMap from '@/components/admin/AdminOperationalMap';
 
 export default function HQDashboardPage() {
+    const router = useRouter();
+    const { user, loading: authLoading, getHomeRoute } = useAuth();
     const [portfolio, setPortfolio] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!authLoading && (!user || user.role !== 'ADMIN')) {
+            router.push(getHomeRoute(user?.role));
+            return;
+        }
+
         const loadGlobalData = async () => {
             setLoading(true);
             try {
@@ -35,7 +44,7 @@ export default function HQDashboardPage() {
             }
         };
         loadGlobalData();
-    }, []);
+    }, [user, authLoading]);
 
     const realFacturacion = portfolio.reduce((acc, c) => acc + (Number(c.price) || 0), 0);
     const activeProjects = tasks.filter(t => t.status !== 'completed').length;

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import {
     MessageSquare, Users, Zap, Calendar, TrendingUp, Filter,
     Search, MoreHorizontal, Phone, Video, Send, CheckCircle,
@@ -59,6 +61,8 @@ const QUICK_ACCESS = [
 ];
 
 export default function ConnectivityDashboard() {
+    const router = useRouter();
+    const { user, loading: authLoading, getHomeRoute } = useAuth();
     const [activeTab, setActiveTab] = useState('overview'); // Default to overview
     const [subModule, setSubModule] = useState(null); // 'channels', 'crm', etc.
     const [crmTab, setCrmTab] = useState('inbox'); // Local state for CRM inner tabs
@@ -145,6 +149,11 @@ export default function ConnectivityDashboard() {
     ];
 
     useEffect(() => {
+        if (!authLoading && (!user || (user.role !== 'ADMIN' && user.role !== 'COMMUNITY'))) {
+            router.push(getHomeRoute(user?.role));
+            return;
+        }
+
         const fetchData = async () => {
             setLoading(true);
             try {
@@ -179,7 +188,7 @@ export default function ConnectivityDashboard() {
         };
 
         fetchData();
-    }, []);
+    }, [user, authLoading]);
 
     const handleCreateAutomationFlow = (triggerId, actionId) => {
         const triggerData = {

@@ -5,7 +5,8 @@ import {
     TrendingUp, DollarSign, PieChart, Activity,
     Calendar, ArrowUpRight, ArrowDownRight, Target,
     RefreshCw, Layers, ShieldCheck, Database, FileText,
-    Zap, Home, Cpu
+    Zap, Home, Cpu, Fingerprint, Copy, Plus, TrendingDown,
+    Search, Filter
 } from 'lucide-react';
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -93,45 +94,94 @@ export default function FinancialDashboard() {
     if (loading) return <HQ_Loading />;
 
     return (
-        <div className="flex-1 h-full bg-[#05050C] overflow-hidden flex flex-col selection:bg-indigo-500/30">
-            {/* AUDIT HEADER */}
-            <div className="h-24 border-b border-white/5 bg-black/40 backdrop-blur-2xl flex items-center justify-between px-10 shrink-0 relative z-10">
-                <div className="flex items-center gap-6">
-                    <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-xl shadow-indigo-500/5">
-                        <DollarSign className="w-7 h-7" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none mb-1.5 flex items-center gap-2">
-                            FINANZAS HQ 
-                            <span className="text-[10px] font-black bg-white/5 border border-white/10 px-3 py-1 rounded-full text-indigo-400 not-italic tracking-widest ml-4">DATOS REALES DB</span>
-                        </h1>
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] italic">OPERATING AUDIT — FY 2026 Q2</p>
-                    </div>
+        <div className="p-8 space-y-8 relative bg-[#05050C] min-h-full overflow-y-auto custom-scrollbar selection:bg-indigo-500/30">
+            {/* NEW CARTERA-STYLE HEADER */}
+            <div className="flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter italic">Control de Costos</h1>
+                    <p className="text-gray-400">Auditoría en tiempo real de lo que se está pagando y lo que se está haciendo.</p>
                 </div>
-
-                <div className="flex items-center gap-6">
+                <div className="flex gap-4">
                     <button 
                         onClick={loadHQData}
-                        className="flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-gray-500 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest"
+                        className={`px-6 py-3 bg-white/5 text-gray-400 font-bold rounded-2xl flex items-center gap-2 hover:bg-white/10 transition-all border border-white/10 ${loading ? 'opacity-50 cursor-wait' : ''}`}
                     >
-                        <RefreshCw className="w-3.5 h-3.5" /> Sincronizar
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> 
+                        Sincronizar Datos Reales
                     </button>
-                    <button className="flex items-center gap-3 px-8 py-3 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl">
-                        <FileText className="w-4 h-4" /> Generar Informe
+                    <button className="px-6 py-3 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-2xl flex items-center gap-2 hover:scale-105 transition-all shadow-xl shadow-white/5 active:scale-95">
+                        <FileText className="w-4 h-4" /> Informe
                     </button>
                 </div>
             </div>
 
-            {/* AUDIT CONTENT */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-10">
-                {/* GLOBAL METRICS */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <MetricCard title="Ingresos Mensuales" value={`$${hqMetrics.income.toLocaleString()}`} icon={TrendingUp} color="text-emerald-400" />
-                    <MetricCard title="Gastos Operativos" value={`$${hqMetrics.expense.toLocaleString()}`} icon={TrendingDown} color="text-rose-400" />
-                    <MetricCard title="Utilidad Operativa" value={`$${hqMetrics.balance.toLocaleString()}`} icon={ShieldCheck} color={hqMetrics.balance >= 0 ? "text-indigo-400" : "text-rose-500"} />
+            {/* AUDIT PROTOCOL BANNER (Image 1 Style) */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-indigo-600/10 border border-indigo-500/20 rounded-[2.5rem] p-6 flex flex-col md:flex-row items-center justify-between gap-6"
+            >
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center border border-indigo-500/30">
+                        <ShieldCheck className="w-6 h-6 text-indigo-400" />
+                    </div>
+                    <div>
+                        <h3 className="text-white font-black uppercase tracking-widest text-xs italic">Protocolo de Auditoría Real</h3>
+                        <p className="text-gray-400 text-[10px] font-medium tracking-tight">Cálculos basados en Production Rates internos y flujos de facturación de Supabase.</p>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
+                <div className="flex flex-wrap gap-3">
+                    <button className="flex items-center gap-3 px-6 py-4 rounded-2xl border bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500 hover:text-white font-black uppercase tracking-[0.2em] text-[10px] transition-all active:scale-95 group relative overflow-hidden">
+                        <DollarSign className="w-4 h-4" /> REVISAR INGRESOS
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    </button>
+                    <button className="flex items-center gap-3 px-6 py-4 rounded-2xl border bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500 hover:text-white font-black uppercase tracking-[0.2em] text-[10px] transition-all active:scale-95 group relative overflow-hidden">
+                        <PieChart className="w-4 h-4" /> AUDITAR GASTOS
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    </button>
+                </div>
+            </motion.div>
+
+            {/* GLOBAL METRICS (Image 1 Style) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard 
+                    title="Ingresos Totales" 
+                    value={`$${hqMetrics.income.toLocaleString()}`} 
+                    icon={TrendingUp} 
+                    color="green" 
+                />
+                <StatCard 
+                    title="Gastos Operativos" 
+                    value={`$${hqMetrics.expense.toLocaleString()}`} 
+                    icon={TrendingDown} 
+                    color="red" 
+                />
+                <StatCard 
+                    title="Utilidad Neta" 
+                    value={`$${hqMetrics.balance.toLocaleString()}`} 
+                    icon={ShieldCheck} 
+                    color="indigo" 
+                />
+            </div>
+
+            {/* Filters & Search (Simulated for parity) */}
+            <div className="flex gap-4">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <input
+                        type="text"
+                        placeholder="Buscar transacciones, centros de costo o ingresos..."
+                        className="w-full bg-[#0E0E18] border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-white focus:outline-none focus:border-indigo-500/50 transition-all border-dashed"
+                        disabled
+                    />
+                </div>
+                <button className="px-6 rounded-2xl border border-white/5 text-gray-400 hover:bg-white/5 transition-all flex items-center gap-2">
+                    <Filter className="w-5 h-5" /> Periodo
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
                     {/* BURN RATE ANALYSIS */}
                     <div className="lg:col-span-3 bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
@@ -272,17 +322,26 @@ export default function FinancialDashboard() {
 
 // --- SUB-COMPONENTS ---
 
-function MetricCard({ title, value, icon: Icon, color }) {
+function StatCard({ title, value, icon: Icon, color }) {
+    const colors = {
+        indigo: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20',
+        green: 'text-green-500 bg-green-500/10 border-green-500/20',
+        red: 'text-red-500 bg-red-500/10 border-red-500/20',
+        blue: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+    };
+
     return (
-        <div className="p-10 rounded-[2.5rem] bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all text-left flex items-center justify-between group">
-            <div className="space-y-4">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] leading-none">{title}</p>
-                <h3 className={`text-5xl font-black italic tracking-tighter ${color} group-hover:scale-110 transition-transform origin-left`}>{value}</h3>
+        <motion.div 
+            whileHover={{ y: -4, backgroundColor: 'rgba(255,255,255,0.02)' }}
+            whileTap={{ scale: 0.98 }}
+            className={`p-10 border border-white/5 bg-[#0E0E18] rounded-[2.5rem] transition-all group`}
+        >
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-all group-hover:scale-110 ${colors[color]}`}>
+                <Icon className="w-7 h-7" />
             </div>
-            <div className={`w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center ${color} opacity-20 group-hover:opacity-100 transition-opacity`}>
-                <Icon className="w-8 h-8" />
-            </div>
-        </div>
+            <div className="text-gray-500 text-[10px] font-black uppercase tracking-[0.4em] mb-2 leading-none">{title}</div>
+            <div className={`text-5xl font-black italic tracking-tighter ${color === 'red' ? 'text-rose-500' : color === 'green' ? 'text-emerald-400' : 'text-white'}`}>{value}</div>
+        </motion.div>
     );
 }
 
