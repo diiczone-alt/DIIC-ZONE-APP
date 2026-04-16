@@ -83,24 +83,32 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-        console.log('[AuthContext] login() started');
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-        });
+        try {
+            console.log('[AuthContext] login() started');
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
 
-        if (error) throw error;
-        
-        console.log('[AuthContext] Fetching profile for user', data.user?.id);
-        const profile = await fetchProfile(data.user.id);
-        
-        const userObj = { ...data.user, ...profile };
-        setUser(userObj);
-        setSession(data.session);
-        localStorage.setItem('user_role', profile.role);
-        if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
-        
-        return { data, role: profile.role };
+            if (error) {
+                console.warn('[AuthContext] Login error caught:', error.message);
+                return { error };
+            }
+            
+            console.log('[AuthContext] Fetching profile for user', data.user?.id);
+            const profile = await fetchProfile(data.user.id);
+            
+            const userObj = { ...data.user, ...profile };
+            setUser(userObj);
+            setSession(data.session);
+            localStorage.setItem('user_role', profile.role);
+            if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
+            
+            return { data, role: profile.role, error: null };
+        } catch (err) {
+            console.error('[AuthContext] Unexpected login exception:', err);
+            return { error: err };
+        }
     };
 
     const register = async (email, password, metadata = {}) => {

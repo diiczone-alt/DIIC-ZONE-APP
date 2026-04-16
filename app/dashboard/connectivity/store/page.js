@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     ShoppingBag, Tag, Link as LinkIcon, Calendar, Mic2,
     Plus, Search, MoreVertical, DollarSign, BarChart2,

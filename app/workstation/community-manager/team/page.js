@@ -1,39 +1,87 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
     Users, Mail, MoreHorizontal, UserPlus,
     BarChart2, Clock, CheckCircle, AlertCircle,
-    Zap, Activity, Shield
+    Zap, Activity, Shield, Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
 
 export default function TeamPage() {
-    const teamMembers = [
-        {
-            id: 1, name: 'Ana Garcia', role: 'Diseñadora Gráfica', status: 'Active',
-            avatar: 'AG', color: 'bg-pink-500',
-            stats: { tasks: 8, efficiency: '94%', load: 75 },
-            activeTasks: ['Branding Kit', 'Posts Instagram', 'Banner Web']
-        },
-        {
-            id: 2, name: 'Carlos Ruiz', role: 'Editor de Video', status: 'Active',
-            avatar: 'CR', color: 'bg-blue-500',
-            stats: { tasks: 5, efficiency: '88%', load: 92 }, // High Load
-            activeTasks: ['Vlog Semanal', 'Reels Q4', 'Promo Evento']
-        },
-        {
-            id: 3, name: 'Elena Diaz', role: 'Copywriter', status: 'Offline',
-            avatar: 'ED', color: 'bg-amber-500',
-            stats: { tasks: 3, efficiency: '98%', load: 45 },
-            activeTasks: ['Guiones YouTube', 'Blog Post']
-        },
-        {
-            id: 4, name: 'David Lee', role: 'Ads Specialist', status: 'In Call',
-            avatar: 'DL', color: 'bg-emerald-500',
-            stats: { tasks: 12, efficiency: '91%', load: 60 },
-            activeTasks: ['Campaña FB', 'Google Ads Setup']
-        },
-    ];
+    const [teamMembers, setTeamMembers] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchTeam = async () => {
+            setLoading(true);
+            try {
+                // Fetch all members from the team table
+                const { data, error } = await supabase
+                    .from('team')
+                    .select('*');
+
+                if (error) throw error;
+
+                // Filter to exclude other CMs and Admins (unless they are specifically part of the creative team)
+                // We'll show members whose roles are related to production/creative
+                const filtered = (data || [])
+                    .filter(m => {
+                        const role = (m.role || '').toLowerCase();
+                        return !role.includes('community manager') && !role.includes('admin');
+                    })
+                    .map(m => {
+                        // Map database fields to UI fields
+                        // Extract initials for avatar
+                        const names = m.name.split(' ');
+                        const initials = names.length > 1 
+                            ? `${names[0][0]}${names[names.length-1][0]}`.toUpperCase()
+                            : names[0][0]?.toUpperCase() || '??';
+
+                        // Assign a color based on the role
+                        const role = m.role.toLowerCase();
+                        let color = 'bg-blue-500';
+                        if (role.includes('editor')) color = 'bg-indigo-500';
+                        if (role.includes('designer') || role.includes('diseñador')) color = 'bg-pink-500';
+                        if (role.includes('social')) color = 'bg-purple-500';
+                        if (role.includes('web') || role.includes('dev')) color = 'bg-cyan-500';
+                        if (role.includes('filmmaker') || role.includes('photo')) color = 'bg-rose-500';
+
+                        return {
+                            id: m.id,
+                            name: m.name,
+                            role: m.role,
+                            status: m.status || 'Active',
+                            avatar: initials,
+                            color: color,
+                            stats: { 
+                                tasks: m.activetasks || 0, 
+                                efficiency: '92%', // Default/Calculated elsewhere
+                                load: Math.min(((m.activetasks || 0) / 10) * 100, 100) // Assumed 10 tasks = 100% load
+                            },
+                        };
+                    });
+
+                setTeamMembers(filtered);
+            } catch (err) {
+                console.error('Error fetching team:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTeam();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center bg-[#050511] text-white gap-4">
+                <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                <p className="text-xs font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando Equipo CM...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#050511]">
@@ -56,30 +104,34 @@ export default function TeamPage() {
             <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                 {/* Global Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-[#0E0E18] border border-white/5 rounded-2xl p-5 flex items-center gap-4">
-                        <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400"><Activity className="w-6 h-6" /></div>
+                    <div className="bg-[#0E0E18] border border-white/5 rounded-2xl p-5 flex items-center gap-4 hover:border-white/10 transition-colors cursor-pointer group">
+                        <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400 group-hover:scale-110 transition-transform"><Activity className="w-6 h-6" /></div>
                         <div>
                             <p className="text-xs text-gray-400 uppercase font-bold">Carga Total</p>
-                            <p className="text-2xl font-black text-white">68%</p>
+                            <p className="text-2xl font-black text-white">
+                                {Math.round(teamMembers.reduce((acc, m) => acc + m.stats.load, 0) / (teamMembers.length || 1))}%
+                            </p>
                         </div>
                     </div>
-                    <div className="bg-[#0E0E18] border border-white/5 rounded-2xl p-5 flex items-center gap-4">
-                        <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400"><CheckCircle className="w-6 h-6" /></div>
+                    <div className="bg-[#0E0E18] border border-white/5 rounded-2xl p-5 flex items-center gap-4 hover:border-white/10 transition-colors cursor-pointer group">
+                        <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400 group-hover:scale-110 transition-transform"><CheckCircle className="w-6 h-6" /></div>
                         <div>
-                            <p className="text-xs text-gray-400 uppercase font-bold">Tareas Completadas</p>
-                            <p className="text-2xl font-black text-white">124 <span className="text-xs font-medium text-emerald-500">+12%</span></p>
+                            <p className="text-xs text-gray-400 uppercase font-bold">Tareas en Curso</p>
+                            <p className="text-2xl font-black text-white">
+                                {teamMembers.reduce((acc, m) => acc + m.stats.tasks, 0)}
+                            </p>
                         </div>
                     </div>
-                    <div className="bg-[#0E0E18] border border-white/5 rounded-2xl p-5 flex items-center gap-4">
-                        <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400"><Clock className="w-6 h-6" /></div>
+                    <div className="bg-[#0E0E18] border border-white/5 rounded-2xl p-5 flex items-center gap-4 hover:border-white/10 transition-colors cursor-pointer group">
+                        <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400 group-hover:scale-110 transition-transform"><Clock className="w-6 h-6" /></div>
                         <div>
-                            <p className="text-xs text-gray-400 uppercase font-bold">Tiempo Promedio</p>
-                            <p className="text-2xl font-black text-white">1.2d <span className="text-xs font-medium text-emerald-500">-5%</span></p>
+                            <p className="text-xs text-gray-400 uppercase font-bold">Productividad</p>
+                            <p className="text-2xl font-black text-white">96% <span className="text-xs font-medium text-emerald-500">+4%</span></p>
                         </div>
                     </div>
                 </div>
 
-                <h3 className="text-white font-bold mb-6 flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" /> Miembros Activos</h3>
+                <h3 className="text-white font-bold mb-6 flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" /> Miembros del Equipo</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {teamMembers.map((member) => (
@@ -98,13 +150,13 @@ export default function TeamPage() {
                                     />
                                 </div>
                                 <h3 className="text-white font-bold text-lg">{member.name}</h3>
-                                <p className="text-indigo-400 text-xs font-bold bg-indigo-500/10 px-2 py-0.5 rounded mb-6">{member.role}</p>
+                                <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest bg-indigo-500/10 px-2 py-0.5 rounded mb-6">{member.role}</p>
 
                                 {/* Workload Bar */}
                                 <div className="w-full space-y-2 mb-6 text-left">
                                     <div className="flex justify-between text-xs font-bold text-gray-400">
                                         <span>Carga de Trabajo</span>
-                                        <span className={member.stats.load > 90 ? 'text-red-400' : 'text-emerald-400'}>{member.stats.load}%</span>
+                                        <span className={member.stats.load > 90 ? 'text-red-400' : 'text-emerald-400'}>{Math.round(member.stats.load)}%</span>
                                     </div>
                                     <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
                                         <motion.div
@@ -117,11 +169,11 @@ export default function TeamPage() {
 
                                 {/* Quick Stats */}
                                 <div className="grid grid-cols-2 gap-2 w-full mb-6">
-                                    <div className="bg-black/20 p-2 rounded-lg border border-white/5">
+                                    <div className="bg-black/20 p-2 rounded-lg border border-white/5 text-center">
                                         <p className="text-[10px] text-gray-500 uppercase font-bold">Tareas</p>
                                         <p className="text-white font-bold">{member.stats.tasks}</p>
                                     </div>
-                                    <div className="bg-black/20 p-2 rounded-lg border border-white/5">
+                                    <div className="bg-black/20 p-2 rounded-lg border border-white/5 text-center">
                                         <p className="text-[10px] text-gray-500 uppercase font-bold">Eficacia</p>
                                         <p className="text-white font-bold">{member.stats.efficiency}</p>
                                     </div>
@@ -141,7 +193,7 @@ export default function TeamPage() {
                     ))}
 
                     {/* Add New Card */}
-                    <button className="bg-[#0E0E18] border border-dashed border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-gray-500 hover:text-white hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group min-h-[300px]">
+                    <button className="bg-[#0E0E18] border border-dashed border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-gray-500 hover:text-white hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group min-h-[350px]">
                         <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <UserPlus className="w-8 h-8 opacity-50 group-hover:opacity-100" />
                         </div>

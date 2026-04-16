@@ -106,15 +106,19 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
 
                     {/* Points Layer */}
                     {filteredPoints.map((p, i) => {
-                        const { x, y } = projectCoords(p.coords[0], p.coords[1]);
+                        const coords = p.coords || [];
+                        if (coords.length < 2) return null;
+                        
+                        const { x, y } = projectCoords(coords[0], coords[1]);
                         const isClient = p.pointType === 'client';
-                        const cityLoad = cityWorkload[p.city] || 0;
+                        const cityName = p.city || 'Desconocido';
+                        const cityLoad = cityWorkload[cityName] || 0;
                         const isSaturated = cityLoad > 8;
                         const dotColor = isClient ? '#10b981' : (isSaturated ? '#ef4444' : '#3b82f6');
                         
                         return (
                             <motion.g 
-                                key={`${p.id}-${i}`}
+                                key={`${p.id || i}-${i}`}
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: i * 0.05 }}
@@ -124,7 +128,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
                                 <circle cx={x} cy={y} r={isSaturated ? "20" : "10"} fill={dotColor} className="opacity-10 animate-ping" />
                                 <circle cx={x} cy={y} r="4" fill={dotColor} stroke="white" strokeWidth="1.5" />
                                 <text x={x} y={y - 12} textAnchor="middle" className="text-[7px] font-black fill-white tracking-tighter opacity-0 group-hover/pin:opacity-100 transition-opacity">
-                                    {p.city.toUpperCase()}
+                                    {cityName.toUpperCase()}
                                 </text>
                             </motion.g>
                         );

@@ -25,6 +25,10 @@ import UnifiedInbox from '@/components/crm/UnifiedInbox';
 import CRMAnalytics from '@/components/crm/CRMAnalytics';
 import AIAgentFlow from '@/components/connectivity/AIAgentFlow';
 import AutomationBoard from '@/components/shared/Automation/AutomationBoard';
+import AddClientModal from '@/components/crm/AddClientModal';
+import ProposalBuilder from '@/components/sales/ProposalBuilder';
+import AutoModal from '@/components/connectivity/AutoModal';
+import { toast } from 'sonner';
 
 const WORKSTATIONS = [
     { id: 'editor', name: 'Editor', icon: Video, color: 'text-indigo-400' },
@@ -142,50 +146,59 @@ export default function ConnectivityDashboard() {
 
     useEffect(() => {
         const fetchData = async () => {
-            const { data: cData } = await supabase.from('chats').select('*');
-            if (cData) setChats(cData);
+            setLoading(true);
+            try {
+                const [chatsRes, stagesRes, logsRes] = await Promise.all([
+                    supabase.from('chats').select('*'),
+                    supabase.from('crm_stages').select('*'),
+                    supabase.from('ai_logs').select('*')
+                ]);
 
-            const { data: sData } = await supabase.from('crm_stages').select('*');
-            if (sData) setCrmStages(sData);
+                if (chatsRes.data) setChats(chatsRes.data);
+                if (chatsRes.error) console.warn('[Connectivity] Chats fetch error:', chatsRes.error.message);
 
-            const { data: aData } = await supabase.from('ai_logs').select('*');
-            if (aData) setAiLogs(aData);
+                if (stagesRes.data) setCrmStages(stagesRes.data);
+                if (stagesRes.error) console.warn('[Connectivity] CRM Stages fetch error:', stagesRes.error.message);
 
-            // Mock Leads Data (Phase 1)
-            setLeads([
-                { id: 1, name: 'Dr. Roberto M.', niche: 'Médico', stage: 'new', score: 45, budget: '$1,500', objective: 'Ventas', last: '2h' },
-                { id: 2, name: 'FitLife Gym', niche: 'Gimnasio', stage: 'qualifying', score: 65, budget: '$2,000', objective: 'Redes', last: '1d' },
-                { id: 3, name: 'Laura Estética', niche: 'Salud', stage: 'meeting_pending', score: 92, budget: '$3,500', objective: 'Ventas', last: '30m' },
-                { id: 4, name: 'InmoGroup', niche: 'Inmobiliaria', stage: 'negotiation', score: 88, budget: '$5,000', objective: 'Lead Gen', last: '5h' },
-                { id: 5, name: 'TechStore', niche: 'E-commerce', stage: 'won', score: 95, budget: '$2,800', objective: 'ROAS', last: '1w' },
-            ]);
+                if (logsRes.data) setAiLogs(logsRes.data);
+                if (logsRes.error) console.warn('[Connectivity] AI Logs fetch error:', logsRes.error.message);
 
-            setLoading(false);
+                // Mock Leads Data (Phase 1)
+                setLeads([
+                    { id: 1, name: 'Dr. Roberto M.', niche: 'Médico', stage: 'new', score: 45, budget: '$1,500', objective: 'Ventas', last: '2h' },
+                    { id: 2, name: 'FitLife Gym', niche: 'Gimnasio', stage: 'qualifying', score: 65, budget: '$2,000', objective: 'Redes', last: '1d' },
+                    { id: 3, name: 'Laura Estética', niche: 'Salud', stage: 'meeting_pending', score: 92, budget: '$3,500', objective: 'Ventas', last: '30m' },
+                    { id: 4, name: 'InmoGroup', niche: 'Inmobiliaria', stage: 'negotiation', score: 88, budget: '$5,000', objective: 'Lead Gen', last: '5h' },
+                    { id: 5, name: 'TechStore', niche: 'E-commerce', stage: 'won', score: 95, budget: '$2,800', objective: 'ROAS', last: '1w' },
+                ]);
+            } catch (err) {
+                console.error('[Connectivity] Unexpected exception in fetchData:', err);
+            } finally {
+                setLoading(false);
+            }
         };
 
         fetchData();
     }, []);
 
-    const handleCreateAutomationFlow = () => {
-        if (!automationTrigger || !automationAction) return;
-
+    const handleCreateAutomationFlow = (triggerId, actionId) => {
         const triggerData = {
             msg: { label: 'Nuevo Mensaje', iconName: 'MessageSquare', color: 'text-indigo-500' },
             comment: { label: 'Comentario Post', iconName: 'Instagram', color: 'text-purple-500' },
             lead: { label: 'Lead Form', iconName: 'FileText', color: 'text-blue-500' },
             calendar: { label: 'Agendamiento', iconName: 'Calendar', color: 'text-amber-500' }
-        }[automationTrigger];
+        }[triggerId];
 
         const actionData = {
             ai: { label: 'Responder con IA', iconName: 'Bot', color: 'text-indigo-400' },
             crm: { label: 'Asignar a Pipeline CRM', iconName: 'Users', color: 'text-emerald-400' }
-        }[automationAction];
+        }[actionId];
 
-        const triggerId = `node_${Date.now()}_t`;
-        const actionId = `node_${Date.now()}_a`;
+        const triggerNodeId = `node_${Date.now()}_t`;
+        const actionNodeId = `node_${Date.now()}_a`;
         
         const newTriggerNode = {
-            id: triggerId,
+            id: triggerNodeId,
             type: 'trigger',
             label: triggerData.label,
             iconName: triggerData.iconName,
@@ -195,7 +208,7 @@ export default function ConnectivityDashboard() {
         };
 
         const newActionNode = {
-            id: actionId,
+            id: actionNodeId,
             type: 'action',
             label: actionData.label,
             iconName: actionData.iconName,
@@ -206,8 +219,8 @@ export default function ConnectivityDashboard() {
 
         const newEdge = {
             id: `edge_${Date.now()}`,
-            source: triggerId,
-            target: actionId,
+            source: triggerNodeId,
+            target: actionNodeId,
             color: '#6366f1'
         };
 
@@ -215,8 +228,6 @@ export default function ConnectivityDashboard() {
         setAgentEdges(prev => [...prev, newEdge]);
         
         setShowAutoModal(false);
-        setAutomationTrigger(null);
-        setAutomationAction(null);
         
         toast.success(`¡Flujo "${triggerData.label} ➜ ${actionData.label}" Creado!`, {
             description: "Los nodos se han inyectado en la pizarra del Command Center v4.0."
@@ -1404,6 +1415,52 @@ export default function ConnectivityDashboard() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* --- MODAL SYSTEM --- */}
+            
+            {/* 1. Add Client Modal */}
+            <AddClientModal 
+                isOpen={showClientModal} 
+                onClose={() => setShowClientModal(false)} 
+            />
+
+            {/* 2. Proposal Builder Modal */}
+            <AnimatePresence>
+                {showProposalModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowProposalModal(false)}
+                            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                            className="relative bg-[#050511] border border-white/10 rounded-[40px] w-full max-w-6xl h-[85vh] shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col z-10"
+                        >
+                            <button 
+                                onClick={() => setShowProposalModal(false)}
+                                className="absolute top-6 right-8 text-gray-500 hover:text-white transition-colors z-[110]"
+                            >
+                                <XCircle className="w-8 h-8" />
+                            </button>
+                            <div className="flex-1 overflow-hidden">
+                                <ProposalBuilder />
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* 3. Automation Builder Modal */}
+            <AutoModal 
+                isOpen={showAutoModal} 
+                onClose={() => setShowAutoModal(false)} 
+                onCreate={handleCreateAutomationFlow}
+            />
         </div>
     );
 }

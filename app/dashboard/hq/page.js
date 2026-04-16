@@ -24,9 +24,12 @@ export default function HQDashboardPage() {
                 ]);
 
                 if (clientsRes.data) setPortfolio(clientsRes.data);
+                if (clientsRes.error) console.warn('[HQ] Clients fetch error:', clientsRes.error.message);
+
                 if (tasksRes.data) setTasks(tasksRes.data);
+                if (tasksRes.error) console.warn('[HQ] Tasks fetch error:', tasksRes.error.message);
             } catch (err) {
-                console.error('Error loading HQ data:', err);
+                console.error('[HQ] Unexpected exception in loadGlobalData:', err);
             } finally {
                 setLoading(false);
             }

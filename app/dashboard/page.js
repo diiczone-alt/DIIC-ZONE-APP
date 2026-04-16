@@ -12,6 +12,7 @@ import {
   Palette, FileText, ArrowRight, Settings, LogOut, User, Shield
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 // ─── Stat Card Component ─────────────────────────────────────────
 function StatCard({ title, value, delta, icon: Icon, color, chartData }) {

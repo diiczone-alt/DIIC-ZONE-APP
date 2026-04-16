@@ -29,15 +29,22 @@ export default function LoginPage() {
 
         try {
             console.log('[LoginPage] Calling login()');
-            const { role } = await login(email, password);
-            console.log('[LoginPage] login() returned role:', role);
+            const { role, error: loginError } = await login(email, password);
             
+            if (loginError) {
+                console.warn('[LoginPage] Login error received (expected):', loginError);
+                setError('Credenciales incorrectas o acceso no autorizado.');
+                setLoading(false);
+                return;
+            }
+
+            console.log('[LoginPage] login() success with role:', role);
             const home = getHomeRoute(role);
             console.log(`[LoginPage] Redirecting ${role} to ${home}`);
             router.push(home);
         } catch (err) {
-            console.error('[LoginPage] Login failed:', err);
-            setError('Credenciales incorrectas o acceso no autorizado.');
+            console.error('[LoginPage] Unexpected exception during handleSubmit (FATAL):', err);
+            setError('Error inesperado al iniciar sesión. Por favor intenta de nuevo.');
         } finally {
             setLoading(false);
         }
