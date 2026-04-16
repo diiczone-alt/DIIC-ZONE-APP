@@ -28,6 +28,12 @@ export default function StrategyCreationWizard({ onComplete, onCancel }) {
             historia: 12,
             reel: 4,
             tiktok: 4,
+            podcast: 0,
+            masterclass: 0,
+            deck: 0,
+            community: 0,
+            audit: 0,
+            affiliate: 0,
             crm: 2,
             form: 1
         }
@@ -281,9 +287,15 @@ export default function StrategyCreationWizard({ onComplete, onCancel }) {
                                         { id: 'video', label: 'Videos', icon: Video, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
                                         { id: 'reel', label: 'Reels', icon: Zap, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
                                         { id: 'tiktok', label: 'Tik Tok', icon: Video, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
+                                        { id: 'podcast', label: 'Podcasts', icon: Mic, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
                                         { id: 'imagen', label: 'Posts', icon: Layout, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
                                         { id: 'historia', label: 'Stories', icon: Instagram, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
-                                        { id: 'carrusel', label: 'Carousel', icon: Layers, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+                                        { id: 'carrusel', label: 'Carousels', icon: Layers, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+                                        { id: 'masterclass', label: 'Masterclass', icon: PlayCircle, color: 'text-rose-500', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
+                                        { id: 'deck', label: 'Slides/Deck', icon: FileText, color: 'text-indigo-300', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
+                                        { id: 'community', label: 'Comunidad', icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+                                        { id: 'audit', label: 'Auditoría', icon: Search, color: '#8b5cf6', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+                                        { id: 'affiliate', label: 'Afiliados', icon: Globe, color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
                                         { id: 'crm', label: 'CRM / Ads', icon: BarChart3, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
                                         { id: 'form', label: 'Forms', icon: Target, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' }
                                     ].map(item => (

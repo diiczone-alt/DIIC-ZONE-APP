@@ -535,9 +535,15 @@ export default function StrategyBoard({ role, onClose }) {
             video: { id: 'v_youtube', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'autoridad'] },
             reel: { id: 'v_reels', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'] },
             tiktok: { id: 'v_tiktok', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'] },
+            podcast: { id: 'v_podcast', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'] },
+            masterclass: { id: 'v_masterclass', areaId: 'creativa', categoryId: 'video', levels: ['consideración', 'autoridad'] },
             imagen: { id: 'i_post', areaId: 'creativa', categoryId: 'imagen', levels: ['consideración', 'conversión'] },
             carrusel: { id: 'i_carrucel', areaId: 'creativa', categoryId: 'imagen', levels: ['conexión', 'autoridad'] },
+            deck: { id: 'i_deck', areaId: 'creativa', categoryId: 'imagen', levels: ['consideración', 'conversión'] },
             historia: { id: 'i_historias', areaId: 'creativa', categoryId: 'imagen', levels: ['conexión', 'retención'] },
+            community: { id: 'r_community', areaId: 'conversiones', categoryId: 'recurso', levels: ['interés', 'retención'] },
+            audit: { id: 'r_audit', areaId: 'conversiones', categoryId: 'recurso', levels: ['consideración'] },
+            affiliate: { id: 'r_affiliate', areaId: 'conversiones', categoryId: 'recurso', levels: ['retención'] },
             crm: { id: 'l3_crm_email', areaId: 'crm', categoryId: 'crm', levels: ['conversión'] },
             form: { id: 'r_form', areaId: 'conversiones', categoryId: 'recurso', levels: ['conversión'] }
         };

@@ -371,10 +371,16 @@ export const STRATEGIC_FORMATS = [
     { id: 'i_historias', label: 'Imagen Historia (Vertical)', icon: Instagram, color: '#E1306C', areaId: 'creativa', category: 'imagen' },
     { id: 'i_portadas', label: 'Portada (Cover Photo)', icon: Layout, color: '#fbbf24', areaId: 'creativa', category: 'imagen' },
     { id: 'i_carrucel', label: 'Carrusel de Valor', icon: Layers, color: '#8b5cf6', areaId: 'creativa', category: 'imagen' },
+    { id: 'v_podcast', label: 'Podcast / Entrevista', icon: Mic, color: '#a855f7', areaId: 'creativa', category: 'video' },
+    { id: 'v_masterclass', label: 'Masterclass / Webinar', icon: Video, color: '#f43f5e', areaId: 'creativa', category: 'video' },
+    { id: 'i_deck', label: 'Presentación / Deck', icon: FileText, color: '#6366f1', areaId: 'creativa', category: 'imagen' },
     { id: 'l3_crm_email', label: 'Email Nurturing Flow', icon: Mail, color: '#06b6d4', areaId: 'crm', category: 'crm' },
     { id: 'l3_crm_scoring', label: 'Lead Scoring Automático', icon: Target, color: '#10b981', areaId: 'crm', category: 'crm' },
     { id: 'l3_crm_retargeting', label: 'WhatsApp / Retargeting', icon: MessageSquare, color: '#f43f5e', areaId: 'crm', category: 'crm' },
-    { id: 'r_form', label: 'Landing / Formulario', icon: Target, color: '#amber-400', areaId: 'conversiones', category: 'recurso' }
+    { id: 'r_community', label: 'Hub de Comunidad', icon: Users, color: '#10b981', areaId: 'conversiones', category: 'recurso' },
+    { id: 'r_audit', label: 'Auditoría Estratégica', icon: Search, color: '#8b5cf6', areaId: 'conversiones', category: 'recurso' },
+    { id: 'r_affiliate', label: 'Portal de Afiliados', icon: Globe2, color: '#f59e0b', areaId: 'conversiones', category: 'recurso' },
+    { id: 'r_form', label: 'Landing / Formulario', icon: Target, color: '#fbbf24', areaId: 'conversiones', category: 'recurso' }
 ];
 
 // Utility: Maps any node to its Strategic Hub/Lane ID
@@ -398,9 +404,14 @@ export const getNodeLaneId = (n) => {
     if (title.includes('retargeting') || sub.includes('retargeting')) return 'l3_crm_retargeting';
     
     // New mappings
-    if (t.includes('audio') || t.includes('podcast') || sub.includes('audio')) return 'l3_audios';
+    if (t.includes('audio') || t.includes('podcast') || sub.includes('audio') || sub.includes('podcast')) return 'v_podcast';
+    if (t.includes('masterclass') || sub.includes('masterclass') || title.includes('masterclass')) return 'v_masterclass';
+    if (t.includes('deck') || sub.includes('deck') || title.includes('presentación')) return 'i_deck';
+    if (t.includes('community') || sub.includes('community')) return 'r_community';
+    if (t.includes('audit') || sub.includes('audit')) return 'r_audit';
+    if (t.includes('affiliate') || sub.includes('affiliate')) return 'r_affiliate';
     if (t.includes('imprenta') || t.includes('impresion') || sub.includes('imprenta')) return 'l3_imprenta';
-    if (t.includes('form') || t.includes('recurso') || t.includes('landing') || sub.includes('form')) return 'l2_conversion';
+    if (t.includes('form') || t.includes('recurso') || t.includes('landing') || sub.includes('form')) return 'r_form';
 
     // Default mappings for common types
     if (t.includes('post') || t.includes('imagen')) {

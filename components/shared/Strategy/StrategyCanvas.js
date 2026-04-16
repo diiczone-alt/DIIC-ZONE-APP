@@ -126,24 +126,24 @@ export default function StrategyCanvas({
             setHubPositions(DEFAULT_HUB_POSITIONS);
 
             // 2. Align Tactical Nodes to their Strategic Columns
-            const columnMapping = {
-                'conciencia': 0,
-                'interés': 1,
-                'consideración': 2,
-                'conversión': 3,
-                'retención': 4
+            const getColIdx = (cat) => {
+                const c = (cat || '').toLowerCase();
+                if (c === 'conciencia' || c === 'video') return 0;
+                if (c === 'interés' || c === 'conexión') return 1;
+                if (c === 'consideración' || c === 'autoridad' || c === 'imagen') return 2;
+                if (c === 'conversión' || c === 'crm') return 3;
+                if (c === 'retención' || c === 'recurso') return 4;
+                return 0;
             };
 
             const updatedNodes = nodes.map(node => {
-                const typeConfig = NODE_TYPES[node.type] || NODE_TYPES.educativo;
-                const colIdx = columnMapping[typeConfig.category];
+                if (node.id.startsWith('hu_') || node.type === 'estrategia') return node;
                 
-                if (colIdx !== undefined) {
-                    const colX = STRATEGIC_RAILS.COLUMNS[colIdx] + 50; // Offset from rail
-                    // Keep existing Y or redistribute? For now, keep Y but move to X column
-                    return { ...node, x: colX };
-                }
-                return node;
+                const typeConfig = NODE_TYPES[node.type] || NODE_TYPES.educativo;
+                const colIdx = getColIdx(node.data?.funnelLevel || typeConfig.category);
+                
+                const colX = STRATEGIC_RAILS.COLUMNS[colIdx] + 50; 
+                return { ...node, x: colX };
             });
 
             // Trigger actual update
@@ -671,6 +671,8 @@ export default function StrategyCanvas({
 
     const renderNodeToHubEdges = () => {
         const connections = [];
+        const hubUsage = {}; // Map to track how many nodes are connected to each hub for fanned offsets
+
         nodes.forEach(node => {
             if (node.data?.isHidden) return;
             const laneId = getNodeLaneId(node);
@@ -683,26 +685,39 @@ export default function StrategyCanvas({
             const targetPos = hubPositions[targetId];
 
             if (targetPos) {
-                // If it's a card hub, offset to the right side
+                // Initialize usage counter for this hub
+                if (!hubUsage[targetId]) hubUsage[targetId] = 0;
+                const nodeIdx = hubUsage[targetId]++;
+
+                // Calculate a vertical offset on the Hub to avoid "The Ladder" look
+                // This creates a "Neural Fanning" effect where each fiber has its own origin
+                const verticalFanOffset = (nodeIdx * 8) - 20; 
+
+                // Offset to the right side of the hub
                 const isCard = hubs.some(h => h.id === targetId);
                 const startX = isCard ? targetPos.x + 80 : targetPos.x;
+                const startY = targetPos.y + verticalFanOffset;
                 
-                const path = getBezier(startX, targetPos.y, node.x, node.y + 38);
+                // End at the tactical card center
+                const endX = node.x;
+                const endY = node.y + 38;
+
+                const path = getBezier(startX, startY, endX, endY);
                 const color = hub?.color || l3Hub?.color || '#6366f1';
                 
                 connections.push(
-                    <g key={`node-hub-edge-${node.id}`}>
+                    <g key={`node-hub-edge-${node.id}`} className="neural-fiber">
                         <path 
                             d={path} 
                             stroke={color} 
-                            strokeWidth="1.5" 
-                            strokeOpacity="0.2" 
+                            strokeWidth="1.2" 
+                            strokeOpacity="0.15" 
                             fill="none" 
-                            strokeDasharray="4,4"
+                            className="transition-all duration-1000"
                         />
-                         <motion.circle r="2" fill={color} opacity="0.6">
-                             <animateMotion dur="4s" repeatCount="indefinite" path={path} />
-                        </motion.circle>
+                         <motion.circle r="1.5" fill={color} opacity="0.4">
+                              <animateMotion dur={`${4 + (nodeIdx % 3)}s`} repeatCount="indefinite" path={path} />
+                         </motion.circle>
                     </g>
                 );
             }
