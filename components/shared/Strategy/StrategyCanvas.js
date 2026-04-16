@@ -632,9 +632,9 @@ export default function StrategyCanvas({
 
     // --- NEURAL ROOT ARCHITECTURE HELPERS ---
     const getBezier = (x1, y1, x2, y2) => {
-        const dx = Math.abs(x2 - x1);
+        const dx = (x2 - x1);
         const cp1x = x1 + dx * 0.45;
-        const cp2x = x2 - dx * 0.45;
+        const cp2x = x1 + dx * 0.55; 
         return `M ${x1} ${y1} C ${cp1x} ${y1}, ${cp2x} ${y2}, ${x2} ${y2}`;
     };
 
@@ -729,7 +729,9 @@ export default function StrategyCanvas({
                 const startX = isCard ? targetPos.x + 80 : targetPos.x;
                 const startY = targetPos.y + verticalFanOffset;
                 
-                // End at the tactical card center
+                // End exactly at the tactical card left edge (x) and vertical center (y+38)
+                // We use node.x directly as cards are 360px wide and were often positioned 
+                // overlapping or close to hubs.
                 const endX = node.x;
                 const endY = node.y + 38;
 
@@ -742,12 +744,12 @@ export default function StrategyCanvas({
                             d={path} 
                             stroke={color} 
                             strokeWidth="1.2" 
-                            strokeOpacity="0.15" 
+                            strokeOpacity="0.08" 
                             fill="none" 
                             className="transition-all duration-1000"
                         />
                          <motion.circle r="1.5" fill={color} opacity="0.4">
-                              <animateMotion dur={`${4 + (nodeIdx % 3)}s`} repeatCount="indefinite" path={path} />
+                              <animateMotion dur={`${3 + (nodeIdx % 2)}s`} repeatCount="indefinite" path={path} />
                          </motion.circle>
                     </g>
                 );
