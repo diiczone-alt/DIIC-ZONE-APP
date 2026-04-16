@@ -799,7 +799,7 @@ export default function StrategyCanvas({
                     fill={color} 
                     filter="url(#glow)" 
                 />
-            </g>
+            </motion.g>
         );
     };
 
