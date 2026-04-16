@@ -158,10 +158,15 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-  useEffect(() => {
+    useEffect(() => {
     if (!loading && user) {
-        if (user.role === 'ADMIN') {
+        const role = (user.role || '').toUpperCase();
+        if (role === 'ADMIN') {
             router.push('/dashboard/hq');
+            return;
+        }
+        if (role === 'COMMUNITY' || role === 'CM') {
+            router.push('/workstation/community-manager');
             return;
         }
     }

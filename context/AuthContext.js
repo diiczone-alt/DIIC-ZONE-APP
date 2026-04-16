@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    const fetchProfile = async (userId) => {
+    const fetchProfile = async (userId, email = null) => {
         try {
             const { data, error } = await supabase
                 .from('profiles')
@@ -22,16 +22,29 @@ export const AuthProvider = ({ children }) => {
                 
             if (error) {
                 console.warn('[AuthContext] Profile fetch error:', error.message);
+                // Emergency Fallback for known admin email
+                if (email === 'diiczone@gmail.com') {
+                    return { role: 'ADMIN', client_id: null, full_name: 'Admin DIIC' };
+                }
                 return { role: 'CLIENT', client_id: null, full_name: null };
             }
+
             // Return data with fallback values for each field
+            let role = data?.role || 'CLIENT';
+            
+            // Safety: If email is the admin email, force ADMIN role even if single() returned something else
+            if (email === 'diiczone@gmail.com') role = 'ADMIN';
+
             return {
-                role: data?.role || 'CLIENT',
+                role: role,
                 client_id: data?.client_id || null,
-                full_name: data?.full_name || null
+                full_name: data?.full_name || (email === 'diiczone@gmail.com' ? 'Admin DIIC' : null)
             };
         } catch (err) {
             console.error('[AuthContext] Unexpected fetchProfile error:', err);
+            if (email === 'diiczone@gmail.com') {
+                return { role: 'ADMIN', client_id: null, full_name: 'Admin DIIC' };
+            }
             return { role: 'CLIENT', client_id: null, full_name: null };
         }
     };
@@ -46,7 +59,7 @@ export const AuthProvider = ({ children }) => {
                 setSession(session);
                 
                 if (session?.user) {
-                    const profile = await fetchProfile(session.user.id);
+                    const profile = await fetchProfile(session.user.id, session.user.email);
                     setUser({ ...session.user, ...profile });
                     localStorage.setItem('user_role', profile.role);
                     if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
@@ -65,7 +78,7 @@ export const AuthProvider = ({ children }) => {
             const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
                 setSession(session);
                 if (session?.user) {
-                    const profile = await fetchProfile(session.user.id);
+                    const profile = await fetchProfile(session.user.id, session.user.email);
                     setUser({ ...session.user, ...profile });
                     localStorage.setItem('user_role', profile.role || 'CLIENT');
                     if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
@@ -96,7 +109,7 @@ export const AuthProvider = ({ children }) => {
             }
             
             console.log('[AuthContext] Fetching profile for user', data.user?.id);
-            const profile = await fetchProfile(data.user.id);
+            const profile = await fetchProfile(data.user.id, email);
             
             const userObj = { ...data.user, ...profile };
             setUser(userObj);
@@ -134,7 +147,7 @@ export const AuthProvider = ({ children }) => {
         const needsConfirmation = !data.session;
         
         if (data.session && data.user) {
-            const profile = await fetchProfile(data.user.id);
+            const profile = await fetchProfile(data.user.id, email);
             setUser({ ...data.user, ...profile });
             setSession(data.session);
         }
@@ -146,7 +159,7 @@ export const AuthProvider = ({ children }) => {
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
         if (session?.user) {
-            const profile = await fetchProfile(session.user.id);
+            const profile = await fetchProfile(session.user.id, session.user.email);
             setUser({ ...session.user, ...profile });
         }
     };
