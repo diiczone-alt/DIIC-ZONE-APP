@@ -138,21 +138,52 @@ export default function StrategyCanvas({
 
             const updatedNodes = nodes.map(node => {
                 if (node.id.startsWith('hu_') || node.type === 'estrategia') return node;
-                
                 const typeConfig = NODE_TYPES[node.type] || NODE_TYPES.educativo;
                 const colIdx = getColIdx(node.data?.funnelLevel || typeConfig.category);
-                
                 const colX = STRATEGIC_RAILS.COLUMNS[colIdx] + 50; 
                 return { ...node, x: colX };
             });
 
-            // Trigger actual update
+            // Trigger node updates
             updatedNodes.forEach(node => onNodeMove(node.id, node.x, node.y));
+
+            // --- ZOOM TO FIT LOGIC ---
+            // Calculate bounding box of all updated nodes and hubs
+            const allPositions = [
+                ...updatedNodes.map(n => ({ x: n.x, y: n.y })),
+                ...Object.values(DEFAULT_HUB_POSITIONS)
+            ];
+
+            if (allPositions.length > 0) {
+                const minX = Math.min(...allPositions.map(p => p.x));
+                const maxX = Math.max(...allPositions.map(p => p.x)) + 300; // Add card width
+                const minY = Math.min(...allPositions.map(p => p.y));
+                const maxY = Math.max(...allPositions.map(p => p.y)) + 150; // Add card height
+
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+                
+                // Calculate scale to fit (with some padding)
+                const boardWidth = 2000; // Expected visible width
+                const boardHeight = 1000; // Expected visible height
+                const contentWidth = maxX - minX;
+                const contentHeight = maxY - minY;
+                
+                const scaleX = boardWidth / contentWidth;
+                const scaleY = boardHeight / contentHeight;
+                const newScale = Math.min(Math.max(Math.min(scaleX, scaleY) * 0.8, 0.3), 1.0);
+
+                // Center the transformation
+                onViewChange({
+                    x: (window.innerWidth / 2) - (centerX * newScale),
+                    y: (window.innerHeight / 2) - (centerY * newScale),
+                    scale: newScale
+                });
+            }
             
-            // Re-select tool back to select to avoid loop
             setTimeout(() => {
                 if (onToolChange) onToolChange('select');
-            }, 800);
+            }, 1000);
         }
     }, [activeTool, onToolChange, nodes, onNodeMove]);
 

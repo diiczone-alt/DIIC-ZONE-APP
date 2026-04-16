@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
     MousePointer2, Plus, Link2, Trash2, FolderOpen, 
-    Sparkles, StickyNote, PenTool, Type, Hand, Layout, CreditCard
+    Sparkles, StickyNote, PenTool, Type, Hand, Layout, CreditCard, BrainCircuit, Bot
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -20,8 +20,8 @@ export default function StrategyToolbar({
         { id: 'create', icon: Plus, label: 'Add Node', desc: 'Drop new node', category: 'add' },
         
         // --- INTELLIGENCE ---
-        { id: 'ai', icon: Sparkles, label: 'AI Copilot', desc: 'Generate Suggestions', category: 'ai' },
-        { id: 'organize', icon: Layout, label: 'Organizar', desc: 'Auto-layout board', category: 'ai' },
+        { id: 'ai', icon: BrainCircuit, label: 'Copiloto IA', desc: 'Sugerencias Inteligentes', category: 'ai' },
+        { id: 'organize', icon: Sparkles, label: 'BARITA MÁGICA', desc: 'Ajustar y Organizar', category: 'ai' },
         { id: 'view-standard', icon: CreditCard, label: 'Vista Estándar', desc: 'Detailed Card View', category: 'view' },
         
         // --- ANNOTATION & DRAWING ---
