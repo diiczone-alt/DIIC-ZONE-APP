@@ -744,7 +744,7 @@ export default function StrategyCanvas({
                 drag
                 dragMomentum={false}
                 onDrag={(e, info) => handleHubDrag(id, info.delta)}
-                className="cursor-grab active:cursor-grabbing group/hub"
+                className="cursor-grab active:cursor-grabbing group/hub pointer-events-auto"
             >
                 {/* Glass Background with Glow */}
                     <rect 
@@ -832,7 +832,7 @@ export default function StrategyCanvas({
                             drag
                             dragMomentum={false}
                             onDrag={(e, info) => handleHubDrag(id, info.delta)}
-                            className="cursor-grab active:cursor-grabbing group/hub"
+                            className="cursor-grab active:cursor-grabbing group/hub pointer-events-auto"
                         >
                             {isRoot ? (
                                 <g>
