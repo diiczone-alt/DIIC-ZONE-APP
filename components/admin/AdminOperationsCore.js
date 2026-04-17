@@ -21,7 +21,7 @@ import AdminTalentPayments from './AdminTalentPayments';
 import AdminTalentTraining from './AdminTalentTraining';
 import AdminProductionDashboard from './AdminProductionDashboard';
 
-export default function AdminOperationsCore() {
+export default function AdminOperationsCore({ productionStats = {}, teamData = [] }) {
     const [activeTab, setActiveTab] = useState('production');
 
     // Helper component for tabs
@@ -51,9 +51,10 @@ export default function AdminOperationsCore() {
                     <button className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-gray-300 hover:bg-white/10 transition-all">
                         <Filter className="w-4 h-4" /> Todos los Nodos
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-black rounded-xl text-xs font-black hover:bg-blue-400 transition-all">
-                        <Activity className="w-4 h-4" /> Monitoreo Vivo
-                    </button>
+                    <div className="px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center gap-3">
+                         <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                         <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Sincronizado</span>
+                    </div>
                 </div>
             </div>
 
@@ -64,19 +65,18 @@ export default function AdminOperationsCore() {
                 <TabBtn id="capacity" label="Capacidad" active={activeTab} setter={setActiveTab} />
                 <TabBtn id="priority" label="Priorización" active={activeTab} setter={setActiveTab} />
                 <TabBtn id="talent" label="Reputación" active={activeTab} setter={setActiveTab} />
-                <TabBtn id="payments" label="Contratos" active={activeTab} setter={setActiveTab} />
                 <TabBtn id="assignment" label="Asignación Smart" active={activeTab} setter={setActiveTab} />
             </div>
+
             {/* CONTENT AREA */}
             <div className="min-h-[600px]">
                 <AnimatePresence mode="wait">
                     {activeTab === 'production' && <AdminProductionDashboard key="production" />}
-                    {activeTab === 'talent-explorer' && <TalentExplorer key="talent-explorer" />}
-                    {activeTab === 'capacity' && <AdminWorkloadManager key="capacity" />}
+                    {activeTab === 'talent-explorer' && <TalentExplorer key="talent-explorer" teamData={teamData} />}
+                    {activeTab === 'capacity' && <AdminWorkloadManager key="capacity" teamData={teamData} />}
                     {activeTab === 'priority' && <AdminClientPrioritization key="priority" />}
-                    {activeTab === 'talent' && <AdminTalentReputation key="talent" />}
+                    {activeTab === 'talent' && <AdminTalentReputation key="talent" teamData={teamData} />}
                     {activeTab === 'payments' && <AdminTalentPayments key="payments" />}
-                    {activeTab === 'training' && <AdminTalentTraining key="training" />}
                     {activeTab === 'assignment' && <AssignmentModule key="assignment" />}
                 </AnimatePresence>
             </div>
@@ -84,19 +84,8 @@ export default function AdminOperationsCore() {
     );
 }
 
-function TalentExplorer() {
-    const [team, setTeam] = useState([]);
-    const [loading, setLoading] = useState(true);
+function TalentExplorer({ teamData = [] }) {
     const [selectedProfile, setSelectedProfile] = useState(null);
-
-    useEffect(() => {
-        const load = async () => {
-            const data = await agencyService.getTeam();
-            setTeam(data);
-            setLoading(false);
-        };
-        load();
-    }, []);
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6 text-left">
@@ -107,7 +96,7 @@ function TalentExplorer() {
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {team.map((m, i) => (
+                    {teamData.map((m, i) => (
                         <div key={m.id || i} className="p-6 bg-white/5 border border-white/5 rounded-3xl hover:border-blue-500/30 transition-all group relative">
                             <div className="absolute top-6 right-6 text-[8px] font-black text-white/20 uppercase tracking-widest">{m.id}</div>
                             <div className="flex items-center gap-4 mb-6">
@@ -123,15 +112,15 @@ function TalentExplorer() {
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between items-center text-[10px] font-bold">
                                     <span className="text-gray-500 uppercase">Ubicación</span>
-                                    <span className="text-white flex items-center gap-1"><MapPin className="w-3 h-3 text-blue-500" /> {m.city}</span>
+                                    <span className="text-white flex items-center gap-1"><MapPin className="w-3 h-3 text-blue-500" /> {m.city || 'Nodo Central'}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-[10px] font-bold">
                                     <span className="text-gray-500 uppercase">Nivel</span>
-                                    <span className={`px-2 py-0.5 rounded border ${m.level === 'Pro' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>{m.level?.toUpperCase()}</span>
+                                    <span className={`px-2 py-0.5 rounded border ${m.load < 70 ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>{m.load < 70 ? 'ÉLITE' : (m.load < 90 ? 'PRO' : 'LIMIT')}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-[10px] font-bold">
                                     <span className="text-gray-500 uppercase">Carga</span>
-                                    <span className="text-white">{m.activeTasks} Tareas Activas</span>
+                                    <span className={`font-black ${m.load > 90 ? 'text-red-500' : 'text-emerald-400'}`}>{m.load}% ({m.activeTasksCount} Tareas)</span>
                                 </div>
                             </div>
 
@@ -141,6 +130,11 @@ function TalentExplorer() {
                             </div>
                         </div>
                     ))}
+                    {teamData.length === 0 && (
+                         <div className="col-span-full py-20 text-center text-gray-500 font-bold italic">
+                            No se detectaron miembros del equipo en el nodo actual.
+                         </div>
+                    )}
                 </div>
             </div>
 

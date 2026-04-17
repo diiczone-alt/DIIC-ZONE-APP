@@ -14,20 +14,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { calculateWorkload, getSystemDirectives } from '../connectivity/CapacityEngine';
 
-export default function AdminCapacitySystem() {
+export default function AdminCapacitySystem({ globalMetrics = {}, teamData = [] }) {
     const [activeTab, setActiveTab] = useState('global');
 
-    // Datos simulados (en producción vendrían de DB)
-    const rawData = [
-        { role: "Editor de Video", current: 38 }, // 95% -> Limit
-        { role: "Diseñador Gráfico", current: 48 }, // 80% -> Caution
-        { role: "Fotógrafo", current: 13 }, // 108% -> Saturated
-        { role: "Filmmaker", current: 5 },  // 50% -> Healthy
-        { role: "Community Manager", current: 11 } // 91% -> Limit
-    ];
+    // Agregamos la carga real de teamData por rol
+    const rolesMap = teamData.reduce((acc, m) => {
+        if (!acc[m.role]) {
+            acc[m.role] = { role: m.role, current: 0 };
+        }
+        acc[m.role].current += (m.assigned || 0); // Horas asignadas
+        return acc;
+    }, {});
 
-    // Procesar datos con el motor
-    const capacityStats = rawData.map(d => calculateWorkload(d.role, d.current));
+    const rawData = Object.values(rolesMap);
+
+    // Si no hay datos (loading), usamos un array vacío
+    const capacityStats = rawData.length > 0 
+        ? rawData.map(d => calculateWorkload(d.role, d.current))
+        : [];
+    
     const activeAlerts = getSystemDirectives(capacityStats);
 
     const getIcon = (roleName) => {

@@ -28,23 +28,36 @@ import AdminClientEvolution from './AdminClientEvolution';
 import AdminOperationalGovernance from './AdminOperationalGovernance';
 import AdminDualAudit from './AdminDualAudit';
 
+const services = [
+    { name: "Producción de Video (Scale)", sales: "$8,500", cost: "$2,125", profit: "$6,375" },
+    { name: "Automatización IA / SaaS", sales: "$4,200", cost: "$630", profit: "$3,570" },
+    { name: "Design & Branding Elite", sales: "$3,600", cost: "$900", profit: "$2,700" },
+    { name: "Estrategia & Social Opt", sales: "$2,800", cost: "$700", profit: "$2,100" }
+];
+
 export default function MasterCommandCenter() {
     const [clients, setClients] = useState([]);
+    const [operationalData, setOperationalData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState('global');
 
     useEffect(() => {
-        const fetchRealClients = async () => {
+        const fetchMasterData = async () => {
             try {
-                const data = await agencyService.getClients();
-                setClients(data);
+                setLoading(true);
+                const [clientsData, intelligence] = await Promise.all([
+                    agencyService.getClients(),
+                    agencyService.getOperationalIntelligence()
+                ]);
+                setClients(clientsData);
+                setOperationalData(intelligence);
             } catch (err) {
-                console.error("MasterCommandCenter: Error fetching real clients", err);
+                console.error("MasterCommandCenter: Error fetching real data", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchRealClients();
+        fetchMasterData();
     }, []);
 
     const handleFeatureClick = (feature) => {
@@ -54,25 +67,14 @@ export default function MasterCommandCenter() {
         });
     };
 
-    const productionStats = {
-        editing: 12,
-        design: 5,
-        shooting: 3,
-        bottlenecks: 2
+    const productionStats = operationalData?.productionStats || {
+        editing: 0,
+        design: 0,
+        shooting: 0,
+        bottlenecks: 0
     };
 
-    const team = [
-        { name: "Fausto", role: "Editor Senior", load: "high", performance: 92 },
-        { name: "CM Agro", role: "Community", load: "medium", performance: 88 },
-        { name: "Diseñador X", role: "Gráfico", load: "low", performance: 76 },
-    ];
-
-    const services = [
-        { name: "Reels / TikToks", sales: "$3,500", cost: "$1,100", profit: "$2,400", trend: "+15%" },
-        { name: "Websites", sales: "$2,000", cost: "$500", profit: "$1,500", trend: "+5%" },
-        { name: "Videos Corp", sales: "$4,800", cost: "$1,600", profit: "$3,200", trend: "+20%" },
-        { name: "SaaS / IA Automations", sales: "$1,200", cost: "$120", profit: "$1,080", trend: "+45%" },
-    ];
+    const team = operationalData?.team || [];
 
     return (
         <div className="space-y-8 pb-20 p-6">
@@ -86,10 +88,10 @@ export default function MasterCommandCenter() {
                     <p className="text-gray-400">Visión Global de DIIC ZONE</p>
                 </div>
                 <div className="flex gap-4">
-                    <div className="flex p-1 bg-white/5 border border-white/10 rounded-2xl mr-4">
+                    <div className="flex p-1 bg-white/5 border border-white/10 rounded-2xl mr-4 overflow-x-auto max-w-full md:max-w-none">
                         <button
                             onClick={() => setView('global')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'global' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${view === 'global' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                         >
                             Vista Global
                         </button>
@@ -98,7 +100,7 @@ export default function MasterCommandCenter() {
                                 setView('finance');
                                 toast.success("Accediendo a Finanzas Globales", { description: "Solo personal con nivel de acceso Admin Central." });
                             }}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'finance' ? 'bg-emerald-500 text-black shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${view === 'finance' ? 'bg-emerald-500 text-black shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                         >
                             Finanzas Globales
                         </button>
@@ -107,7 +109,7 @@ export default function MasterCommandCenter() {
                                 setView('risk');
                                 toast.success("Accediendo a Gestión de Riesgos", { description: "Panel de Dirección Estratégica activo." });
                             }}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'risk' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${view === 'risk' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                         >
                             Gestión de Riesgos
                         </button>
@@ -116,7 +118,7 @@ export default function MasterCommandCenter() {
                                 setView('governance');
                                 toast.success("Accediendo a Gobernanza Operativa", { description: "Control total de tasas y costos activo." });
                             }}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'governance' ? 'bg-indigo-600 text-white shadow-lg' : 'text-indigo-400 border border-indigo-500/20 bg-indigo-500/10'}`}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${view === 'governance' ? 'bg-indigo-600 text-white shadow-lg' : 'text-indigo-400 border border-indigo-500/20 bg-indigo-500/10'}`}
                         >
                             Gobernanza
                         </button>
@@ -125,7 +127,7 @@ export default function MasterCommandCenter() {
                                 setView('operations');
                                 toast.success("Accediendo a Operaciones Globales", { description: "Control de Producción y Calidad." });
                             }}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'operations' ? 'bg-blue-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${view === 'operations' ? 'bg-blue-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                         >
                             Operaciones Globales
                         </button>
@@ -134,62 +136,13 @@ export default function MasterCommandCenter() {
                                 setView('team');
                                 handleFeatureClick('Gestión de Talento');
                             }}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'team' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${view === 'team' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                         >
                             Gestión de Talento
                         </button>
-                        <div className="flex flex-wrap items-center gap-3">
-                            <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
-                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Estructura Operativa:</span>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => {
-                                            setView('nodes');
-                                            handleFeatureClick('Gestión de Nodos');
-                                        }}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${view === 'nodes' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                                    >
-                                        Sedes & Nodos
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setView('training');
-                                            handleFeatureClick('Formación de Nodos');
-                                        }}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${view === 'training' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                                    >
-                                        Formación de Nodos
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setView('qa');
-                                            handleFeatureClick('Control de Calidad');
-                                        }}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${view === 'qa' ? 'bg-emerald-500 text-black shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                                    >
-                                        Control de Calidad
-                                    </button>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setView('bi')}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'bi' ? 'bg-emerald-500 text-black shadow-lg' : 'text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20'}`}
-                            >
-                                Inteligencia de Negocio
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setView('docs');
-                                    handleFeatureClick('Documentación Central');
-                                }}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${view === 'docs' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                            >
-                                Documentación
-                            </button>
-                        </div>
                     </div>
                     <StatusBadge label="Sistemas Activos" status="online" />
-                    <StatusBadge label="Alertas" count={3} status="alert" />
+                    <StatusBadge label="Alertas" count={operationalData?.risks?.length || 0} status={operationalData?.risks?.length > 0 ? 'alert' : 'online'} />
                 </div>
             </div>
 
@@ -205,10 +158,10 @@ export default function MasterCommandCenter() {
                     >
                         {/* 1. GLOBAL KPIs */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <KPICard icon={Users} title="Clientes Activos" value={clients.filter(c => c.status === 'active').length} sub="+3 este mes" color="indigo" />
-                            <KPICard icon={TrendingUp} title="Crecimiento" value="18%" sub="vs mes anterior" color="emerald" />
-                            <KPICard icon={AlertTriangle} title="En Riesgo" value="2" sub="Requieren atención" color="red" />
-                            <KPICard icon={DollarSign} title="Ingreso Mensual" value={`$${clients.reduce((acc, c) => acc + (c.price || 0), 0)}`} sub="Facturación Total" color="indigo" />
+                            <KPICard icon={Users} title="Clientes Activos" value={clients.filter(c => c.status === 'active').length} sub={`${clients.length} totales`} color="indigo" />
+                            <KPICard icon={Zap} title="Carga Global" value={`${operationalData?.globalMetrics?.globalLoad || 0}%`} sub="Promedio del Staff" color={operationalData?.globalMetrics?.globalLoad > 80 ? 'red' : 'emerald'} />
+                            <KPICard icon={AlertTriangle} title="Amenazas" value={operationalData?.risks?.filter(r => r.severity === 'critical').length || 0} sub="Incidentes Críticos" color="red" />
+                            <KPICard icon={DollarSign} title="Ingreso Mensual" value={`$${clients.reduce((acc, c) => acc + (Number(c.price) || 0), 0).toLocaleString()}`} sub="Facturación Proyectada" color="indigo" />
                         </div>
 
                         {/* 2. STRATEGIC MODULES (REDUNDANT NAV) */}
@@ -222,109 +175,66 @@ export default function MasterCommandCenter() {
                             />
                             <PillarCard
                                 title="Riesgos"
-                                desc="Alertas de Producción"
-                                icon={ShieldCheck}
+                                desc="Centro de Rescate"
+                                icon={ShieldAlert}
                                 color="red"
                                 onClick={() => setView('risk')}
                             />
                             <PillarCard
                                 title="Operaciones"
-                                desc="Control & Calidad"
+                                desc="Producción Real"
                                 icon={Activity}
                                 color="blue"
                                 onClick={() => setView('operations')}
                             />
                             <PillarCard
                                 title="Equipo"
-                                desc="Reputación & Score"
+                                desc="Reputación & Carga"
                                 icon={Award}
                                 color="purple"
                                 onClick={() => setView('team')}
                             />
                             <PillarCard
-                                title="Calidad"
-                                desc="QA 3 Fases"
-                                icon={ShieldCheck}
-                                color="emerald"
-                                onClick={() => setView('qa')}
-                            />
-                            <PillarCard
-                                title="Sedes"
-                                desc="Expansión Global"
-                                icon={MapPin}
-                                color="indigo"
-                                onClick={() => setView('nodes')}
-                            />
-                            <PillarCard
-                                title="Documentos"
-                                desc="Reglas & SOPs"
-                                icon={BookOpen}
-                                color="purple"
-                                onClick={() => setView('docs')}
-                            />
-                            <PillarCard
-                                title="Mejora Continua"
-                                desc="Optimización & ROI"
-                                icon={BrainCircuit}
-                                color="yellow"
-                                onClick={() => setView('improvement')}
-                            />
-                            <PillarCard
-                                title="Inteligencia"
-                                desc="Dirección & BI"
-                                icon={Compass}
-                                color="indigo"
-                                active={view === 'bi'}
-                                onClick={() => setView('bi')}
-                            />
-                            <PillarCard
                                 title="Capacidad"
-                                desc="Límite & Carga"
+                                desc="Límite TCS"
                                 icon={Package}
                                 color="blue"
                                 onClick={() => setView('capacity')}
                             />
                             <PillarCard
-                                title="Precios"
-                                desc="Tarifa Dinámica"
-                                icon={Calculator}
-                                color="emerald"
-                                onClick={() => setView('pricing')}
-                            />
-                            <PillarCard
-                                title="Evolución"
-                                desc="Niveles Clientes"
-                                icon={Trophy}
-                                color="purple"
-                                onClick={() => setView('evolution')}
+                                title="Sedes"
+                                desc="Vigilancia Nodos"
+                                icon={MapPin}
+                                color="indigo"
+                                onClick={() => setView('nodes')}
                             />
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             {/* 2. CLIENT MAP */}
                             <div className="lg:col-span-2 bg-[#0A0A12] border border-white/10 rounded-3xl p-6">
-                                <div className="flex justify-between items-center mb-6">
+                                <div className="flex justify-between items-center mb-6 text-left">
                                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                        <Globe className="w-5 h-5 text-indigo-400" /> Mapa de Clientes
+                                        <Globe className="w-5 h-5 text-indigo-400" /> Mapa de Clientes (LIVE)
                                     </h3>
                                     <div className="flex gap-2">
-                                        <input type="text" placeholder="Buscar cliente..." className="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-300 outline-none focus:border-indigo-500" />
+                                        <input type="text" placeholder="Filtrar base..." className="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-sm text-gray-300 outline-none focus:border-indigo-500" />
                                     </div>
                                 </div>
                                 <div className="space-y-3">
                                     <div className="grid grid-cols-5 text-xs font-bold text-gray-500 uppercase px-4 pb-2 text-left">
                                         <div className="col-span-2">Cliente</div>
-                                        <div>Nivel</div>
-                                        <div>Salud</div>
-                                        <div className="text-right">Ingreso</div>
+                                        <div>Servicio</div>
+                                        <div>Salud Ops</div>
+                                        <div className="text-right">Ticket</div>
                                     </div>
                                     {clients.map(client => (
                                         <ClientRow key={client.id} data={{
                                             ...client,
-                                            niche: client.type || 'Socio',
-                                            level: client.plan?.toLowerCase() === 'elite' ? 6 : (client.plan?.toLowerCase() === 'pro' ? 4 : 2),
+                                            niche: client.type || 'Socio Estratégico',
+                                            level: client.plan?.toLowerCase() === 'elite' ? 'Gold' : (client.plan?.toLowerCase() === 'pro' ? 'Active' : 'Basic'),
                                             health: client.status === 'active' ? 'excellent' : 'warning',
-                                            income: `$${client.price || 0}`
+                                            income: `$${Number(client.price || 0).toLocaleString()}`
                                         }} />
                                     ))}
                                     {clients.length === 0 && !loading && (
@@ -333,7 +243,7 @@ export default function MasterCommandCenter() {
                                         </div>
                                     )}
                                     {loading && (
-                                        <div className="py-2 text-gray-500 animate-pulse">Sincronizando con Supabase...</div>
+                                        <div className="py-2 text-gray-500 animate-pulse">Analizando nodos clientes...</div>
                                     )}
                                 </div>
                             </div>
@@ -346,28 +256,40 @@ export default function MasterCommandCenter() {
                                         <ShieldAlert className="w-5 h-5 text-red-500" /> Salud Operativa
                                     </h3>
                                     <div className="space-y-4">
-                                        <RiskHealthIndicator label="Saturación de Equipo" status="crítico" color="red" />
-                                        <RiskHealthIndicator label="Pagos Atrasados" status="bajo" color="emerald" />
-                                        <RiskHealthIndicator label="Calidad de Entrega" status="excelente" color="emerald" />
-                                        <RiskHealthIndicator label="Riesgo de Crecimiento" status="alto" color="yellow" />
+                                        <RiskHealthIndicator 
+                                            label="Saturación Crítica" 
+                                            status={operationalData?.risks?.filter(r => r.category === 'creative' && r.severity === 'critical').length > 0 ? 'CRÍTICO' : 'SEGURO'} 
+                                            color={operationalData?.risks?.filter(r => r.category === 'creative' && r.severity === 'critical').length > 0 ? 'red' : 'emerald'} 
+                                        />
+                                        <RiskHealthIndicator 
+                                            label="Retrasos Producción" 
+                                            status={operationalData?.risks?.filter(r => r.category === 'project').length > 0 ? `${operationalData?.risks?.filter(r => r.category === 'project').length} VENCIDOS` : 'DÍA'} 
+                                            color={operationalData?.risks?.filter(r => r.category === 'project').length > 0 ? 'red' : 'emerald'} 
+                                        />
+                                        <RiskHealthIndicator label="Calidad QA" status="OPTIMIZADO" color="emerald" />
+                                        <RiskHealthIndicator 
+                                            label="Nivel de Amenaza" 
+                                            status={operationalData?.globalMetrics?.threatLevel?.toUpperCase() || 'ESTABLE'} 
+                                            color={operationalData?.globalMetrics?.threatLevel === 'crítico' ? 'red' : 'emerald'} 
+                                        />
                                     </div>
                                     <button
                                         onClick={() => setView('risk')}
                                         className="w-full mt-6 py-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-red-500/20 transition-all"
                                     >
-                                        Ver Mapa Completo
+                                        Neutralizar Riesgos
                                     </button>
                                 </div>
 
                                 <div className="bg-[#0A0A12] border border-white/10 rounded-3xl p-6 text-left">
                                     <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                        <Video className="w-5 h-5 text-indigo-400" /> Estado de Producción
+                                        <Video className="w-5 h-5 text-indigo-400" /> Producción en Tiempo Real
                                     </h3>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <StatBox label="En Edición" value={productionStats.editing} color="blue" />
-                                        <StatBox label="Diseño" value={productionStats.design} color="purple" />
-                                        <StatBox label="Grabación" value={productionStats.shooting} color="green" />
-                                        <StatBox label="Atascados" value={productionStats.bottlenecks} color="red" />
+                                        <StatBox label="Editando" value={productionStats.editing} color="blue" />
+                                        <StatBox label="Diseñando" value={productionStats.design} color="purple" />
+                                        <StatBox label="Rodajes" value={productionStats.shooting} color="green" />
+                                        <StatBox label="Bloqueos" value={productionStats.bottlenecks} color="red" />
                                     </div>
                                 </div>
                             </div>
@@ -375,15 +297,85 @@ export default function MasterCommandCenter() {
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div className="bg-[#0A0A12] border border-white/10 rounded-3xl p-6 text-left">
-                                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-indigo-400" /> Rendimiento del Equipo
-                                </h3>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                        <Users className="w-5 h-5 text-indigo-400" /> Monitor de Carga del Staff
+                                    </h3>
+                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest underline underline-offset-4 decoration-indigo-500">Capacidad: 40h/sem</span>
+                                </div>
                                 <div className="space-y-4">
-                                    {team.map((member, i) => (
+                                    {team.slice(0, 5).map((member, i) => (
                                         <TeamRow key={i} data={member} />
                                     ))}
+                                    {team.length > 5 && (
+                                        <button onClick={() => setView('team')} className="w-full text-center text-[10px] text-gray-500 font-bold uppercase hover:text-white transition-colors py-2 border-t border-white/5 pt-4">
+                                            Ver todos los {team.length} miembros
+                                        </button>
+                                    )}
                                 </div>
                             </div>
+
+                            <div className="bg-[#0A0A12] border border-white/10 rounded-3xl p-6 text-left">
+                                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                    <Target className="w-5 h-5 text-emerald-400" /> Próximos Eventos Críticos
+                                </h3>
+                                <div className="space-y-4">
+                                    {loading ? (
+                                        <div className="py-4 text-gray-500 animate-pulse">Escaneando cronogramas...</div>
+                                    ) : (
+                                        <>
+                                            {operationalData?.risks?.map((risk, index) => (
+                                                <div key={index} className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5">
+                                                    <div>
+                                                        <div className="text-[10px] font-black text-gray-500 uppercase">{risk.category}</div>
+                                                        <div className="text-xs font-bold text-white">{risk.message}</div>
+                                                    </div>
+                                                    <div className={`px-2 py-1 rounded text-[10px] font-black ${risk.severity === 'critical' ? 'bg-red-500/20 text-red-500' : 'bg-yellow-500/20 text-yellow-500'}`}>
+                                                        {risk.severity === 'critical' ? 'CRÍTICO' : 'ATENCIÓN'}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {(!operationalData?.risks || operationalData?.risks?.length === 0) && (
+                                                <div className="py-10 text-center text-gray-500 text-xs font-bold italic">
+                                                    Sin alertas pendientes. El sistema está operando en niveles óptimos.
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                ) : view === 'finance' ? (
+                    <motion.div key="finance" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <AdminFinancialCore globalData={operationalData} />
+                    </motion.div>
+                ) : view === 'risk' ? (
+                    <motion.div key="risk" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
+                        <AdminRiskControl risks={operationalData?.risks || []} stats={operationalData?.globalMetrics} />
+                    </motion.div>
+                ) : view === 'team' ? (
+                    <motion.div key="team" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                        <AdminTeamReputation teamData={operationalData?.team || []} activeRisks={operationalData?.risks || []} />
+                    </motion.div>
+                ) : view === 'capacity' ? (
+                    <motion.div key="capacity" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                        <AdminCapacitySystem globalMetrics={operationalData?.globalMetrics} teamData={operationalData?.team || []} />
+                    </motion.div>
+                ) : view === 'operations' ? (
+                    <motion.div key="operations" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                        <AdminOperationsCore productionStats={operationalData?.productionStats} teamData={operationalData?.team || []} />
+                    </motion.div>
+                ) : (
+                    <div className="py-40 text-center">
+                        <div className="text-4xl font-black text-white/20 uppercase italic">Sección en Desarrollo</div>
+                        <p className="text-gray-500 font-bold mt-4">Nivel de acceso detectado: Gran Maestro Administrativo</p>
+                        <button onClick={() => setView('global')} className="mt-8 px-6 py-3 bg-indigo-500 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-indigo-600 transition-all text-[10px]">
+                            Regresar a Base
+                        </button>
+                    </div>
+                )}
+            </AnimatePresence>
 
                             <div className="bg-[#0A0A12] border border-emerald-500/20 rounded-3xl p-6 relative overflow-hidden text-left">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -522,7 +514,10 @@ export default function MasterCommandCenter() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                     >
-                        <AdminOperationsCore />
+                        <AdminOperationsCore 
+                            productionStats={productionStats} 
+                            teamData={team} 
+                        />
                     </motion.div>
                 ) : view === 'team' ? (
                     <motion.div
@@ -531,7 +526,10 @@ export default function MasterCommandCenter() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                     >
-                        <AdminTeamReputation />
+                        <AdminTeamReputation 
+                            teamData={team} 
+                            activeRisks={operationalData?.risks || []} 
+                        />
                     </motion.div>
                 ) : view === 'qa' ? (
                     <motion.div

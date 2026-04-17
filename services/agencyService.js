@@ -810,6 +810,133 @@ export const agencyService = {
         }
     },
 
+    // --- OPERATIONAL INTELLIGENCE ENGINE (HQ SYNC) ---
+    getOperationalIntelligence: async () => {
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`🧠 [${timestamp}] Starting Operational Intelligence Engine...`);
+        try {
+            const [team, tasks, clients] = await Promise.all([
+                agencyService.getTeam(),
+                agencyService.getTasks('all'),
+                agencyService.getClients()
+            ]);
+
+            // 1. Task Weight Config
+            const WORKLOAD_MAP = {
+                'Post Simple': 1.2,
+                'Image': 1.2,
+                'Carousel': 2,
+                'Reel Vertical (9:16)': 1.8,
+                'Video 9:16': 1.8,
+                'Video 16:9': 4.5,
+                'Landscape (16:9)': 1.5,
+                'PDF/Docs': 2.0,
+                'Default': 2.0
+            };
+
+            // 2. Process Team Workload
+            const activeTasks = tasks.filter(t => t.status !== 'completed' && t.status !== 'approved');
+            
+            const processedTeam = team.map(member => {
+                const memberTasks = activeTasks.filter(t => 
+                    t.assigned_to === member.name || 
+                    t.assigned_to === member.id
+                );
+
+                const assignedHours = memberTasks.reduce((sum, task) => {
+                    const weight = WORKLOAD_MAP[task.format] || WORKLOAD_MAP['Default'];
+                    return sum + weight;
+                }, 0);
+
+                const loadPercent = Math.round((assignedHours / 40) * 100);
+
+                return {
+                    ...member,
+                    assigned: Number(assignedHours.toFixed(1)),
+                    capacity: 40,
+                    load: loadPercent,
+                    activeTasksCount: memberTasks.length,
+                    status: loadPercent > 90 ? 'rose' : loadPercent > 70 ? 'red' : loadPercent > 50 ? 'yellow' : 'emerald'
+                };
+            });
+
+            // 3. Risk Analysis
+            const risks = [];
+            const now = new Date();
+
+            // Check overdue tasks
+            activeTasks.forEach(task => {
+                if (task.due_date && new Date(task.due_date) < now) {
+                    risks.push({
+                        id: `risk-task-${task.id}`,
+                        category: 'project',
+                        severity: 'critical',
+                        title: `Tarea Vencida: ${task.title}`,
+                        msg: `La tarea debió entregarse el ${new Date(task.due_date).toLocaleDateString()}.`,
+                        impact: 'Retraso en cronograma de cliente',
+                        action: 'Reasignar / Urgente',
+                        color: 'red'
+                    });
+                }
+            });
+
+            // Check overloaded members
+            processedTeam.forEach(m => {
+                if (m.load > 100) {
+                    risks.push({
+                        id: `risk-team-${m.id}`,
+                        category: 'creative',
+                        severity: 'critical',
+                        title: `Saturación Extrema: ${m.name}`,
+                        msg: `${m.name} tiene ${m.assigned}h asignadas (100%+ de su capacidad semanal).`,
+                        impact: 'Riesgo de colapso y baja calidad',
+                        action: 'Reasignar tareas de inmediato',
+                        color: 'rose'
+                    });
+                } else if (m.load > 85) {
+                    risks.push({
+                        id: `risk-team-warn-${m.id}`,
+                        category: 'creative',
+                        severity: 'warning',
+                        title: `Alerta de Carga: ${m.name}`,
+                        msg: `${m.name} está llegando a su límite de capacidad (${m.load}%).`,
+                        impact: 'Posible cuello de botella',
+                        action: 'Monitorizar / No asignar más',
+                        color: 'red'
+                    });
+                }
+            });
+
+            // 4. Production Stats
+            const productionStats = {
+                editing: activeTasks.filter(t => t.assigned_role === 'EDITOR' || t.title?.toLowerCase().includes('edit')).length,
+                design: activeTasks.filter(t => t.assigned_role === 'DESIGN' || t.title?.toLowerCase().includes('diseñ')).length,
+                shooting: activeTasks.filter(t => t.assigned_role === 'FILMMAKER' || t.title?.toLowerCase().includes('rodaje')).length,
+                bottlenecks: risks.filter(r => r.severity === 'critical').length
+            };
+
+            const globalLoad = Math.round(processedTeam.reduce((acc, m) => acc + m.load, 0) / (processedTeam.length || 1));
+
+            return {
+                team: processedTeam,
+                tasks: activeTasks,
+                clients: clients,
+                risks: risks.length > 0 ? risks : [],
+                productionStats,
+                globalMetrics: {
+                    globalLoad,
+                    totalMembers: processedTeam.length,
+                    activeTasksCount: activeTasks.length,
+                    threatLevel: risks.filter(r => r.severity === 'critical').length > 2 ? 'crítico' : 'estable'
+                }
+            };
+
+        } catch (error) {
+            console.error("🚨 Critical Error in Operational Intelligence Engine:", error);
+            return null;
+        }
+    },
+
     // --- FINANCIAL BUDGETS (PLANNING) ---
     getFinancialBudgets: async (month) => {
         try {

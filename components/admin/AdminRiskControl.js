@@ -12,53 +12,27 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function AdminRiskControl() {
+export default function AdminRiskControl({ risks = [], stats: globalMetrics = {} }) {
     const [filter, setFilter] = useState('all');
 
-    const alerts = [
-        {
-            id: 1, category: 'client', severity: 'critical',
-            title: 'Riesgo de Abandono: Clínica Dental A',
-            msg: 'El cliente no ha entrado a la App en 10 días y tiene 3 revisiones pendientes de aprobar.',
-            impact: 'Pérdida de Revenue recurrente L4',
-            action: 'Activar Rescate', color: 'red', icon: Users
-        },
-        {
-            id: 2, category: 'project', severity: 'warning',
-            title: 'Retraso en Producción: Campaña Verano',
-            msg: 'La entrega de edición se ha desplazado 48h por falta de materiales del cliente.',
-            impact: 'Retraso en calendario de pauta',
-            action: 'Llamar a Cliente', color: 'yellow', icon: Briefcase
-        },
-        {
-            id: 3, category: 'creative', severity: 'critical',
-            title: 'Saturación: Rodrigo (Editor)',
-            msg: 'Carga de trabajo al 120%. Tiene 8 proyectos críticos asignados para esta semana.',
-            impact: 'Riesgo de caída en calidad y plazos',
-            action: 'Reasignar Tareas', color: 'red', icon: Zap
-        },
-        {
-            id: 4, category: 'operation', severity: 'warning',
-            title: 'Cuello de Botella: Diseño Base',
-            msg: 'Entrada masiva de nuevos clientes Nivel 1. Tiempo de entrega promedio subió de 24h a 72h.',
-            impact: 'Baja satisfacción inicial',
-            action: 'Contratar Refuerzo', color: 'yellow', icon: Activity
-        },
-        {
-            id: 5, category: 'results', severity: 'info',
-            title: 'Estrategia Estancada: Startup X',
-            msg: '6 meses sin subir de nivel. El cliente está pagando pero su ROI es marginal.',
-            impact: 'Riesgo de cancelación por falta de resultados',
-            action: 'Nueva Revisión Estratégica', color: 'blue', icon: BarChart3
-        }
-    ];
+    const alerts = risks.map(r => ({
+        id: Math.random(),
+        category: r.category,
+        severity: r.severity,
+        title: r.severity === 'critical' ? `CRÍTICO: ${r.message}` : r.message,
+        msg: r.description || r.message, // Fallback to message
+        impact: r.category === 'creative' ? 'Riesgo de retraso en entregas por saturación' : (r.category === 'project' ? 'Incumplimiento de cronograma' : (r.category === 'client' ? 'Desconexión del cliente detectada' : 'Afectación operativa general')),
+        action: r.category === 'creative' ? 'Reasignar / Reforzar' : (r.category === 'project' ? 'Llamar a Cliente/Agencia' : 'Intervención Directa'),
+        color: r.severity === 'critical' ? 'red' : 'yellow',
+        icon: r.category === 'creative' ? Zap : (r.category === 'project' ? Briefcase : Users)
+    }));
 
     const filteredAlerts = filter === 'all' ? alerts : alerts.filter(a => a.category === filter);
 
-    const stats = [
-        { label: 'Amenazas Críticas', val: '2', color: 'red' },
-        { label: 'Proyectos en Riesgo', val: '4', color: 'yellow' },
-        { label: 'Saturación Equipo', val: '15%', color: 'blue' }
+    const riskStats = [
+        { label: 'Amenazas Críticas', val: risks.filter(r => r.severity === 'critical').length, color: 'red' },
+        { label: 'Alertas Totales', val: risks.length, color: 'yellow' },
+        { label: 'Saturación Promedio', val: `${globalMetrics.globalLoad || 0}%`, color: 'blue' }
     ];
 
     return (
@@ -80,7 +54,7 @@ export default function AdminRiskControl() {
                     </div>
 
                     <div className="flex gap-4">
-                        {stats.map((s, i) => (
+                        {riskStats.map((s, i) => (
                             <div key={i} className="bg-white/5 border border-white/5 p-6 rounded-[32px] min-w-[140px] text-center backdrop-blur-md">
                                 <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-2">{s.label}</span>
                                 <span className={`text-3xl font-black text-${s.color}-500`}>{s.val}</span>

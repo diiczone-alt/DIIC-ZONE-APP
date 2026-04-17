@@ -15,66 +15,35 @@ import { toast } from 'sonner';
 import AdminTalentPayments from './AdminTalentPayments';
 import AdminTalentTraining from './AdminTalentTraining';
 
-export default function AdminTeamReputation() {
+export default function AdminTeamReputation({ teamData = [], activeRisks = [] }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('reputation'); // 'reputation', 'payments', 'training', 'incentives'
 
-    const creatives = [
-        {
-            name: "Fausto R.",
-            role: "Editor de Video (Senior)",
-            points: { quality: 4, timing: 4, corrections: 3, prof: 3, client: 4 },
-            score: 18,
-            level: "ÉLITE",
-            history: "Apoyo principal a Leslie y Andrea",
-            color: "purple"
-        },
-        {
-            name: "Leslie",
-            role: "Community Manager",
-            points: { quality: 4, timing: 3, corrections: 3, prof: 4, client: 4 },
-            score: 18,
-            level: "ÉLITE",
-            history: "Gestiona G.S.T, Innova, Nova, etc.",
-            color: "purple"
-        },
-        {
-            name: "Andrea",
-            role: "Community Manager",
-            points: { quality: 3, timing: 3, corrections: 2, prof: 3, client: 3 },
-            score: 14,
-            level: "PRO",
-            history: "Especialista en Agropecuarios Ecuador",
-            color: "blue"
-        },
-        {
-            name: "Jocelyn",
-            role: "Community Manager",
-            points: { quality: 3, timing: 3, corrections: 1, prof: 3, client: 2 },
-            score: 12,
-            level: "ACTIVO",
-            history: "Gestiona Entre Panas y Parcelas",
-            color: "emerald"
-        },
-        {
-            name: "Anthony",
-            role: "Editor de Video",
-            points: { quality: 3, timing: 2, corrections: 2, prof: 2, client: 2 },
-            score: 11,
-            level: "PRO",
-            history: "Producción de Reels y TikToks",
-            color: "blue"
-        },
-        {
-            name: "Jimmy",
-            role: "Editor de Video",
-            points: { quality: 2, timing: 2, corrections: 1, prof: 2, client: 1 },
-            score: 8,
-            level: "ACTIVO",
-            history: "Apoyo en edición básica",
-            color: "emerald"
-        }
-    ];
+    // Map real team to visualization format
+    const creatives = teamData.map(member => {
+        // Simple logic to map score to a level based on load and role for now, 
+        // until we have a real reputation score in DB
+        const baseScore = member.load > 90 ? 10 : (member.load > 70 ? 14 : 18);
+        const level = baseScore >= 18 ? "ÉLITE" : (baseScore >= 14 ? "PRO" : "ACTIVO");
+        
+        return {
+            id: member.id,
+            name: member.name,
+            role: member.role,
+            points: { 
+                quality: Math.floor(baseScore / 4.5), 
+                timing: Math.floor(baseScore / 6), 
+                corrections: 3, 
+                prof: 3, 
+                client: 4 
+            },
+            score: baseScore,
+            level: level,
+            history: `Activo con ${member.activeTasksCount} tareas asignadas.`,
+            color: level === "ÉLITE" ? "purple" : (level === "PRO" ? "blue" : "emerald"),
+            load: member.load
+        };
+    });
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 text-left">

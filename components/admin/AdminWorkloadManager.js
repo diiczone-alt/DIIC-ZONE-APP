@@ -70,26 +70,6 @@ export default function AdminWorkloadManager() {
         } else {
             toast.error(`No se pudo asignar: ${result.reason}`);
         }
-    };
-
-    const globalMetrics = {
-        totalCapacity: 1200, // Monthly base
-        assignedHours: 936,
-        globalLoad: 78,
-        risk: 'Precaución'
-    };
-
-    return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 text-left pb-10">
-
-            {/* 🖥 ESTADO GENERAL (GLOBAL) */}
-            <div className="bg-[#0A0A12] border border-white/10 rounded-[32px] p-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-[100px] pointer-events-none" />
-                <div className="flex flex-col md:flex-row justify-between items-end gap-6 relative z-10">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">
-                            <Gauge className="w-4 h-4 text-yellow-500" /> Planeación de Carga & Capacidad
-                        </div>
                         <h2 className="text-3xl font-black text-white uppercase tracking-tight">
                             Capacidad Usada: <span className={`text-${getStatusColor(globalMetrics.globalLoad)}-500`}>{globalMetrics.globalLoad}%</span>
                         </h2>
