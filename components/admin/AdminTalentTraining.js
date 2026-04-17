@@ -155,18 +155,20 @@ export default function AdminTalentTraining() {
                         className="space-y-8"
                     >
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                        {students.length === 0 && (
-                            <div className="py-20 text-center text-gray-500 font-bold italic border border-white/5 rounded-[40px] bg-[#0A0A12]">
-                                <GraduationCap className="w-12 h-12 text-gray-700 mx-auto mb-4 opacity-20" />
-                                No hay creativos inscritos en cursos actualmente.
-                            </div>
-                        )}
-                        {students.map(student => (
-                            <StudentRow
-                                key={student.id}
-                                data={student}
-                                onClick={() => setSelectedStudent(student)}
-                        ))}
+                            {students.length === 0 && (
+                                <div className="lg:col-span-4 py-20 text-center text-gray-500 font-bold italic border border-white/5 rounded-[40px] bg-[#0A0A12]">
+                                    <GraduationCap className="w-12 h-12 text-gray-700 mx-auto mb-4 opacity-20" />
+                                    No hay creativos inscritos en cursos actualmente.
+                                </div>
+                            )}
+                            {students.map(student => (
+                                <StudentRow
+                                    key={student.id}
+                                    data={student}
+                                    onClick={() => setSelectedStudent(student)}
+                                    isSelected={selectedStudent?.id === student.id}
+                                />
+                            ))}
                         </div>
                         {selectedStudent && (
                             <StudentFocusPanel student={selectedStudent} />

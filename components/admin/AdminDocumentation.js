@@ -16,39 +16,9 @@ export default function AdminDocumentation() {
     const [selectedDoc, setSelectedDoc] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const manuals = [
-        {
-            id: 'node-bible',
-            title: "Manual del Nodo (The Bible)",
-            category: "Reglas de Oro",
-            icon: Book,
-            color: "indigo",
-            description: "Estandarización absoluta para la producción física en sedes regionales.",
-            content: [
-                { section: "01. Captura & Equipos", text: "Reglas para el uso de cámaras, iluminación y sonido en locación." },
-                { section: "02. Workflow de Subida", text: "Proceso obligatorio de subida al Audit Room en menos de 12h." },
-                { section: "03. Etiqueta & Marca", text: "Cómo el personal del nodo debe interactuar con el cliente central." }
-            ]
-        },
-        {
-            id: 'central-ops',
-            title: "Manual Operativo Central",
-            category: "Estrategia",
-            icon: Briefcase,
-            color: "emerald",
-            description: "Procedimientos internos para el equipo central (Edición, Diseño, CRM).",
-            content: [
-                { section: "01. Tiempos de Entrega", text: "SOP para la transformación de brutos a piezas finales en 24-48h." },
-                { section: "02. Control de Calidad", text: "Manual de criterios para el QA Room (Red/Yellow/Green)." }
-            ]
-        }
-    ];
+    const manuals = [];
 
-    const contracts = [
-        { id: 1, name: "Contrato de Representación Regional", type: "Legal", status: "Official", date: "2026-V1" },
-        { id: 2, name: "Acuerdo de Confidencialidad (NDA)", type: "Legal", status: "Required", date: "2026-V1" },
-        { id: 3, name: "Términos de Servicio al Cliente", type: "Legal", status: "Public", date: "2025-V3" }
-    ];
+    const contracts = [];
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 text-left">
@@ -105,6 +75,12 @@ export default function AdminDocumentation() {
                                 exit={{ opacity: 0, y: -10 }}
                                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
                             >
+                                {manuals.length === 0 && (
+                                    <div className="md:col-span-2 py-20 text-center text-gray-500 font-bold italic border border-white/5 rounded-[32px] bg-[#0A0A12]">
+                                        <BookOpen className="w-12 h-12 text-gray-700 mx-auto mb-4 opacity-20" />
+                                        No hay manuales operativos registrados aún.
+                                    </div>
+                                )}
                                 {manuals.filter(m => m.title.toLowerCase().includes(searchTerm.toLowerCase())).map((m) => (
                                     <ManualCard key={m.id} data={m} onClick={() => setSelectedDoc(m)} />
                                 ))}
@@ -121,6 +97,11 @@ export default function AdminDocumentation() {
                                     <h3 className="text-sm font-black text-white uppercase tracking-widest">Repositorio Legal Central</h3>
                                 </div>
                                 <div className="p-2">
+                                    {contracts.length === 0 && (
+                                        <div className="py-12 text-center text-gray-600 font-bold italic">
+                                            No hay documentos legales cargados en el repositorio.
+                                        </div>
+                                    )}
                                     {contracts.map((c) => (
                                         <ContractRow key={c.id} data={c} />
                                     ))}

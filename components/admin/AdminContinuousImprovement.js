@@ -17,50 +17,13 @@ export default function AdminContinuousImprovement() {
     const [activeTab, setActiveTab] = useState('insights'); // 'insights', 'processes', 'profitability', 'training'
 
     const metrics = [
-        { label: "Oportunidades", value: "12", sub: "Detectadas hoy", icon: Lightbulb, color: "yellow" },
-        { label: "ROI Optimizado", value: "+14%", sub: "Últimos 30 días", icon: TrendingUp, color: "emerald" },
-        { label: "Procesos en Mejora", value: "5", sub: "Flujos activos", icon: RefreshCw, color: "blue" },
-        { label: "Tasa de Error", value: "2.1%", sub: "-0.5% vs mes anterior", icon: ShieldCheck, color: "indigo" }
+        { label: "Oportunidades", value: "0", sub: "Detectadas hoy", icon: Lightbulb, color: "yellow" },
+        { label: "ROI Optimizado", value: "0%", sub: "Últimos 30 días", icon: TrendingUp, color: "emerald" },
+        { label: "Procesos en Mejora", value: "0", sub: "Flujos activos", icon: RefreshCw, color: "blue" },
+        { label: "Tasa de Error", value: "0%", sub: "vs mes anterior", icon: ShieldCheck, color: "indigo" }
     ];
 
-    const recommendations = [
-        {
-            id: 1,
-            area: "Edición Video",
-            issue: "Los videos médicos tardan 30% más de lo normal.",
-            suggestion: "Crear plantillas médicas maestras para Premiere y After Effects.",
-            impact: "Alto",
-            benefit: "Ahorro de 4h por proyecto",
-            type: "proceso"
-        },
-        {
-            id: 2,
-            area: "Rentabilidad",
-            issue: "Automatizaciones tienen margen 3x mayor que fotografía.",
-            suggestion: "Lanzar campaña interna para promover paquetes de IA Automations.",
-            impact: "Crítico",
-            benefit: "Incremento de utilidad neta 15%",
-            type: "negocio"
-        },
-        {
-            id: 3,
-            area: "Calidad",
-            issue: "Muchos clientes piden cambios por guiones débiles.",
-            suggestion: "Mejorar módulo de guion e integrar checklist de Storytelling Médico.",
-            impact: "Alto",
-            benefit: "Reducción de rondas de cambios en 40%",
-            type: "calidad"
-        },
-        {
-            id: 4,
-            area: "Operaciones",
-            issue: "Cuello de botella en revisión de QA Nivel 2.",
-            suggestion: "Capacitar a 2 creativos Senior como revisores auxiliares.",
-            impact: "Medio",
-            benefit: "Flujo de entrega más fluido",
-            type: "talento"
-        }
-    ];
+    const recommendations = [];
 
     const handleAction = (id, action) => {
         toast.success(`Acción executada: ${action} para recomendación #${id}`);
@@ -112,6 +75,11 @@ export default function AdminContinuousImprovement() {
                     </div>
 
                     <div className="space-y-4">
+                        {recommendations.length === 0 && (
+                            <div className="py-20 text-center text-gray-500 font-bold italic border border-white/5 rounded-[32px]">
+                                No se han detectado brechas de optimización en el flujo actual.
+                            </div>
+                        )}
                         {recommendations.map(rec => (
                             <RecommendationCard key={rec.id} rec={rec} onAction={handleAction} />
                         ))}
@@ -144,7 +112,7 @@ export default function AdminContinuousImprovement() {
                         </div>
                         <div className="p-5 rounded-3xl bg-white/5 border border-white/5 mb-6">
                             <p className="text-xs text-gray-400 italic leading-relaxed">
-                                "He detectado un patrón de retraso en los renders finales. Sugiero implementar un servidor dedicado tipo 'Render Farm' para el Nodo Central."
+                                "Analizando patrones de rendimiento... Esperando datos operativos suficientes para generar sugerencias autónomas."
                             </p>
                         </div>
                         <button className="w-full py-4 bg-yellow-500 text-black text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all">
