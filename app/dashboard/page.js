@@ -149,27 +149,31 @@ function DonutChart({ value, label, color, icon: Icon }) {
 
 // ─── Reverted Dashboard Content ──────────────────────────────────
 function DashboardContent() {
-  const { user } = useAuth();
+  const { user, loading: authLoading, getHomeRoute } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
+
   
   const [clientData, setClientData] = useState(null);
   const [production, setProduction] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
+    // Handle role-based redirection as soon as user is loaded
     useEffect(() => {
-    if (!loading && user) {
-        const role = (user.role || '').toUpperCase();
-        if (role === 'ADMIN') {
-            router.push('/dashboard/hq');
-            return;
+        if (!authLoading && user) {
+            const homeRoute = getHomeRoute(user.role);
+            // Only redirect if the current path is /dashboard and the home route is different
+            // We compare with '/dashboard' but also check if we are already where we need to be
+            if (homeRoute && homeRoute !== '/dashboard') {
+                console.log(`[Dashboard] Redirecting ${user.role} to ${homeRoute}`);
+                router.push(homeRoute);
+            }
         }
-        if (role === 'COMMUNITY' || role === 'CM') {
-            router.push('/workstation/community-manager');
-            return;
-        }
-    }
+    }, [user, authLoading, router, getHomeRoute]);
+
+    useEffect(() => {
+
 
     const fetchData = async () => {
         if (!user) return;
@@ -223,6 +227,29 @@ function DashboardContent() {
     { title: 'En Producción', value: production.length.toString(), delta: 'Al día', icon: AlertCircle, color: '#f59e0b', chartData: "M 0,25 Q 30,5 60,35 T 100,20" },
     { title: 'Audiencia Total', value: '18.4K', delta: '+3.2%', icon: Users, color: '#ec4899', chartData: "M 0,40 Q 40,30 70,10 T 100,5" }
   ];
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#07070F] flex items-center justify-center text-white font-black tracking-[0.5em] uppercase text-[10px] italic">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+          <span className="animate-pulse">Autenticando Acceso...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const homeRoute = getHomeRoute(user?.role);
+  if (homeRoute && homeRoute !== '/dashboard') {
+    return (
+      <div className="min-h-screen bg-[#07070F] flex items-center justify-center text-white font-black tracking-[0.5em] uppercase text-[10px] italic">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+          <span className="animate-pulse">Redireccionando a tu Workstation...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#07070F] text-white p-6 md:p-10 space-y-10 font-sans selection:bg-indigo-500/30 overflow-x-hidden">
