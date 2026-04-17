@@ -108,12 +108,6 @@ export default function CMWorkstationLayout() {
         { id: 'reports', label: 'Generador de Reportes', icon: FileText },
     ] : [
         { id: 'dashboard_cm', label: 'Dashboard CM', icon: LayoutDashboard },
-        { id: 'clients', label: 'Empresas', icon: Users },
-    ];
-
-    const bottomMenuItems = [
-        { id: 'academy', label: 'Academia Estratega', icon: GraduationCap },
-        { id: 'growth', label: 'Mi Crecimiento', icon: Award },
     ];
 
     // Guard de Autenticación - Si no hay usuario logueado después de cargar, mostramos error de acceso
@@ -155,23 +149,6 @@ export default function CMWorkstationLayout() {
 
                 <div className="flex-1 py-4 px-3 space-y-1">
                     {menuItems.map(item => (
-                        <button
-                            key={item.id}
-                            onClick={() => setActiveTab(item.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === item.id
-                                ? 'bg-cyan-600/10 text-cyan-400 border border-cyan-500/20'
-                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                                }`}
-                        >
-                            <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-cyan-400' : 'text-gray-500 group-hover:text-white'}`} />
-                            <span className="font-bold text-sm tracking-wide">{item.label}</span>
-                        </button>
-                    ))}
-                </div>
-
-                {/* Bottom Navigation Section */}
-                <div className="py-4 px-3 space-y-1 border-t border-white/5">
-                    {bottomMenuItems.map(item => (
                         <button
                             key={item.id}
                             onClick={() => setActiveTab(item.id)}
