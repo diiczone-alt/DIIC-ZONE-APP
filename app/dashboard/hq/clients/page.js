@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ChevronDown, Building2, Fingerprint, Copy, UserPlus } from 'lucide-react';
+import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { agencyService } from '@/services/agencyService';
 import VisionEcosystem from '@/components/VisionEcosystem';
@@ -726,140 +726,6 @@ export default function HQClientsPage() {
                                 <header className="mb-10 text-center">
                                     <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase mb-2">
                                         Editar Perfil del Socio
-                                    </h2>
-                                    <div className="flex items-center justify-center gap-2">
-                                        <div className="h-px w-8 bg-indigo-500/50" />
-                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">Internal OS • Master Admin</span>
-                                        <div className="h-px w-8 bg-indigo-500/50" />
-                                    </div>
-                                </header>
-
-                                <form onSubmit={handleSaveEdit} className="space-y-8">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
-                                            <Target className="w-3 h-3" /> Nombre / Marca Comercial
-                                        </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={newClient.name}
-                                            onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 focus:bg-indigo-500/5 transition-all font-bold text-lg placeholder:text-gray-800"
-                                            placeholder="Nombre de la marca..."
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <PremiumDropdown 
-                                            label="Estrategia Asignada"
-                                            value={newClient.plan}
-                                            onChange={(val) => {
-                                                const defaults = {
-                                                    'Basic': { price: 250, target: 400 },
-                                                    'Premium': { price: 450, target: 800 },
-                                                    'Agency': { price: 850, target: 1500 }
-                                                };
-                                                const data = defaults[val] || { price: 0, target: 0 };
-                                                setNewClient({ ...newClient, plan: val, price: data.price, target: data.target });
-                                            }}
-                                            options={[
-                                                { value: 'Basic', label: 'Basic' },
-                                                { value: 'Premium', label: 'Premium' },
-                                                { value: 'Agency', label: 'Agency Enterprise' }
-                                            ]}
-                                        />
-                                        <PremiumDropdown 
-                                            label="CM Responsable"
-                                            value={newClient.cm}
-                                            onChange={(val) => setNewClient({ ...newClient, cm: val })}
-                                            options={cmOptions}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
-                                                <Clock className="w-3 h-3" /> Inversión Mensual ($)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                required
-                                                value={newClient.price}
-                                                onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })}
-                                                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-emerald-500/40 focus:bg-emerald-500/5 transition-all font-mono font-black text-xl"
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
-                                                <TrendingUp className="w-3 h-3" /> Meta de Retorno ($)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={newClient.target}
-                                                onChange={(e) => setNewClient({ ...newClient, target: parseInt(e.target.value) || 0 })}
-                                                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-mono font-black text-xl"
-                                            />
-                                        </div>
-                                    
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
-                                                <MessageSquare className="w-3 h-3" /> WhatsApp Contacto
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={newClient.whatsapp_number}
-                                                onChange={(e) => setNewClient({ ...newClient, whatsapp_number: e.target.value })}
-                                                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold"
-                                                placeholder="+51..."
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
-                                                <Globe className="w-3 h-3" /> Folder ID Google Drive
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={newClient.google_drive_folder_id}
-                                                onChange={(e) => setNewClient({ ...newClient, google_drive_folder_id: e.target.value })}
-                                                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold"
-                                                placeholder="ID de carpeta"
-                                            />
-                                        </div>
-                                    </div>
-                                    </div>
-
-                                    <div className="flex gap-4 pt-6">
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            type="button"
-                                            onClick={() => setIsEditModalOpen(false)}
-                                            className="flex-1 py-5 text-gray-500 font-black uppercase tracking-[0.2em] hover:text-white transition-all text-[10px]"
-                                        >
-                                            Cancelar
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.02, backgroundColor: 'rgba(79, 70, 229, 0.9)', boxShadow: '0 0 30px rgba(79, 70, 229, 0.4)' }}
-                                            whileTap={{ scale: 0.98 }}
-                                            type="submit"
-                                            disabled={isSubmitting}
-                                            className="flex-[2] py-5 bg-indigo-600 text-white font-black rounded-3xl uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-indigo-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                                        >
-                                            {isSubmitting ? (
-                                                <>
-                                                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    Sincronizando...
-                                                </>
-                                            ) : 'Actualizar Perfil'}
-                                        </motion.button>
-                                    </div>
-                                </form>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
 
             {/* Strategy Preview Modal */}
             <AnimatePresence>
