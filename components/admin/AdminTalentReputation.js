@@ -27,7 +27,7 @@ export default function AdminTalentReputation() {
             // Service: level (1-5), levelInfo { name: 'Elite', ... }
             // UI expects 'level' string key for the style map.
             levelKey: getLevelKey(c.level),
-            metrics: { quality: 90, time: 85, comms: 88, eff: 92, const: 89, complexity: 85 } // Mocked granulars for now if service doesn't have them
+            metrics: c.metrics || { quality: 0, time: 0, comms: 0, eff: 0, const: 0, complexity: 0 } 
         })).sort((a, b) => b.score - a.score);
 
         setTalent(data);

@@ -185,10 +185,26 @@ export default function AdminWorkloadManager({ teamData = [], globalMetrics = {}
 
             {/* AREA TRENDS */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <AreaMiniCard label="Video" load={92} />
-                <AreaMiniCard label="Diseño" load={45} />
-                <AreaMiniCard label="Social Media" load={70} />
-                <AreaMiniCard label="Web Dev" load={37} />
+                <AreaMiniCard 
+                    label="Video" 
+                    load={teamData.filter(m => m.role?.toLowerCase().includes('editor') || m.role?.toLowerCase().includes('film'))
+                        .reduce((acc, m, _, arr) => acc + (m.load || 0) / arr.length, 0)} 
+                />
+                <AreaMiniCard 
+                    label="Diseño" 
+                    load={teamData.filter(m => m.role?.toLowerCase().includes('design'))
+                        .reduce((acc, m, _, arr) => acc + (m.load || 0) / arr.length, 0)} 
+                />
+                <AreaMiniCard 
+                    label="Social Media" 
+                    load={teamData.filter(m => m.role?.toLowerCase().includes('community'))
+                        .reduce((acc, m, _, arr) => acc + (m.load || 0) / arr.length, 0)} 
+                />
+                <AreaMiniCard 
+                    label="Web Dev" 
+                    load={teamData.filter(m => m.role?.toLowerCase().includes('web') || m.role?.toLowerCase().includes('dev'))
+                        .reduce((acc, m, _, arr) => acc + (m.load || 0) / arr.length, 0)} 
+                />
             </div>
         </div>
     );

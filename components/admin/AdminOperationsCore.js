@@ -647,14 +647,3 @@ function NodeRow({ name, projects, onTime, level }) {
     );
 }
 
-function TabBtn({ id, label, active, setter }) {
-    const isActive = active === id;
-    return (
-        <button
-            onClick={() => setter(id)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-        >
-            {label}
-        </button>
-    );
-}

@@ -124,9 +124,9 @@ function StatCard({ title, value, icon: Icon, color }) {
 }
 
 function EditorCard({ editor, pieceCount }) {
-    // Dynamic earnings based on real pieces or fallback to assigned tasks
-    const pieces = pieceCount || (editor.id === 'fausto' ? 45 : (editor.id === 'anthony' ? 32 : 28));
-    const earnings = pieces * 2.5;
+    // Dynamic earnings based on real pieces
+    const pieces = pieceCount || 0;
+    const earnings = pieces * 2.5; // Todo: conectar a tarifas reales si es necesario
 
     return (
         <div className="p-6 bg-white/[0.02] border border-white/5 rounded-[24px] hover:bg-white/[0.04] transition-all flex items-center justify-between">

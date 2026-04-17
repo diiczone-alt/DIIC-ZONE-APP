@@ -5,14 +5,8 @@
  * Motor de asignación inteligente de tareas para balancear la carga del equipo.
  */
 
-// Simulación de Base de Datos de Talento
-export const TEAM_DB = [
-    { id: 't1', name: 'Fausto R.', role: 'Editor', skills: ['Reels', 'VFX', 'Dinámico'], load: 32, capacity: 40, reputation: 4.8 },
-    { id: 't2', name: 'Andrea P.', role: 'Filmmaker', skills: ['Cine', 'Docu', 'Entrevistas'], load: 38, capacity: 40, reputation: 4.9 },
-    { id: 't3', name: 'Marcos L.', role: 'Web Dev', skills: ['React', 'Landing', 'SEO'], load: 15, capacity: 40, reputation: 4.5 },
-    { id: 't4', name: 'Luis M.', role: 'Designer', skills: ['Branding', 'Social', 'Minimal'], load: 42, capacity: 40, reputation: 4.2 },
-    { id: 't5', name: 'Sofía G.', role: 'Editor', skills: ['Corporate', 'Clean', 'Slow'], load: 10, capacity: 40, reputation: 4.6 }
-];
+// Base de Datos de Talento (Se poblará desde Supabase)
+export const TEAM_DB = [];
 
 const WEIGHTS = {
     AVAILABILITY: 0.4, // Disponibilidad es lo más crítico para evitar burnout

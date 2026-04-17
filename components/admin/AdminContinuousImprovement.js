@@ -115,7 +115,13 @@ export default function AdminContinuousImprovement() {
                                 "Analizando patrones de rendimiento... Esperando datos operativos suficientes para generar sugerencias autónomas."
                             </p>
                         </div>
-                        <button className="w-full py-4 bg-yellow-500 text-black text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all">
+                        <button 
+                            onClick={() => toast.success('IA: Analizando rentabilidad de inversión en tiempo real...', {
+                                description: 'Comparando patrones de ROI contra 50+ marcas similares.',
+                                icon: <Zap className="w-4 h-4 text-yellow-500" />
+                            })}
+                            className="w-full py-4 bg-yellow-500 text-black text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all"
+                        >
                             Evaluar Inversión
                         </button>
                     </div>

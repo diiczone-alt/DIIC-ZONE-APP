@@ -203,14 +203,10 @@ export const agencyService = {
             const { data, error } = await supabase.from('tasks').select('*');
             if (error) throw error;
             
-            const finalTasks = data?.length > 0 ? data : MOCK_DATA.tasks;
-            localStorage.setItem('diic_tasks', JSON.stringify(finalTasks));
-
-            if (role === 'all') return finalTasks;
-            return finalTasks.filter(t => t.assigned_role === role.toUpperCase());
+            return data?.length > 0 ? data : [];
         } catch (error) {
             console.error("Error fetching tasks:", error);
-            return MOCK_DATA.tasks;
+            return [];
         }
     },
     getTasksByAssignee: async (name) => {
@@ -334,8 +330,7 @@ export const agencyService = {
             return data || [];
         } catch (error) {
             console.error(`❌ [${timestamp}] Error in getTeam:`, error);
-            const localRaw = typeof window !== 'undefined' ? localStorage.getItem('diic_team') : null;
-            return localRaw ? JSON.parse(localRaw) : MOCK_DATA.team;
+            return [];
         }
     },
 

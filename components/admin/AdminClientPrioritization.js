@@ -179,7 +179,9 @@ export default function AdminClientPrioritization() {
                             <Zap className="w-4 h-4" /> DiiC IA Decision Hub
                         </div>
                         <p className="text-xs text-indigo-200/70 leading-relaxed italic mb-6">
-                            "Saturación de carga detectada (85%). He reordenado la cola de producción priorizando a los clientes <strong className="text-white">Críticos y High</strong>. Los proyectos de nivel Bajo han sido reprogramados para mañana 09:00 AM."
+                            {clients.filter(c => c.isCritical).length > 0 
+                                ? `"He detectado ${clients.filter(c => c.isCritical).length} cliente(s) en estado crítico. He reordenado la cola de producción para asegurar su entrega inmediata y mitigar riesgos de churn."`
+                                : `"Operaciones estables. El motor de priorización está listo para optimizar la cola de producción en cuanto se detecten cuellos de botella o nuevas tareas de alta prioridad."`}
                         </p>
                         <button
                             onClick={() => toast.success("Equipos notificados de la nueva prioridad")}

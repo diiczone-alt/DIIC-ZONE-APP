@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-    LayoutGrid, Calendar, Target, Folder, Edit3,
+    LayoutGrid, Calendar, Target, Folder, Edit3, Bell,
     BarChart2, MessageCircle, Zap, GraduationCap, Award, Settings, LogOut,
     ChevronLeft, ChevronRight, MessageSquare, Wallet, Bot, Users, PenTool
 } from 'lucide-react';
@@ -18,6 +18,8 @@ export default function CMSidebar() {
     const menuItems = [
         { icon: LayoutGrid, label: 'Centro de Mando', path: '/workstation/community-manager' },
         { icon: Target, label: 'Empresas', path: '/workstation/community-manager?tab=clients' },
+        { icon: Edit3, label: 'Mis Tareas', path: '/workstation/community-manager?tab=tasks' },
+        { icon: Bell, label: 'Notificaciones', path: '/workstation/community-manager?tab=notifications' },
         { icon: Calendar, label: 'Calendario Editorial', path: '/workstation/community-manager/calendar' },
         { icon: Users, label: 'Equipo & Carga', path: '/workstation/community-manager/team' },
         { icon: BarChart2, label: 'Reportes de Redes', path: '/workstation/community-manager/reports' },
