@@ -101,7 +101,7 @@ export default function EditorSidebar() {
                 {!collapsed && (
                     <div className="px-3 mt-4 mb-2">
                         <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                            <CapacityBar current={82} max={100} label="Mi Carga" mini />
+                            <CapacityBar current={0} max={100} label="Mi Carga" mini />
                         </div>
                     </div>
                 )}

@@ -5,12 +5,14 @@ import {
     Folder, FileVideo, FileImage, Download, 
     MoreVertical, Search, Filter, Plus, 
     FileText, Trash2, Edit2, Share2, 
-    X, Check
+    X, Check, ChevronLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { EDITOR_FILES } from '@/data/workstationData';
 
 export default function EditorFilesPage() {
+    const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('all');
     const [isNewFolderModalOpen, setIsNewFolderModalOpen] = useState(false);
