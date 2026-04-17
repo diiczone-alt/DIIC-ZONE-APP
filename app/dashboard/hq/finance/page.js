@@ -5,7 +5,7 @@ import {
     DollarSign, TrendingUp, TrendingDown,
     PieChart, ArrowUpRight, ArrowDownRight, Wallet, Activity,
     X, CheckCircle2, AlertCircle, RefreshCw, BarChart3, Users,
-    FileText, CreditCard, ChevronRight
+    FileText, CreditCard, ChevronRight, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -378,10 +378,27 @@ export default function HQFinancePage() {
                                 <div className="space-y-10">
                                     <h4 className="text-4xl font-black uppercase italic tracking-tighter text-gray-100">CÁLCULO UTILIDAD FINAL</h4>
                                     <div className="bg-white/[0.02] rounded-[3rem] p-12 border border-white/5 space-y-6">
-                                         <CalculationRow label="Total Ingresos (MRR DB)" value={`$${metrics.income?.toLocaleString()}`} positive />
-                                         <CalculationRow label="(-) Gastos de Producción" value={`-$${prodCosts?.toLocaleString()}`} />
-                                         <CalculationRow label="(-) Nómina 11p Staff" value={`-$${payrollCosts?.toLocaleString()}`} />
-                                         <CalculationRow label="(-) Herramientas & SW" value={`-$${swCosts?.toLocaleString()}`} />
+                                         <CalculationRow 
+                                            label="Total Ingresos (MRR DB)" 
+                                            value={`$${metrics.income?.toLocaleString()}`} 
+                                            positive 
+                                            onTrace={() => setActiveModal('mrr')}
+                                          />
+                                          <CalculationRow 
+                                            label="(-) Gastos de Producción" 
+                                            value={`-$${prodCosts?.toLocaleString()}`} 
+                                            onTrace={() => setActiveModal('costs')}
+                                          />
+                                          <CalculationRow 
+                                            label="(-) Nómina 11p Staff" 
+                                            value={`-$${payrollCosts?.toLocaleString()}`} 
+                                            onTrace={() => setActiveModal('expenses')}
+                                          />
+                                          <CalculationRow 
+                                            label="(-) Herramientas & SW" 
+                                            value={`-$${swCosts?.toLocaleString()}`} 
+                                            onTrace={() => setActiveModal('expenses')}
+                                          />
                                          <div className="h-px bg-white/10 my-10" />
                                          <div className="flex justify-between items-center px-4">
                                               <span className="text-3xl font-black italic text-white uppercase italic">Utility Real</span>
@@ -468,10 +485,20 @@ function ProductionLine({ label, cost }) {
     );
 }
 
-function CalculationRow({ label, value, positive }) {
+function CalculationRow({ label, value, positive, onTrace }) {
     return (
-        <div className="flex justify-between items-center py-5 px-4 rounded-2xl hover:bg-white/[0.03] transition-all">
-             <span className="text-xs font-black text-gray-500 uppercase italic tracking-widest">{label}</span>
+        <div className="flex justify-between items-center py-5 px-4 rounded-2xl hover:bg-white/[0.03] transition-all group">
+             <div className="flex items-center gap-4">
+                <span className="text-xs font-black text-gray-500 uppercase italic tracking-widest">{label}</span>
+                {onTrace && (
+                    <button 
+                        onClick={onTrace}
+                        className="opacity-0 group-hover:opacity-100 flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black text-gray-400 uppercase tracking-tighter hover:bg-indigo-500/20 hover:text-white transition-all"
+                    >
+                        <Search className="w-3 h-3" /> Rastrear Origen
+                    </button>
+                )}
+             </div>
              <span className={`text-2xl font-black italic ${positive ? 'text-emerald-500' : 'text-rose-500'}`}>{value}</span>
         </div>
     );

@@ -591,3 +591,27 @@ function WeightBadge({ label, weight, color }) {
         </div>
     );
 }
+function AccuracyMetric({ label, accuracy, color }) {
+    const colorStyles = {
+        purple: "bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]",
+        emerald: "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]",
+        blue: "bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+    };
+
+    return (
+        <div className="space-y-3">
+            <div className="flex justify-between items-end">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</span>
+                <span className="text-xl font-black text-white italic">{accuracy}%</span>
+            </div>
+            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden p-[2px]">
+                <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${accuracy}%` }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                    className={`h-full rounded-full ${colorStyles[color]}`}
+                />
+            </div>
+        </div>
+    );
+}

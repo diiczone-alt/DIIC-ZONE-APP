@@ -785,7 +785,7 @@ function CustomTooltip({ active, payload }) {
                     </div>
                     <div className="pt-4 border-t border-white/5 mt-4">
                         <div className={`text-[11px] font-black uppercase italic ${data.value > data.budget ? 'text-rose-500' : 'text-emerald-500'}`}>
-                            {data.value > data.budget ? `Exceso: $${(data.value - data.budget).toLocaleString()}` : `Margen: $${(data.budget - data.balance).toLocaleString()}`}
+                            {data.value > data.budget ? `Exceso: $${(data.value - data.budget).toLocaleString()}` : `Margen: $${(data.budget - data.value).toLocaleString()}`}
                         </div>
                     </div>
                 </div>

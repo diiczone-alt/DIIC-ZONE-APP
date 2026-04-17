@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
     Wallet, CreditCard, Settings,
     Download, PieChart, AlertCircle,
-    Loader2
+    Loader2, Landmark, Send, Bitcoin, Trash2
 } from 'lucide-react';
 import { WalletCard, TransactionList } from '@/components/finance/FinanceComponents';
 import DynamicSidebar from '@/components/shared/DynamicSidebar';
@@ -86,6 +86,25 @@ export default function FinancePage() {
     useEffect(() => {
         fetchFinanceData();
     }, [fetchFinanceData]);
+
+    const handleDeletePaymentMethod = async () => {
+        if (!confirm("¿Estás seguro de que deseas eliminar este método de pago?")) return;
+        
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ payment_method_config: {} })
+                .eq('id', user.id);
+
+            if (error) throw error;
+            
+            toast.success("Método de pago eliminado");
+            fetchFinanceData();
+        } catch (err) {
+            console.error('Error deleting payment method:', err);
+            toast.error("Error al eliminar el método");
+        }
+    };
 
     const handleExport = () => {
         if (transactions.length === 0) {
@@ -178,25 +197,54 @@ export default function FinancePage() {
 
                             {/* Payment Method */}
                             <div className="bg-[#0E0E18] border border-white/5 rounded-2xl p-6">
-                                <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                                <h3 className="font-bold text-white mb-4 flex items-center gap-2 text-sm">
                                     <CreditCard className="w-4 h-4 text-purple-400" /> Método de Retiro
                                 </h3>
-                                <div className="bg-white/5 rounded-xl p-4 flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded bg-white flex items-center justify-center">
-                                            <div className="w-6 h-6 rounded-full bg-red-500/20" /> 
-                                            <span className="text-red-600 font-bold text-[10px]">DIIC</span>
+                                
+                                {profileData?.payment_method_config && Object.keys(profileData.payment_method_config).length > 0 ? (
+                                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 flex items-center justify-between mb-4 hover:border-purple-500/30 transition-all group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                                                {profileData.payment_method_config.type === 'bank' && <Landmark className="w-5 h-5 text-blue-400" />}
+                                                {profileData.payment_method_config.type === 'paypal' && <Send className="w-5 h-5 text-indigo-400" />}
+                                                {profileData.payment_method_config.type === 'binance' && <Bitcoin className="w-5 h-5 text-orange-400" />}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-white capitalize">
+                                                    {profileData.payment_method_config.type === 'bank' ? profileData.payment_method_config.bank_name : 
+                                                     profileData.payment_method_config.type === 'paypal' ? 'PayPal Checkout' : 'Binance Wallet'}
+                                                </p>
+                                                <p className="text-[10px] text-gray-500 font-medium font-mono">
+                                                    {profileData.payment_method_config.type === 'bank' ? `****${profileData.payment_method_config.account_number?.slice(-4)}` : 
+                                                     profileData.payment_method_config.type === 'paypal' ? profileData.payment_method_config.email : 
+                                                     `${profileData.payment_method_config.wallet_address?.slice(0, 6)}...${profileData.payment_method_config.wallet_address?.slice(-4)}`}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-white">Cuenta Principal</p>
-                                            <p className="text-xs text-gray-500">Sincronizado con Perfil</p>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <span className="text-[9px] text-emerald-400 font-black uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-full">Activo</span>
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeletePaymentMethod();
+                                                }}
+                                                className="p-1.5 text-gray-700 hover:text-red-500 hover:bg-red-500/5 rounded-lg transition-all"
+                                                title="Eliminar método"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
                                     </div>
-                                    <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded">Activo</span>
-                                </div>
+                                ) : (
+                                    <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-4 flex items-center gap-3 mb-4">
+                                        <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                                        <p className="text-[10px] text-red-200/60 font-medium leading-tight">No has configurado un método de retiro. Los pagos están retenidos.</p>
+                                    </div>
+                                )}
+
                                 <button 
                                     onClick={() => setShowPaymentModal(true)}
-                                    className="w-full py-2 text-xs font-bold text-gray-400 hover:text-white border border-dashed border-white/10 rounded-lg hover:bg-white/5 transition-colors"
+                                    className="w-full py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white border border-dashed border-white/10 rounded-xl hover:bg-white/5 transition-all"
                                 >
                                     + Modificar Método
                                 </button>

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutGrid, Calendar, Target, Folder, Edit3,
-    BarChart2, MessageCircle, Zap, GraduationCap, Settings, LogOut,
+    BarChart2, MessageCircle, Zap, GraduationCap, Award, Settings, LogOut,
     ChevronLeft, ChevronRight, MessageSquare, Wallet, Bot, Users, PenTool
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -24,6 +24,8 @@ export default function CMSidebar() {
         { icon: Bot, label: 'Asistente IA', path: '/workstation/community-manager/agent' },
         { icon: PenTool, label: 'Guion IA', path: '/workstation/community-manager/guion' },
         { icon: Wallet, label: 'Finanzas', path: '/workstation/finance' },
+        { icon: GraduationCap, label: 'Academia Estratega', path: '/workstation/community-manager?tab=academy' },
+        { icon: Award, label: 'Mi Crecimiento', path: '/workstation/community-manager?tab=growth' },
     ];
 
     return (

@@ -21,6 +21,14 @@ export default function AdminOperationalGovernance() {
         ledger: []
     });
     const [saving, setSaving] = useState(false);
+    const [isAddingRate, setIsAddingRate] = useState(false);
+    const [newRate, setNewRate] = useState({
+        name: '',
+        description: '',
+        cost_internal: 0,
+        price_sale: 0,
+        unit: 'unidad'
+    });
 
     useEffect(() => {
         loadData();
@@ -79,6 +87,40 @@ export default function AdminOperationalGovernance() {
         }
     };
 
+    const handleCreateRate = async () => {
+        if (!newRate.name) {
+            toast.error("El nombre es obligatorio");
+            return;
+        }
+
+        try {
+            setSaving(true);
+            const id = newRate.name.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
+                .replace(/[^a-z0-9]/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_|_$/g, '');
+            
+            const { error } = await supabase
+                .from('production_rates')
+                .insert({
+                    id,
+                    ...newRate
+                });
+
+            if (error) throw error;
+            toast.success("Nuevo formato de tasa creado");
+            setIsAddingRate(false);
+            setNewRate({ name: '', description: '', cost_internal: 0, price_sale: 0, unit: 'unidad' });
+            loadData();
+        } catch (err) {
+            console.error("Error creating rate:", err);
+            toast.error("Error al crear nueva tasa");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="h-[600px] flex flex-col items-center justify-center gap-4">
@@ -121,9 +163,12 @@ export default function AdminOperationalGovernance() {
                                     <h3 className="text-2xl font-black text-white italic uppercase tracking-tight">Editor de Tasas Maestro</h3>
                                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">Determina cuánto paga la agencia por cada formato de contenido</p>
                                  </div>
-                                 <button className="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-full font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all">
+                                  <button 
+                                     onClick={() => setIsAddingRate(true)}
+                                     className="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-full font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-white/10"
+                                  >
                                      <Plus className="w-3.5 h-3.5" /> Nueva Tasa
-                                 </button>
+                                  </button>
                              </div>
 
                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -206,6 +251,18 @@ export default function AdminOperationalGovernance() {
                     )}
                 </AnimatePresence>
             </main>
+
+            <AnimatePresence>
+                {isAddingRate && (
+                    <NewRateModal 
+                        data={newRate} 
+                        onChange={setNewRate} 
+                        onSave={handleCreateRate} 
+                        onClose={() => setIsAddingRate(false)}
+                        saving={saving}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
@@ -440,6 +497,102 @@ function TeamControlRow({ member, onSave }) {
                 </button>
             </td>
         </tr>
+    );
+}
+
+function NewRateModal({ data, onChange, onSave, onClose, saving }) {
+    const profit = Number(data.price_sale) - Number(data.cost_internal);
+    const margin = data.price_sale > 0 ? (profit / data.price_sale) * 100 : 0;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 text-left">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/90 backdrop-blur-xl" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-[#0A0A1F] border border-white/10 rounded-[3rem] p-12 max-w-2xl w-full shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-2 h-full bg-indigo-500" />
+                <div className="flex justify-between items-start mb-10">
+                    <div>
+                        <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Crear <span className="text-indigo-500">Nuevo Formato</span></h3>
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2">Expansión del Catálogo de Servicios</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-all">
+                        <ArrowLeft className="w-5 h-5 text-gray-500" />
+                    </button>
+                </div>
+
+                <div className="space-y-8 mb-12">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-3 block">Nombre del Formato</label>
+                        <input 
+                            value={data.name}
+                            onChange={e => onChange({...data, name: e.target.value})}
+                            placeholder="Ej: Video Reel Pro"
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-8 py-5 text-xl text-white font-black italic focus:border-indigo-500 transition-all outline-none uppercase"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-3 block">Descripción Operativa</label>
+                        <textarea 
+                            value={data.description}
+                            onChange={e => onChange({...data, description: e.target.value})}
+                            placeholder="Detalles sobre el alcance del servicio..."
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-8 py-5 text-sm text-gray-400 font-bold focus:border-indigo-500 transition-all outline-none h-24 resize-none"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-3 block">Inversión (Costo)</label>
+                            <div className="relative">
+                                <DollarSign className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                                <input 
+                                    type="number"
+                                    value={data.cost_internal}
+                                    onChange={e => onChange({...data, cost_internal: e.target.value})}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl pl-14 pr-8 py-5 text-2xl text-white font-black italic focus:border-indigo-500 transition-all outline-none"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-emerald-500/50 uppercase tracking-widest pl-3 block">Venta (Cliente)</label>
+                            <div className="relative">
+                                <DollarSign className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500/30" />
+                                <input 
+                                    type="number"
+                                    value={data.price_sale}
+                                    onChange={e => onChange({...data, price_sale: e.target.value})}
+                                    className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-2xl pl-14 pr-8 py-5 text-2xl text-emerald-400 font-black italic focus:border-emerald-500 transition-all outline-none"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 flex justify-between items-center">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Rentabilidad Calculada</p>
+                            <div className="flex items-center gap-3">
+                                <span className={`text-4xl font-black italic ${profit >= 0 ? 'text-white' : 'text-rose-500'}`}>${profit}</span>
+                                <span className={`text-xs font-black px-3 py-1 rounded-full uppercase italic ${margin > 40 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'}`}>
+                                    {margin.toFixed(0)}% Profit
+                                </span>
+                            </div>
+                        </div>
+                        <Target className={`w-10 h-10 ${margin > 40 ? 'text-emerald-500' : 'text-gray-700'} opacity-20`} />
+                    </div>
+                </div>
+
+                <div className="flex gap-6">
+                    <button 
+                        onClick={onSave}
+                        disabled={saving}
+                        className="flex-1 py-6 bg-indigo-500 text-white text-[12px] font-black uppercase tracking-[0.4em] rounded-2xl hover:bg-indigo-400 transition-all shadow-2xl shadow-indigo-500/20 disabled:opacity-50"
+                    >
+                        {saving ? 'Creando...' : 'Confirmar Formato'}
+                    </button>
+                    <button onClick={onClose} className="px-10 py-6 bg-white/5 text-gray-500 text-[10px] font-black uppercase rounded-2xl hover:text-white transition-all">Cancelar</button>
+                </div>
+            </motion.div>
+        </div>
     );
 }
 

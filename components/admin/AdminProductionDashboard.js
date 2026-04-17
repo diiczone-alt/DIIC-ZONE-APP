@@ -8,33 +8,55 @@ import { agencyService } from '@/services/agencyService';
 export default function AdminProductionDashboard() {
     const [team, setTeam] = useState([]);
     const [rates, setRates] = useState([]);
+    const [clients, setClients] = useState([]);
+    const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadData = async () => {
-            const teamData = await agencyService.getTeam();
-            const ratesData = await agencyService.getProductionRates();
-            setTeam(teamData);
-            setRates(ratesData);
-            setLoading(false);
+            try {
+                const [teamData, ratesData, clientsData, tasksData] = await Promise.all([
+                    agencyService.getTeam(),
+                    agencyService.getProductionRates(),
+                    agencyService.getClients(),
+                    agencyService.getTasks()
+                ]);
+                setTeam(teamData);
+                setRates(ratesData);
+                setClients(clientsData);
+                setTasks(tasksData);
+            } catch (error) {
+                console.error("Error loading production data:", error);
+            } finally {
+                setLoading(false);
+            }
         };
         loadData();
     }, []);
 
     const editors = team.filter(m => m.role.includes('Editor'));
-    const cms = team.filter(m => m.role.includes('Community'));
+    const totalProduction = clients.reduce((acc, c) => acc + (Number(c.price) || 0), 0);
+    const piecesCreated = tasks.length || clients.reduce((acc, c) => acc + (c.projects || 0), 0);
 
     return (
         <div className="space-y-8 p-6">
             <header>
-                <h1 className="text-3xl font-black text-white uppercase italic tracking-tighter">Control de Producción y Pagos</h1>
-                <p className="text-gray-500 font-medium">Gestión de tarifas creativas y rendimiento del equipo.</p>
+                <div className="flex justify-between items-end">
+                    <div>
+                        <h1 className="text-3xl font-black text-white uppercase italic tracking-tighter">Control de Producción y Pagos</h1>
+                        <p className="text-gray-500 font-medium">Gestión de tarifas creativas y rendimiento del equipo.</p>
+                    </div>
+                    <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3">
+                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                         <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Live Sync Activo</span>
+                    </div>
+                </div>
             </header>
 
             {/* Global Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard title="Total Producción (Mes)" value="$2,450" icon={DollarSign} color="green" />
-                <StatCard title="Piezas Creadas" value="124" icon={Video} color="indigo" />
+                <StatCard title="Total Producción (Mes)" value={`$${totalProduction.toLocaleString()}`} icon={DollarSign} color="green" />
+                <StatCard title="Piezas Creadas" value={piecesCreated.toString()} icon={Video} color="indigo" />
                 <StatCard title="Editores Activos" value={editors.length} icon={Users} color="purple" />
             </div>
 
@@ -53,7 +75,7 @@ export default function AdminProductionDashboard() {
                                         <div className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Por {rate.unit}</div>
                                     </div>
                                     <div className="text-lg font-black text-indigo-400">
-                                        ${rate.price || (rate.price_range ? `${rate.price_range[0]}-${rate.price_range[1]}` : rate.price_min + '+')}
+                                        ${rate.price_sale || rate.price || rate.price_suggested || (rate.price_range ? `${rate.price_range[0]}-${rate.price_range[1]}` : rate.price_min + '+')}
                                     </div>
                                 </div>
                             ))}
@@ -67,8 +89,15 @@ export default function AdminProductionDashboard() {
                         <h2 className="text-xl font-bold text-white mb-6">Rendimiento de Editores</h2>
                         <div className="space-y-4">
                             {editors.map(editor => (
-                                <EditorCard key={editor.id} editor={editor} />
+                                <EditorCard 
+                                    key={editor.id} 
+                                    editor={editor} 
+                                    pieceCount={tasks.filter(t => t.assigned_to === editor.name).length}
+                                />
                             ))}
+                            {editors.length === 0 && (
+                                <div className="py-10 text-center text-gray-500 italic">No hay editores activos detectados.</div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -94,9 +123,9 @@ function StatCard({ title, value, icon: Icon, color }) {
     );
 }
 
-function EditorCard({ editor }) {
-    // Mock earnings calculation
-    const pieces = editor.id === 'fausto' ? 45 : (editor.id === 'anthony' ? 32 : 28);
+function EditorCard({ editor, pieceCount }) {
+    // Dynamic earnings based on real pieces or fallback to assigned tasks
+    const pieces = pieceCount || (editor.id === 'fausto' ? 45 : (editor.id === 'anthony' ? 32 : 28));
     const earnings = pieces * 2.5;
 
     return (

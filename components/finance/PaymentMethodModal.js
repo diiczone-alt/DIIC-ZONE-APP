@@ -59,15 +59,15 @@ export default function PaymentMethodModal({ isOpen, onClose, user, onUpdate }) 
                 .eq('id', user.id);
 
             if (error) throw error;
-
+            
+            setLoading(false);
             toast.success("Método de pago actualizado");
-            if (onUpdate) await onUpdate();
+            if (onUpdate) onUpdate();
             if (onClose) onClose();
         } catch (err) {
-            console.error('Error saving payment method:', err);
-            toast.error("Error al guardar la configuración: " + (err.message || "Error Desconocido"));
-        } finally {
             setLoading(false);
+            console.error('Error saving payment method:', err);
+            toast.error("Error al guardar: " + (err.message || "Error Desconocido"));
         }
     };
 

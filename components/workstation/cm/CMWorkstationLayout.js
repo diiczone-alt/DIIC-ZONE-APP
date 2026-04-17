@@ -8,7 +8,8 @@ import {
     ExternalLink, CheckCircle2, AlertTriangle, 
     Smartphone, Globe, MessageSquare, Share2, Database,
     MoreHorizontal, Filter, Play, Check, ChevronRight as ChevronRightIcon, X,
-    FolderOpen, Palette, Clock, Bot, FileText
+    FolderOpen, Palette, Clock, Bot, FileText, Zap, ShieldCheck, Eye, Send,
+    GraduationCap, Award, TrendingUp, Target
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StrategyBoard from '../../shared/Strategy/StrategyBoard';
@@ -110,6 +111,11 @@ export default function CMWorkstationLayout() {
         { id: 'clients', label: 'Empresas', icon: Users },
     ];
 
+    const bottomMenuItems = [
+        { id: 'academy', label: 'Academia Estratega', icon: GraduationCap },
+        { id: 'growth', label: 'Mi Crecimiento', icon: Award },
+    ];
+
     // Guard de Autenticación - Si no hay usuario logueado después de cargar, mostramos error de acceso
     if (!loading && (!user || (user.role !== 'COMMUNITY' && user.role !== 'CM'))) {
         return (
@@ -149,6 +155,23 @@ export default function CMWorkstationLayout() {
 
                 <div className="flex-1 py-4 px-3 space-y-1">
                     {menuItems.map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveTab(item.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${activeTab === item.id
+                                ? 'bg-cyan-600/10 text-cyan-400 border border-cyan-500/20'
+                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                }`}
+                        >
+                            <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-cyan-400' : 'text-gray-500 group-hover:text-white'}`} />
+                            <span className="font-bold text-sm tracking-wide">{item.label}</span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Bottom Navigation Section */}
+                <div className="py-4 px-3 space-y-1 border-t border-white/5">
+                    {bottomMenuItems.map(item => (
                         <button
                             key={item.id}
                             onClick={() => setActiveTab(item.id)}
@@ -204,6 +227,9 @@ export default function CMWorkstationLayout() {
 function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad) {
     if (!selectedClient) {
         if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} />;
+        if (tab === 'academy') return <CMAcademy />;
+        if (tab === 'growth') return <CMGrowth />;
+        
         return (
             <CMSettingsClients 
                 clients={clients} 
@@ -227,6 +253,8 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'strategy': return <StrategyBoard role="cm" onClose={() => setActiveTab('dashboard')} />;
         case 'team': return <TeamView client={selectedClient} tasks={clientTasks} squad={squad} />;
         case 'reports': return <CMReports client={selectedClient} />;
+        case 'academy': return <CMAcademy />;
+        case 'growth': return <CMGrowth />;
         default: return <CMDashboard client={selectedClient} />;
     }
 }
@@ -1191,6 +1219,232 @@ function CMSettingsClients({ clients, onSelectClient, loading, userMissingProfil
                     </motion.div>
                 ))}
             </div>
+        </div>
+    );
+}
+
+function CMAcademy() {
+    const modules = [
+        {
+            id: 1,
+            title: "Protocolos de Alta Dirección",
+            focus: "Estrategia Mando",
+            desc: "Domina el flujo de trabajo sin necesidad de editar. Aprende a controlar, organizar y revisar para que todo fluya bajo el estándar DIIC.",
+            icon: Target,
+            color: "text-cyan-400",
+            bg: "bg-cyan-500/10",
+            border: "border-cyan-500/20",
+            bulletpoints: ["Control de Calidad (Audit)", "Optimización de Tiempos", "Escalabilidad x10"]
+        },
+        {
+            id: 2,
+            title: "Sistemas de Automatización IA",
+            focus: "Automatización",
+            desc: "Implementa flujos de trabajo inteligentes para reportes y seguimiento. Deja que la IA haga el trabajo pesado de recolección de datos.",
+            icon: Bot,
+            color: "text-purple-400",
+            bg: "bg-purple-500/10",
+            border: "border-purple-500/20",
+            bulletpoints: ["Flujos de Reportes Automáticos", "Auditoría de Pauta IA", "Alertas de Rendimiento"]
+        },
+        {
+            id: 3,
+            title: "Liderazgo de Células Creativas",
+            focus: "Mente de Talento",
+            desc: "Aprende a comunicarte de forma asertiva con editores, diseñadores y filmmakers para que tu visión se ejecute a la perfección.",
+            icon: Users,
+            color: "text-emerald-400",
+            bg: "bg-emerald-500/10",
+            border: "border-emerald-500/20",
+            bulletpoints: ["Briefing de Alto Impacto", "Feedback Transformador", "Gestión de Capacidades"]
+        }
+    ];
+
+    return (
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full mb-4">
+                        <GraduationCap className="w-4 h-4 text-cyan-400" />
+                        <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Entrenamiento de Elite</span>
+                    </div>
+                    <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-2">Academia de Estrategas</h2>
+                    <p className="text-gray-500 italic max-w-xl font-medium">Formación especializada para dominar la pauta y la gestión operativa sin cargar con la ejecución técnica.</p>
+                </div>
+                <div className="flex gap-4">
+                    <div className="bg-white/5 border border-white/10 px-6 py-4 rounded-[2rem] text-center">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Tu Progreso</p>
+                        <p className="text-2xl font-black text-white italic">35<span className="text-cyan-400">%</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {modules.map(mod => (
+                    <motion.div
+                        key={mod.id}
+                        whileHover={{ y: -8 }}
+                        className="bg-[#0E0E18] border border-white/5 rounded-[3rem] p-10 group hover:border-white/10 transition-all relative overflow-hidden"
+                    >
+                        <div className={`absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform ${mod.color}`}>
+                            <mod.icon className="w-32 h-32" />
+                        </div>
+
+                        <div className={`w-14 h-14 rounded-[1.5rem] ${mod.bg} flex items-center justify-center ${mod.color} mb-8 shadow-xl shadow-cyan-500/5`}>
+                            <mod.icon className="w-7 h-7" />
+                        </div>
+
+                        <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tighter">{mod.title}</h3>
+                        <p className={`text-[10px] font-black uppercase tracking-widest mb-6 ${mod.color}`}>{mod.focus}</p>
+                        
+                        <p className="text-sm text-gray-500 leading-relaxed font-bold mb-8 italic">"{mod.desc}"</p>
+
+                        <div className="space-y-3 mb-10">
+                            {mod.bulletpoints.map((bp, i) => (
+                                <div key={i} className="flex items-center gap-3">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${mod.bg.replace('/10', '/50')}`} />
+                                    <span className="text-[11px] text-gray-400 font-bold">{bp}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${mod.border} ${mod.color} hover:bg-white hover:text-black hover:border-white`}>
+                            Comenzar Módulo
+                        </button>
+                    </motion.div>
+                ))}
+            </div>
+
+            <div className="bg-gradient-to-r from-cyan-600/10 to-transparent border border-white/5 p-12 rounded-[3.5rem] flex flex-col md:flex-row items-center gap-10">
+                <div className="w-20 h-20 rounded-full bg-cyan-600/20 flex items-center justify-center text-cyan-400 shrink-0">
+                    <Zap className="w-10 h-10 animate-pulse" />
+                </div>
+                <div>
+                    <h4 className="text-xl font-bold text-white mb-2 uppercase tracking-tight">IA Mastermind: Siguiente Clase en Vivo</h4>
+                    <p className="text-gray-500 text-sm font-medium italic">"Cómo predecir tendencias de Meta Ads usando la base de datos DIIC ZONE"</p>
+                </div>
+                <button className="whitespace-nowrap px-8 py-4 bg-white text-black font-black uppercase text-xs rounded-2xl hover:scale-105 transition-all ml-auto">Agendar Slot</button>
+            </div>
+        </div>
+    );
+}
+
+function CMGrowth() {
+    return (
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-4">
+                        <Award className="w-4 h-4 text-emerald-400" />
+                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Sistema de Evolución</span>
+                    </div>
+                    <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-2">Mi Crecimiento</h2>
+                    <p className="text-gray-500 italic max-w-xl font-medium">Visualiza tu evolución, desbloquea nuevos rangos y gestiona tus recompensas por eficiencia estratégica.</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Rango Card */}
+                <div className="lg:col-span-2 bg-[#0E0E18] border border-white/5 rounded-[3rem] p-10 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-12 opacity-[0.03]">
+                        <TrendingUp className="w-96 h-96" />
+                    </div>
+                    
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-center mb-12">
+                            <div>
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Rango Actual</p>
+                                <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Estratega Junior II</h3>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Próxima meta</p>
+                                <h4 className="text-xl font-black text-emerald-400 italic uppercase">Senior Mastery</h4>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2 mb-12">
+                            <div className="flex justify-between text-[11px] font-black uppercase tracking-widest mb-1">
+                                <span className="text-gray-500">Progreso de Nivel</span>
+                                <span className="text-white">750 / 1000 XP</span>
+                            </div>
+                            <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden p-1 border border-white/10">
+                                <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: '75%' }}
+                                    className="h-full bg-gradient-to-r from-emerald-600 to-cyan-500 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="p-6 bg-white/5 border border-white/5 rounded-[2rem] text-center">
+                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">KPI Eficiencia</p>
+                                <p className="text-2xl font-black text-emerald-400 italic">98<span className="text-xs">%</span></p>
+                            </div>
+                            <div className="p-6 bg-white/5 border border-white/5 rounded-[2rem] text-center">
+                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">Audit Accuracy</p>
+                                <p className="text-2xl font-black text-cyan-400 italic">94<span className="text-xs">%</span></p>
+                            </div>
+                            <div className="p-6 bg-white/5 border border-white/5 rounded-[2rem] text-center">
+                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-2">Marcas bajo mando</p>
+                                <p className="text-2xl font-black text-purple-400 italic">12</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Rewards Panel */}
+                <div className="bg-[#0E0E18] border border-white/5 rounded-[3rem] p-10">
+                    <h3 className="text-xl font-black text-white uppercase tracking-tighter mb-8 flex items-center gap-3">
+                        <Award className="w-6 h-6 text-emerald-400" /> Recompensas
+                    </h3>
+                    
+                    <div className="space-y-4">
+                        <RewardItem 
+                            title="Bono Eficiencia Q2" 
+                            status="Desbloqueable" 
+                            xp="250 XP+" 
+                            available={false}
+                        />
+                        <RewardItem 
+                            title="Acceso Mastermind IA" 
+                            status="ACTIVO" 
+                            xp="Canjeado" 
+                            available={true}
+                        />
+                        <RewardItem 
+                            title="Descuento en Certificación" 
+                            status="Disponible" 
+                            xp="500 XP+" 
+                            available={false} 
+                        />
+                        <RewardItem 
+                            title="Badge Estratega Elite" 
+                            status="Nivel 5 Requerido" 
+                            xp="1500 XP+" 
+                            available={false} 
+                        />
+                    </div>
+
+                    <button className="w-full mt-10 py-5 bg-white text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:scale-105 transition-all shadow-xl shadow-white/5">
+                        Canjear XP acumulada
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function RewardItem({ title, status, xp, available }) {
+    return (
+        <div className={`p-5 rounded-2xl border transition-all ${available ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-white/5 border-white/5 opacity-60'}`}>
+            <div className="flex justify-between items-start mb-2">
+                <h4 className="text-xs font-bold text-white uppercase tracking-tight">{title}</h4>
+                <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${available ? 'bg-emerald-500 text-white' : 'bg-white/10 text-gray-500'}`}>
+                    {status}
+                </div>
+            </div>
+            <p className={`text-[10px] font-black italic ${available ? 'text-emerald-400' : 'text-gray-600'}`}>{xp}</p>
         </div>
     );
 }
