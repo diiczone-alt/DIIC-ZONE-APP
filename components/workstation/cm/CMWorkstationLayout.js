@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-    LayoutDashboard, FolderOpen, Palette, Calendar,
-    Share2, MessageSquare, BarChart3, ShieldCheck,
-    CheckCircle2, Clock, AlertTriangle, Plus,
-    Send, Eye, MoreHorizontal, ChevronRight as ChevronRightIcon,
-    Bot, Users, FileText, Database
+    LayoutDashboard, Users, Calendar, BarChart3, 
+    Settings, Search, Bell, Mail, Plus,
+    ExternalLink, CheckCircle2, AlertTriangle, 
+    Smartphone, Globe, MessageSquare, Share2, Database,
+    MoreHorizontal, Filter, Play, Check, ChevronRight as ChevronRightIcon, X,
+    FolderOpen, Palette, Clock, Bot, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StrategyBoard from '../../shared/Strategy/StrategyBoard';
@@ -882,10 +883,46 @@ function CMOverviewDashboard({ clients, loading }) {
 }
 
 function MetaAdsModule({ client }) {
-    const ads = [
-        { id: 1, name: 'Campaña Limpieza', status: 'Activo', reach: '12.4K', clicks: 840, leads: 12, budget: '$450/mo' },
-        { id: 2, name: 'Blanqueamiento PRO', status: 'Pausado', reach: '5.2K', clicks: 120, leads: 3, budget: '$200/mo' },
+    const [ads, setAds] = useState([
+        { 
+            id: 1, name: 'Campaña Limpieza', status: 'Activo', budget: '$450/mo',
+            metrics: { reach: '12.4K', clicks: 840, leads: 12 },
+            advanced: { ctr: '2.4%', cpc: '$0.54', roas: '4.2x', cpm: '$8.20', watchTime: '18s', cpl: '$3.50' },
+            activeAdvanced: [] 
+        },
+        { 
+            id: 2, name: 'Blanqueamiento PRO', status: 'Pausado', budget: '$200/mo',
+            metrics: { reach: '5.2K', clicks: 120, leads: 3 },
+            advanced: { ctr: '1.2%', cpc: '$1.10', roas: '2.1x', cpm: '$12.50', watchTime: '8s', cpl: '$15.20' },
+            activeAdvanced: [] 
+        },
+    ]);
+
+    const [showSelectorFor, setShowSelectorFor] = useState(null);
+
+    const AVAILABLE_METRICS = [
+        { id: 'ctr', label: 'CTR', color: 'text-indigo-400' },
+        { id: 'cpc', label: 'CPC', color: 'text-emerald-400' },
+        { id: 'roas', label: 'ROAS', color: 'text-purple-400' },
+        { id: 'cpm', label: 'CPM', color: 'text-amber-400' },
+        { id: 'watchTime', label: 'Avg. Watch', color: 'text-rose-400' },
+        { id: 'cpl', label: 'CPL', color: 'text-cyan-400' },
     ];
+
+    const toggleMetric = (adId, metricId) => {
+        setAds(prev => prev.map(ad => {
+            if (ad.id === adId) {
+                const isAlreadyActive = ad.activeAdvanced.includes(metricId);
+                return {
+                    ...ad,
+                    activeAdvanced: isAlreadyActive 
+                        ? ad.activeAdvanced.filter(m => m !== metricId)
+                        : [...ad.activeAdvanced, metricId]
+                };
+            }
+            return ad;
+        }));
+    };
 
     return (
         <div className="space-y-8 h-full flex flex-col">
@@ -901,7 +938,7 @@ function MetaAdsModule({ client }) {
 
             <div className="grid grid-cols-1 gap-6">
                 {ads.map(ad => (
-                    <div key={ad.id} className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 hover:border-cyan-500/20 transition-all">
+                    <div key={ad.id} className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 hover:border-cyan-500/20 transition-all relative">
                         <div className="flex justify-between items-start mb-8">
                             <div className="flex items-center gap-4">
                                 <div className={`w-3 h-3 rounded-full ${ad.status === 'Activo' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-500'}`} />
@@ -916,30 +953,101 @@ function MetaAdsModule({ client }) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-4 gap-4">
-                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
+                        <div className="flex flex-wrap gap-4 items-stretch">
+                            {/* Main Metrics */}
+                            <div className="flex-1 min-w-[120px] p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
                                 <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Alcance</p>
-                                <p className="text-lg font-bold text-white">{ad.reach}</p>
+                                <p className="text-lg font-bold text-white">{ad.metrics.reach}</p>
                             </div>
-                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
+                            <div className="flex-1 min-w-[120px] p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
                                 <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Clics</p>
-                                <p className="text-lg font-bold text-white">{ad.clicks}</p>
+                                <p className="text-lg font-bold text-white">{ad.metrics.clicks}</p>
                             </div>
-                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
+                            <div className="flex-1 min-w-[120px] p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
                                 <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Leads</p>
-                                <p className="text-lg font-bold text-white">{ad.leads}</p>
+                                <p className="text-lg font-bold text-white">{ad.metrics.leads}</p>
                             </div>
-                            <div className="p-4 bg-cyan-600/10 rounded-2xl border border-cyan-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-cyan-600/20 transition-all">
-                                <p className="text-[10px] text-cyan-400 font-bold uppercase">Optimizar</p>
-                                <p className="text-[9px] text-cyan-400/60 italic">IA Sugiere: +5% Presupuesto</p>
+
+                            {/* Advanced Metrics Render */}
+                            {ad.activeAdvanced.map(mId => {
+                                const metricInfo = AVAILABLE_METRICS.find(m => m.id === mId);
+                                return (
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        key={mId} 
+                                        className="flex-1 min-w-[120px] p-4 bg-cyan-600/5 rounded-2xl border border-cyan-500/10 text-center relative group"
+                                    >
+                                        <p className={`text-[10px] font-bold uppercase mb-1 ${metricInfo.color}`}>{metricInfo.label}</p>
+                                        <p className="text-lg font-bold text-white">{ad.advanced[mId]}</p>
+                                        <button 
+                                            onClick={() => toggleMetric(ad.id, mId)}
+                                            className="absolute -top-2 -right-2 w-5 h-5 bg-[#050511] border border-white/10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:border-rose-500"
+                                        >
+                                            <X className="w-3 h-3 text-rose-500" />
+                                        </button>
+                                    </motion.div>
+                                );
+                            })}
+
+                            <div className="flex gap-2">
+                                {/* Plus Selector Toggle */}
+                                <div className="relative">
+                                    <button 
+                                        onClick={() => setShowSelectorFor(showSelectorFor === ad.id ? null : ad.id)}
+                                        className={`w-full h-full aspect-square min-w-[56px] rounded-2xl border transition-all flex items-center justify-center ${showSelectorFor === ad.id ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:border-cyan-500/50 hover:text-cyan-400'}`}
+                                    >
+                                        {showSelectorFor === ad.id ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+                                    </button>
+
+                                    {/* Selector Menu Popover */}
+                                    <AnimatePresence>
+                                        {showSelectorFor === ad.id && (
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                className="absolute bottom-full mb-4 right-0 z-50 bg-[#161625] border border-white/10 rounded-3xl p-4 shadow-2xl min-w-[200px]"
+                                            >
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 px-2 italic">Métricas de Estratega</p>
+                                                <div className="space-y-1">
+                                                    {AVAILABLE_METRICS.map(m => (
+                                                        <button
+                                                            key={m.id}
+                                                            onClick={() => toggleMetric(ad.id, m.id)}
+                                                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${ad.activeAdvanced.includes(m.id) ? 'bg-cyan-600/10 text-white' : 'hover:bg-white/5 text-gray-400'}`}
+                                                        >
+                                                            <span className="text-[11px] font-bold">{m.label}</span>
+                                                            <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${ad.activeAdvanced.includes(m.id) ? 'border-cyan-500 bg-cyan-500 text-white' : 'border-white/10 bg-white/5'}`}>
+                                                                {ad.activeAdvanced.includes(m.id) && <Check className="w-3 h-3" />}
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                {/* Optimization Suggestion */}
+                                <div className="flex-1 min-w-[160px] p-4 bg-cyan-600/10 rounded-2xl border border-cyan-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-cyan-600/20 transition-all group">
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Zap className="w-3 h-3 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                        <p className="text-[10px] text-cyan-400 font-bold uppercase">Optimizar</p>
+                                    </div>
+                                    <p className="text-[9px] text-cyan-400/60 italic">IA Sugiere: +5% Presupuesto</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div className="p-6 bg-indigo-600/5 border border-indigo-500/10 rounded-2xl italic text-[11px] text-indigo-400 font-medium">
-                💡 **Estrategia CM:** Los leads de "Campaña Limpieza" están costando $2 menos que el promedio. Considera mover presupuesto orgánico a este anuncio.
+            <div className="p-6 bg-indigo-600/5 border border-indigo-500/10 rounded-2xl italic text-[11px] text-indigo-400 font-medium flex items-center gap-3">
+                <span className="text-lg">💡</span>
+                <p>
+                    **Estrategia CM:** Los leads de "Campaña Limpieza" están costando $2 menos que el promedio. Considera mover presupuesto orgánico a este anuncio.
+                </p>
             </div>
         </div>
     );

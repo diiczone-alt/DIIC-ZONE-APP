@@ -135,6 +135,15 @@ export default function MasterCommandCenter() {
                         >
                             Gestión de Talento
                         </button>
+                        <button
+                            onClick={() => {
+                                setView('bi');
+                                toast.success("Accediendo a Inteligencia Maestra", { description: "Nodos de procesamiento central activos." });
+                            }}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${view === 'bi' ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'text-cyan-400 border border-cyan-500/20 bg-cyan-500/5'}`}
+                        >
+                            Inteligencia Maestra
+                        </button>
                     </div>
                     <StatusBadge label="Sistemas Activos" status="online" />
                     <StatusBadge label="Alertas" count={operationalData?.risks?.length || 0} status={operationalData?.risks?.length > 0 ? 'alert' : 'online'} />
@@ -203,6 +212,16 @@ export default function MasterCommandCenter() {
                                 color="indigo"
                                 onClick={() => setView('nodes')}
                             />
+                        </div>
+                        
+                        {/* 3. ADVANCED STRATEGIC NAVIGATION (RESTORED ROW) */}
+                        <div className="flex p-2 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl overflow-x-auto gap-2 scrollbar-none shadow-inner shadow-black/20">
+                            <QuickNavPill label="Inteligencia HQ" viewKey="bi" activeView={view} onClick={() => setView('bi')} icon={BrainCircuit} color="cyan" />
+                            <QuickNavPill label="Propulsión" viewKey="pricing" activeView={view} onClick={() => setView('pricing')} icon={Flame} color="orange" />
+                            <QuickNavPill label="Evolución" viewKey="evolution" activeView={view} onClick={() => setView('evolution')} icon={TrendingUp} color="emerald" />
+                            <QuickNavPill label="Calidad QA" viewKey="qa" activeView={view} onClick={() => setView('qa')} icon={ShieldCheck} color="blue" />
+                            <QuickNavPill label="Entrenamiento" viewKey="training" activeView={view} onClick={() => setView('training')} icon={BookOpen} color="indigo" />
+                            <QuickNavPill label="Mejora Continua" viewKey="improvement" activeView={view} onClick={() => setView('improvement')} icon={Activity} color="purple" />
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -807,3 +826,27 @@ function StatusBadge({ label, count, status }) {
         </div>
     );
 }
+
+function QuickNavPill({ label, viewKey, activeView, onClick, icon: Icon, color }) {
+    const colors = {
+        cyan: "text-cyan-400 border-cyan-400/30",
+        orange: "text-orange-400 border-orange-400/30",
+        emerald: "text-emerald-400 border-emerald-400/30",
+        blue: "text-blue-400 border-blue-400/30",
+        indigo: "text-indigo-400 border-indigo-400/30",
+        purple: "text-purple-400 border-purple-400/30",
+    };
+
+    const isActive = activeView === viewKey;
+
+    return (
+        <button
+            onClick={onClick}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap hover:scale-105 active:scale-95 ${isActive ? 'bg-white/10 border-white/30 text-white shadow-lg' : `bg-black/20 border-white/5 opacity-60 hover:opacity-100 ${colors[color]}`}`}
+        >
+            <Icon className="w-3.5 h-3.5" />
+            {label}
+        </button>
+    );
+}
+

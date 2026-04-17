@@ -29,7 +29,7 @@ export default function CreativeZonePage() {
 
     return (
         <div className="min-h-screen bg-[#050511] text-white font-sans selection:bg-indigo-500/30">
-            <Sidebar />
+            <DynamicSidebar />
 
             <div className="pl-64 transition-all duration-300">
                 <main className="p-8 max-w-[1600px] mx-auto space-y-8">
