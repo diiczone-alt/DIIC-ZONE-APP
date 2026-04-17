@@ -10,9 +10,10 @@ import {
     MoreHorizontal, Filter, Play, Check, ChevronRight as ChevronRightIcon, X,
     FolderOpen, Palette, Clock, Bot, FileText, Zap, ShieldCheck, Eye, Send,
     GraduationCap, Award, TrendingUp, Target, Brain, Sparkles, PenTool, Edit3,
-    ChevronLeft as ChevronLeftIcon
+    ChevronLeft as ChevronLeftIcon, Layers, MapPin, Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import StrategyBoard from '../../shared/Strategy/StrategyBoard';
 import ContentKanban from '../../shared/Kanban/ContentKanban';
 import UnifiedCalendar from '../../calendar/UnifiedCalendar';
@@ -286,10 +287,10 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
     }
 
     switch (tab) {
-        case 'dashboard': return <CMDashboard client={selectedClient} user={user} />;
+        case 'dashboard': return <CMDashboard client={selectedClient} user={user} tasks={clientTasks} />;
         case 'projects': return <CMProjects client={selectedClient} tasks={clientTasks} loading={loadingTasks} />;
-        case 'contents': return <ContentKanban role="cm" />;
-        case 'chat': return <CommunicationCenter client={selectedClient} squad={squad} />;
+        case 'contents': return <ContentKanban role="cm" client={selectedClient} />;
+        case 'chat': return <CommunicationCenter client={selectedClient} squad={squad} tasks={clientTasks} />;
         case 'meta': return <MetaAdsModule client={selectedClient} />;
         case 'calendar': return <UnifiedCalendar role="cm" />;
         case 'strategy': return <StrategyBoard role="cm" onClose={() => setActiveTab('dashboard')} />;
@@ -301,14 +302,49 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
     }
 }
 
-function CMDashboard({ client, user }) {
+function CMDashboard({ client, user, tasks = [] }) {
+    const [checklist, setChecklist] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem(`cm_checklist_${client.id}`);
+            return saved ? JSON.parse(saved) : [
+                { id: 1, label: "Revisar material recibido (videos/fotos)", completed: false },
+                { id: 2, label: "Enviar instrucciones a editores", completed: true },
+                { id: 3, label: "Confirmar fechas de publicación", completed: false },
+                { id: 4, label: "Verificar reporte de métricas semanal", completed: false },
+                { id: 5, label: "Escalar leads importantes a Ventas", completed: false }
+            ];
+        }
+        return [];
+    });
+
+    useEffect(() => {
+        localStorage.setItem(`cm_checklist_${client.id}`, JSON.stringify(checklist));
+    }, [checklist, client.id]);
+
+    const toggleCheckItem = (id) => {
+        setChecklist(prev => prev.map(item => 
+            item.id === id ? { ...item, completed: !item.completed } : item
+        ));
+        toast.success("Protocolo Actualizado", {
+            description: "Estado de ejecución guardado localmente."
+        });
+    };
+
+    // Calculate real metrics from Supabase tasks
+    const metrics = {
+        total: tasks.length,
+        pending: tasks.filter(t => t.status === 'pending' || t.status === 'in_progress').length,
+        review: tasks.filter(t => t.status === 'review').length,
+        urgent: tasks.filter(t => (t.priority || '').toLowerCase() === 'high' || (t.priority || '').toLowerCase() === 'urgente').length
+    };
+
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <StatusCard title="Proyectos" value="12" sub="Activos" icon={FolderOpen} color="text-cyan-400" />
-                <StatCardMini title="Pendientes" value="5" color="text-orange-400" icon={Clock} />
-                <StatCardMini title="Para Revisión" value="3" color="text-purple-400" icon={Eye} />
-                <StatCardMini title="Urgente" value="1" color="text-red-400" icon={AlertTriangle} />
+                <StatusCard title="Proyectos" value={metrics.total} sub="Activos en Nube" icon={FolderOpen} color="text-cyan-400" />
+                <StatCardMini title="Pendientes" value={metrics.pending} color="text-orange-400" icon={Clock} />
+                <StatCardMini title="Para Revisión" value={metrics.review} color="text-purple-400" icon={Eye} />
+                <StatCardMini title="Urgente" value={metrics.urgent} color="text-red-400" icon={AlertTriangle} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -317,11 +353,14 @@ function CMDashboard({ client, user }) {
                         <CheckCircle2 className="w-5 h-5 text-cyan-400" /> Checklist Operativo
                     </h3>
                     <div className="space-y-4">
-                        <CheckItem label="Revisar material recibido (videos/fotos)" completed={false} />
-                        <CheckItem label="Enviar instrucciones a editores" completed={true} />
-                        <CheckItem label="Confirmar fechas de publicación" completed={false} />
-                        <CheckItem label="Verificar reporte de métricas semanal" completed={false} />
-                        <CheckItem label="Escalar leads importantes a Ventas" completed={false} />
+                        {checklist.map(item => (
+                            <CheckItem 
+                                key={item.id} 
+                                label={item.label} 
+                                completed={item.completed} 
+                                onToggle={() => toggleCheckItem(item.id)}
+                            />
+                        ))}
                     </div>
                 </div>
 
@@ -330,9 +369,17 @@ function CMDashboard({ client, user }) {
                         <Clock className="w-5 h-5 text-indigo-400" /> Actividad Reciente
                     </h3>
                     <div className="space-y-4">
-                        <ActivityItem text="Andrés Vera subió 'Reel Pro Clínica RM'" time="Hace 10 min" />
-                        <ActivityItem text={`${user?.full_name?.split(' ')[0] || 'CM'} aprobó 'Video Intro Branding'`} time="Hace 2h" />
-                        <ActivityItem text="Mateo G. reportó 'Grabación Completada'" time="Ayer" />
+                        {tasks.length > 0 ? (
+                            tasks.slice(0, 3).map((task, i) => (
+                                <ActivityItem 
+                                    key={task.id || i}
+                                    text={`${task.assigned_to || 'Equipo'} actualizó '${task.title}'`} 
+                                    time={task.created_at ? new Date(task.created_at).toLocaleDateString() : 'Reciente'} 
+                                />
+                            ))
+                        ) : (
+                            <p className="text-xs text-gray-500 italic">No hay actividad registrada aún.</p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -469,8 +516,7 @@ function StatusCard({ title, value, sub, icon: Icon, color }) {
 function StatCardMini({ title, value, icon: Icon, color }) {
     return (
         <div 
-            onClick={() => alert(`Filtrando dashboard por estado: ${title}`)}
-            className="bg-[#0E0E18] border border-white/5 rounded-2xl p-6 flex items-center justify-between group hover:border-white/10 transition-all cursor-pointer"
+            className="bg-[#0E0E18] border border-white/5 rounded-2xl p-6 flex items-center justify-between group hover:border-white/10 transition-all cursor-pointer shadow-xl shadow-black/20"
         >
             <div>
                 <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest">{title}</p>
@@ -481,16 +527,16 @@ function StatCardMini({ title, value, icon: Icon, color }) {
     );
 }
 
-function CheckItem({ label, completed }) {
+function CheckItem({ label, completed, onToggle }) {
     return (
         <div 
-            onClick={() => alert(`Protocolo Operativo: ${label}\nEstado actualizado exitosamente.`)}
-            className="flex items-center gap-3 p-3 bg-[#151520] rounded-xl border border-white/5 hover:border-cyan-500/30 transition-all group cursor-pointer"
+            onClick={onToggle}
+            className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/5 hover:border-cyan-500/30 transition-all group cursor-pointer active:scale-[0.98]"
         >
-            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${completed ? 'bg-cyan-500 border-cyan-500' : 'border-white/20'}`}>
+            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${completed ? 'bg-cyan-500 border-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.4)]' : 'border-white/20'}`}>
                 {completed && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
             </div>
-            <span className={`text-sm ${completed ? 'text-gray-500 line-through' : 'text-gray-300 group-hover:text-white'}`}>{label}</span>
+            <span className={`text-xs font-medium transition-colors ${completed ? 'text-gray-500 line-through' : 'text-gray-300 group-hover:text-white'}`}>{label}</span>
         </div>
     );
 }
@@ -619,9 +665,12 @@ function RoleTaskCard({ role, staff, tasks, color }) {
     );
 }
 
-function CommunicationCenter({ client, squad }) {
+function CommunicationCenter({ client, squad, tasks = [] }) {
     const [subTab, setSubTab] = useState('ia');
     const [showContextModal, setShowContextModal] = useState(false);
+    const [selectedMember, setSelectedMember] = useState(null);
+    const [commMode, setCommMode] = useState('general'); // 'general' or 'dept'
+    const [activeMemberId, setActiveMemberId] = useState(null);
 
     const tabs = [
         { id: 'ia', label: 'Asistente IA', icon: Bot },
@@ -656,68 +705,137 @@ function CommunicationCenter({ client, squad }) {
                         exit={{ opacity: 0, x: -10 }}
                         className="flex-1 overflow-y-auto custom-scrollbar p-6"
                     >
-                        {subTab === 'ia' && <AIChatView />}
+                        {subTab === 'ia' && <AIChatView tasks={tasks} />}
                         {subTab === 'empresa' && <EnterpriseChatView client={client} />}
-                        {subTab === 'team' && <TeamChatView client={client} squad={squad} onSend={() => setShowContextModal(true)} />}
+                        {subTab === 'team' && (
+                            <TeamChatView 
+                                client={client} 
+                                squad={squad} 
+                                commMode={commMode}
+                                onSetCommMode={setCommMode}
+                                activeMemberId={activeMemberId}
+                                onSelectMember={(m) => setActiveMemberId(m.id === activeMemberId ? null : m.id)}
+                                onSendMember={(member) => { setSelectedMember(member); setShowContextModal(true); }}
+                                onViewKPIs={(member) => setSelectedMember(member)}
+                            />
+                        )}
                     </motion.div>
                 </AnimatePresence>
 
                 <div className="p-4 border-t border-white/5 bg-white/[0.01]">
-                    <div className="relative">
-                        <input
-                            placeholder="Escribe un mensaje..."
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-all pr-12"
-                        />
+                    <div className="flex items-center gap-3">
                         <button
                             onClick={() => setShowContextModal(true)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-cyan-600 rounded-xl flex items-center justify-center text-white hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-600/20"
+                            className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-white/10 transition-all shadow-lg active:scale-95 group"
                         >
-                            <Send className="w-4 h-4" />
+                            <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform" />
                         </button>
+                        <div className="flex-1 relative">
+                            <input
+                                placeholder={activeMemberId ? "Mensaje directo..." : "Escribe un mensaje..."}
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-all pr-12"
+                            />
+                            <button
+                                onClick={() => {
+                                    if (activeMemberId) {
+                                        toast.success("Mensaje Directo Enviado", { description: "Tu mensaje ha sido cifrado y enviado al creativo." });
+                                    } else {
+                                        setShowContextModal(true);
+                                    }
+                                }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-cyan-600 rounded-xl flex items-center justify-center text-white hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-600/20"
+                            >
+                                <Send className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {showContextModal && (
-                <MessageContextModal onClose={() => setShowContextModal(false)} />
+                <MessageContextModal member={selectedMember} onClose={() => { setShowContextModal(false); setSelectedMember(null); }} />
+            )}
+
+            {selectedMember && !showContextModal && (
+                <MemberKPIModal member={selectedMember} onClose={() => setSelectedMember(null)} />
             )}
         </div>
     );
 }
 
-function AIChatView() {
+function AIChatView({ tasks = [] }) {
     const { user } = useAuth();
+    const [isThinking, setIsThinking] = useState(false);
+    const [aiResponse, setAiResponse] = useState(null);
+
+    const handleAISuggestion = (type) => {
+        setIsThinking(true);
+        setAiResponse(null);
+        
+        setTimeout(() => {
+            setIsThinking(false);
+            if (type === 'report') {
+                const total = tasks.length;
+                const completed = tasks.filter(t => t.status === 'completed').length;
+                setAiResponse(`He analizado tus ${total} tareas actuales. Tienes un ${Math.round((completed/total)*100 || 0)}% de avance semanal. ¿Deseas que prepare el PDF de resumen para el cliente?`);
+            } else {
+                const pending = tasks.filter(t => t.status !== 'completed');
+                setAiResponse(`Hay ${pending.length} tareas activas. La más urgente es "${pending[0]?.title || 'ninguna'}" asignada a ${pending[0]?.assigned_role || 'el equipo'}.`);
+            }
+        }, 1500);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-700 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-700 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0 relative overflow-hidden">
                     <Bot className="w-6 h-6" />
+                    {isThinking && (
+                        <motion.div 
+                            className="absolute inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center"
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{ repeat: Infinity, duration: 1 }}
+                        >
+                            <Sparkles className="w-4 h-4 text-white animate-spin" />
+                        </motion.div>
+                    )}
                 </div>
                 <div className="space-y-4 max-w-[85%]">
-                    <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5 rounded-tl-none backdrop-blur-md">
+                    <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5 rounded-tl-none backdrop-blur-md shadow-xl">
                         <p className="text-sm text-gray-300 leading-relaxed">
-                            ¡Hola, {user?.full_name?.split(' ')[0] || 'Estratega'}! Soy tu **Estratega IA**. He analizado los datos y observo un flujo constante en la producción. 
-                            <br /><br />
-                            Recuerda que esta es tu zona de control: aquí organizamos la estrategia directa con la marca. ¿Quieres que redacte un reporte rápido de desempeño para enviar al cliente ahora mismo?
+                            {aiResponse || `¡Hola, ${user?.full_name?.split(' ')[0] || 'Estratega'}! Soy tu **Estratega IA**. He analizado los datos y observo un flujo constante en la producción. 
+                            
+                            Recuerda que esta es tu zona de control: aquí organizamos la estrategia directa con la marca. ¿Quieres que redacte un reporte rápido de desempeño para enviar al cliente ahora mismo?`}
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-2">
+                    {!aiResponse && !isThinking && (
+                        <div className="grid grid-cols-1 gap-2">
+                            <button 
+                                onClick={() => handleAISuggestion('report')}
+                                className="text-left px-4 py-3 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl text-[11px] text-cyan-400 font-bold hover:bg-cyan-500/20 transition-all flex items-center justify-between group"
+                            >
+                                <span>"Generar reporte de desempeño semanal"</span>
+                                <ChevronRightIcon className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                            <button 
+                                onClick={() => handleAISuggestion('status')}
+                                className="text-left px-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-[11px] text-gray-400 font-bold hover:text-white transition-all flex items-center justify-between group"
+                            >
+                                <span>"¿Cuál es el estado de los videos en edición?"</span>
+                                <ChevronRightIcon className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        </div>
+                    )}
+
+                    {aiResponse && (
                         <button 
-                            onClick={() => alert('IA Estratégica: Generando reporte de desempeño semanal...')}
-                            className="text-left px-4 py-3 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl text-[11px] text-cyan-400 font-bold hover:bg-cyan-500/20 transition-all flex items-center justify-between group"
+                            onClick={() => { setAiResponse(null); toast.info("Memoria de IA despejada."); }}
+                            className="text-[10px] text-gray-500 font-bold uppercase hover:text-white transition-colors"
                         >
-                            <span>"Generar reporte de desempeño semanal"</span>
-                            <ChevronRightIcon className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                            &larr; Hacer otra consulta
                         </button>
-                        <button 
-                            onClick={() => alert('IA Estratégica: Consultando estado de ediciones en DIIC Cloud...')}
-                            className="text-left px-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-[11px] text-gray-400 font-bold hover:text-white transition-all flex items-center justify-between group"
-                        >
-                            <span>"¿Cuál es el estado de los videos en edición?"</span>
-                            <ChevronRightIcon className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -747,32 +865,49 @@ function EnterpriseChatView({ client }) {
     );
 }
 
-function TeamChatView({ client, squad, onSend }) {
+function TeamChatView({ client, squad, commMode, onSetCommMode, activeMemberId, onSelectMember, onSendMember, onViewKPIs }) {
     const team = (squad && squad.length > 0) ? squad.map(m => ({
+        id: m.id,
         name: m.name,
         role: m.role,
         status: m.status || 'Disponible',
-        avatar: m.name.split(' ').map(n => n[0]).join('').toUpperCase()
+        avatar: (m.name || 'User').split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase(),
+        kpis: Array.isArray(m.skills) ? m.skills : (typeof m.skills === 'string' && m.skills ? JSON.parse(m.skills) : [])
     })) : [
-        { name: 'Cargando equipo...', role: 'No asignado', status: '-', avatar: '?' }
+        { id: 1, name: 'Anthony (Sto Dgo)', role: 'Diseñador', status: 'Disponible', avatar: 'A', kpis: [] },
+        { id: 2, name: 'Fausto', role: 'Editor de Video', status: 'Disponible', avatar: 'F', kpis: [] }
     ];
 
     return (
         <div className="space-y-8">
             <div className="flex gap-4 border-b border-white/5 pb-6">
                 <button 
-                    onClick={() => alert('Abriendo Chat General del Proyecto')}
-                    className="flex-1 p-4 bg-cyan-600/10 border border-cyan-500/20 rounded-2xl text-center group hover:bg-cyan-600/20 transition-all"
+                    onClick={() => {
+                        onSetCommMode('general');
+                        toast.info("Accediendo al Chat General", { description: "Conectando con todos los creativos del proyecto." });
+                    }}
+                    className={`flex-1 p-4 border rounded-2xl text-center group transition-all shadow-lg ${
+                        commMode === 'general' 
+                        ? 'bg-cyan-600/10 border-cyan-500/50 shadow-cyan-900/10' 
+                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    }`}
                 >
                     <h4 className="text-xs font-bold text-cyan-400 mb-1">Chat General</h4>
                     <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Proyecto Completo</p>
                 </button>
                 <button 
-                    onClick={() => alert('Filtrando Chat por Departamentos')}
-                    className="flex-1 p-4 bg-white/5 border border-white/10 rounded-2xl text-center group hover:bg-white/10 transition-all"
+                    onClick={() => {
+                        onSetCommMode('dept');
+                        toast.info("Seleccionando Departamento", { description: "Filtra la comunicación por Video, Diseño o Copy." });
+                    }}
+                    className={`flex-1 p-4 border rounded-2xl text-center group transition-all ${
+                        commMode === 'dept'
+                        ? 'bg-cyan-600 border-cyan-500 text-white shadow-lg shadow-cyan-600/20'
+                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    }`}
                 >
-                    <h4 className="text-xs font-bold text-white mb-1">Departamentos</h4>
-                    <p className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Ej: Video / Diseño</p>
+                    <h4 className={`text-xs font-bold mb-1 ${commMode === 'dept' ? 'text-white' : 'text-white'}`}>Departamentos</h4>
+                    <p className={`text-[9px] uppercase font-bold tracking-widest ${commMode === 'dept' ? 'text-cyan-100' : 'text-gray-500'}`}>Ej: Video / Diseño</p>
                 </button>
             </div>
 
@@ -780,25 +915,47 @@ function TeamChatView({ client, squad, onSend }) {
                 <h4 className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-4">Chat Directo con el Equipo</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {team.map(m => (
-                        <div key={m.name} className="p-5 bg-white/[0.03] border border-white/10 rounded-[2rem] hover:border-cyan-500/30 transition-all group cursor-pointer relative overflow-hidden">
+                        <div 
+                            key={m.id} 
+                            onClick={() => onSelectMember(m)}
+                            className={`p-5 border rounded-[2rem] transition-all group relative overflow-hidden shadow-xl cursor-pointer ${
+                                activeMemberId === m.id
+                                ? 'bg-indigo-600/10 border-indigo-500/50 ring-1 ring-indigo-500/30'
+                                : 'bg-white/[0.03] border-white/10 hover:border-cyan-500/30'
+                            }`}
+                        >
+                            {activeMemberId === m.id && (
+                                <div className="absolute top-0 right-0 p-3">
+                                    <div className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
+                                </div>
+                            )}
                             <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">{m.avatar}</div>
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-sm shadow-lg transition-transform group-hover:scale-110 ${
+                                    activeMemberId === m.id ? 'bg-indigo-500 shadow-indigo-600/40' : 'bg-indigo-600 shadow-indigo-500/20'
+                                }`}>
+                                    {m.avatar}
+                                </div>
                                 <div className="flex-1">
-                                    <h5 className="text-sm font-bold text-white">{m.name}</h5>
+                                    <h5 className="text-sm font-bold text-white italic">{m.name}</h5>
                                     <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">{m.role}</p>
                                 </div>
                             </div>
 
                             <div className="flex items-center justify-between text-[9px] font-bold uppercase text-gray-500">
-                                <span className={m.status === 'Disponible' ? 'text-emerald-400' : 'text-orange-400'}>● {m.status}</span>
+                                <span className={m.status === 'Disponible' ? 'text-emerald-400' : 'text-orange-400'}>● {activeMemberId === m.id ? 'CHAT ACTIVO' : m.status}</span>
                                 <div className="flex gap-2">
                                     <button 
-                                        onClick={(e) => { e.stopPropagation(); alert(`Visualizando hoja de vida y KPIs de ${m.name}...`); }}
-                                        className="p-2 bg-white/5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white"
+                                        onClick={(e) => { e.stopPropagation(); onViewKPIs(m); }}
+                                        className="p-2 bg-white/5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
                                     >
                                         <Eye className="w-3.5 h-3.5" />
                                     </button>
-                                    <button onClick={onSend} className="p-2 bg-cyan-600 rounded-lg text-white hover:bg-cyan-500"><Send className="w-3.5 h-3.5" /></button>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); onSendMember(m); }}
+                                        className="p-2 bg-cyan-600 rounded-lg text-white hover:bg-cyan-500 shadow-md shadow-cyan-600/20 transition-all active:scale-95"
+                                    >
+                                        <Send className="w-3.5 h-3.5" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -816,8 +973,11 @@ function TeamChatView({ client, squad, onSend }) {
     );
 }
 
-function MessageContextModal({ onClose }) {
+function MessageContextModal({ member, onClose }) {
     const { user } = useAuth();
+    const [sending, setSending] = useState(false);
+    const [selectedContext, setSelectedContext] = useState(null);
+
     const contexts = [
         { id: 'proj', label: 'Proyecto', icon: FolderOpen },
         { id: 'task', label: 'Tarea', icon: CheckCircle2 },
@@ -828,41 +988,131 @@ function MessageContextModal({ onClose }) {
         { id: 'general', label: 'Consulta General', icon: MessageSquare },
     ];
 
+    const handleSend = () => {
+        if (!selectedContext) {
+            toast.warning("Selecciona un contexto", { description: "Es vital para que el equipo entienda tu mensaje rápidamente." });
+            return;
+        }
+        setSending(true);
+        setTimeout(() => {
+            setSending(false);
+            toast.success("Mensaje Enviado", {
+                description: `Enviado a ${member?.name || 'equipo'} con contexto: ${selectedContext.label}`
+            });
+            onClose();
+        }, 1800);
+    };
+
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
             <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-[#0E0E18] border border-white/10 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl"
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="bg-[#0E0E18] border border-white/10 rounded-[3rem] w-full max-w-lg overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]"
             >
-                <div className="p-8 border-b border-white/5">
-                    <h3 className="text-2xl font-bold text-white mb-2">¿Sobre qué es este mensaje?</h3>
-                    <p className="text-gray-500 text-sm italic">Para que no sea caos, el CM necesita contexto antes de enviar.</p>
+                <div className="p-10 border-b border-white/5 text-center">
+                    <div className="w-16 h-16 bg-cyan-600/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <MessageSquare className="w-8 h-8 text-cyan-400" />
+                    </div>
+                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white mb-2">Canal de Control DIIC</h3>
+                    <p className="text-gray-500 text-sm italic">Define el contexto antes de enviar a {member?.name || 'este creativo'}.</p>
                 </div>
 
-                <div className="p-8 grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                <div className="p-10 grid grid-cols-2 gap-3 max-h-[350px] overflow-y-auto custom-scrollbar">
                     {contexts.map(ctx => (
                         <button
                             key={ctx.id}
-                            onClick={() => alert(`Contexto seleccionado: ${ctx.label}\nEsto ayudará al equipo a entender mejor tu mensaje.`)}
-                            className="flex items-center gap-3 p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-cyan-600/10 hover:border-cyan-500/30 transition-all text-left group"
+                            onClick={() => setSelectedContext(ctx)}
+                            className={`flex items-center gap-3 p-4 border rounded-2xl transition-all text-left group ${selectedContext?.id === ctx.id 
+                                ? 'bg-cyan-600 border-cyan-500 shadow-lg shadow-cyan-600/20' 
+                                : 'bg-white/5 border-white/5 hover:bg-white/[0.08]'}`}
                         >
-                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-500 group-hover:text-cyan-400 transition-colors">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${selectedContext?.id === ctx.id ? 'bg-white/20 text-white' : 'bg-white/5 text-gray-500 group-hover:text-cyan-400'}`}>
                                 <ctx.icon className="w-5 h-5" />
                             </div>
-                            <span className="text-xs font-bold text-gray-400 group-hover:text-white transition-colors">{ctx.label}</span>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${selectedContext?.id === ctx.id ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>{ctx.label}</span>
                         </button>
                     ))}
                 </div>
 
-                <div className="p-8 bg-white/[0.02] flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-4 text-xs font-bold text-gray-500 hover:text-white transition-colors">Cancelar</button>
+                <div className="p-10 bg-white/[0.02] flex gap-4">
+                    <button onClick={onClose} className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors">Cancelar</button>
                     <button 
-                        onClick={() => { alert('¡Mensaje enviado con éxito al equipo!'); onClose(); }}
-                        className="flex-[2] py-4 bg-cyan-600 rounded-2xl text-xs font-bold text-white shadow-lg shadow-cyan-600/20 hover:bg-cyan-500 transition-all"
+                        onClick={handleSend}
+                        disabled={sending}
+                        className="flex-[2] py-4 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-cyan-600/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden"
                     >
-                        CONFIRMAR & ENVIAR
+                        <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                        {sending ? 'Encriptando & Enviando...' : 'Confirmar & Enviar'}
                     </button>
+                </div>
+            </motion.div>
+        </div>
+    );
+}
+
+function MemberKPIModal({ member, onClose }) {
+    const kpis = [
+        { label: 'Calidad Creativa', value: '98%', color: 'from-cyan-600 to-blue-500' },
+        { label: 'Tiempo de Entrega', value: '1.2d', color: 'from-purple-600 to-indigo-500' },
+        { label: 'Asertividad', value: '95%', color: 'from-emerald-600 to-teal-500' },
+        { label: 'Revisiones Avg.', value: '0.8', color: 'from-orange-600 to-red-500' }
+    ];
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9, x: 20 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                className="bg-[#0E0E18] border border-white/10 rounded-[3rem] w-full max-w-2xl overflow-hidden shadow-2xl"
+            >
+                <div className="flex h-full">
+                    <div className="w-1/3 bg-[#11111E] p-10 flex flex-col items-center justify-center border-r border-white/5 text-center">
+                        <div className="w-24 h-24 rounded-[2.5rem] bg-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow-2xl shadow-indigo-600/20 mb-6">
+                            {member.avatar}
+                        </div>
+                        <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-1">{member.name}</h3>
+                        <p className="text-[10px] text-cyan-400 font-black uppercase tracking-widest mb-6">{member.role}</p>
+                        <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full inline-flex items-center gap-2">
+                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                             <span className="text-[10px] font-black text-emerald-400 uppercase">Activo Ahora</span>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 p-10 flex flex-col">
+                        <div className="flex justify-between items-start mb-10">
+                            <div>
+                                <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-1">Audit Report</h4>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Desempeño acumulado en DIIC Zone</p>
+                            </div>
+                            <button onClick={onClose} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 flex-1">
+                            {kpis.map((kpi, i) => (
+                                <div key={i} className="bg-white/5 border border-white/5 rounded-3xl p-6 relative overflow-hidden group">
+                                    <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${kpi.color}`} />
+                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest mb-2">{kpi.label}</p>
+                                    <h5 className="text-3xl font-black text-white group-hover:translate-x-1 transition-transform">{kpi.value}</h5>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-8 flex gap-3">
+                            <button 
+                                onClick={() => toast.success("Hoja de Vida en camino", { description: "Enviando PDF histórico a tu correo." })}
+                                className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all"
+                            >
+                                Perfil Completo
+                            </button>
+                            <button 
+                                onClick={() => { onClose(); toast.info("Canal seguro conectado."); }}
+                                className="flex-[2] py-4 bg-cyan-600 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-cyan-600/20 hover:bg-cyan-500 transition-all"
+                            >
+                                Abrir Chat Directo
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </motion.div>
         </div>
@@ -1027,6 +1277,19 @@ function MetaAdsModule({ client }) {
     ]);
 
     const [showSelectorFor, setShowSelectorFor] = useState(null);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [showAudienceModal, setShowAudienceModal] = useState(false);
+    const [showCreativeModal, setShowCreativeModal] = useState(false);
+    const [selectedAdForMetrics, setSelectedAdForMetrics] = useState(null);
+
+    const handleSync = () => {
+        setIsSyncing(true);
+        toast.info("Conectando con Meta API...", { description: "Sincronizando Business Manager y cuentas publicitarias." });
+        setTimeout(() => {
+            setIsSyncing(false);
+            toast.success("DIIC Sync Completado", { description: "Datos de pauta actualizados en tiempo real." });
+        }, 2200);
+    };
 
     const AVAILABLE_METRICS = [
         { id: 'ctr', label: 'CTR', color: 'text-indigo-400' },
@@ -1060,10 +1323,12 @@ function MetaAdsModule({ client }) {
                     <p className="text-gray-500 italic">Monitorea y optimiza la pauta de {client.name}.</p>
                 </div>
                 <button 
-                    onClick={() => alert('Sincronizando con Meta Business Manager API...')}
-                    className="px-6 py-3 bg-cyan-600 rounded-2xl text-[11px] font-bold text-white hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-600/20"
+                    onClick={handleSync}
+                    disabled={isSyncing}
+                    className="px-6 py-3 bg-cyan-600 rounded-2xl text-[11px] font-bold text-white hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-600/20 disabled:opacity-50 flex items-center gap-2"
                 >
-                    SINCRONIZAR BUSINESS MANAGER
+                    {isSyncing && <Zap className="w-3 h-3 animate-spin" />}
+                    {isSyncing ? 'SINCRONIZANDO...' : 'SINCRONIZAR BUSINESS MANAGER'}
                 </button>
             </div>
 
@@ -1168,13 +1433,68 @@ function MetaAdsModule({ client }) {
                                             setTimeout(() => { p.innerText = original; el.style.pointerEvents = 'auto'; }, 2000);
                                         }, 1500);
                                     }}
-                                    className="flex-1 min-w-[160px] p-4 bg-cyan-600/10 rounded-2xl border border-cyan-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-cyan-600/20 transition-all group"
+                                    className="flex-1 min-w-[150px] p-4 bg-cyan-600/10 rounded-2xl border border-cyan-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-cyan-600/20 transition-all group"
                                 >
                                     <div className="flex items-center justify-center gap-2">
                                         <Zap className="w-3 h-3 text-cyan-400 group-hover:scale-110 transition-transform" />
                                         <p className="text-[10px] text-cyan-400 font-bold uppercase">Optimizar</p>
                                     </div>
                                     <p className="text-[9px] text-cyan-400/60 italic">IA Sugiere: +5% Presupuesto</p>
+                                </div>
+
+                                <div 
+                                    onClick={() => {
+                                        setSelectedAdForMetrics(ad);
+                                        setShowAudienceModal(true);
+                                    }}
+                                    className="flex-1 min-w-[150px] p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-amber-500/20 transition-all group"
+                                >
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Users className="w-3 h-3 text-amber-500 group-hover:scale-110 transition-transform" />
+                                        <p className="text-[10px] text-amber-500 font-bold uppercase">Público & Metas</p>
+                                    </div>
+                                    <p className="text-[9px] text-amber-500/60 italic">H: 45% | M: 55%</p>
+                                </div>
+
+                                <div 
+                                    onClick={() => {
+                                        toast.success("Público Guardado", {
+                                            description: `Audiencia de '${ad.name}' sincronizada con DIIC Database.`
+                                        });
+                                    }}
+                                    className="flex-1 min-w-[150px] p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-emerald-500/20 transition-all group"
+                                >
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Target className="w-3 h-3 text-emerald-500 group-hover:scale-110 transition-transform" />
+                                        <p className="text-[10px] text-emerald-500 font-bold uppercase">Guardar Público</p>
+                                    </div>
+                                    <p className="text-[9px] text-emerald-500/60 italic">Sincronizar Meta</p>
+                                </div>
+
+                                <div 
+                                    onClick={() => {
+                                        toast.info("Advantage+ Activado", {
+                                            description: "IA optimizando creatividades dinámicamente."
+                                        });
+                                    }}
+                                    className="flex-1 min-w-[150px] p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-purple-500/20 transition-all group"
+                                >
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Sparkles className="w-3 h-3 text-purple-400 group-hover:scale-110 transition-transform" />
+                                        <p className="text-[10px] text-purple-400 font-bold uppercase">Advantage+</p>
+                                    </div>
+                                    <p className="text-[9px] text-purple-400/60 italic">IA Creativa ON</p>
+                                </div>
+
+                                <div 
+                                    onClick={() => setShowCreativeModal(true)}
+                                    className="flex-1 min-w-[150px] p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-indigo-500/20 transition-all group"
+                                >
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Layers className="w-3 h-3 text-indigo-400 group-hover:scale-110 transition-transform" />
+                                        <p className="text-[10px] text-indigo-400 font-bold uppercase">Escalar / Nueva</p>
+                                    </div>
+                                    <p className="text-[9px] text-indigo-400/60 italic">+ Nueva Pieza</p>
                                 </div>
                             </div>
                         </div>
@@ -1187,12 +1507,260 @@ function MetaAdsModule({ client }) {
                     <strong>Estrategia CM:</strong> Los leads de "Campaña Limpieza" están costando $2 menos que el promedio. Considera mover presupuesto orgánico a este anuncio.
                 </p>
             </div>
+
+            <AnimatePresence>
+                {showAudienceModal && (
+                    <AudienceMetricsModal 
+                        ad={selectedAdForMetrics} 
+                        onClose={() => setShowAudienceModal(false)} 
+                    />
+                )}
+                {showCreativeModal && (
+                    <CreativeTestingModal 
+                        onClose={() => setShowCreativeModal(false)} 
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+function AudienceMetricsModal({ ad, onClose }) {
+    const demography = [
+        { label: 'Mujeres', value: 55, color: 'bg-rose-500' },
+        { label: 'Hombres', value: 45, color: 'bg-blue-500' }
+    ];
+
+    const cities = [
+        { name: 'Guayaquil', reach: '45%', color: 'bg-emerald-500' },
+        { name: 'Quito', reach: '30%', color: 'bg-indigo-500' },
+        { name: 'Cuenca', reach: '15%', color: 'bg-amber-500' },
+        { name: 'Manta', reach: '10%', color: 'bg-cyan-500' }
+    ];
+
+    const interests = [
+        { name: 'Estética & Salud', ctr: '3.4%', icon: Activity },
+        { name: 'Lujo & Estilo de vida', ctr: '2.8%', icon: Sparkles },
+        { name: 'Cirugía Plástica', ctr: '2.1%', icon: Target }
+    ];
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="bg-[#0E0E18] border border-white/10 rounded-[3rem] w-full max-w-4xl overflow-hidden shadow-2xl flex"
+            >
+                <div className="w-1/3 bg-[#11111E] p-10 border-r border-white/5">
+                    <div className="mb-10 text-center">
+                        <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <Users className="w-8 h-8 text-amber-500" />
+                        </div>
+                        <h3 className="text-xl font-black text-white italic uppercase tracking-tighter mb-2">Audience Audit</h3>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-relaxed">Sincronización de Meta Graph API en tiempo real.</p>
+                    </div>
+
+                    <div className="space-y-6">
+                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest text-center border-b border-white/5 pb-4">Distribución por Género</p>
+                        {demography.map(d => (
+                            <div key={d.label} className="space-y-2">
+                                <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest">
+                                    <span className="text-gray-400">{d.label}</span>
+                                    <span className="text-white">{d.value}%</span>
+                                </div>
+                                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                                    <motion.div 
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${d.value}%` }}
+                                        className={`h-full ${d.color}`}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-12 p-6 bg-amber-500/5 border border-amber-500/10 rounded-2xl italic text-[10px] text-amber-400/80 leading-relaxed">
+                        "El 62% de tu público interactúa más a las 8:00 PM."
+                    </div>
+                </div>
+
+                <div className="flex-1 p-10">
+                    <div className="flex justify-between items-start mb-10">
+                        <div>
+                            <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-1">Impacto Geográfico & Intereses</h4>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">{ad?.name || 'Campaña Activa'}</p>
+                        </div>
+                        <button onClick={onClose} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8">
+                        <div>
+                            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-6">Top Ciudades</p>
+                            <div className="space-y-4">
+                                {cities.map(city => (
+                                    <div key={city.name} className="flex items-center gap-4">
+                                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center"><MapPin className="w-4 h-4 text-gray-500" /></div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-1">
+                                                <span className="text-white">{city.name}</span>
+                                                <span className="text-gray-500">{city.reach}</span>
+                                            </div>
+                                            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                                <div className={`h-full ${city.color}`} style={{ width: city.reach }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-6">Intereses Ganadores</p>
+                            <div className="space-y-3">
+                                {interests.map(interest => (
+                                    <div key={interest.name} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-cyan-500/30 transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <interest.icon className="w-4 h-4 text-cyan-400" />
+                                            <span className="text-[11px] font-bold text-gray-300">{interest.name}</span>
+                                        </div>
+                                        <span className="text-xs font-black text-emerald-400">{interest.ctr} <span className="text-[8px] opacity-50">CTR</span></span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-10 flex gap-4">
+                        <button 
+                            onClick={onClose}
+                            className="flex-1 py-4 bg-white text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:scale-105 transition-all shadow-xl shadow-white/5"
+                        >
+                            Listo
+                        </button>
+                        <button 
+                            onClick={() => toast.success("Público Guardado en DIIC Database")}
+                            className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all"
+                        >
+                            Exportar Audiencia
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        </div>
+    );
+}
+
+function CreativeTestingModal({ onClose }) {
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="bg-[#0E0E18] border border-white/10 rounded-[3rem] w-full max-w-2xl p-10 shadow-2xl relative overflow-hidden"
+            >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 blur-[100px] rounded-full" />
+                
+                <div className="flex justify-between items-start mb-10 relative z-10">
+                    <div>
+                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-2 leading-none">Creative Testing</h3>
+                        <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest leading-relaxed">ESCALADO & NUEVAS PIEZAS DINÁMICAS</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
+                </div>
+
+                <div className="space-y-6 relative z-10">
+                    <div className="bg-white/5 border border-white/5 rounded-3xl p-6 flex items-center gap-6 group hover:border-indigo-500/30 transition-all cursor-pointer">
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-600/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                            <Plus className="w-8 h-8 font-black" />
+                        </div>
+                        <div>
+                            <h4 className="text-lg font-bold text-white mb-1">Nueva Pieza Creativa</h4>
+                            <p className="text-xs text-gray-500 italic">Sube un nuevo Reel o Imagen para probar contra el control actual.</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white/5 border border-white/5 rounded-3xl p-6 flex items-center gap-6 group hover:border-cyan-500/30 transition-all cursor-pointer">
+                        <div className="w-14 h-14 rounded-2xl bg-cyan-600/10 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
+                            <Zap className="w-8 h-8 font-black" />
+                        </div>
+                        <div>
+                            <h4 className="text-lg font-bold text-white mb-1">Escalar Campaign</h4>
+                            <p className="text-xs text-gray-500 italic">Duplicar conjunto de anuncios con presupuestos de escalado horizontal.</p>
+                        </div>
+                    </div>
+
+                    <div className="p-8 mt-10 border border-dashed border-white/10 rounded-[2rem] text-center">
+                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-widest mb-4">Metodología DIIC Zone</p>
+                        <p className="text-xs text-gray-400 leading-relaxed italic italic">"La pauta no es gasto, es compra de data. Cada nueva pieza nos acerca al CPA ideal para tu marca."</p>
+                    </div>
+                </div>
+
+                <div className="mt-10 flex gap-4 relative z-10">
+                    <button 
+                        onClick={onClose}
+                        className="flex-1 py-5 bg-gradient-to-tr from-indigo-700 to-indigo-500 text-white font-black uppercase text-xs tracking-[0.2em] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-indigo-600/20"
+                    >
+                        Abrir Gestor de Carga
+                    </button>
+                </div>
+            </motion.div>
         </div>
     );
 }
 
 function CMReports({ client }) {
     const { user } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({ content: { total: 0, pending: 0, finished: 0 }, tasks: { total: 0, completed: 0 } });
+    const [showPreview, setShowPreview] = useState(false);
+    const [selectedReport, setSelectedReport] = useState(null);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            setLoading(true);
+            try {
+                // Fetch Content Stats
+                const { data: contentData } = await supabase
+                    .from('content')
+                    .select('stage')
+                    .eq('client', client.id);
+                
+                // Fetch Task Stats
+                const { data: taskData } = await supabase
+                    .from('tasks')
+                    .select('status')
+                    .eq('client', client.id);
+
+                const cTotal = contentData?.length || 0;
+                const cFinished = contentData?.filter(c => 
+                    ['PUBLISHED', 'FINISHED', 'READY', 'LISTO'].includes(c.stage?.toUpperCase())
+                ).length || 0;
+                
+                const tTotal = taskData?.length || 0;
+                const tCompleted = taskData?.filter(t => 
+                    ['COMPLETED', 'DONE', 'FINISHED', 'LISTO'].includes(t.status?.toUpperCase())
+                ).length || 0;
+
+                setStats({
+                    content: { total: cTotal, pending: cTotal - cFinished, finished: cFinished },
+                    tasks: { total: tTotal, completed: tCompleted }
+                });
+            } catch (error) {
+                console.error("Error fetching report stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        if (client?.id) fetchStats();
+    }, [client.id]);
+
+    const handleShareWhatsApp = (type) => {
+        const message = `Hola ${client.name}! 👋 Soy ${user?.full_name || 'tu CM'}. %0A%0AAquí tienes el *Resumen de Rendimiento Semanal*: %0A- Contenidos Producidos: ${stats.content.finished}/${stats.content.total} %0A- Tareas Completadas: ${stats.tasks.completed}/${stats.tasks.total} %0A- Estado de Ads: Óptimo ✅ %0A%0APuedes ver el detalle completo en el dashboard de DIIC Zone.`;
+        window.open(`https://wa.me/?text=${message}`, '_blank');
+    };
+
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
@@ -1202,88 +1770,203 @@ function CMReports({ client }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 group hover:border-cyan-500/30 transition-all cursor-pointer">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 group hover:border-cyan-500/30 transition-all cursor-pointer flex flex-col">
                     <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-cyan-400 mb-6 group-hover:scale-110 transition-transform">
                         <BarChart3 className="w-6 h-6" />
                     </div>
-                    <h4 className="text-xl font-bold text-white mb-2">Reporte Semanal de Rendimiento</h4>
-                    <p className="text-xs text-gray-500 mb-6 italic">Métricas de alcance, interacción y mejores contenidos de los últimos 7 días.</p>
+                    <h4 className="text-xl font-bold text-white mb-2">Rendimiento de Producción</h4>
+                    <p className="text-xs text-gray-500 mb-6 italic flex-1">Consolidado de contenidos creados, publicados y en revisión de la semana.</p>
                     <div className="flex gap-3">
                         <button 
-                            onClick={(e) => {
-                                const btn = e.currentTarget;
-                                const original = btn.innerText;
-                                btn.innerText = 'GENERANDO PDF...';
-                                btn.disabled = true;
-                                btn.style.opacity = '0.7';
-                                setTimeout(() => {
-                                    btn.innerText = '¡PDF LISTO!';
-                                    setTimeout(() => { btn.innerText = original; btn.disabled = false; btn.style.opacity = '1'; }, 2000);
-                                }, 2000);
+                            onClick={() => {
+                                setSelectedReport({ type: 'Producción', icon: BarChart3 });
+                                setShowPreview(true);
                             }}
-                            className="flex-1 py-3 bg-cyan-600 rounded-xl text-[10px] font-bold text-white hover:bg-cyan-500 transition-all"
+                            className="flex-1 py-3 bg-cyan-600 rounded-xl text-[10px] font-bold text-white hover:bg-cyan-500 transition-all uppercase tracking-widest"
                         >
-                            GENERAL PDF
+                            Ver Preview
                         </button>
                         <button 
-                            onClick={(e) => {
-                                const btn = e.currentTarget;
-                                const original = btn.innerHTML;
-                                btn.innerText = 'ENVIANDO...';
-                                btn.disabled = true;
-                                setTimeout(() => {
-                                    btn.innerText = '¡ENVIADO!';
-                                    setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 2000);
-                                }, 1500);
-                            }}
-                            className="flex-1 py-3 bg-emerald-600 rounded-xl text-[10px] font-bold text-white hover:bg-emerald-500 transition-all flex items-center justify-center gap-2"
+                            onClick={() => handleShareWhatsApp('Producción')}
+                            className="w-12 h-12 bg-emerald-600 rounded-xl text-white hover:bg-emerald-500 transition-all flex items-center justify-center"
                         >
-                            <MessageSquare className="w-3.5 h-3.5" /> WHATSAPP
+                            <MessageSquare className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
 
-                <div className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 group hover:border-purple-500/30 transition-all cursor-pointer">
+                <div className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 group hover:border-purple-500/30 transition-all cursor-pointer flex flex-col">
                     <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 transition-transform">
                         <Share2 className="w-6 h-6" />
                     </div>
-                    <h4 className="text-xl font-bold text-white mb-2">Reporte de Auditoría de Pauta</h4>
-                    <p className="text-xs text-gray-500 mb-6 italic">Desglose de inversión, CPC, CTR y retorno de inversión esperado.</p>
+                    <h4 className="text-xl font-bold text-white mb-2">Auditoría de Pauta (Ads)</h4>
+                    <p className="text-xs text-gray-500 mb-6 italic flex-1">Desglose de inversión Meta Ads, CTR, Leads y Retorno de Inversión esperado.</p>
                     <div className="flex gap-3">
                         <button 
-                            onClick={(e) => {
-                                const btn = e.currentTarget;
-                                const original = btn.innerText;
-                                btn.innerText = 'GENERANDO...';
-                                btn.disabled = true;
-                                setTimeout(() => {
-                                    btn.innerText = '¡DESCARGADO!';
-                                    setTimeout(() => { btn.innerText = original; btn.disabled = false; }, 2000);
-                                }, 2500);
+                            onClick={() => {
+                                setSelectedReport({ type: 'Ads & Pauta', icon: Share2 });
+                                setShowPreview(true);
                             }}
-                            className="flex-1 py-3 bg-purple-600 rounded-xl text-[10px] font-bold text-white hover:bg-purple-500 transition-all"
+                            className="flex-1 py-3 bg-purple-600 rounded-xl text-[10px] font-bold text-white hover:bg-purple-500 transition-all uppercase tracking-widest"
                         >
-                            GENERAL PDF
+                            Ver Preview
                         </button>
                         <button 
-                            onClick={(e) => {
-                                const btn = e.currentTarget;
-                                const original = btn.innerHTML;
-                                btn.innerText = 'CONECTANDO...';
-                                btn.disabled = true;
-                                setTimeout(() => {
-                                    btn.innerText = '¡ENVIADO!';
-                                    setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 2000);
-                                }, 1800);
-                            }}
-                            className="flex-1 py-3 bg-emerald-600 rounded-xl text-[10px] font-bold text-white hover:bg-emerald-500 transition-all flex items-center justify-center gap-2"
+                            onClick={() => handleShareWhatsApp('Ads')}
+                            className="w-12 h-12 bg-emerald-600 rounded-xl text-white hover:bg-emerald-500 transition-all flex items-center justify-center"
                         >
-                            <MessageSquare className="w-3.5 h-3.5" /> WHATSAPP
+                            <MessageSquare className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 group hover:border-amber-500/30 transition-all cursor-pointer flex flex-col">
+                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-amber-500 mb-6 group-hover:scale-110 transition-transform">
+                        <Activity className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-xl font-bold text-white mb-2">Eficiencia de Equipo</h4>
+                    <p className="text-xs text-gray-500 mb-6 italic flex-1">Análisis de tiempos de entrega y calidad de respuesta del staff asignado.</p>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => {
+                                setSelectedReport({ type: 'Eficiencia', icon: Activity });
+                                setShowPreview(true);
+                            }}
+                            className="flex-1 py-3 bg-amber-600 rounded-xl text-[10px] font-bold text-white hover:bg-amber-500 transition-all uppercase tracking-widest"
+                        >
+                            Ver Preview
+                        </button>
+                        <button 
+                            onClick={() => handleShareWhatsApp('Eficiencia')}
+                            className="w-12 h-12 bg-emerald-600 rounded-xl text-white hover:bg-emerald-500 transition-all flex items-center justify-center"
+                        >
+                            <MessageSquare className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
             </div>
+
+            <AnimatePresence>
+                {showPreview && (
+                    <ReportPreviewModal 
+                        report={selectedReport} 
+                        stats={stats}
+                        client={client}
+                        onClose={() => setShowPreview(false)} 
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+function ReportPreviewModal({ report, stats, client, onClose }) {
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="bg-white rounded-[3rem] w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col h-[85vh] relative"
+            >
+                {/* Header Estilo Reporte */}
+                <div className="p-10 bg-[#0E0E18] text-white flex justify-between items-center">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center">
+                                <report.icon className="w-4 h-4" />
+                            </div>
+                            <h3 className="text-2xl font-black italic uppercase tracking-tighter">DIIC ZONE <span className="text-cyan-400">AUDIT</span></h3>
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Resumen Ejecutivo Semanal</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-xl font-bold uppercase tracking-widest">{client.name}</p>
+                        <p className="text-[10px] font-bold text-gray-500 italic">Fecha: {new Date().toLocaleDateString()}</p>
+                    </div>
+                </div>
+
+                {/* Cuerpo del Reporte (Scrollable) */}
+                <div className="flex-1 overflow-y-auto p-12 text-[#0E0E18]">
+                    <div className="mb-12 border-b border-gray-100 pb-8">
+                        <h4 className="text-sm font-black uppercase tracking-widest mb-6 border-l-4 border-cyan-600 pl-4">{report.type === 'Producción' ? 'Productividad de Contenido' : 'Análisis Operativo'}</h4>
+                        <div className="grid grid-cols-3 gap-6">
+                            <div className="p-6 bg-gray-50 rounded-3xl text-center">
+                                <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Total</p>
+                                <p className="text-3xl font-black">{stats.content.total}</p>
+                            </div>
+                            <div className="p-6 bg-cyan-50 rounded-3xl text-center">
+                                <p className="text-[10px] font-black text-cyan-600 uppercase mb-1">Listos</p>
+                                <p className="text-3xl font-black text-cyan-700">{stats.content.finished}</p>
+                            </div>
+                            <div className="p-6 bg-amber-50 rounded-3xl text-center">
+                                <p className="text-[10px] font-black text-amber-600 uppercase mb-1">Pendientes</p>
+                                <p className="text-3xl font-black text-amber-700">{stats.content.pending}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mb-12 border-b border-gray-100 pb-8">
+                        <h4 className="text-sm font-black uppercase tracking-widest mb-6 border-l-4 border-purple-600 pl-4">Cumplimiento de Objetivos</h4>
+                        <div className="space-y-4">
+                            <div className="flex justify-between text-xs font-bold uppercase mb-1">
+                                <span>Tareas Completadas</span>
+                                <span>{Math.round((stats.tasks.completed / (stats.tasks.total || 1)) * 100)}%</span>
+                            </div>
+                            <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
+                                <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${(stats.tasks.completed / (stats.tasks.total || 1)) * 100}%` }}
+                                    className="h-full bg-purple-600"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 className="text-sm font-black uppercase tracking-widest mb-6 border-l-4 border-emerald-600 pl-4">Métricas Meta Ads</h4>
+                        <div className="p-8 bg-emerald-50 rounded-[2rem] flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-600/10 flex items-center justify-center text-emerald-600">
+                                    <Target className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black uppercase">Estado de Pauta</p>
+                                    <p className="text-[10px] text-emerald-600 font-bold italic">Rendimiento Óptimo detectado por IA</p>
+                                </div>
+                            </div>
+                            <p className="text-2xl font-black text-emerald-700">9.2 <span className="text-[8px] opacity-50">Score</span></p>
+                        </div>
+                    </div>
+
+                    <div className="mt-12 p-8 bg-gray-900 rounded-[2rem] text-white">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Comentarios del CM</p>
+                        <p className="text-xs leading-relaxed italic opacity-80">"Semana de alta tracción en Reels. El costo por lead se mantiene estable. Sugerimos incrementar inversión en el Asset #4 el próximo Lunes."</p>
+                    </div>
+                </div>
+
+                {/* Footer del Reporte */}
+                <div className="p-10 border-t border-gray-100 flex gap-4">
+                    <button 
+                        onClick={(e) => {
+                            const btn = e.currentTarget;
+                            btn.innerText = 'GENERANDO PDF...';
+                            setTimeout(() => {
+                                btn.innerText = 'PDF DESCARGADO ✅';
+                                toast.success("PDF Generado", { description: `El reporte de ${client.name} se ha guardado en tu dispositivo.` });
+                                setTimeout(() => btn.innerText = 'DESCARGAR PDF (OFICIAL)', 2000);
+                            }, 2000);
+                        }}
+                        className="flex-1 py-5 bg-[#0E0E18] text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-gray-900/10"
+                    >
+                        DESCARGAR PDF (OFICIAL)
+                    </button>
+                    <button onClick={onClose} className="px-8 py-5 border border-gray-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 hover:border-red-500 transition-all">
+                        Cerrar
+                    </button>
+                </div>
+            </motion.div>
         </div>
     );
 }

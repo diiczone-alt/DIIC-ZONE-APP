@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Plus, MoreHorizontal, User, Calendar,
     MessageSquare, CheckCircle, Share2,
     Megaphone, Eye, ArrowRight, Clock,
-    LayoutGrid, Filter, Search, ChevronRight
+    LayoutGrid, Filter, Search, ChevronRight, X
 } from 'lucide-react';
+import { contentService } from '@/services/contentService';
 
 const STAGES = [
     { id: 'idea', label: 'Idea', color: 'border-blue-500/20 text-blue-400', icon: LayoutGrid },
@@ -55,17 +56,50 @@ const MOCK_DATA = [
     }
 ];
 
-export default function ContentKanban({ role = 'cm', clientName = 'Cliente Demo', initialContents = null, isEmbedded = false }) {
-    const [contents, setContents] = useState(initialContents || MOCK_DATA);
+export default function ContentKanban({ role = 'cm', client = null, isEmbedded = false }) {
+    const [contents, setContents] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    const clientName = client?.name || 'Cliente Demo';
+    const clientId = client?.id;
 
     const isCM = role === 'cm';
     const isClient = role === 'client';
     const isCreative = role === 'creative';
 
-    const handleMoveStage = (id, newStage) => {
+    useEffect(() => {
+        if (clientId) {
+            fetchContents();
+        } else {
+            setContents(MOCK_DATA);
+            setLoading(false);
+        }
+    }, [clientId]);
+
+    const fetchContents = async () => {
+        setLoading(true);
+        const data = await contentService.getContents(clientId);
+        if (data && data.length > 0) {
+            setContents(data);
+        } else {
+            // If no real data, show mock for now but allow creating real ones
+            setContents([]);
+        }
+        setLoading(false);
+    };
+
+    const handleMoveStage = async (id, newStage) => {
         if (isClient && newStage !== 'aprobado') return; // Client can only approve
+        
+        // Optimistic update
         setContents(prev => prev.map(c => c.id === id ? { ...c, stage: newStage } : c));
+
+        // DB update if it's a real item (uuid)
+        if (id.length > 5) {
+            await contentService.updateContentStage(id, newStage);
+        }
     };
 
     return (
@@ -79,7 +113,10 @@ export default function ContentKanban({ role = 'cm', clientName = 'Cliente Demo'
                     </div>
                     <div className="flex items-center gap-3">
                         {isCM && (
-                            <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
+                            <button 
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+                            >
                                 <Plus className="w-4 h-4" /> Nuevo Contenido
                             </button>
                         )}
@@ -345,6 +382,153 @@ export default function ContentKanban({ role = 'cm', clientName = 'Cliente Demo'
                     </div>
                 )}
             </AnimatePresence>
+
+            <AnimatePresence>
+                {isCreateModalOpen && (
+                    <CreateContentModal 
+                        onClose={() => setIsCreateModalOpen(false)}
+                        onSubmit={async (data) => {
+                            const result = await contentService.createContent({
+                                ...data,
+                                client_id: clientId
+                            });
+                            if (result.data) {
+                                setContents(prev => [result.data, ...prev]);
+                                setIsCreateModalOpen(false);
+                            }
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+function CreateContentModal({ onClose, onSubmit }) {
+    const [formData, setFormData] = useState({
+        title: '',
+        type: 'Reel',
+        platform: 'IG',
+        mode: 'Orgánico',
+        priority: 'Media',
+        deadline: '',
+        responsible: ''
+    });
+
+    return (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6">
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-[#020205]/90 backdrop-blur-xl"
+                onClick={onClose}
+            />
+            <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="relative w-full max-w-xl bg-[#0E0E18] border border-white/10 rounded-[2.5rem] p-10 shadow-2xl overflow-hidden"
+            >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full" />
+                
+                <div className="flex justify-between items-start mb-8 relative z-10">
+                    <div>
+                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Nuevo Contenido</h2>
+                        <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest mt-1">Industrialización de Producción</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-colors text-gray-500 hover:text-white">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+
+                <div className="space-y-6 relative z-10">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-2">Título del Contenido</label>
+                        <input 
+                            autoFocus
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all font-bold"
+                            placeholder="Ej: Reel: Un día en la clínica"
+                            value={formData.title}
+                            onChange={e => setFormData({...formData, title: e.target.value})}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-2">Tipo</label>
+                            <select 
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all font-bold appearance-none"
+                                value={formData.type}
+                                onChange={e => setFormData({...formData, type: e.target.value})}
+                            >
+                                <option value="Reel">Reel</option>
+                                <option value="Video">Video</option>
+                                <option value="Imagen">Imagen</option>
+                                <option value="Carousel">Carousel</option>
+                                <option value="Story">Story</option>
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-2">Plataforma</label>
+                            <select 
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all font-bold appearance-none"
+                                value={formData.platform}
+                                onChange={e => setFormData({...formData, platform: e.target.value})}
+                            >
+                                <option value="IG">Instagram</option>
+                                <option value="FB">Facebook</option>
+                                <option value="TT">TikTok</option>
+                                <option value="YT">YouTube</option>
+                                <option value="LI">LinkedIn</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-2">Prioridad</label>
+                            <select 
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all font-bold appearance-none"
+                                value={formData.priority}
+                                onChange={e => setFormData({...formData, priority: e.target.value})}
+                            >
+                                <option value="Alta">Alta</option>
+                                <option value="Media">Media</option>
+                                <option value="Baja">Baja</option>
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-2">Entrega</label>
+                            <input 
+                                type="text"
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all font-bold"
+                                placeholder="Ej: 25 Feb"
+                                value={formData.deadline}
+                                onChange={e => setFormData({...formData, deadline: e.target.value})}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-2">Responsable sugerido</label>
+                        <input 
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all font-bold"
+                            placeholder="Ej: Andrés Vera"
+                            value={formData.responsible}
+                            onChange={e => setFormData({...formData, responsible: e.target.value})}
+                        />
+                    </div>
+
+                    <button 
+                        disabled={!formData.title}
+                        onClick={() => onSubmit(formData)}
+                        className="w-full py-5 mt-6 bg-gradient-to-r from-indigo-600 to-indigo-800 text-white font-black text-xs uppercase tracking-[0.3em] rounded-[1.5rem] shadow-xl shadow-indigo-600/20 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
+                    >
+                        Activar Producción
+                    </button>
+                </div>
+            </motion.div>
         </div>
     );
 }

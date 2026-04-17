@@ -1,52 +1,79 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export const contentService = {
-    // Get pipeline items (Kanban)
-    async getPipelineItems() {
-        // const supabase = createClientComponentClient(); -> Use imported singleton
+    /**
+     * Fetch all content for a specific client
+     */
+    getContents: async (clientId) => {
         try {
             const { data, error } = await supabase
-                .from('content_items')
+                .from('content')
                 .select('*')
-                .order('scheduled_date', { ascending: true });
-
+                .eq('client_id', clientId)
+                .order('created_at', { ascending: false });
+            
             if (error) throw error;
             return data || [];
         } catch (error) {
-            console.error('Error fetching pipeline:', error);
+            console.error('Error fetching contents:', error);
             return [];
         }
     },
 
-    // Update item status or date
-    async updateItem(id, updates) {
-        // const supabase = createClientComponentClient();
-        const { data, error } = await supabase
-            .from('content_items')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error updating item:', error);
-            return null;
+    /**
+     * Create a new content piece
+     */
+    createContent: async (contentData) => {
+        try {
+            const { data, error } = await supabase
+                .from('content')
+                .insert([contentData])
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return { data, error: null };
+        } catch (error) {
+            console.error('Error creating content:', error);
+            return { data: null, error };
         }
-        return data;
     },
 
-    // Create a new content item (e.g., from File Upload)
-    async createItem(itemData) {
-        // const supabase = createClientComponentClient();
-        const { data: { user } } = await supabase.auth.getUser();
+    /**
+     * Update the stage of a content piece
+     */
+    updateContentStage: async (id, newStage) => {
+        try {
+            const { data, error } = await supabase
+                .from('content')
+                .update({ stage: newStage })
+                .eq('id', id)
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return { data, error: null };
+        } catch (error) {
+            console.error('Error updating content stage:', error);
+            return { data: null, error };
+        }
+    },
 
-        const { data, error } = await supabase
-            .from('content_items')
-            .insert({ ...itemData, client_id: user.id })
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
+    /**
+     * Delete a content piece
+     */
+    deleteContent: async (id) => {
+        try {
+            const { error } = await supabase
+                .from('content')
+                .delete()
+                .eq('id', id);
+            
+            if (error) throw error;
+            return { error: null };
+        } catch (error) {
+            console.error('Error deleting content:', error);
+            return { error };
+        }
     }
 };
