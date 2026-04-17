@@ -8,12 +8,7 @@ import {
 
 export default function NotificationCenter() {
     const [isOpen, setIsOpen] = useState(false);
-    const [notifications, setNotifications] = useState([
-        { id: 1, type: 'alert', title: 'Capacidad al 95%', message: 'El equipo de video está saturado.', time: 'Hace 5 min', read: false },
-        { id: 2, type: 'finance', title: 'Pago Recibido', message: 'Cliente "Nike" ha pagado $450.', time: 'Hace 1h', read: false },
-        { id: 3, type: 'project', title: 'Feedback v1', message: 'Cambios solicitados en "Boda Luis".', time: 'Hace 3h', read: true },
-        { id: 4, type: 'system', title: 'Mantenimiento', message: 'Actualización programada 2:00 AM.', time: 'Ayer', read: true },
-    ]);
+    const [notifications, setNotifications] = useState([]);
 
     const unreadCount = notifications.filter(n => !n.read).length;
 

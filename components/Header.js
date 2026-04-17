@@ -34,6 +34,7 @@ export default function Header({ userLevel = 1 }) {
             {/* RIGHT: Actions & Profile */}
             <div className="flex items-center gap-4">
 
+                <NotificationCenter />
 
                 <button className="relative p-2 text-gray-400 hover:text-white transition-colors">
                     <MessageSquare className="w-5 h-5" />

@@ -33,6 +33,23 @@ export default function CMWorkstationLayout() {
     const [squad, setSquad] = useState([]);
     const [loadingSquad, setLoadingSquad] = useState(false);
     const [globalTasks, setGlobalTasks] = useState([]);
+    const [notifications, setNotifications] = useState([]);
+    const [loadingNotifications, setLoadingNotifications] = useState(false);
+
+    const handleMarkAsRead = async (id) => {
+        try {
+            const { error } = await supabase
+                .from('notifications')
+                .update({ status: 'read' })
+                .eq('id', id);
+            
+            if (!error) {
+                setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'read' } : n));
+            }
+        } catch (err) {
+            console.error('Error marking notification as read:', err);
+        }
+    };
 
     const { user } = useAuth();
 
@@ -109,10 +126,24 @@ export default function CMWorkstationLayout() {
         if (data) setGlobalTasks(data);
         setLoadingTasks(false);
     };
+    
+    const fetchNotifications = async () => {
+        if (!user?.id) return;
+        setLoadingNotifications(true);
+        const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+        
+        if (data) setNotifications(data);
+        setLoadingNotifications(false);
+    };
 
 
     useEffect(() => {
         if (activeTab === 'tasks') fetchAllTasks();
+        if (activeTab === 'notifications') fetchNotifications();
     }, [activeTab, clients]);
 
     const menuItems = selectedClient ? [
@@ -129,6 +160,12 @@ export default function CMWorkstationLayout() {
         { id: 'dashboard_cm', label: 'Dashboard CM', icon: LayoutDashboard },
         { id: 'clients', label: 'Empresas', icon: Users },
         { id: 'tasks', label: 'Mis Tareas', icon: Edit3 },
+        { 
+            id: 'notifications', 
+            label: 'Notificaciones', 
+            icon: Bell, 
+            badge: notifications.filter(n => n.status === 'unread').length 
+        },
     ];
 
     if (!loading && (!user || (user.role !== 'COMMUNITY' && user.role !== 'CM'))) {
@@ -180,7 +217,12 @@ export default function CMWorkstationLayout() {
                                     }`}
                             >
                                 <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-cyan-400' : 'text-gray-500 group-hover:text-white'}`} />
-                                <span className="font-bold text-sm tracking-wide">{item.label}</span>
+                                <span className="font-bold text-sm tracking-wide truncate">{item.label}</span>
+                                {item.badge > 0 && (
+                                    <span className="ml-auto w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-pulse">
+                                        {item.badge}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </div>
@@ -213,7 +255,7 @@ export default function CMWorkstationLayout() {
                             transition={{ duration: 0.2 }}
                             className="h-full"
                         >
-                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks)}
+                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead)}
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -222,12 +264,13 @@ export default function CMWorkstationLayout() {
     );
 }
 
-function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks) {
+function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead) {
     if (!selectedClient) {
         if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} />;
         if (tab === 'academy') return <CMAcademy />;
         if (tab === 'growth') return <CMGrowth />;
         if (tab === 'tasks') return <GlobalTasksView tasks={globalTasks} loading={loadingTasks} onSelectClient={(c) => { setSelectedClient(c); setActiveTab('dashboard'); }} />;
+        if (tab === 'notifications') return <NotificationsView notifications={notifications} loading={loadingNotifications} onMarkAsRead={handleMarkAsRead} />;
         
         return (
             <CMSettingsClients 
@@ -1112,7 +1155,19 @@ function MetaAdsModule({ client }) {
                                 </div>
 
                                 <div 
-                                    onClick={() => alert('IA Meta Optimizer: Aplicando ajustes de presupuesto sugeridos...')}
+                                    onClick={(e) => {
+                                        const el = e.currentTarget;
+                                        el.style.opacity = '0.5';
+                                        el.style.pointerEvents = 'none';
+                                        const p = el.querySelector('p:last-child');
+                                        const original = p.innerText;
+                                        p.innerText = 'Aplicando...';
+                                        setTimeout(() => {
+                                            p.innerText = '¡Aplicado con Éxito!';
+                                            el.style.opacity = '1';
+                                            setTimeout(() => { p.innerText = original; el.style.pointerEvents = 'auto'; }, 2000);
+                                        }, 1500);
+                                    }}
                                     className="flex-1 min-w-[160px] p-4 bg-cyan-600/10 rounded-2xl border border-cyan-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-cyan-600/20 transition-all group"
                                 >
                                     <div className="flex items-center justify-center gap-2">
@@ -1156,13 +1211,32 @@ function CMReports({ client }) {
                     <p className="text-xs text-gray-500 mb-6 italic">Métricas de alcance, interacción y mejores contenidos de los últimos 7 días.</p>
                     <div className="flex gap-3">
                         <button 
-                            onClick={() => alert('Generando Reporte Semanal en PDF...')}
+                            onClick={(e) => {
+                                const btn = e.currentTarget;
+                                const original = btn.innerText;
+                                btn.innerText = 'GENERANDO PDF...';
+                                btn.disabled = true;
+                                btn.style.opacity = '0.7';
+                                setTimeout(() => {
+                                    btn.innerText = '¡PDF LISTO!';
+                                    setTimeout(() => { btn.innerText = original; btn.disabled = false; btn.style.opacity = '1'; }, 2000);
+                                }, 2000);
+                            }}
                             className="flex-1 py-3 bg-cyan-600 rounded-xl text-[10px] font-bold text-white hover:bg-cyan-500 transition-all"
                         >
                             GENERAL PDF
                         </button>
                         <button 
-                            onClick={() => alert('Preparando Reporte para enviar por WhatsApp...')}
+                            onClick={(e) => {
+                                const btn = e.currentTarget;
+                                const original = btn.innerHTML;
+                                btn.innerText = 'ENVIANDO...';
+                                btn.disabled = true;
+                                setTimeout(() => {
+                                    btn.innerText = '¡ENVIADO!';
+                                    setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 2000);
+                                }, 1500);
+                            }}
                             className="flex-1 py-3 bg-emerald-600 rounded-xl text-[10px] font-bold text-white hover:bg-emerald-500 transition-all flex items-center justify-center gap-2"
                         >
                             <MessageSquare className="w-3.5 h-3.5" /> WHATSAPP
@@ -1178,13 +1252,31 @@ function CMReports({ client }) {
                     <p className="text-xs text-gray-500 mb-6 italic">Desglose de inversión, CPC, CTR y retorno de inversión esperado.</p>
                     <div className="flex gap-3">
                         <button 
-                            onClick={() => alert('Generando Auditoría de Pauta en PDF...')}
+                            onClick={(e) => {
+                                const btn = e.currentTarget;
+                                const original = btn.innerText;
+                                btn.innerText = 'GENERANDO...';
+                                btn.disabled = true;
+                                setTimeout(() => {
+                                    btn.innerText = '¡DESCARGADO!';
+                                    setTimeout(() => { btn.innerText = original; btn.disabled = false; }, 2000);
+                                }, 2500);
+                            }}
                             className="flex-1 py-3 bg-purple-600 rounded-xl text-[10px] font-bold text-white hover:bg-purple-500 transition-all"
                         >
                             GENERAL PDF
                         </button>
                         <button 
-                            onClick={() => alert('Enviando Auditoría de Pauta al cliente vía WhatsApp...')}
+                            onClick={(e) => {
+                                const btn = e.currentTarget;
+                                const original = btn.innerHTML;
+                                btn.innerText = 'CONECTANDO...';
+                                btn.disabled = true;
+                                setTimeout(() => {
+                                    btn.innerText = '¡ENVIADO!';
+                                    setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 2000);
+                                }, 1800);
+                            }}
                             className="flex-1 py-3 bg-emerald-600 rounded-xl text-[10px] font-bold text-white hover:bg-emerald-500 transition-all flex items-center justify-center gap-2"
                         >
                             <MessageSquare className="w-3.5 h-3.5" /> WHATSAPP
@@ -1386,9 +1478,9 @@ function CMAcademy() {
                     <div className="w-20 h-20 rounded-3xl bg-amber-400/10 flex items-center justify-center text-amber-400 mb-4 group-hover:scale-110 transition-transform">
                         <Award className="w-10 h-10" />
                     </div>
-                    <p className="text-2xl font-black text-white italic uppercase tracking-tighter">Estratega Pro II</p>
+                    <p className="text-2xl font-black text-white italic uppercase tracking-tighter">{user?.rank || 'Estratega Junior'}</p>
                     <div className="mt-4 px-4 py-1 bg-white/5 rounded-full text-[9px] font-black text-gray-400 uppercase tracking-widest border border-white/5">
-                        750 / 2500 XP
+                        {user?.xp || 0} / {(user?.level || 1) * 1000} XP
                     </div>
                 </div>
 
@@ -1569,88 +1661,7 @@ function GlobalTasksView({ tasks, loading, onSelectClient }) {
     );
 }
 
-function NotificationsView({ notifications, loading }) {
-    if (loading) return (
-        <div className="h-full flex flex-col items-center justify-center gap-6">
-            <div className="w-16 h-16 rounded-full border-t-2 border-cyan-500 animate-spin" />
-            <p className="text-cyan-400 italic font-bold text-sm tracking-widest uppercase animate-pulse">Actualizando centro de mando...</p>
-        </div>
-    );
 
-    return (
-        <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-20">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-400/10 border border-cyan-400/20 rounded-full mb-4">
-                        <Bell className="w-4 h-4 text-cyan-400" />
-                        <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Protocolo de Alerta DIIC</span>
-                    </div>
-                    <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-2">Centro de Notificaciones</h2>
-                    <p className="text-gray-500 italic max-w-xl font-medium">Alertas del sistema, feedback estratégico de clientes y actualizaciones críticas de producción.</p>
-                </div>
-                <button 
-                    onClick={() => alert('Limpiando historial de notificaciones leídas...') }
-                    className="text-[10px] font-black text-gray-600 uppercase tracking-widest hover:text-white transition-all pb-2 border-b border-transparent hover:border-white"
-                >
-                    Depurar historial de lectura
-                </button>
-            </div>
-
-            <div className="space-y-5">
-                {notifications.length === 0 ? (
-                    <div className="bg-[#0E0E18] border border-white/5 rounded-[3.5rem] p-24 text-center">
-                        <div className="w-24 h-24 rounded-[2rem] bg-white/5 flex items-center justify-center text-gray-800 mx-auto mb-10 opacity-30">
-                            <Bell className="w-12 h-12" />
-                        </div>
-                        <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Tu Bandeja está Sincronizada</h3>
-                        <p className="text-gray-600 italic mt-2">No hay alertas críticas que requieran tu atención inmediata.</p>
-                    </div>
-                ) : (
-                    notifications.map(n => (
-                        <div key={n.id} className={`p-10 rounded-[3rem] border transition-all flex flex-col md:flex-row gap-8 group relative overflow-hidden ${
-                            n.status === 'unread' ? 'bg-[#121220] border-white/10 shadow-2xl' : 'bg-transparent border-white/5 opacity-50'
-                        }`}>
-                            {n.status === 'unread' && (
-                                <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-500" />
-                            )}
-                            
-                            <div className={`w-16 h-16 rounded-[1.4rem] flex items-center justify-center shrink-0 shadow-lg ${
-                                n.type === 'error' ? 'bg-red-500/10 text-red-500' :
-                                n.type === 'warning' ? 'bg-orange-500/10 text-orange-500' :
-                                n.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' :
-                                'bg-cyan-500/10 text-cyan-400'
-                            }`}>
-                                {n.type === 'error' ? <AlertTriangle className="w-8 h-8" /> :
-                                 n.type === 'warning' ? <AlertTriangle className="w-8 h-8" /> :
-                                 n.type === 'success' ? <CheckCircle2 className="w-8 h-8" /> :
-                                 <Plus className="w-8 h-8" />}
-                            </div>
-
-                            <div className="flex-1">
-                                <div className="flex flex-col md:flex-row justify-between items-start mb-3 gap-4">
-                                    <h4 className="text-xl font-black text-white uppercase tracking-tighter transition-all group-hover:text-cyan-400">{n.title}</h4>
-                                    <span className="text-[10px] text-gray-600 font-black uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/5">
-                                        {new Date(n.created_at).toLocaleString()}
-                                    </span>
-                                </div>
-                                <p className="text-sm text-gray-500 leading-relaxed font-bold italic mb-6">"{n.message}"</p>
-                                
-                                {n.link && (
-                                    <button 
-                                        onClick={() => alert(`Iniciando acción estratégica: ${n.title}`)}
-                                        className="px-8 py-3 bg-white text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:scale-105 transition-all shadow-xl shadow-white/5"
-                                    >
-                                        EJECUTAR ACCIÓN ESTRATÉGICA &rarr;
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-        </div>
-    );
-}
 
 function CMGrowth() {
     return (
@@ -1676,7 +1687,7 @@ function CMGrowth() {
                         <div className="flex justify-between items-center mb-12">
                             <div>
                                 <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Rango Actual</p>
-                                <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Estratega Junior II</h3>
+                                <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">{user?.rank || 'Estratega Junior'}</h3>
                             </div>
                             <div className="text-right">
                                 <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Próxima meta</p>
@@ -1687,12 +1698,12 @@ function CMGrowth() {
                         <div className="space-y-3 mb-12">
                             <div className="flex justify-between text-[11px] font-black uppercase tracking-widest mb-1">
                                 <span className="text-gray-500">Progreso de Nivel</span>
-                                <span className="text-white font-black italic">750 / 1000 XP</span>
+                                <span className="text-white font-black italic">{user?.xp || 0} / {(user?.level || 1) * 1000} XP</span>
                             </div>
                             <div className="h-5 w-full bg-white/5 rounded-full overflow-hidden p-1 border border-white/10">
                                 <motion.div 
                                     initial={{ width: 0 }}
-                                    animate={{ width: '75%' }}
+                                    animate={{ width: `${Math.min(((user?.xp || 0) / ((user?.level || 1) * 1000)) * 100, 100)}%` }}
                                     className="h-full bg-gradient-to-r from-emerald-600 to-cyan-500 rounded-full shadow-[0_0_25px_rgba(16,185,129,0.3)]"
                                 />
                             </div>
@@ -1744,6 +1755,18 @@ function CMGrowth() {
 
 function ModulePlayer({ module, onBack }) {
     const [activeLesson, setActiveLesson] = useState(0);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [downloadSuccess, setDownloadSuccess] = useState(false);
+
+    const handleDownload = () => {
+        setIsDownloading(true);
+        setTimeout(() => {
+            setIsDownloading(false);
+            setDownloadSuccess(true);
+            setTimeout(() => setDownloadSuccess(false), 3000);
+        }, 2000);
+    };
+
     
     // Contenido simulado de alta fidelidad para el módulo
     const lessons = [
@@ -1851,10 +1874,24 @@ function ModulePlayer({ module, onBack }) {
                             <p className="text-sm text-gray-500 leading-relaxed italic">Descarga la guía rápida de "Estructura de Tres Actos" y los templates de hooks que usamos en esta lección.</p>
                         </div>
                         <button 
-                            onClick={() => alert('Iniciando descarga de: Guía Rápida - Ingeniería de Retención v2.pdf')}
-                            className="flex items-center gap-3 bg-white text-black px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:scale-105 active:scale-95 transition-all"
+                            onClick={handleDownload}
+                            disabled={isDownloading}
+                            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${
+                                downloadSuccess 
+                                ? 'bg-emerald-500 text-white' 
+                                : isDownloading 
+                                    ? 'bg-gray-200 text-gray-500 cursor-wait' 
+                                    : 'bg-white text-black hover:scale-105 active:scale-95'
+                            }`}
                         >
-                            <FileText className="w-4 h-4" /> Bajar PDF Guía
+                            {isDownloading ? (
+                                <div className="w-4 h-4 border-2 border-gray-400 border-t-white rounded-full animate-spin" />
+                            ) : downloadSuccess ? (
+                                <CheckCircle2 className="w-4 h-4" />
+                            ) : (
+                                <FileText className="w-4 h-4" />
+                            )}
+                            {isDownloading ? 'Descargando...' : downloadSuccess ? '¡Completado!' : 'Bajar PDF Guía'}
                         </button>
                     </div>
                 </div>
@@ -1917,4 +1954,93 @@ function RewardItem({ title, status, xp, available }) {
         </div>
     );
 }
+
+function NotificationsView({ notifications, loading, onMarkAsRead }) {
+    if (loading) return (
+        <div className="h-full flex flex-col items-center justify-center gap-6">
+            <div className="w-16 h-16 rounded-full border-t-2 border-cyan-500 animate-spin" />
+            <p className="text-cyan-400 italic font-bold text-sm tracking-widest uppercase animate-pulse">Actualizando centro de mando...</p>
+        </div>
+    );
+
+    return (
+        <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-20">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-400/10 border border-cyan-400/20 rounded-full mb-4">
+                        <Bell className="w-4 h-4 text-cyan-400" />
+                        <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Protocolo de Alerta DIIC</span>
+                    </div>
+                    <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-2">Centro de Notificaciones</h2>
+                    <p className="text-gray-500 italic max-w-xl font-medium">Alertas del sistema, feedback estratégico de clientes y actualizaciones críticas de producción.</p>
+                </div>
+            </div>
+
+            <div className="space-y-5">
+                {notifications.length === 0 ? (
+                    <div className="bg-[#0E0E18] border border-white/5 rounded-[3.5rem] p-24 text-center">
+                        <div className="w-24 h-24 rounded-[2rem] bg-white/5 flex items-center justify-center text-gray-800 mx-auto mb-10 opacity-30">
+                            <Bell className="w-12 h-12" />
+                        </div>
+                        <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Tu Bandeja está Sincronizada</h3>
+                        <p className="text-gray-600 italic mt-2">No hay alertas críticas que requieran tu atención inmediata.</p>
+                    </div>
+                ) : (
+                    notifications.map(n => (
+                        <div key={n.id} className={`p-10 rounded-[3rem] border transition-all flex flex-col md:flex-row gap-8 group relative overflow-hidden ${
+                            n.status === 'unread' ? 'bg-[#121220] border-white/10 shadow-2xl' : 'bg-transparent border-white/5 opacity-50'
+                        }`}>
+                            {n.status === 'unread' && (
+                                <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-500" />
+                            )}
+                            
+                            <div className={`w-16 h-16 rounded-[1.4rem] flex items-center justify-center shrink-0 shadow-lg ${
+                                n.type === 'error' ? 'bg-red-500/10 text-red-500' :
+                                n.type === 'warning' ? 'bg-orange-500/10 text-orange-500' :
+                                n.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' :
+                                'bg-cyan-500/10 text-cyan-400'
+                            }`}>
+                                {n.type === 'error' ? <AlertTriangle className="w-8 h-8" /> :
+                                 n.type === 'warning' ? <AlertTriangle className="w-8 h-8" /> :
+                                 n.type === 'success' ? <CheckCircle2 className="w-8 h-8" /> :
+                                 <Plus className="w-8 h-8" />}
+                            </div>
+
+                            <div className="flex-1">
+                                <div className="flex flex-col md:flex-row justify-between items-start mb-3 gap-4">
+                                    <h4 className="text-xl font-black text-white uppercase tracking-tighter transition-all group-hover:text-cyan-400">{n.title}</h4>
+                                    <span className="text-[10px] text-gray-600 font-black uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                                        {new Date(n.created_at).toLocaleString()}
+                                    </span>
+                                </div>
+                                <p className="text-sm text-gray-500 leading-relaxed font-bold italic mb-6">"{n.message}"</p>
+                                
+                                <div className="flex gap-4">
+                                    {n.link && (
+                                        <button 
+                                            onClick={() => alert(`Iniciando acción estratégica: ${n.title}`)}
+                                            className="px-8 py-3 bg-white text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:scale-105 transition-all shadow-xl shadow-white/5"
+                                        >
+                                            EJECUTAR ACCIÓN ESTRATÉGICA &rarr;
+                                        </button>
+                                    )}
+                                    {n.status === 'unread' && (
+                                        <button 
+                                            onClick={() => onMarkAsRead(n.id)}
+                                            className="px-8 py-3 bg-white/5 border border-white/10 text-gray-400 font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-white hover:text-black transition-all"
+                                        >
+                                            MARCAR COMO LEÍDA
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+}
+
+
 
