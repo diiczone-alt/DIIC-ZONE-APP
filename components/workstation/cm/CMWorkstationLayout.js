@@ -213,7 +213,7 @@ export default function CMWorkstationLayout() {
                             transition={{ duration: 0.2 }}
                             className="h-full"
                         >
-                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications)}
+                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks)}
                         </motion.div>
                     </AnimatePresence>
                 </div>
