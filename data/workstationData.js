@@ -200,10 +200,14 @@ export const ACADEMY_COURSES = [
 ];
 
 export const EDITOR_FILES = [
-    { id: 1, name: 'Proyecto_Alpha_Cut_v1.mp4', type: 'video', size: '1.2 GB', date: 'Hace 2 horas', status: 'ready' },
-    { id: 2, name: 'Assets_Graficos_Pack.zip', type: 'archive', size: '450 MB', date: 'Ayer', status: 'ready' },
-    { id: 3, name: 'Guion_Tecnico_Final.pdf', type: 'doc', size: '2.4 MB', date: '20 Oct', status: 'ready' },
-    { id: 4, name: 'B-Roll_Drone_Shots.mp4', type: 'video', size: '3.1 GB', date: '18 Oct', status: 'ready' },
-    { id: 5, name: 'Referencia_Estilo.jpg', type: 'image', size: '5.2 MB', date: '15 Oct', status: 'ready' },
-    { id: 6, name: 'Thumbnail_Draft_v1.psd', type: 'archive', size: '84 MB', date: '12 Oct', status: 'ready' },
+    { id: 100, name: 'NOVA', type: 'folder', size: '--', date: 'Recién creado', status: 'ready', parentId: null },
+    { id: 1, name: 'PROYECTO_ALPHA_CUT_V1.MP4', type: 'video', size: '1.2 GB', date: 'Hace 2 horas', status: 'ready', parentId: null },
+    { id: 2, name: 'ASSETS_GRAFICOS_PACK.ZIP', type: 'archive', size: '450 MB', date: 'Ayer', status: 'ready', parentId: null },
+    { id: 3, name: 'GUION_TECNICO_FINAL.PDF', type: 'doc', size: '2.4 MB', date: '20 Oct', status: 'ready', parentId: null },
+    { id: 7, name: 'ENTREVISTA_DR_RUBIO.MP4', type: 'video', size: '890 MB', date: 'Recién subido', status: 'ready', parentId: 100 },
+    { id: 8, name: 'B-ROLL_CLINICA.ZIP', type: 'archive', size: '2.1 GB', date: 'Recién subido', status: 'ready', parentId: 100 },
+    { id: 9, name: 'FOTO_BANNER.JPG', type: 'image', size: '1.4 MB', date: 'Recién subido', status: 'ready', parentId: 100 },
+    { id: 4, name: 'B-ROLL_DRONE_SHOTS.MP4', type: 'video', size: '3.1 GB', date: '18 Oct', status: 'ready', parentId: null },
+    { id: 5, name: 'REFERENCIA_ESTILO.JPG', type: 'image', size: '5.2 MB', date: '15 Oct', status: 'ready', parentId: null },
+    { id: 6, name: 'THUMBNAIL_DRAFT_V1.PSD', type: 'archive', size: '84 MB', date: '12 Oct', status: 'ready', parentId: null },
 ];
