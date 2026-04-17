@@ -7,7 +7,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { WalletCard, TransactionList } from '@/components/finance/FinanceComponents';
-import Sidebar from '@/components/Sidebar';
+import DynamicSidebar from '@/components/shared/DynamicSidebar';
 import PayoutModal from '@/components/finance/PayoutModal';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -108,7 +108,7 @@ export default function FinancePage() {
     return (
         <div className="flex bg-[#050511] min-h-screen">
             {/* Sidebar Lateral Izquierda */}
-            <Sidebar />
+            <DynamicSidebar />
 
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
                 {/* Header */}
