@@ -726,6 +726,256 @@ export default function HQClientsPage() {
                                 <header className="mb-10 text-center">
                                     <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase mb-2">
                                         Editar Perfil del Socio
+                                    </h2>
+                                    <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 mt-6">
+                                        {[
+                                            { id: 'operative', label: 'Operativo', icon: Zap },
+                                            { id: 'strategy', label: 'Estrategia', icon: Target },
+                                            { id: 'business', label: 'Negocio', icon: Building2 },
+                                            { id: 'connectivity', label: 'Conexión', icon: Globe }
+                                        ].map(tab => (
+                                            <button
+                                                key={tab.id}
+                                                type="button"
+                                                onClick={() => setActiveEditTab(tab.id)}
+                                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeEditTab === tab.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-gray-300'}`}
+                                            >
+                                                <tab.icon className="w-3 h-3" /> {tab.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </header>
+                                <form onSubmit={handleSaveEdit} className="space-y-8 max-h-[65vh] overflow-y-auto px-4 custom-scrollbar">
+                                    <AnimatePresence mode="wait">
+                                        {activeEditTab === 'operative' && (
+                                            <motion.div
+                                                key="operative"
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: 10 }}
+                                                className="space-y-8"
+                                            >
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4 flex items-center gap-2">
+                                                        <Building2 className="w-3 h-3" /> Nombre Comercial / Marca
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={newClient.name}
+                                                        onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
+                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-[24px] py-4 px-6 text-white outline-none focus:border-indigo-500/40 focus:bg-indigo-500/5 transition-all font-bold text-xl tracking-tighter italic"
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-6">
+                                                    <PremiumDropdown 
+                                                        label="Nivel de Servicio"
+                                                        value={newClient.plan}
+                                                        onChange={(val) => setNewClient({ ...newClient, plan: val })}
+                                                        options={[
+                                                            { value: 'Basic', label: 'Basic Growth' },
+                                                            { value: 'Premium', label: 'Premium Scale' },
+                                                            { value: 'Agency', label: 'Agency Enterprise' }
+                                                        ]}
+                                                        icon={Shield}
+                                                    />
+                                                    <PremiumDropdown 
+                                                        label="Estratega / CM"
+                                                        value={newClient.cm}
+                                                        onChange={(val) => setNewClient({ ...newClient, cm: val })}
+                                                        options={cmOptions}
+                                                        icon={Users}
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-6">
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
+                                                            <DollarSign className="w-3 h-3 text-emerald-500" /> Inversión (USD)
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            value={newClient.price}
+                                                            onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })}
+                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-emerald-500/40 transition-all font-mono font-black text-xl"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
+                                                            <TrendingUp className="w-3 h-3 text-indigo-500" /> Meta Factur. (USD)
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            value={newClient.target}
+                                                            onChange={(e) => setNewClient({ ...newClient, target: parseInt(e.target.value) || 0 })}
+                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-mono font-black text-xl"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {activeEditTab === 'strategy' && (
+                                            <motion.div
+                                                key="strategy"
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: 10 }}
+                                                className="space-y-6"
+                                            >
+                                                <div className="grid grid-cols-2 gap-6">
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">Nicho / Industria</label>
+                                                        <input
+                                                            type="text"
+                                                            value={newClient.onboarding_data?.niche || ''}
+                                                            onChange={(e) => setNewClient({ ...newClient, onboarding_data: { ...newClient.onboarding_data, niche: e.target.value } })}
+                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-white outline-none focus:border-indigo-500/40"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">Ubicación (Ciudad)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={newClient.city}
+                                                            onChange={(e) => setNewClient({ ...newClient, city: e.target.value })}
+                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-white outline-none focus:border-indigo-500/40"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">Objetivo Estratégico</label>
+                                                    <textarea
+                                                        rows={3}
+                                                        value={newClient.onboarding_data?.goal || ''}
+                                                        onChange={(e) => setNewClient({ ...newClient, onboarding_data: { ...newClient.onboarding_data, goal: e.target.value } })}
+                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white text-sm leading-relaxed outline-none focus:border-indigo-500/40"
+                                                    />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">Diferenciación de Marca</label>
+                                                    <textarea
+                                                        rows={3}
+                                                        value={newClient.onboarding_data?.differentiation || ''}
+                                                        onChange={(e) => setNewClient({ ...newClient, onboarding_data: { ...newClient.onboarding_data, differentiation: e.target.value } })}
+                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white text-sm leading-relaxed outline-none focus:border-indigo-500/40"
+                                                    />
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {activeEditTab === 'business' && (
+                                            <motion.div
+                                                key="business"
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: 10 }}
+                                                className="space-y-6"
+                                            >
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">¿Qué Vende? (Productos / Servicios)</label>
+                                                    <textarea
+                                                        rows={4}
+                                                        value={newClient.onboarding_data?.productsServices || ''}
+                                                        onChange={(e) => setNewClient({ ...newClient, onboarding_data: { ...newClient.onboarding_data, productsServices: e.target.value } })}
+                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-medium outline-none focus:border-indigo-500/40"
+                                                        placeholder="Detalla la oferta comercial..."
+                                                    />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">Estrategia & Competencia</label>
+                                                    <textarea
+                                                        rows={4}
+                                                        value={newClient.onboarding_data?.generalStrategy || ''}
+                                                        onChange={(e) => setNewClient({ ...newClient, onboarding_data: { ...newClient.onboarding_data, generalStrategy: e.target.value } })}
+                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-medium outline-none focus:border-indigo-500/40"
+                                                        placeholder="Análisis de rivales y plan de acción..."
+                                                    />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest pl-4">Notas Privadas (Admin)</label>
+                                                    <textarea
+                                                        rows={2}
+                                                        value={newClient.notes}
+                                                        onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
+                                                        className="w-full bg-indigo-500/5 border border-indigo-500/10 rounded-2xl py-4 px-6 text-white text-xs italic outline-none focus:border-indigo-500/40"
+                                                    />
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {activeEditTab === 'connectivity' && (
+                                            <motion.div
+                                                key="connectivity"
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: 10 }}
+                                                className="space-y-8"
+                                            >
+                                                <div className="grid grid-cols-2 gap-6">
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4 flex items-center gap-2">
+                                                            <MessageSquare className="w-3 h-3 text-green-500" /> WhatsApp Directo
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={newClient.whatsapp_number}
+                                                            onChange={(e) => setNewClient({ ...newClient, whatsapp_number: e.target.value })}
+                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40"
+                                                            placeholder="+00 000 000 000"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4 flex items-center gap-2">
+                                                            <Globe className="w-3 h-3 text-blue-500" /> Drive Folder ID
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={newClient.google_drive_folder_id}
+                                                            onChange={(e) => setNewClient({ ...newClient, google_drive_folder_id: e.target.value })}
+                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="p-6 bg-white/[0.02] border border-white/5 rounded-[32px] space-y-4">
+                                                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Estado de Conexión de Redes</h4>
+                                                    <div className="flex gap-4">
+                                                        {['instagram', 'facebook', 'tiktok'].map(platform => (
+                                                            <div key={platform} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${newClient.onboarding_data?.social?.[platform] ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-white/5 border-white/5 text-gray-600'}`}>
+                                                                <div className={`w-1.5 h-1.5 rounded-full ${newClient.onboarding_data?.social?.[platform] ? 'bg-indigo-400 animate-pulse' : 'bg-gray-800'}`} />
+                                                                {platform}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    <div className="flex gap-4 pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditModalOpen(false)}
+                                            className="flex-1 py-4 text-gray-500 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            className="flex-[2] py-5 bg-indigo-600 text-white font-black rounded-3xl uppercase tracking-[0.4em] text-[10px] shadow-2xl shadow-indigo-600/20 transition-all hover:bg-indigo-500 active:scale-95 disabled:opacity-50"
+                                        >
+                                            {isSubmitting ? 'Sincronizando...' : 'Actualizar Perfil de Socio'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Strategy Preview Modal */}
             <AnimatePresence>
