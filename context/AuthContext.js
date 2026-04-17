@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [session, setSession] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isSyncingTokens, setIsSyncingTokens] = useState(false);
     const router = useRouter();
 
     const fetchProfile = async (userId, email = null, metadata = null) => {
@@ -98,6 +99,11 @@ export const AuthProvider = ({ children }) => {
                     setUser({ ...session.user, ...profile });
                     localStorage.setItem('user_role', profile.role);
                     if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
+                    
+                    // SAVE GOOGLE TOKENS IF PRESENT
+                    if (session.provider_token && profile.client_id && profile.role === 'CLIENT') {
+                        syncGoogleTokens(profile.client_id, session.provider_token, session.provider_refresh_token, session.user.email);
+                    }
                 } else {
                     setUser(null);
                 }
@@ -257,6 +263,7 @@ export const AuthProvider = ({ children }) => {
                     access_type: 'offline',
                     prompt: 'consent',
                 },
+                scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
                 data: {
                     full_name: metadata.full_name || '',
                     role: metadata.role || 'CLIENT',
@@ -283,6 +290,30 @@ export const AuthProvider = ({ children }) => {
         if (error) throw error;
         localStorage.clear();
         router.push('/');
+    };
+
+    const syncGoogleTokens = async (clientId, accessToken, refreshToken, email) => {
+        if (isSyncingTokens) return;
+        setIsSyncingTokens(true);
+        console.log(`[AuthContext] Syncing Google Tokens for client: ${clientId}`);
+        try {
+            const { error } = await supabase
+                .from('clients')
+                .update({
+                    google_access_token: accessToken,
+                    google_refresh_token: refreshToken,
+                    google_connected_email: email,
+                    sync_active: true
+                })
+                .eq('id', clientId);
+            
+            if (error) throw error;
+            console.log('[AuthContext] Google Tokens synced successfully.');
+        } catch (err) {
+            console.error('[AuthContext] Google Token sync failed:', err.message);
+        } finally {
+            setIsSyncingTokens(false);
+        }
     };
 
     const getHomeRoute = (role) => {

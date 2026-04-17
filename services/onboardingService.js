@@ -32,7 +32,8 @@ export const onboardingService = {
                         type: formData.profileType || 'Business',
                         status: 'ONBOARDING_COMPLETED',
                         priority: 'MEDIUM',
-                        plan: 'STARTUP' // Default
+                        plan: 'STARTUP', // Default
+                        onboarding_data: formData // STORE FULL FORM DATA FOR ADMIN REFERENCE
                     })
                     .select()
                     .single();

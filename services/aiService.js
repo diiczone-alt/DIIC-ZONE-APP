@@ -84,5 +84,32 @@ export const aiService = {
             steps,
             data: mockResponses[niche]
         };
+    },
+
+    /**
+     * Real-time chat with DIIC Strategic Agent (Gemini 1.5 Pro)
+     * @param {Array} messages - Chat history
+     * @param {Object} clientContext - Current client data (id, name, etc)
+     */
+    chatWithAgent: async (messages, clientContext) => {
+        try {
+            const response = await fetch('/api/ai/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages, clientContext })
+            });
+
+            if (response.ok) {
+                return await response.json();
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Chat API Error');
+            }
+        } catch (error) {
+            console.error("[aiService] Chat Bridge Failure:", error);
+            return { 
+                text: "Error de conexión con el Agente Estratégico. Por favor, verifica tu conexión o intenta más tarde." 
+            };
+        }
     }
 };

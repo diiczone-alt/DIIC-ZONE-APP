@@ -15,11 +15,13 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import StrategyBoard from '../../shared/Strategy/StrategyBoard';
+import CreativeStudio from '../../events/CreativeBoard';
 import ContentKanban from '../../shared/Kanban/ContentKanban';
 import UnifiedCalendar from '../../calendar/UnifiedCalendar';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
+import { aiService } from '@/services/aiService';
 
 export default function CMWorkstationLayout() {
     const searchParams = useSearchParams();
@@ -155,6 +157,7 @@ export default function CMWorkstationLayout() {
         { id: 'meta', label: 'Módulo Meta (Ads)', icon: BarChart3 },
         { id: 'calendar', label: 'Calendario', icon: Calendar },
         { id: 'strategy', label: 'Pizarra Estratégica', icon: Share2 },
+        { id: 'creative', label: 'Estudio Creativo', icon: Sparkles },
         { id: 'team', label: 'Equipo Asignado', icon: Palette },
         { id: 'reports', label: 'Generador de Reportes', icon: FileText },
     ] : [
@@ -293,7 +296,8 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'chat': return <CommunicationCenter client={selectedClient} squad={squad} tasks={clientTasks} />;
         case 'meta': return <MetaAdsModule client={selectedClient} />;
         case 'calendar': return <UnifiedCalendar role="cm" />;
-        case 'strategy': return <StrategyBoard role="cm" onClose={() => setActiveTab('dashboard')} />;
+        case 'strategy': return <StrategyBoard role="cm" isSubcomponent={true} onClose={() => setActiveTab('dashboard')} />;
+        case 'creative': return <CreativeStudio isSubcomponent={true} />;
         case 'team': return <TeamView client={selectedClient} tasks={clientTasks} squad={squad} />;
         case 'reports': return <CMReports client={selectedClient} />;
         case 'academy': return <CMAcademy />;
@@ -667,10 +671,65 @@ function RoleTaskCard({ role, staff, tasks, color }) {
 
 function CommunicationCenter({ client, squad, tasks = [] }) {
     const [subTab, setSubTab] = useState('ia');
-    const [showContextModal, setShowContextModal] = useState(false);
-    const [selectedMember, setSelectedMember] = useState(null);
-    const [commMode, setCommMode] = useState('general'); // 'general' or 'dept'
-    const [activeMemberId, setActiveMemberId] = useState(null);
+    const [showPopover, setShowPopover] = useState(false);
+    const [activeChat, setActiveChat] = useState({ id: 'ia', type: 'ia', name: 'Asistente IA' });
+    const [inputValue, setInputValue] = useState('');
+    const [messages, setMessages] = useState([
+        { id: 1, chatId: 'ia', text: '¡Hola Leslie! Soy tu Estratega IA. Estoy listo para optimizar tu flujo de trabajo de hoy.', sender: 'ai', time: '10:00 AM' },
+        { id: 2, chatId: 'general', text: 'Equipo, ¿cómo vamos con los reels de Clínica Dental?', sender: 'me', time: '10:05 AM' },
+    ]);
+
+    const [isTyping, setIsTyping] = useState(false);
+
+    const handleSend = async () => {
+        if (!inputValue.trim() || isTyping) return;
+        
+        const userMsg = inputValue.trim();
+        const newMessage = {
+            id: Date.now(),
+            chatId: activeChat.id,
+            text: userMsg,
+            sender: 'me',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        setMessages(prev => [...prev, newMessage]);
+        setInputValue('');
+
+        if (activeChat.type === 'ia') {
+            setIsTyping(true);
+            try {
+                // Prepare chat history for the API
+                const history = messages.filter(m => m.chatId === 'ia');
+                const combinedMessages = [...history, newMessage];
+                
+                const result = await aiService.chatWithAgent(combinedMessages, client);
+                
+                if (result?.text) {
+                    setMessages(prev => [...prev, {
+                        id: Date.now() + 1,
+                        chatId: 'ia',
+                        text: result.text,
+                        sender: 'ai',
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    }]);
+                }
+            } catch (error) {
+                console.error("AI Chat Error:", error);
+                toast.error("Error del Agente", { description: "No pude procesar tu solicitud estratégica." });
+            } finally {
+                setIsTyping(false);
+            }
+        } else {
+            toast.success("Mensaje Enviado", { description: `Enviado a ${activeChat.name}` });
+        }
+    };
+
+    const selectChat = (chat) => {
+        setActiveChat(chat);
+        setSubTab(chat.type === 'ia' ? 'ia' : chat.type === 'enterprise' ? 'empresa' : 'team');
+        setShowPopover(false);
+    };
 
     const tabs = [
         { id: 'ia', label: 'Asistente IA', icon: Bot },
@@ -679,12 +738,18 @@ function CommunicationCenter({ client, squad, tasks = [] }) {
     ];
 
     return (
-        <div className="h-full flex flex-col bg-[#0E0E18] border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <div className="h-full flex flex-col bg-[#0E0E18] border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+            
+            {/* ─── Top Navigation ─── */}
             <div className="flex p-2 bg-white/[0.02] border-b border-white/5">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
-                        onClick={() => setSubTab(tab.id)}
+                        onClick={() => {
+                            setSubTab(tab.id);
+                            if (tab.id === 'ia') setActiveChat({ id: 'ia', type: 'ia', name: 'Asistente IA' });
+                            if (tab.id === 'empresa') setActiveChat({ id: 'enterprise', type: 'enterprise', name: client.name });
+                        }}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl transition-all font-bold text-xs ${subTab === tab.id
                             ? 'bg-cyan-600/10 text-cyan-400 border border-cyan-500/20'
                             : 'text-gray-500 hover:text-white'
@@ -696,53 +761,140 @@ function CommunicationCenter({ client, squad, tasks = [] }) {
                 ))}
             </div>
 
+            {/* ─── Chat Area ─── */}
             <div className="flex-1 overflow-hidden relative flex flex-col">
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={subTab}
+                        key={`${subTab}-${activeChat.id}`}
                         initial={{ opacity: 0, x: 10 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
-                        className="flex-1 overflow-y-auto custom-scrollbar p-6"
+                        className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4"
                     >
-                        {subTab === 'ia' && <AIChatView tasks={tasks} />}
-                        {subTab === 'empresa' && <EnterpriseChatView client={client} />}
-                        {subTab === 'team' && (
+                        {/* If in 'team' tab but no specific member selected yet, show the team list */}
+                        {subTab === 'team' && activeChat.type !== 'member' && activeChat.id !== 'general' ? (
                             <TeamChatView 
                                 client={client} 
                                 squad={squad} 
-                                commMode={commMode}
-                                onSetCommMode={setCommMode}
-                                activeMemberId={activeMemberId}
-                                onSelectMember={(m) => setActiveMemberId(m.id === activeMemberId ? null : m.id)}
-                                onSendMember={(member) => { setSelectedMember(member); setShowContextModal(true); }}
-                                onViewKPIs={(member) => setSelectedMember(member)}
+                                activeMemberId={null}
+                                onSelectMember={(m) => selectChat({ id: m.id, type: 'member', name: m.name })}
+                                onSendMember={(m) => selectChat({ id: m.id, type: 'member', name: m.name })}
+                                onViewKPIs={() => {}}
                             />
+                        ) : (
+                            /* Else show the message history for the active chat */
+                            <div className="flex flex-col h-full">
+                                {subTab === 'ia' && messages.filter(m => m.chatId === 'ia').length === 0 && <AIChatView tasks={tasks} />}
+                                {subTab === 'empresa' && messages.filter(m => m.chatId === 'enterprise').length === 0 && <EnterpriseChatView client={client} />}
+                                
+                                <div className="space-y-6">
+                                    {messages.filter(m => m.chatId === activeChat.id).map((msg) => (
+                                        <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[80%] p-4 rounded-3xl ${
+                                                msg.sender === 'me' 
+                                                ? 'bg-cyan-600 text-white rounded-tr-none' 
+                                                : msg.sender === 'ai' 
+                                                    ? 'bg-white/5 border border-indigo-500/30 text-gray-200 rounded-tl-none backdrop-blur-md'
+                                                    : 'bg-white/5 border border-white/10 text-gray-200 rounded-tl-none'
+                                            }`}>
+                                                <p className="text-sm leading-relaxed">{msg.text}</p>
+                                                <p className="text-[9px] mt-2 opacity-50 font-bold uppercase tracking-widest">{msg.time}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {isTyping && activeChat.type === 'ia' && (
+                                        <div className="flex justify-start">
+                                            <div className="bg-white/5 border border-indigo-500/30 p-4 rounded-3xl rounded-tl-none backdrop-blur-md flex items-center gap-3">
+                                                <div className="flex gap-1">
+                                                    <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                                    <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                                    <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" />
+                                                </div>
+                                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest italic animate-pulse">Analizando Estrategia...</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         )}
                     </motion.div>
                 </AnimatePresence>
 
-                <div className="p-4 border-t border-white/5 bg-white/[0.01]">
+                {/* ─── Input Area ─── */}
+                <div className="p-4 border-t border-white/5 bg-white/[0.01] relative">
+                    {/* Action Popover (ChatGPT Style) */}
+                    <AnimatePresence>
+                        {showPopover && (
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                className="absolute bottom-full left-4 mb-4 z-[60] bg-[#161625]/95 backdrop-blur-xl border border-white/10 rounded-[2rem] p-4 shadow-2xl min-w-[240px]"
+                            >
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 px-2 italic">Canales de Control</p>
+                                <div className="space-y-1">
+                                    <button 
+                                        onClick={() => selectChat({ id: 'general', type: 'member', name: 'Chat General' })}
+                                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-left transition-all group"
+                                    >
+                                        <div className="w-8 h-8 rounded-lg bg-cyan-600/20 flex items-center justify-center text-cyan-400">
+                                            <Users className="w-4 h-4" />
+                                        </div>
+                                        <span className="text-xs font-bold text-gray-300 group-hover:text-white">Chat General</span>
+                                    </button>
+                                    <div className="h-px bg-white/5 my-2 mx-2" />
+                                    {squad?.map(m => (
+                                        <button 
+                                            key={m.id}
+                                            onClick={() => selectChat({ id: m.id, type: 'member', name: m.name })}
+                                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-left transition-all group"
+                                        >
+                                            <div className="w-8 h-8 rounded-lg bg-indigo-600/20 flex items-center justify-center text-indigo-400 font-bold text-[10px]">
+                                                {m.name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-300 group-hover:text-white">{m.name}</p>
+                                                <p className="text-[8px] text-gray-500 font-bold uppercase">{m.role}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                    {(!squad || squad.length === 0) && (
+                                        <>
+                                            <button onClick={() => selectChat({ id: 'fausto', type: 'member', name: 'Fausto' })} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-left transition-all group">
+                                                <div className="w-8 h-8 rounded-lg bg-indigo-600/20 flex items-center justify-center text-indigo-400 font-bold">F</div>
+                                                <span className="text-xs font-bold text-gray-300 group-hover:text-white">Fausto (Video)</span>
+                                            </button>
+                                            <button onClick={() => selectChat({ id: 'anthony', type: 'member', name: 'Anthony' })} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-left transition-all group">
+                                                <div className="w-8 h-8 rounded-lg bg-indigo-600/20 flex items-center justify-center text-indigo-400 font-bold">A</div>
+                                                <span className="text-xs font-bold text-gray-300 group-hover:text-white">Anthony (Diseño)</span>
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={() => setShowContextModal(true)}
-                            className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-white/10 transition-all shadow-lg active:scale-95 group"
+                            onClick={() => setShowPopover(!showPopover)}
+                            className={`w-12 h-12 rounded-2xl border transition-all flex items-center justify-center shadow-lg active:scale-95 group ${
+                                showPopover ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:text-cyan-400'
+                            }`}
                         >
-                            <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+                            <Plus className={`w-6 h-6 transition-transform ${showPopover ? 'rotate-45' : 'group-hover:rotate-90'}`} />
                         </button>
                         <div className="flex-1 relative">
                             <input
-                                placeholder={activeMemberId ? "Mensaje directo..." : "Escribe un mensaje..."}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                                placeholder={`Hablar con ${activeChat.name}...`}
                                 className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-all pr-12"
                             />
                             <button
-                                onClick={() => {
-                                    if (activeMemberId) {
-                                        toast.success("Mensaje Directo Enviado", { description: "Tu mensaje ha sido cifrado y enviado al creativo." });
-                                    } else {
-                                        setShowContextModal(true);
-                                    }
-                                }}
+                                onClick={handleSend}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-cyan-600 rounded-xl flex items-center justify-center text-white hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-600/20"
                             >
                                 <Send className="w-4 h-4" />
@@ -751,14 +903,6 @@ function CommunicationCenter({ client, squad, tasks = [] }) {
                     </div>
                 </div>
             </div>
-
-            {showContextModal && (
-                <MessageContextModal member={selectedMember} onClose={() => { setShowContextModal(false); setSelectedMember(null); }} />
-            )}
-
-            {selectedMember && !showContextModal && (
-                <MemberKPIModal member={selectedMember} onClose={() => setSelectedMember(null)} />
-            )}
         </div>
     );
 }

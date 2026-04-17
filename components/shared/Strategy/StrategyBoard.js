@@ -74,7 +74,7 @@ const initialStrategyData = {
     activeCampaignId: 'camp_default'
 };
 
-export default function StrategyBoard({ role, onClose }) {
+export default function StrategyBoard({ role, onClose, isSubcomponent = false }) {
     // --- STATE ---
     const [strategyData, setStrategyData] = useState({
         ...initialStrategyData,
@@ -845,7 +845,7 @@ export default function StrategyBoard({ role, onClose }) {
     }, [setDrawings]);
 
     return (
-        <div className={`fixed inset-0 z-[100] w-full flex flex-col overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-[#F1F5F9]'}`}>
+        <div className={`${isSubcomponent ? 'relative flex-1' : 'fixed inset-0 z-[100]'} w-full flex flex-col overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-[#F1F5F9]'}`}>
             {/* 1. TOP BAR */}
             <StrategyTopBar
                 strategyName={strategyData.name}

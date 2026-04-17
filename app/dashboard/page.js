@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import StrategyPlanner from '../../components/shared/Strategy/StrategyPlanner';
+import { googleDriveService } from '@/services/googleDriveService';
 
 // ─── Stat Card Component ─────────────────────────────────────────
 function StatCard({ title, value, delta, icon: Icon, color, chartData }) {
@@ -251,214 +253,95 @@ function DashboardContent() {
     );
   }
 
+  const isStaff = user?.role === 'CM' || user?.role === 'COMMUNITY' || user?.role === 'ADMIN';
+
   return (
-    <div className="min-h-screen bg-[#07070F] text-white p-6 md:p-10 space-y-10 font-sans selection:bg-indigo-500/30 overflow-x-hidden">
+    <div className="min-h-screen text-white p-6 md:p-10 pt-16 md:pt-20 space-y-12 font-sans selection:bg-indigo-500/30 overflow-x-hidden bg-transparent">
       
-      {/* ─── Top Navigation (Premium Centered) ─── */}
-      <header className="grid grid-cols-3 items-center h-20 mb-8 relative z-[100]">
-         {/* Left: Branding Redesign */}
-         <div className="flex items-center gap-3 group cursor-pointer active:scale-95 transition-all">
-            <div className="relative">
-              <div className="w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center font-black italic text-xl shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20 z-10 relative">D</div>
-              <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <div className="flex flex-col">
-               <span className="text-sm font-black text-white tracking-[0.2em] uppercase leading-none">Diiczone</span>
-               <span className="text-[7px] font-black text-white/40 tracking-[0.4em] uppercase mt-1">Ecosistema Pro</span>
-            </div>
-         </div>
-         
-         {/* Middle: Centered Search */}
-         <div className="flex justify-center">
-            <div className="relative group w-full max-w-sm">
-               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 group-focus-within:text-white transition-colors z-10" />
-               <input 
-                 type="text" 
-                 placeholder="Buscar en el ecosistema..." 
-                 className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-2.5 pl-12 pr-16 text-[10px] text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-white/20 focus:bg-white/[0.06] transition-all font-bold tracking-wide relative z-0"
-               />
-               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.05] border border-white/5 z-10">
-                  <span className="text-[8px] font-black text-gray-600 tracking-tighter">⌘ K</span>
-               </div>
-            </div>
-         </div>
+      {/* ─── Role-Based Main Module ─── */}
+      {isStaff ? (
+        <section className="relative overflow-hidden rounded-[3rem] border border-white/5 bg-gradient-to-br from-[#0A0A1F] to-[#050510] shadow-2xl">
+            {/* Ambient Glow */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full -z-10" />
+            <StrategyPlanner activeCampaign={{ name: clientData?.name || 'DIIC Global', progress: 94 }} />
+        </section>
+      ) : (
+        <section className="flex flex-col md:flex-row justify-between items-end gap-6 pb-8 relative pt-4">
+           <div className="space-y-3 relative z-10">
+              <div className="flex items-center gap-3">
+                 <div className={`text-[10px] font-black uppercase tracking-[0.5em] flex items-center gap-2 px-3 py-1 rounded-full border ${clientData?.status === 'Pausado' ? 'text-amber-500 bg-amber-500/5 border-amber-500/10' : 'text-emerald-500 bg-emerald-500/5 border-emerald-500/10'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse shadow-lg ${clientData?.status === 'Pausado' ? 'bg-amber-500' : 'bg-emerald-500'}`} /> 
+                    NODO CLIENTE {clientData?.status?.toUpperCase() || 'ACTIVO'}
+                 </div>
+                 <div className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">
+                    {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
+                 </div>
+              </div>
+              
+              <div className="relative">
+                 <h1 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter leading-none select-none">
+                    ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">{(user?.user_metadata?.full_name || user?.full_name || 'Estratega').split(' ')[0]}</span>.
+                 </h1>
+                 <div className="absolute -top-4 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-[80px] -z-10" />
+              </div>
 
-         {/* Right: Actions & Premium Profile */}
-         <div className="flex items-center justify-end gap-6">
-            <div className="flex items-center gap-4 pr-6 border-r border-white/5">
-               <button 
-                onClick={() => setActiveDropdown(activeDropdown === 'notif' ? null : 'notif')}
-                className={`p-2 rounded-xl transition-all relative ${activeDropdown === 'notif' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
-               >
-                  <div className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#07070F] shadow-[0_0_10px_rgba(244,63,94,0.5)]" />
-                  <Bell className="w-5 h-5" />
-               </button>
-               <button 
-                onClick={() => setActiveDropdown(activeDropdown === 'msg' ? null : 'msg')}
-                className={`p-2 rounded-xl transition-all ${activeDropdown === 'msg' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
-               >
-                  <MessageSquare className="w-5 h-5" />
-               </button>
-            </div>
-            
-            <div 
-              onClick={() => setActiveDropdown(activeDropdown === 'profile' ? null : 'profile')}
-              className={`flex items-center gap-4 px-2 py-1.5 rounded-2xl cursor-pointer transition-all border ${activeDropdown === 'profile' ? 'bg-white/10 border-white/20' : 'hover:bg-white/5 border-transparent'}`}
-            >
-               <div className="text-right hidden sm:block">
-                  <p className="text-[9px] font-black text-white uppercase tracking-widest leading-none">
-                     {user?.user_metadata?.full_name || user?.full_name || 'Estratega'}
-                  </p>
-                  <p className="text-[7px] font-bold text-emerald-400 uppercase tracking-tighter mt-1 opacity-70">
-                     {user?.role === 'ADMIN' ? 'Administrador Master' : (user?.role === 'CREATOR' || user?.role === 'CM' || user?.role === 'COMMUNITY' ? 'Estratega de Contenido' : (user?.user_metadata?.brand || 'Cliente Empresarial'))}
-                  </p>
-               </div>
-               <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/20 p-0.5 bg-gradient-to-br from-indigo-500/20 to-purple-500/20">
-                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" className="w-full h-full rounded-[8px] object-cover" alt="User" />
-               </div>
-            </div>
-
-            {/* Premium Dropdowns Container */}
-            <AnimatePresence>
-              {activeDropdown && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute top-20 right-0 w-80 bg-[#0A0A14] border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl overflow-hidden z-[200]"
-                >
-                  {/* NOTIFICATIONS DROPDOWN */}
-                  {activeDropdown === 'notif' && (
-                    <div className="p-6 space-y-4">
-                      <div className="flex justify-between items-center mb-2">
-                         <h3 className="text-xs font-black uppercase tracking-widest">Notificaciones</h3>
-                         <span className="text-[10px] text-indigo-400 font-bold cursor-pointer hover:underline">Marcar todo</span>
-                      </div>
-                      <div className="space-y-3">
-                        {[1, 2].map(i => (
-                          <div key={i} className="flex gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center shrink-0">
-                              <Bell className="w-4 h-4 text-indigo-400" />
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-[11px] font-bold">Nueva Tarea Asignada</p>
-                              <p className="text-[9px] text-gray-500">Diseño de landing page está lista para revisión.</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <button className="w-full py-3 text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors border-t border-white/5 pt-4">Ver historial</button>
-                    </div>
-                  )}
-
-                  {/* MESSAGES DROPDOWN */}
-                  {activeDropdown === 'msg' && (
-                    <div className="p-6 space-y-4">
-                      <div className="flex justify-between items-center">
-                         <h3 className="text-xs font-black uppercase tracking-widest">Mensajería Directa</h3>
-                         <Plus className="w-4 h-4 text-gray-400 cursor-pointer" />
-                      </div>
-                      <div className="space-y-3">
-                        {[1, 2].map(i => (
-                          <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                            <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden shrink-0">
-                              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i === 1 ? 'Ana' : 'Bob'}`} alt="Avatar" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                               <p className="text-[11px] font-bold truncate">{i === 1 ? 'Ana M. (Lead Designer)' : 'Robert G. (Creative Director)'}</p>
-                               <p className="text-[9px] text-gray-500 truncate">{i === 1 ? 'Envié los bocetos actualizados...' : 'Mañana tenemos reunión de equipo.'}</p>
-                            </div>
-                            <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* PROFILE DROPDOWN (Premium Window) */}
-                  {activeDropdown === 'profile' && (
-                    <div className="p-2">
-                       <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white mb-2 relative overflow-hidden">
-                          <div className="relative z-10 space-y-1">
-                             <h3 className="text-lg font-black italic tracking-tighter uppercase">{user?.user_metadata?.full_name || user?.full_name || 'DIIC User'}</h3>
-                             <p className="text-[9px] font-bold opacity-80 uppercase tracking-widest leading-none">
-                                {user?.role === 'CLIENT' ? `MARCA: ${user?.user_metadata?.brand || 'DIIC ZONE'}` : `TALENTO: ${user?.role || 'PROF'}`} • {user?.user_metadata?.city || 'Global'}
-                             </p>
-                             <div className="pt-4 flex items-center gap-2">
-                                <Shield className="w-4 h-4 text-white/60" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">{user?.role === 'CLIENT' ? 'CLIENTE PRO' : 'COLABORADOR'}</span>
-                             </div>
-                          </div>
-                          {/* Ambient glow */}
-                          <div className="absolute -right-5 -bottom-5 w-24 h-24 bg-white/20 blur-2xl rounded-full" />
-                       </div>
-                       
-                       <div className="grid grid-cols-1 gap-1 p-2">
-                          <button 
-                             onClick={() => { setActiveDropdown(null); router.push('/dashboard/profile'); }}
-                             className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-white/5 transition-all text-gray-400 hover:text-white group"
-                          >
-                             <User className="w-4 h-4 group-hover:text-indigo-400" />
-                             <span className="text-[11px] font-bold">{user?.role === 'CLIENT' ? 'Perfil de Empresa' : 'Configuración de Mi Cuenta'}</span>
-                          </button>
-                          <button 
-                             onClick={() => { setActiveDropdown(null); router.push('/dashboard/settings'); }}
-                             className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-white/5 transition-all text-gray-400 hover:text-white group"
-                          >
-                             <Settings className="w-4 h-4 group-hover:text-indigo-400" />
-                             <span className="text-[11px] font-bold">Configuración</span>
-                          </button>
-                          <div className="my-2 border-t border-white/5 h-0" />
-                          <button 
-                             onClick={() => { localStorage.clear(); window.location.href = '/'; }}
-                             className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-rose-500/10 transition-all text-rose-500 group"
-                          >
-                             <LogOut className="w-4 h-4" />
-                             <span className="text-[11px] font-black uppercase tracking-widest">Desconectar Hub</span>
-                          </button>
-                       </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-         </div>
-      </header>
-
-      {/* ─── Hero Section (Premium Update) ─── */}
-      <section className="flex flex-col md:flex-row justify-between items-end gap-6 pb-8 relative">
-         <div className="space-y-3 relative z-10">
-            <div className="flex items-center gap-3">
-               <div className={`text-[10px] font-black uppercase tracking-[0.5em] flex items-center gap-2 px-3 py-1 rounded-full border ${clientData?.status === 'Pausado' ? 'text-amber-500 bg-amber-500/5 border-amber-500/10' : 'text-emerald-500 bg-emerald-500/5 border-emerald-500/10'}`}>
-                  <div className={`w-1.5 h-1.5 rounded-full animate-pulse shadow-lg ${clientData?.status === 'Pausado' ? 'bg-amber-500' : 'bg-emerald-500'}`} /> 
-                  SISTEMA {clientData?.status?.toUpperCase() || 'ACTIVO'}
-               </div>
-               <div className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">
-                  {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
-               </div>
-            </div>
-            
-            <div className="relative">
-               <h1 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter leading-none select-none">
-                  ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">{(user?.user_metadata?.full_name || user?.full_name || 'Estratega').split(' ')[0]}</span>.
-               </h1>
-               {/* Subtle title glow */}
-               <div className="absolute -top-4 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-[80px] -z-10" />
-            </div>
-
-            <p className="text-sm md:text-base font-bold text-gray-400 max-w-xl leading-relaxed">
-               Bienvenido a tu <span className="text-indigo-400">Ecosistema {clientData?.name || 'Digital'}</span>. Tu centro de mando operativo se encuentra al <span className="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.3)]">98% de salud total</span>. 
-               <span className="text-gray-600 block text-xs mt-1 uppercase tracking-widest font-black">Sincronización de nodos completa.</span>
-            </p>
-         </div>
-
-
-      </section>
+              <p className="text-sm md:text-base font-bold text-gray-400 max-w-xl leading-relaxed">
+                 Bienvenido a tu <span className="text-indigo-400">Ecosistema {clientData?.name || 'Digital'}</span>. Tu marca se encuentra en un estado de <span className="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.3)]">crecimiento constante</span>. 
+                 <span className="text-gray-600 block text-xs mt-1 uppercase tracking-widest font-black">Revisa tus últimos activos y reportes debajo.</span>
+              </p>
+           </div>
+        </section>
+      )}
 
       {/* ─── Metric Cards ─── */}
       <section className="flex gap-6 overflow-x-auto pb-4 scrollbar-none">
          {stats.map((s, i) => <StatCard key={i} {...s} />)}
       </section>
+
+      {/* ─── Connectivity & Storage Section (NEW) ─── */}
+      {!isStaff && (
+          <section className="relative px-8 py-10 rounded-[3rem] bg-indigo-500/[0.03] border border-indigo-500/10 overflow-hidden group">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] -z-10" />
+              <div className="flex flex-col md:flex-row justify-between items-center gap-8 relative z-10">
+                  <div className="flex gap-6 items-center">
+                      <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400">
+                          <Globe className="w-8 h-8" />
+                      </div>
+                      <div className="space-y-1">
+                          <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Espacio de Almacenamiento</h3>
+                          <p className="text-sm text-gray-500 font-bold">
+                              {clientData?.google_connected_email 
+                                ? `Sincronizado con: ${clientData.google_connected_email}` 
+                                : 'Tu almacenamiento en Google Drive no está vinculado aún.'}
+                          </p>
+                      </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                      {clientData?.google_connected_email ? (
+                          <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 px-6 py-3 rounded-2xl">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Nube Activa</span>
+                          </div>
+                      ) : (
+                          <button 
+                            onClick={async () => {
+                                // Logic to trigger Google Auth handled by AuthContext
+                                window.location.href = '/login'; 
+                            }}
+                            className="bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center gap-3"
+                          >
+                            <UserPlus className="w-4 h-4" /> Relacionar Google Drive
+                          </button>
+                      )}
+                      
+                      <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center gap-3 shadow-lg shadow-indigo-600/20">
+                          <Settings className="w-4 h-4" /> Configurar Sincronización
+                      </button>
+                  </div>
+              </div>
+          </section>
+      )}
 
       {/* ─── Main Content Grid ─── */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-10">

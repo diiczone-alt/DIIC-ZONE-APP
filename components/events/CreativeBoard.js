@@ -19,8 +19,8 @@ import ScriptEditor from '../previs/ScriptEditor';
 import ScriptCampaignSelector from '../previs/ScriptCampaignSelector';
 
 // --- 1. PrevisWelcome (The 3-Path Entry) ---
-const PrevisWelcome = ({ onSelectPath }) => (
-    <div className="absolute inset-0 z-[50] bg-[#050511] flex flex-col items-center justify-center text-center p-8">
+const PrevisWelcome = ({ onSelectPath, isSubcomponent = false }) => (
+    <div className={`${isSubcomponent ? 'relative flex-1' : 'absolute inset-0 z-[50]'} bg-[#050511] flex flex-col items-center justify-center text-center p-8`}>
         <div className="max-w-4xl w-full">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold mb-6 tracking-wider uppercase">
                 <Sparkles className="w-3 h-3" /> DIIC Previs Studio
@@ -94,7 +94,7 @@ const PrevisView = ({ scenes, activeSceneId }) => (
 
 
 // --- 4. Main PrevisStudio Container ---
-export default function PrevisStudio() {
+export default function PrevisStudio({ isSubcomponent = false }) {
     // Global State
     const [projectType, setProjectType] = useState(null); // 'storyboard', 'script', 'previs'
     const [scenes, setScenes] = useState([
@@ -157,7 +157,7 @@ export default function PrevisStudio() {
     return (
         <div className="relative h-full w-full flex flex-col bg-[#020205] text-white overflow-hidden">
             {/* Welcome Modal */}
-            {showWelcome && <PrevisWelcome onSelectPath={handleSelectPath} />}
+            {showWelcome && <PrevisWelcome onSelectPath={handleSelectPath} isSubcomponent={isSubcomponent} />}
 
             {/* Header / Navigation */}
             {(!showWelcome && !(projectType === 'script' && selectedScriptContent)) && (

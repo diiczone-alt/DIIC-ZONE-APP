@@ -7,36 +7,31 @@ export const agencyService = {
         const timestamp = new Date().toLocaleTimeString();
         try {
             console.log(`🚀 [${timestamp}] Start: getClients`);
-            const isMock = !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
             
-            console.log(`📡 [${timestamp}] Step 1: Querying ${isMock ? 'Local' : 'Supabase'}...`);
             const { data, error } = await supabase
                 .from('clients')
                 .select('*')
                 .order('created_at', { ascending: false });
-
+ 
             if (error) {
                 console.error(`❌ [${timestamp}] Supabase Error:`, error.message);
                 throw error;
             }
-
-            console.log(`💾 [${timestamp}] Step 2: Syncing LocalCache (${data?.length || 0} clients)`);
+ 
+            // SYNC CACHE (Read-only fallback)
             if (typeof window !== 'undefined' && Array.isArray(data)) {
-                try {
-                    localStorage.setItem('diic_clients', JSON.stringify(data));
-                } catch (e) {
-                    console.warn(`⚠️ [${timestamp}] LocalStorage sync failed:`, e.message);
-                }
+                localStorage.setItem('diic_clients', JSON.stringify(data));
             }
-
-            console.log(`✅ [${timestamp}] Step 3: Fetch successful.`);
+ 
             return data || [];
         } catch (error) {
-            console.error(`🚨 [${timestamp}] Service Crash:`, error);
-            const localRaw = typeof window !== 'undefined' ? localStorage.getItem('diic_clients') : null;
-            if (localRaw) {
-                console.warn(`📑 [${timestamp}] Reverting to last known local copy.`);
-                try { return JSON.parse(localRaw); } catch(e) { return []; }
+            console.error(`🚨 [${timestamp}] Fetch Failed:`, error);
+            // Revert to local cache ONLY on failure
+            if (typeof window !== 'undefined') {
+                const localRaw = localStorage.getItem('diic_clients');
+                if (localRaw) {
+                    try { return JSON.parse(localRaw); } catch(e) { return []; }
+                }
             }
             return [];
         }
@@ -47,7 +42,12 @@ export const agencyService = {
         console.log(`🚀 [${timestamp}] Service: Creating New Client...`);
         try {
             // Pick only valid columns that exist in the DB schema
-            const validFields = ['id', 'name', 'city', 'type', 'status', 'cm', 'priority', 'plan', 'projects', 'nextpost', 'price', 'target', 'email', 'password_initial', 'created_at'];
+            const validFields = [
+                'id', 'name', 'city', 'type', 'status', 'cm', 'priority', 'plan', 
+                'projects', 'nextpost', 'price', 'target', 'email', 
+                'password_initial', 'whatsapp_number', 'google_drive_folder_id',
+                'onboarding_data', 'notes', 'created_at'
+            ];
             const sanitizedData = {};
             validFields.forEach(field => {
                 if (clientData[field] !== undefined) sanitizedData[field] = clientData[field];
@@ -91,7 +91,12 @@ export const agencyService = {
         console.log(`🚀 [${timestamp}] Service: Updating Client ${id}...`);
         try {
             // Data Guardian: Include price/target/access info for persistence
-            const validFields = ['name', 'city', 'type', 'status', 'cm', 'priority', 'plan', 'projects', 'nextpost', 'price', 'target', 'email', 'password_initial'];
+            const validFields = [
+                'name', 'city', 'type', 'status', 'cm', 'priority', 'plan', 
+                'projects', 'nextpost', 'price', 'target', 'email', 
+                'password_initial', 'whatsapp_number', 'google_drive_folder_id',
+                'onboarding_data', 'notes'
+            ];
             const sanitizedUpdates = {};
             validFields.forEach(field => {
                 if (updates[field] !== undefined) sanitizedUpdates[field] = updates[field];
@@ -193,19 +198,27 @@ export const agencyService = {
     // --- OTHER SERVICES (HYBRID FOR NOW) ---
     getTasks: async (role = 'all') => {
         try {
-            const localTasks = localStorage.getItem('diic_tasks');
-            if (localTasks) {
-                const tasks = JSON.parse(localTasks);
-                if (role === 'all') return tasks;
-                return tasks.filter(t => t.assigned_role === role.toUpperCase());
-            }
-
             const { data, error } = await supabase.from('tasks').select('*');
             if (error) throw error;
             
-            return data?.length > 0 ? data : [];
+            // Sync cache
+            if (typeof window !== 'undefined' && Array.isArray(data)) {
+                localStorage.setItem('diic_tasks', JSON.stringify(data));
+            }
+
+            if (role === 'all') return data || [];
+            return data.filter(t => t.assigned_role === role.toUpperCase()) || [];
         } catch (error) {
             console.error("Error fetching tasks:", error);
+            // Fallback to cache ONLY on error
+            if (typeof window !== 'undefined') {
+                const localTasks = localStorage.getItem('diic_tasks');
+                if (localTasks) {
+                    const tasks = JSON.parse(localTasks);
+                    if (role === 'all') return tasks;
+                    return tasks.filter(t => t.assigned_role === role.toUpperCase());
+                }
+            }
             return [];
         }
     },
@@ -331,6 +344,42 @@ export const agencyService = {
         } catch (error) {
             console.error(`❌ [${timestamp}] Error in getTeam:`, error);
             return [];
+        }
+    },
+
+    createTeamMember: async (memberData) => {
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`🚀 [${timestamp}] Service: Creating New Team Member...`);
+        try {
+            const validFields = ['id', 'name', 'role', 'status', 'city', 'whatsapp', 'salary', 'email'];
+            const sanitizedData = {};
+            validFields.forEach(field => {
+                if (memberData[field] !== undefined) sanitizedData[field] = memberData[field];
+            });
+
+            const { data, error } = await supabase
+                .from('team')
+                .insert([{
+                    ...sanitizedData,
+                    id: memberData.id || `M-${Math.floor(Math.random() * 9000) + 1000}`,
+                    status: memberData.status || 'activo',
+                    created_at: new Date().toISOString()
+                }])
+                .select();
+
+            if (error) throw error;
+            
+            // Sync Local Cache
+            if (typeof window !== 'undefined') {
+                const stored = localStorage.getItem('diic_team');
+                const curr = stored ? JSON.parse(stored) : [];
+                localStorage.setItem('diic_team', JSON.stringify([data[0], ...curr]));
+            }
+
+            return data[0];
+        } catch (error) {
+            console.error(`❌ [${timestamp}] Error in createTeamMember:`, error);
+            throw error;
         }
     },
 

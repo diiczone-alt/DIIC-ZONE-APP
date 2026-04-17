@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { agencyService } from '@/services/agencyService';
 import VisionEcosystem from '@/components/VisionEcosystem';
 import { toast } from 'sonner';
+import { isCloudConnected } from '@/lib/supabase';
 
 // --- PREMIUM DROPDOWN COMPONENT ---
 const PremiumDropdown = ({ value, onChange, options, label, icon: Icon }) => {
@@ -84,6 +85,7 @@ export default function HQClientsPage() {
     const [previewData, setPreviewData] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingClient, setEditingClient] = useState(null);
+    const [activeEditTab, setActiveEditTab] = useState('operative');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [newClient, setNewClient] = useState({
         name: '',
@@ -92,7 +94,11 @@ export default function HQClientsPage() {
         target: 0,
         cm: '',
         email: '',
-        password_initial: ''
+        password_initial: '',
+        whatsapp_number: '',
+        google_drive_folder_id: '',
+        notes: '',
+        onboarding_data: {}
     });
 
     const fetchClients = async () => {
@@ -139,22 +145,26 @@ export default function HQClientsPage() {
         e.preventDefault();
         if (isSubmitting) return;
 
-        // 1. DIRECT-FIRE UI (CLOSE MODAL & SHOW LOCAL DATA)
-        setIsModalOpen(false); 
-        
+        setIsSubmitting(true);
         const tempId = `C-${Math.floor(Math.random() * 9000) + 1000}`;
         const clientWithId = { ...newClient, id: tempId, status: 'active', created_at: new Date().toISOString() };
         
-        setClients(prev => [clientWithId, ...prev]);
-        setNewClient({ name: '', plan: 'Basic', price: 0, target: 0, cm: '', email: '', password_initial: '' });
-
-        // 2. BACKGROUND SYNC (SILENT)
         try {
-            await agencyService.createClient(clientWithId);
-            toast.success("Socio registrado en la nube");
+            // 1. AWAIT REAL CLOUD SYNC (BLOCKING FOR SAFETY)
+            const created = await agencyService.createClient(clientWithId);
+            
+            // 2. ONLY UPDATE UI ON SUCCESS
+            setClients(prev => [created, ...prev]);
+            setIsModalOpen(false); 
+            setNewClient({ name: '', plan: 'Basic', price: 0, target: 0, cm: '', email: '', password_initial: '' });
+            toast.success("Socio registrado exitosamente");
         } catch (error) {
             console.error("❌ [Flow] Creation Error:", error);
-            toast.error("Error de Nube", { description: "Guardado localmente. Se sincronizará luego." });
+            toast.error("Error al registrar cliente", { 
+                description: "Verifica tu conexión a la base de datos." 
+            });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -208,8 +218,13 @@ export default function HQClientsPage() {
             target: client.target || 0,
             cm: client.cm || '',
             email: client.email || '',
-            password_initial: client.password_initial || ''
+            password_initial: client.password_initial || '',
+            whatsapp_number: client.whatsapp_number || '',
+            google_drive_folder_id: client.google_drive_folder_id || '',
+            notes: client.notes || '',
+            onboarding_data: client.onboarding_data || {}
         });
+        setActiveEditTab('operative');
         setIsEditModalOpen(true);
     };
 
@@ -306,7 +321,13 @@ export default function HQClientsPage() {
                     <h1 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">Cartera de Clientes</h1>
                     <p className="text-gray-400">Gestión centralizada de socios y cuentas activas.</p>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-4 items-center">
+                    <div className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest flex items-center gap-2 ${
+                        isCloudConnected ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                    }`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${isCloudConnected ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-amber-500 animate-pulse'}`} />
+                        {isCloudConnected ? 'Real Cloud Connected' : 'Local Mock Active'}
+                    </div>
                     <button
                         onClick={fetchClients}
                         className={`px-6 py-3 bg-white/5 text-gray-400 font-bold rounded-2xl flex items-center gap-2 hover:bg-white/10 transition-all border border-white/10 ${loading ? 'opacity-50 cursor-wait' : ''}`}
@@ -779,6 +800,33 @@ export default function HQClientsPage() {
                                                 className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-mono font-black text-xl"
                                             />
                                         </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
+                                                <MessageSquare className="w-3 h-3" /> WhatsApp Contacto
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newClient.whatsapp_number}
+                                                onChange={(e) => setNewClient({ ...newClient, whatsapp_number: e.target.value })}
+                                                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold"
+                                                placeholder="+51..."
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
+                                                <Globe className="w-3 h-3" /> Folder ID Google Drive
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newClient.google_drive_folder_id}
+                                                onChange={(e) => setNewClient({ ...newClient, google_drive_folder_id: e.target.value })}
+                                                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold"
+                                                placeholder="ID de carpeta"
+                                            />
+                                        </div>
+                                    </div>
                                     </div>
 
                                     <div className="flex gap-4 pt-6">

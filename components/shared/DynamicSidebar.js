@@ -7,13 +7,15 @@ import DesignerSidebar from '@/components/workstation/designer/DesignerSidebar';
 import EditorSidebar from '@/components/workstation/editor/EditorSidebar';
 import AudioSidebar from '@/components/workstation/audio/AudioSidebar';
 import AdminSidebar from '@/components/Sidebar';
+import ClientHubSidebar from '@/components/layout/Sidebar';
 
 export default function DynamicSidebar() {
     const { user } = useAuth();
     
     if (!user) return null;
 
-    const role = (user.role || '').toUpperCase();
+    let role = (user.role || '').toUpperCase();
+    const fullName = (user.full_name || user.user_metadata?.full_name || '').toUpperCase();
 
     // Mapeo detallado de roles a sus respectivas barras laterales
     switch (role) {
@@ -33,8 +35,7 @@ export default function DynamicSidebar() {
         case 'MUSIC':
             return <AudioSidebar />;
         default:
-            // Por defecto, si es un cliente o rol no mapeado, mostramos la barra administrativa
-            // o podrías optar por no mostrar ninguna dependiendo de la seguridad
-            return <AdminSidebar />;
+            // Por defecto, usamos la barra de alta fidelidad 'Client Hub'
+            return <ClientHubSidebar />;
     }
 }

@@ -19,10 +19,47 @@ export default function HQTeamPage() {
     const [viewMode, setViewMode] = useState('squads'); // Default to squads as per user preference
     const [selectedMember, setSelectedMember] = useState(null);
     const [isAuditOpen, setIsAuditOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [newMember, setNewMember] = useState({
+        name: '',
+        role: 'Editor de Video',
+        email: '',
+        whatsapp: '',
+        city: 'Quito',
+        salary: 0
+    });
 
     const openAudit = (member) => {
         setSelectedMember(member);
         setIsAuditOpen(true);
+    };
+
+    const handleAddMember = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            await agencyService.createTeamMember(newMember);
+            const updatedTeam = await agencyService.getTeam();
+            setTeam(updatedTeam);
+            setIsAddModalOpen(false);
+            setNewMember({ 
+                name: '', 
+                role: 'Editor de Video', 
+                email: '', 
+                whatsapp: '', 
+                city: 'Quito', 
+                salary: 0 
+            });
+            toast.success("Talento Vinculado", {
+                description: "Registrado en el Core HQ"
+            });
+        } catch (error) {
+            console.error("Error creating member:", error);
+            toast.error("Error al registrar");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     useEffect(() => {
@@ -94,6 +131,16 @@ export default function HQTeamPage() {
                         </button>
                     </div>
                 </div>
+
+                <motion.button
+                    whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(99, 102, 241, 0.4)' }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="flex items-center gap-4 bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl transition-all"
+                >
+                    <UserPlus className="w-4 h-4" />
+                    Registrar Talento
+                </motion.button>
             </div>
 
             {loading ? (
@@ -939,8 +986,148 @@ function TeamAuditModal({ member, cms = [], team = [], allClients = [], onClose,
                         </div>
                     </div>
                 </div>
+            <AnimatePresence>
+                {isAddModalOpen && (
+                    <AddMemberModal 
+                        newMember={newMember}
+                        setNewMember={setNewMember}
+                        onClose={() => setIsAddModalOpen(false)}
+                        onSubmit={handleAddMember}
+                        isSubmitting={isSubmitting}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* TEAM AUDIT MODAL */}
+            <AnimatePresence>
+                {isAuditOpen && (
+                    <TeamAuditModal 
+                        member={selectedMember} 
+                        cms={team.filter(m => m.role === 'Community Manager')}
+                        team={team}
+                        allClients={clients}
+                        onClose={() => setIsAuditOpen(false)} 
+                        onSave={() => window.location.reload()}
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitting }) {
+    return (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                className="absolute inset-0 bg-[#050511]/95 backdrop-blur-3xl"
+            />
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                className="relative w-full max-w-2xl bg-[#0A0A1F] border border-white/10 rounded-[40px] shadow-3xl overflow-hidden"
+            >
+                <div className="p-12 space-y-10">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h3 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-1">Registrar <span className="text-indigo-500">Talento</span></h3>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">NUEVO ACTIVO EN HQ CORE DIIC ZONE</p>
+                        </div>
+                        <button onClick={onClose} className="p-4 bg-white/5 hover:bg-rose-500/20 hover:text-rose-500 rounded-2xl transition-all">
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    <form onSubmit={onSubmit} className="space-y-8">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">Nombre Completo</label>
+                            <input
+                                required
+                                value={newMember.name}
+                                onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold"
+                                placeholder="Ej: Fausto León"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">Email Corporativo/Personal</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={newMember.email}
+                                    onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold"
+                                    placeholder="correo@ejemplo.com"
+                                />
+                            </div>
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">WhatsApp</label>
+                                <input
+                                    value={newMember.whatsapp}
+                                    onChange={(e) => setNewMember({ ...newMember, whatsapp: e.target.value })}
+                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold"
+                                    placeholder="+593..."
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">Rol</label>
+                                <select
+                                    value={newMember.role}
+                                    onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold appearance-none cursor-pointer"
+                                >
+                                    <option value="Editor de Video">Editor de Video</option>
+                                    <option value="Community Manager">Community Manager</option>
+                                    <option value="Diseñador">Diseñador</option>
+                                    <option value="Filmmaker">Filmmaker</option>
+                                    <option value="Programador">Programador</option>
+                                </select>
+                            </div>
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">Ciudad</label>
+                                <input
+                                    value={newMember.city}
+                                    onChange={(e) => setNewMember({ ...newMember, city: e.target.value })}
+                                    className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold"
+                                    placeholder="Ej: Quito"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="pt-8">
+                            <motion.button
+                                whileHover={{ scale: 1.02, backgroundColor: 'rgba(79, 70, 229, 0.9)' }}
+                                whileTap={{ scale: 0.98 }}
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full py-6 bg-indigo-600 text-white font-black rounded-3xl uppercase tracking-[0.4em] text-[11px] shadow-3xl shadow-indigo-600/20 flex items-center justify-center gap-4 disabled:opacity-50"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Database className="w-4 h-4 animate-spin" />
+                                        Registrando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus className="w-4 h-4" />
+                                        Vincular Talento
+                                    </>
+                                )}
+                            </motion.button>
+                        </div>
+                    </form>
+                </div>
             </motion.div>
-        </motion.div>
+        </div>
     );
 }
 
