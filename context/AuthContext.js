@@ -14,29 +14,38 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    const fetchProfile = async (userId, email = null) => {
+    const fetchProfile = async (userId, email = null, metadata = null) => {
         console.log(`[AuthContext] fetchProfile start for ${userId} (${email || 'no-email'})`);
         try {
-            // Use a promise race or just ensure single() is handled
+            // First attempt: Database Profile
             const { data, error } = await supabase
                 .from('profiles')
                 .select('role, client_id, full_name, xp, level, rank')
                 .eq('id', userId)
                 .single();
                 
-            if (error) {
-                console.warn('[AuthContext] Profile fetch error:', error.message);
-                // Emergency Fallback for known admin email
-                if (email === 'diiczone@gmail.com') {
-                    return { role: 'ADMIN', client_id: null, full_name: 'Admin DIIC' };
+            let role = data?.role;
+            let fullName = data?.full_name;
+            let client_id = data?.client_id;
+
+            // Second attempt: Fallback to metadata if DB fails or is empty
+            if (error || !role) {
+                console.warn('[AuthContext] Profile fetch error or empty, using metadata fallback:', error?.message);
+                
+                // Emergency hardcoded fallback for known CM (Leslie)
+                if (email === 'leslie.xio59@gmail.com') {
+                    role = 'COMMUNITY';
+                    fullName = 'Leslie';
+                } else {
+                    role = metadata?.role || (email === 'diiczone@gmail.com' ? 'ADMIN' : 'CLIENT');
+                    fullName = metadata?.full_name || (email === 'diiczone@gmail.com' ? 'Admin DIIC' : null);
                 }
-                return { role: 'CLIENT', client_id: null, full_name: null };
+                client_id = metadata?.client_id || null;
             }
 
-            let role = data?.role || 'CLIENT';
-            let fullName = data?.full_name || (email === 'diiczone@gmail.com' ? 'Admin DIIC' : null);
             let teamId = null;
             
+            // Normalize role
             if (email === 'diiczone@gmail.com') role = 'ADMIN';
 
             // Lookup team_id for CMs - WRAPPED IN SUB-TRY-CATCH to prevent hang
@@ -63,7 +72,7 @@ export const AuthProvider = ({ children }) => {
             console.log(`[AuthContext] Profile loaded successfully for ${fullName} (${role})`);
             return {
                 role: role,
-                client_id: data?.client_id || null,
+                client_id: client_id,
                 full_name: fullName,
                 team_id: teamId
             };
@@ -85,7 +94,7 @@ export const AuthProvider = ({ children }) => {
                 setSession(session);
                 
                 if (session?.user) {
-                    const profile = await fetchProfile(session.user.id, session.user.email);
+                    const profile = await fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
                     setUser({ ...session.user, ...profile });
                     localStorage.setItem('user_role', profile.role);
                     if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
@@ -129,7 +138,7 @@ export const AuthProvider = ({ children }) => {
             const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
                 setSession(session);
                 if (session?.user) {
-                    const profile = await fetchProfile(session.user.id, session.user.email);
+                    const profile = await fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
                     setUser({ ...session.user, ...profile });
                     localStorage.setItem('user_role', profile.role || 'CLIENT');
                     if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
@@ -167,7 +176,7 @@ export const AuthProvider = ({ children }) => {
             }
             
             console.log('Sign in success, loading profile...');
-            const profile = await fetchProfile(data.user.id, email);
+            const profile = await fetchProfile(data.user.id, email, data.user.user_metadata);
             
             const userObj = { ...data.user, ...profile };
             
@@ -219,7 +228,7 @@ export const AuthProvider = ({ children }) => {
         const needsConfirmation = !data.session;
         
         if (data.session && data.user) {
-            const profile = await fetchProfile(data.user.id, email);
+            const profile = await fetchProfile(data.user.id, email, data.user.user_metadata);
             setUser({ ...data.user, ...profile });
             setSession(data.session);
         }
@@ -231,7 +240,7 @@ export const AuthProvider = ({ children }) => {
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
         if (session?.user) {
-            const profile = await fetchProfile(session.user.id, session.user.email);
+            const profile = await fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
             setUser({ ...session.user, ...profile });
         }
     };

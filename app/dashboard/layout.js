@@ -56,17 +56,23 @@ export default function DashboardLayout({ children }) {
         
         // Guard Logic based on Real Role
         // Guard Logic based on Unified Routing
+        // Guard Logic based on Unified Routing
+        const isDashboardBase = pathname === '/dashboard' || pathname === '/dashboard/';
+        const isAdminArea = pathname.startsWith('/dashboard/hq');
+        const isWorkstationUnderDashboard = pathname.startsWith('/dashboard/editing') || pathname.startsWith('/dashboard/design');
+
         if (role === 'ADMIN') {
             const allowedAdminPaths = ['/dashboard/hq', '/dashboard/strategy', '/dashboard/systemcore'];
-            if (!allowedAdminPaths.some(p => pathname.startsWith(p))) {
+            if (!allowedAdminPaths.some(p => pathname.startsWith(p)) && pathname !== '/dashboard') {
                 router.push(home);
             }
-        } else if (pathname === '/dashboard' || pathname === '/dashboard/' || pathname === '/dashboard/hq' || pathname.startsWith('/dashboard/hq')) {
-             // Strict isolation: non-admins cannot stay in /dashboard or enter /dashboard/hq
-             if (role !== 'ADMIN' && home !== pathname) {
-                 console.log(`[DashboardLayout] Restricting access for ${role}. Redirecting to ${home}`);
-                 router.push(home);
-             }
+        } else {
+            // Non-admins should usually be in their home workstation
+            // If they are in the generic dashboard area, force them to their homeRoute
+            if ((isDashboardBase || isAdminArea) && home !== pathname) {
+                console.log(`[DashboardLayout] Restricting access for ${role}. Redirecting to ${home}`);
+                router.push(home);
+            }
         }
     }, [user, loading, pathname, router]);
 

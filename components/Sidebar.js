@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Home, Clapperboard, MonitorPlay, BarChart2, User, Share2, CreditCard, MessageSquare, Video, Palette, Mic2, CalendarDays, ShieldAlert, Globe, UserCheck } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { 
+    Home, Clapperboard, MonitorPlay, BarChart2, User, Share2, 
+    CreditCard, MessageSquare, Video, Palette, Mic2, 
+    CalendarDays, ShieldAlert, Globe, UserCheck, Users 
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 
 export default function Sidebar() {
     const router = useRouter();
+    const pathname = usePathname();
     const { user } = useAuth();
     const [clickCount, setClickCount] = useState(0);
 
@@ -33,6 +38,18 @@ export default function Sidebar() {
         return () => clearTimeout(timer);
     }, [clickCount, router]);
 
+    const navItems = [
+        { label: 'Dashboard', href: '/dashboard', icon: Home, color: 'text-primary' },
+        { label: 'Conectividad & Automatización', href: '/dashboard/connectivity', icon: Share2, color: 'text-indigo-400' },
+    ];
+
+    const workstations = [
+        { label: 'Community M.', href: '/workstation/community-manager', icon: Users, color: 'text-indigo-400' },
+        { label: 'Filmmaker', href: '/dashboard/filmmaker', icon: Clapperboard, color: 'text-orange-400' },
+        { label: 'Designer', href: '/dashboard/design', icon: MonitorPlay, color: 'text-fuchsia-400' },
+        { label: 'Audio Studio', href: '/dashboard/audio', icon: BarChart2, color: 'text-blue-400' },
+    ];
+
     return (
         <aside className="w-20 lg:w-64 glass border-r border-white/5 flex flex-col justify-between hidden md:flex z-50 h-screen sticky top-0">
             <div>
@@ -46,54 +63,68 @@ export default function Sidebar() {
                 </div>
 
                 <nav className="mt-8 flex flex-col gap-2 px-4">
-                    <Link href="/" className="flex items-center gap-4 px-4 py-3 rounded-xl bg-primary/10 text-primary border border-primary/20 transition-all">
-                        <Home className="w-6 h-6" />
-                        <span className="font-medium hidden lg:block">Dashboard</span>
-                    </Link>
-
-                    {/* --- CONNECTIVITY --- */}
-                    <div className="px-4 pt-1">
-                        <Link href="/dashboard/connectivity" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-indigo-500/10 text-indigo-400 hover:text-white transition-all text-sm border border-transparent hover:border-indigo-500/20">
-                            <Share2 className="w-5 h-5" />
-                            <span className="font-medium hidden lg:block">Conectividad & Automatización</span>
-                        </Link>
-                    </div>
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                            <Link 
+                                key={item.href}
+                                href={item.href} 
+                                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all border ${
+                                    isActive 
+                                    ? 'bg-primary/10 text-primary border-primary/20' 
+                                    : 'hover:bg-white/5 text-gray-400 border-transparent'
+                                }`}
+                            >
+                                <item.icon className={`w-6 h-6 ${isActive ? '' : 'opacity-70'}`} />
+                                <span className="font-medium hidden lg:block">{item.label}</span>
+                            </Link>
+                        );
+                    })}
 
                     {/* --- WORKSTATIONS --- */}
                     <div className="px-4 pt-4 pb-2">
                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hidden lg:block mb-2">Workstations</p>
                         <div className="space-y-1">
-                            <Link href="/dashboard/community" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
-                                <Share2 className="w-5 h-5 text-indigo-400" />
-                                <span className="font-medium hidden lg:block">Community M.</span>
-                            </Link>
-                            <Link href="/dashboard/filmmaker" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
-                                <Clapperboard className="w-5 h-5 text-orange-400" />
-                                <span className="font-medium hidden lg:block">Filmmaker</span>
-                            </Link>
-                            <Link href="/dashboard/design" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
-                                <MonitorPlay className="w-5 h-5 text-fuchsia-400" />
-                                <span className="font-medium hidden lg:block">Designer</span>
-                            </Link>
-                            <Link href="/dashboard/audio" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm">
-                                <BarChart2 className="w-5 h-5 text-blue-400" />
-                                <span className="font-medium hidden lg:block">Audio Studio</span>
-                            </Link>
+                            {workstations.map((ws) => {
+                                const isActive = pathname.startsWith(ws.href);
+                                return (
+                                    <Link 
+                                        key={ws.href}
+                                        href={ws.href} 
+                                        className={`flex items-center gap-4 px-4 py-2 rounded-xl transition-all text-sm border ${
+                                            isActive 
+                                            ? 'bg-white/10 text-white border-white/10' 
+                                            : 'hover:bg-white/5 text-gray-400 hover:text-white border-transparent'
+                                        }`}
+                                    >
+                                        <ws.icon className={`w-5 h-5 ${ws.color} ${isActive ? '' : 'opacity-70'}`} />
+                                        <span className="font-medium hidden lg:block">{ws.label}</span>
+                                    </Link>
+                                );
+                            })}
                         </div>
                     </div>
 
                     {/* --- ADMIN CORE --- */}
                     <div className="px-4 pt-4">
                         <p className="text-[10px] font-bold text-red-500/50 uppercase tracking-widest hidden lg:block mb-2">Admin Core</p>
-                        <Link href="/dashboard/hq/control" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-red-500/10 text-red-500/60 hover:text-red-400 transition-all text-sm border border-transparent hover:border-red-500/20">
+                        <Link href="/dashboard/hq/control" className={`flex items-center gap-4 px-4 py-2 rounded-xl transition-all text-sm border ${
+                            pathname.startsWith('/dashboard/hq')
+                            ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                            : 'hover:bg-red-500/10 text-red-500/60 hover:text-red-400 border-transparent hover:border-red-500/20'
+                        }`}>
                             <ShieldAlert className="w-5 h-5" />
                             <span className="font-medium hidden lg:block">Gobernanza</span>
                         </Link>
                     </div>
 
-                    {/* --- LEGACY LINKS (Optional or collapsed) --- */}
+                    {/* --- METRICS --- */}
                     <div className="px-4 pt-4 border-t border-white/5 mt-4">
-                        <Link href="/dashboard/analytics" className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all text-sm opacity-60 hover:opacity-100">
+                        <Link href="/dashboard/analytics" className={`flex items-center gap-4 px-4 py-2 rounded-xl transition-all text-sm ${
+                            pathname === '/dashboard/analytics'
+                            ? 'bg-white/5 text-white'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5 opacity-60 hover:opacity-100'
+                        }`}>
                             <BarChart2 className="w-5 h-5" />
                             <span className="font-medium hidden lg:block">Métricas</span>
                         </Link>

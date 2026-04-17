@@ -5,7 +5,8 @@ import {
     Folder, FileVideo, FileImage, Download, 
     MoreVertical, Search, Filter, Plus, 
     FileText, Trash2, Edit2, Share2, 
-    X, Check, ChevronLeft, Eye, ExternalLink
+    X, Check, ChevronLeft, Eye, ExternalLink,
+    Cloud, Database, HardDrive, Chrome, ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -16,6 +17,7 @@ export default function EditorFilesPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('all');
     const [isNewFolderModalOpen, setIsNewFolderModalOpen] = useState(false);
+    const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
     const [files, setFiles] = useState(EDITOR_FILES);
     const [currentFolderId, setCurrentFolderId] = useState(null);
@@ -99,13 +101,25 @@ export default function EditorFilesPage() {
                         {currentFolderId ? `Explorando contenidos de ${currentFolder?.name}` : 'Gestiona los activos y entregables de tus proyectos.'}
                     </p>
                 </div>
-                <button 
-                    onClick={() => setIsNewFolderModalOpen(true)}
-                    className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl transition-all font-black uppercase text-xs tracking-widest flex items-center gap-3 shadow-2xl shadow-indigo-600/30 active:scale-95"
-                >
-                    <Plus className="w-5 h-5" /> Nuevo Folder
-                </button>
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => setIsCloudModalOpen(true)}
+                        className="px-6 py-4 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/5 rounded-2xl transition-all font-black uppercase text-[10px] tracking-widest flex items-center gap-3 backdrop-blur-md group"
+                    >
+                        <Cloud className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" /> 
+                        <span className="hidden lg:block">Vincular Cloud</span>
+                    </button>
+                    <button 
+                        onClick={() => setIsNewFolderModalOpen(true)}
+                        className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl transition-all font-black uppercase text-xs tracking-widest flex items-center gap-3 shadow-2xl shadow-indigo-600/30 active:scale-95"
+                    >
+                        <Plus className="w-5 h-5" /> Nuevo Folder
+                    </button>
+                </div>
             </header>
+
+            {/* Models */}
+            <ConnectCloudModal isOpen={isCloudModalOpen} onClose={() => setIsCloudModalOpen(false)} onToast={showToast} />
 
             {/* Toolbar */}
             <div className="flex flex-wrap gap-4 mb-8 bg-white/5 border border-white/5 p-4 rounded-3xl backdrop-blur-md">
@@ -261,6 +275,80 @@ export default function EditorFilesPage() {
                 )}
             </AnimatePresence>
         </div>
+    );
+}
+
+
+function ConnectCloudModal({ isOpen, onClose, onToast }) {
+    const providers = [
+        { id: 'google', name: 'Google Drive', icon: Chrome, color: 'text-red-400', bg: 'bg-red-400/5', border: 'border-red-400/10' },
+        { id: 'dropbox', name: 'Dropbox', icon: Database, color: 'text-blue-400', bg: 'bg-blue-400/5', border: 'border-blue-400/10' },
+        { id: 'onedrive', name: 'OneDrive', icon: HardDrive, color: 'text-indigo-400', bg: 'bg-indigo-400/5', border: 'border-indigo-400/10' },
+    ];
+
+    const handleConnect = (name) => {
+        onToast(`Iniciando conexión con ${name}...`);
+        setTimeout(() => {
+            onToast(`Cámaras vinculadas: ${name} ahora está activo.`);
+            onClose();
+        }, 2000);
+    };
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 backdrop-blur-2xl bg-black/60">
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        className="bg-[#0E0E18] border border-white/10 p-10 rounded-[40px] w-full max-w-xl shadow-2xl relative"
+                    >
+                        <button 
+                            onClick={onClose}
+                            className="absolute top-8 right-8 p-2 text-gray-500 hover:text-white transition-colors"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+
+                        <div className="mb-10 text-center">
+                            <div className="w-20 h-20 bg-indigo-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-indigo-500/20 shadow-2xl shadow-indigo-500/10">
+                                <Cloud className="w-10 h-10 text-indigo-400 animate-pulse" />
+                            </div>
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-2">Vincular Almacenamiento</h2>
+                            <p className="text-gray-500 font-medium">Conecta tus activos externos para importarlos directamente a producción.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 mb-8">
+                            {providers.map((p) => (
+                                <button 
+                                    key={p.id}
+                                    onClick={() => handleConnect(p.name)}
+                                    className={`flex items-center justify-between p-6 rounded-3xl ${p.bg} ${p.border} border hover:bg-white/5 hover:border-white/10 transition-all group active:scale-95`}
+                                >
+                                    <div className="flex items-center gap-6">
+                                        <div className={`p-4 rounded-2xl bg-black/40 ${p.color} border border-white/5 group-hover:scale-110 transition-transform`}>
+                                            <p.icon className="w-8 h-8" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-white font-black uppercase tracking-widest text-sm">{p.name}</p>
+                                            <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest mt-1">Cloud Storage Sync</p>
+                                        </div>
+                                    </div>
+                                    <div className="w-10 h-10 rounded-full border border-white/5 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-all">
+                                        <ArrowRight className="w-5 h-5" />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <p className="text-center text-[9px] text-gray-700 font-black uppercase tracking-[0.3em] px-8 leading-relaxed">
+                            Al conectar cuentas externas, DIIC ZONE solo solicitará permisos de lectura/escritura en carpetas específicas de producción.
+                        </p>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
     );
 }
 

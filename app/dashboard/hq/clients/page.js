@@ -266,14 +266,22 @@ export default function HQClientsPage() {
 
     const confirmDelete = async () => {
         if (!clientToDelete) return;
+        setIsSubmitting(true);
         try {
             await agencyService.deleteClient(clientToDelete);
             await fetchClients();
             setIsDeleteModalOpen(false);
             setClientToDelete(null);
-            console.log("Client deleted successfully");
+            toast.success("Socio eliminado", {
+                description: "Los datos han sido removidos de la nube."
+            });
         } catch (error) {
             console.error("Error deleting client:", error);
+            toast.error("Error al eliminar", {
+                description: "No se pudo retirar al socio de la base de datos."
+            });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -931,9 +939,10 @@ export default function HQClientsPage() {
                                 <button
                                     id="confirm-delete-btn"
                                     onClick={confirmDelete}
-                                    className="px-8 py-4 bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-lg shadow-red-500/20"
+                                    disabled={isSubmitting}
+                                    className="px-8 py-4 bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-lg shadow-red-500/20 disabled:opacity-50"
                                 >
-                                    Elininar Ahora
+                                    {isSubmitting ? 'Eliminando...' : 'Eliminar Ahora'}
                                 </button>
                             </div>
                         </motion.div>
