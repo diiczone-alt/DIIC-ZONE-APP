@@ -31,14 +31,28 @@ export const AuthProvider = ({ children }) => {
 
             // Return data with fallback values for each field
             let role = data?.role || 'CLIENT';
+            let fullName = data?.full_name || (email === 'diiczone@gmail.com' ? 'Admin DIIC' : null);
+            let teamId = null;
             
-            // Safety: If email is the admin email, force ADMIN role even if single() returned something else
+            // Safety: If email is the admin email, force ADMIN role
             if (email === 'diiczone@gmail.com') role = 'ADMIN';
+
+            // Lookup team_id for CMs to enable squad filtering
+            if ((role === 'COMMUNITY' || role === 'CM') && fullName) {
+                const { data: teamData } = await supabase
+                    .from('team')
+                    .select('id')
+                    .eq('name', fullName)
+                    .eq('role', 'Community Manager')
+                    .single();
+                if (teamData) teamId = teamData.id;
+            }
 
             return {
                 role: role,
                 client_id: data?.client_id || null,
-                full_name: data?.full_name || (email === 'diiczone@gmail.com' ? 'Admin DIIC' : null)
+                full_name: fullName,
+                team_id: teamId
             };
         } catch (err) {
             console.error('[AuthContext] Unexpected fetchProfile error:', err);

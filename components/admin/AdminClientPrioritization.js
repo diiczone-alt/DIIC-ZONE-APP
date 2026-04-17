@@ -11,35 +11,90 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 import { prioritizationService } from '@/services/prioritizationService';
 
 export default function AdminClientPrioritization() {
     // Simulation of DB Clients + Service Calculation
     const [clients, setClients] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [suggestedQueue, setSuggestedQueue] = useState([]);
 
     useEffect(() => {
-        const raw = [
-            { id: 1, name: "Clínica Dental A", income: "$2,400", plan: "PREMIUM", urgency: "2025-10-25", impact: "SALES_CAMPAIGN", history: "VIP" },
-            { id: 2, name: "Empresa Tech B", income: "$1,800", plan: "PRO", urgency: "2025-10-28", impact: "LAUNCH", history: "GOOD" },
-            { id: 3, name: "Restaurante C", income: "$800", plan: "BASIC", urgency: "2025-11-10", impact: "CONTENT", history: "GOOD" },
-            { id: 4, name: "Startup D", income: "$450", plan: "BASIC", urgency: "2025-12-01", impact: "DESIGN", history: "CONFLICTIVE" },
-            { id: 5, name: "Inmobiliaria E", income: "$2,100", plan: "PRO", urgency: "2025-10-26", impact: "AUTOMATION", history: "VIP" },
-        ];
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // 1. Fetch Clients
+                const { data: dbClients, error: clientErr } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .neq('status', 'inactive');
+                
+                if (clientErr) throw clientErr;
 
-        const processed = raw.map(client => {
-            const result = prioritizationService.calculateScore(
-                { plan: client.plan, history: client.history },
-                { type: client.impact, deadline: client.urgency }
-            );
-            return {
-                ...client,
-                pp: result.score,
-                level: result.tier === 'HIGH' ? 'high' : result.tier === 'MEDIUM' ? 'medium' : 'low',
-                isCritical: result.score >= 90 // Visual helper
-            };
-        }).sort((a, b) => b.pp - a.pp);
+                // 2. Fetch Pending Tasks
+                const { data: dbTasks, error: taskErr } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .neq('status', 'done');
 
-        setClients(processed);
+                if (taskErr) throw taskErr;
+
+                // 3. Process Scoring
+                const processed = dbClients.map(client => {
+                    // Find most urgent task for this client
+                    const clientTasks = dbTasks.filter(t => t.client === client.id);
+                    const mostUrgentTask = clientTasks.sort((a, b) => {
+                        if (!a.deadline) return 1;
+                        if (!b.deadline) return -1;
+                        return new Date(a.deadline) - new Date(b.deadline);
+                    })[0];
+
+                    const result = prioritizationService.calculateScore(
+                        { 
+                            plan: client.plan || 'BASIC', 
+                            history: client.history || 'GOOD' // Future: could fetch from a metadata/profile table
+                        },
+                        { 
+                            type: mostUrgentTask?.format || 'CONTENT', 
+                            deadline: mostUrgentTask?.deadline 
+                        }
+                    );
+
+                    return {
+                        ...client,
+                        income: `$${(client.price || 0).toLocaleString()}`,
+                        pp: result.score,
+                        level: result.tier === 'HIGH' ? 'high' : result.tier === 'MEDIUM' ? 'medium' : 'low',
+                        isCritical: result.score >= 90,
+                        topTask: mostUrgentTask
+                    };
+                }).sort((a, b) => b.pp - a.pp);
+
+                setClients(processed);
+
+                // 4. Build Suggested Queue
+                const queue = processed
+                    .filter(c => c.topTask)
+                    .map(c => ({
+                        client: c.name,
+                        task: c.topTask.title,
+                        time: c.topTask.deadline ? new Date(c.topTask.deadline).toLocaleDateString() : 'Pendiente',
+                        level: c.level
+                    }))
+                    .slice(0, 10);
+                
+                setSuggestedQueue(queue);
+
+            } catch (err) {
+                console.error('Error fetching prioritization data:', err);
+                toast.error('Error al cargar datos de priorización');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
     }, []);
 
     return (
@@ -79,9 +134,19 @@ export default function AdminClientPrioritization() {
                     </div>
 
                     <div className="space-y-3">
-                        {clients.map((client, index) => (
-                            <RankingRow key={client.id} client={client} rank={index + 1} />
-                        ))}
+                        {loading ? (
+                            <div className="py-20 flex flex-col items-center justify-center gap-4">
+                                <Timer className="w-8 h-8 text-indigo-500 animate-spin" />
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Calculando Prioridades...</p>
+                            </div>
+                        ) : (
+                            clients.map((client, index) => (
+                                <RankingRow key={client.id} client={client} rank={index + 1} />
+                            ))
+                        )}
+                        {!loading && clients.length === 0 && (
+                            <div className="py-20 text-center text-gray-500 font-bold uppercase text-xs">No hay clientes activos</div>
+                        )}
                     </div>
                 </div>
 
@@ -90,13 +155,22 @@ export default function AdminClientPrioritization() {
                     <div className="bg-white/5 border border-white/10 rounded-[32px] p-8">
                         <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-8"> Cola de Producción Sugerida</h3>
                         <div className="space-y-4">
-                            <QueueItem client="Clínica Dental A" task="Edición Reel Master" time="08:00 AM" level="critical" />
-                            <QueueItem client="Inmobiliaria E" task="Diseño Branding" time="10:30 AM" level="high" />
-                            <QueueItem client="Empresa Tech B" task="Setup CRM" time="01:00 PM" level="high" />
-                            <div className="pt-4 mt-4 border-t border-white/10 opacity-40">
-                                <QueueItem client="Restaurante C" task="Post Semanales" time="Pospuesto" level="medium" />
-                                <QueueItem client="Startup D" task="Review Web" time="Pospuesto" level="low" />
-                            </div>
+                            {suggestedQueue.length > 0 ? (
+                                <>
+                                    {suggestedQueue.filter(i => i.time !== 'Pospuesto').map((item, idx) => (
+                                        <QueueItem key={idx} {...item} />
+                                    ))}
+                                    {suggestedQueue.filter(i => i.time === 'Pospuesto').length > 0 && (
+                                        <div className="pt-4 mt-4 border-t border-white/10 opacity-40">
+                                            {suggestedQueue.filter(i => i.time === 'Pospuesto').map((item, idx) => (
+                                                <QueueItem key={idx} {...item} />
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="text-[10px] text-gray-500 font-bold uppercase py-10 text-center">No hay tareas pendientes</p>
+                            )}
                         </div>
                     </div>
 

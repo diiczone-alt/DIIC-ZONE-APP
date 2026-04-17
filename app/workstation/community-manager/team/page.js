@@ -9,8 +9,10 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 export default function TeamPage() {
+    const { user } = useAuth();
     const [teamMembers, setTeamMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedMember, setSelectedMember] = useState(null);
@@ -19,6 +21,12 @@ export default function TeamPage() {
 
     useEffect(() => {
         const fetchTeam = async () => {
+            if (!user?.team_id) {
+                // If user is loaded but no team_id, we might still be loading or they have no squad
+                if (user) setLoading(false);
+                return;
+            }
+
             setLoading(true);
             const timeoutId = setTimeout(() => {
                 setLoading(true); // Ensure we don't accidentally set false before fetch starts
@@ -26,10 +34,11 @@ export default function TeamPage() {
             }, 4000);
 
             try {
-                // Fetch all members from the team table
+                // Fetch members belonging to this CM's squad
                 const { data, error } = await supabase
                     .from('team')
-                    .select('*');
+                    .select('*')
+                    .eq('squad_lead_id', user.team_id);
 
                 clearTimeout(timeoutId);
                 if (error) throw error;
@@ -90,7 +99,7 @@ export default function TeamPage() {
         };
 
         fetchTeam();
-    }, []);
+    }, [user]);
 
     if (loading) {
         return (

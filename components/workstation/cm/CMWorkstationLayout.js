@@ -15,6 +15,7 @@ import ContentKanban from '../../shared/Kanban/ContentKanban';
 import UnifiedCalendar from '../../calendar/UnifiedCalendar';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { agencyService } from '@/services/agencyService';
 
 export default function CMWorkstationLayout() {
     const searchParams = useSearchParams();
@@ -26,6 +27,8 @@ export default function CMWorkstationLayout() {
     const [clientTasks, setClientTasks] = useState([]);
     const [loadingTasks, setLoadingTasks] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [squad, setSquad] = useState([]);
+    const [loadingSquad, setLoadingSquad] = useState(false);
 
     const { user } = useAuth();
 
@@ -36,12 +39,25 @@ export default function CMWorkstationLayout() {
         if (user) {
             if (user.full_name) {
                 fetchClients();
+                if (user.team_id) fetchSquad(user.team_id);
             } else {
                 // Si el usuario existe pero no tiene nombre, liberamos carga para mostrar estado vacío/error
                 setLoading(false);
             }
         }
     }, [searchParams, user]);
+
+    const fetchSquad = async (teamId) => {
+        setLoadingSquad(true);
+        try {
+            const data = await agencyService.getTeamByLead(teamId);
+            if (data) setSquad(data);
+        } catch (err) {
+            console.error('Error fetching squad:', err);
+        } finally {
+            setLoadingSquad(false);
+        }
+    };
 
     const fetchClientTasks = async (clientId) => {
         setLoadingTasks(true);
@@ -175,7 +191,7 @@ export default function CMWorkstationLayout() {
                             transition={{ duration: 0.2 }}
                             className="h-full"
                         >
-                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user)}
+                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad)}
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -184,7 +200,7 @@ export default function CMWorkstationLayout() {
     );
 }
 
-function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user) {
+function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad) {
     if (!selectedClient) {
         if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} />;
         return (
@@ -204,11 +220,11 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'dashboard': return <CMDashboard client={selectedClient} user={user} />;
         case 'projects': return <CMProjects client={selectedClient} tasks={clientTasks} loading={loadingTasks} />;
         case 'contents': return <ContentKanban role="cm" />;
-        case 'chat': return <CommunicationCenter client={selectedClient} />;
+        case 'chat': return <CommunicationCenter client={selectedClient} squad={squad} />;
         case 'meta': return <MetaAdsModule client={selectedClient} />;
         case 'calendar': return <UnifiedCalendar role="cm" />;
         case 'strategy': return <StrategyBoard role="cm" onClose={() => setActiveTab('dashboard')} />;
-        case 'team': return <TeamView client={selectedClient} tasks={clientTasks} />;
+        case 'team': return <TeamView client={selectedClient} tasks={clientTasks} squad={squad} />;
         case 'reports': return <CMReports client={selectedClient} />;
         default: return <CMDashboard client={selectedClient} />;
     }
@@ -502,7 +518,7 @@ function RoleTaskCard({ role, staff, tasks, color }) {
     );
 }
 
-function CommunicationCenter({ client }) {
+function CommunicationCenter({ client, squad }) {
     const [subTab, setSubTab] = useState('ia');
     const [showContextModal, setShowContextModal] = useState(false);
 
@@ -541,7 +557,7 @@ function CommunicationCenter({ client }) {
                     >
                         {subTab === 'ia' && <AIChatView />}
                         {subTab === 'empresa' && <EnterpriseChatView client={client} />}
-                        {subTab === 'team' && <TeamChatView client={client} onSend={() => setShowContextModal(true)} />}
+                        {subTab === 'team' && <TeamChatView client={client} squad={squad} onSend={() => setShowContextModal(true)} />}
                     </motion.div>
                 </AnimatePresence>
 
@@ -624,11 +640,14 @@ function EnterpriseChatView({ client }) {
     );
 }
 
-function TeamChatView({ client, onSend }) {
-    const team = [
-        { name: 'Andrés Vera', role: 'Editor Video', status: 'En producción', avatar: 'AV' },
-        { name: 'Mateo G.', role: 'Diseñador', status: 'Disponible', avatar: 'MG' },
-        { name: 'Kevin R.', role: 'Filmmaker', status: 'En revisión', avatar: 'KR' },
+function TeamChatView({ client, squad, onSend }) {
+    const team = (squad && squad.length > 0) ? squad.map(m => ({
+        name: m.name,
+        role: m.role,
+        status: m.status || 'Disponible',
+        avatar: m.name.split(' ').map(n => n[0]).join('').toUpperCase()
+    })) : [
+        { name: 'Cargando equipo...', role: 'No asignado', status: '-', avatar: '?' }
     ];
 
     return (
@@ -728,12 +747,18 @@ function MessageContextModal({ onClose }) {
     );
 }
 
-function TeamView({ client, tasks }) {
+function TeamView({ client, tasks, squad }) {
     const roles = [
         { id: 'editor', name: 'Editor de Video', avatar: 'ED' },
         { id: 'designer', name: 'Diseñador', avatar: 'DS' },
         { id: 'filmmaker', name: 'Filmmaker/Ph', avatar: 'FK' }
     ];
+
+    // Helper to find specific squad member by role
+    const getSquadMemberByRole = (roleName) => {
+        if (!squad) return null;
+        return squad.find(m => m.role.toLowerCase().includes(roleName.toLowerCase()));
+    };
 
     return (
         <div className="space-y-12">
@@ -743,6 +768,7 @@ function TeamView({ client, tasks }) {
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {roles.map((role) => {
+                        const member = getSquadMemberByRole(role.id === 'editor' ? 'Editor' : role.id === 'designer' ? 'Diseñador' : 'Filmmaker');
                         const roleTasks = tasks.filter(t => t.assigned_role === role.id);
                         const completedTasks = roleTasks.filter(t => t.status === 'completed').length;
                         const progress = roleTasks.length > 0 ? (completedTasks / roleTasks.length) * 100 : 0;
@@ -751,11 +777,12 @@ function TeamView({ client, tasks }) {
                             <div key={role.id} className="bg-[#0E0E18] border border-white/5 rounded-3xl p-6 hover:border-cyan-500/30 transition-all group">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
-                                        {role.avatar}
+                                        {member ? member.name.split(' ').map(n=>n[0]).join('') : role.avatar}
                                     </div>
                                     <div>
-                                        <h4 className="text-white font-bold">{role.name}</h4>
-                                        <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">{roleTasks.length} Tareas Asignadas</p>
+                                        <h4 className="text-white font-bold">{member ? member.name : role.name}</h4>
+                                        <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">{member ? member.role : role.name}</p>
+                                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">{roleTasks.length} Tareas Asignadas</p>
                                     </div>
                                 </div>
 

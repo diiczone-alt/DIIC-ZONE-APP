@@ -16,8 +16,32 @@ class PrioritizationService {
 
         // --- SCORING TABLES ---
         this.SCORES = {
-            PLAN: { 'PREMIUM': 100, 'PRO': 80, 'BASIC': 60, 'PAY_PER_USE': 40, 'FREE': 20 },
-            IMPACT: { 'SALES_CAMPAIGN': 100, 'LAUNCH': 90, 'AUTOMATION': 85, 'CONTENT': 70, 'DESIGN': 50, 'LAB': 30 },
+            PLAN: { 
+                'PREMIUM': 100, 
+                'PRO': 80, 
+                'BASIC': 60, 
+                'PAY_PER_USE': 40, 
+                'FREE': 20,
+                // Real DB Mapping
+                'Estrategia Elite (12 meses)': 100,
+                'Estrategia Pro (6 meses)': 85,
+                'STARTUP': 65,
+                'Basic': 50
+            },
+            IMPACT: { 
+                'SALES_CAMPAIGN': 100, 
+                'LAUNCH': 95, 
+                'AUTOMATION': 85, 
+                'CONTENT': 70, 
+                'DESIGN': 50, 
+                'LAB': 30,
+                // Real Task Format Mapping
+                'Video Promo': 95,
+                'Reel': 75,
+                'Post': 60,
+                'Diseño': 50,
+                'Web': 80
+            },
             URGENCY: { 'CRITICAL_24H': 100, 'HIGH_3D': 80, 'MEDIUM_6D': 60, 'LOW_7D': 40 },
             HISTORY: { 'VIP': 100, 'GOOD': 70, 'CONFLICTIVE': 40 }
         };
