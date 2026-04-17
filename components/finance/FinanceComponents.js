@@ -5,7 +5,7 @@ import {
     ArrowUpRight, AlertCircle, Calendar
 } from 'lucide-react';
 
-export function WalletCard({ available, retained, pending, nextPayout }) {
+export function WalletCard({ available, retained, pending, nextPayout, onAction }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
@@ -21,7 +21,10 @@ export function WalletCard({ available, retained, pending, nextPayout }) {
                         Próximo Pago: <span className="text-white font-bold">{nextPayout}</span>
                     </p>
                 </div>
-                <button className="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs transition-colors shadow-lg shadow-emerald-600/20">
+                <button 
+                    onClick={onAction}
+                    className="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs transition-colors shadow-lg shadow-emerald-600/20"
+                >
                     Solicitar Retiro
                 </button>
             </div>
