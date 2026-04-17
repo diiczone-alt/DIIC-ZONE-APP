@@ -93,7 +93,7 @@ export const aiService = {
      */
     chatWithAgent: async (messages, clientContext) => {
         try {
-            const response = await fetch('/api/ai/chat', {
+            const response = await fetch('/api/ai/vision-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ messages, clientContext })
