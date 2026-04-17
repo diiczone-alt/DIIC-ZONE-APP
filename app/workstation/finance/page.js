@@ -9,6 +9,7 @@ import {
 import { WalletCard, TransactionList } from '@/components/finance/FinanceComponents';
 import DynamicSidebar from '@/components/shared/DynamicSidebar';
 import PayoutModal from '@/components/finance/PayoutModal';
+import PaymentMethodModal from '@/components/finance/PaymentMethodModal';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -18,6 +19,8 @@ export default function FinancePage() {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showPayoutModal, setShowPayoutModal] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [profileData, setProfileData] = useState(null);
     const [metrics, setMetrics] = useState({
         available: '0.00',
         retained: '0.00',
@@ -25,10 +28,20 @@ export default function FinancePage() {
     });
 
     const fetchFinanceData = useCallback(async () => {
-        if (!user?.full_name) return;
+        if (!user?.id) return;
         setLoading(true);
 
         try {
+            // Fetch Profile for Payment Config
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            
+            setProfileData(profile);
+
+            // Fetch Transactions
             const { data, error } = await supabase
                 .from('financial_transactions')
                 .select('*')
@@ -128,7 +141,7 @@ export default function FinancePage() {
                             <Download className="w-4 h-4" /> Exportar Reporte
                         </button>
                         <button 
-                            onClick={() => toast.info("Configuración de pagos próxima mente disponible")}
+                            onClick={() => setShowPaymentModal(true)}
                             className="px-4 py-2 bg-[#0E0E18] border border-white/10 rounded-xl text-xs font-bold text-gray-400 hover:text-white flex items-center gap-2 transition-colors"
                         >
                             <Settings className="w-4 h-4" /> Configurar Pagos
@@ -181,7 +194,10 @@ export default function FinancePage() {
                                     </div>
                                     <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded">Activo</span>
                                 </div>
-                                <button className="w-full py-2 text-xs font-bold text-gray-400 hover:text-white border border-dashed border-white/10 rounded-lg hover:bg-white/5 transition-colors">
+                                <button 
+                                    onClick={() => setShowPaymentModal(true)}
+                                    className="w-full py-2 text-xs font-bold text-gray-400 hover:text-white border border-dashed border-white/10 rounded-lg hover:bg-white/5 transition-colors"
+                                >
                                     + Modificar Método
                                 </button>
                             </div>
@@ -210,7 +226,15 @@ export default function FinancePage() {
                 isOpen={showPayoutModal}
                 onClose={() => setShowPayoutModal(false)}
                 availableBalance={metrics.available}
-                user={user}
+                user={profileData || user}
+                onUpdate={fetchFinanceData}
+            />
+
+            {/* Modal de Configuración de Pagos */}
+            <PaymentMethodModal
+                isOpen={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                user={profileData || user}
                 onUpdate={fetchFinanceData}
             />
         </div>
