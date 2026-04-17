@@ -55,7 +55,7 @@ export default function OnboardingWizard({ initialType = 'client' }) {
     const { user, loading } = useAuth();
 
     const isCreative = formData.type === 'creative';
-    const totalSteps = isCreative ? 8 : 15;
+    const totalSteps = isCreative ? 9 : 15;
 
 
     // 1. Persistence: Load state from localStorage on mount
@@ -130,7 +130,8 @@ export default function OnboardingWizard({ initialType = 'client' }) {
                 case 5: return <TalentDescriptionStep onNext={nextStep} updateData={updateRoot} />;
                 case 6: return <TalentCVStep onNext={nextStep} updateData={updateRoot} />;
                 case 7: return <SubProfileStep onNext={nextStep} updateData={updateRoot} profileType="creator" />;
-                case 8: return <EnvironmentSuccessStep onNext={nextStep} formData={formData} />;
+                case 8: return <DriveSetupStep onNext={nextStep} updateData={(d) => handleUpdateData('driveData', d)} data={formData} />;
+                case 9: return <EnvironmentSuccessStep onNext={nextStep} formData={formData} />;
                 default: return <div className="text-white text-center p-10 font-bold">¡Bienvenido a la Zona Creativa! 🎥</div>;
             }
         }

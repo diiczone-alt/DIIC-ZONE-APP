@@ -156,24 +156,21 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                         </p>
                     </div>
 
-                    <div className="pt-6 border-t border-white/5">
-                        <p className="text-[10px] text-gray-500 font-mono uppercase tracking-[0.2em] mb-4">¿Ya confirmaste?</p>
+                    <div className="pt-4 flex flex-col gap-3">
                         <button
                             onClick={() => window.location.reload()}
-                            className="w-full py-5 bg-white/5 border border-white/10 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                            className="w-full py-4 bg-white/5 border border-white/10 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-white/10 transition-all flex items-center justify-center gap-2"
                         >
-                            INICIAR SESIÓN AHORA <ArrowRight className="w-4 h-4" />
+                            ¿YA CONFIRMASTE? INICIAR SESIÓN <ArrowRight className="w-4 h-4" />
                         </button>
-                    </div>
 
-                    {isDev && bypassActive && (
                         <button
                             onClick={onNext}
-                            className="w-full py-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-emerald-500/20 transition-all mb-4"
+                            className="w-full py-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-emerald-500/20 transition-all"
                         >
-                            BYPASS: CONTINUAR SIN VERIFICAR (DEV ONLY)
+                            CONTINUAR DIRECTO (SIN VERIFICAR)
                         </button>
-                    )}
+                    </div>
 
                     <p className="text-[9px] text-gray-700 font-bold uppercase tracking-widest">
                         Nota: Revisa tu carpeta de Spam si no recibes el correo en 2 minutos.
