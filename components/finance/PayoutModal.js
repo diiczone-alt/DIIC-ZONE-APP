@@ -114,6 +114,31 @@ export default function PayoutModal({ isOpen, onClose, availableBalance, user, o
                                 <h4 className="text-2xl font-black text-white">${availableBalance}</h4>
                             </div>
 
+                            {/* Payment Method Summary */}
+                            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                                <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest mb-3">Método de Cobro Activo</p>
+                                {user?.payment_method_config?.type ? (
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-white uppercase">
+                                                {user.payment_method_config.type === 'bank' ? `Banco: ${user.payment_method_config.bank_name}` : 
+                                                 user.payment_method_config.type === 'paypal' ? `PayPal: ${user.payment_method_config.email}` : 
+                                                 `Binance: ${user.payment_method_config.wallet_address.substring(0, 10)}...`}
+                                            </p>
+                                            <p className="text-[9px] text-gray-500 font-bold">CONFIGURACIÓN VERIFICADA</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3 text-orange-400">
+                                        <AlertCircle className="w-4 h-4" />
+                                        <p className="text-[10px] font-bold uppercase">No has configurado un método de pago</p>
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Input Field */}
                             <div className="space-y-2">
                                 <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest ml-1">Monto a Retirar (USD)</label>
@@ -134,7 +159,7 @@ export default function PayoutModal({ isOpen, onClose, availableBalance, user, o
                             <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-xl flex gap-3">
                                 <AlertCircle className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
                                 <p className="text-[10px] text-gray-500 leading-relaxed">
-                                    Al solicitar el retiro, los fondos pasarán a estado **Bloqueado** hasta que la transferencia sea procesada por el equipo de finanzas.
+                                    Al solicitar el retiro, los fondos pasarán a estado **Pendiente** hasta que la transferencia sea procesada por Administración.
                                 </p>
                             </div>
                         </div>
