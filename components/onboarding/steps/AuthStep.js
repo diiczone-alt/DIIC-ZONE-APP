@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Wifi, Cpu, Globe, ArrowRight, Mail, Lock, User, Briefcase, MapPin, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -20,6 +20,14 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
     const [loading, setLoading] = useState(false);
     const [isCityOpen, setIsCityOpen] = useState(false);
     const [verificationSent, setVerificationSent] = useState(false);
+    const [bypassActive, setBypassActive] = useState(false);
+    const [isDev, setIsDev] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            setIsDev(true);
+        }
+    }, []);
 
     const ecuadorCities = [
         "Quito", "Guayaquil", "Cuenca", "Santo Domingo", "Machala", 
@@ -79,7 +87,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 full_name: formData.full_name,
                 brand: formData.brand,
                 city: formData.city,
-                role: finalRole
+                role: finalRole,
+                type: type
             });
 
             updateData({ 
@@ -156,6 +165,15 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                             INICIAR SESIÓN AHORA <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
+
+                    {isDev && bypassActive && (
+                        <button
+                            onClick={onNext}
+                            className="w-full py-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-emerald-500/20 transition-all mb-4"
+                        >
+                            BYPASS: CONTINUAR SIN VERIFICAR (DEV ONLY)
+                        </button>
+                    )}
 
                     <p className="text-[9px] text-gray-700 font-bold uppercase tracking-widest">
                         Nota: Revisa tu carpeta de Spam si no recibes el correo en 2 minutos.
@@ -318,8 +336,11 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
             </motion.form>
             )}
 
-            <div className="font-mono text-[7px] text-gray-700 uppercase tracking-[0.3em] font-black">
-                PROTOCOL_BYPASS_ENABLED: FALSE | CHANNEL: SECURE_CORE
+            <div 
+                onClick={() => isDev && setBypassActive(!bypassActive)}
+                className={`font-mono text-[7px] ${bypassActive ? 'text-emerald-500' : 'text-gray-700'} uppercase tracking-[0.3em] font-black cursor-pointer hover:opacity-100 transition-opacity`}
+            >
+                PROTOCOL_BYPASS_ENABLED: {bypassActive ? 'TRUE' : 'FALSE'} | CHANNEL: SECURE_CORE
             </div>
         </div>
     );

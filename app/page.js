@@ -1,10 +1,35 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 import { ArrowRight, BarChart3, Bot, Clapperboard, Layers, Zap } from 'lucide-react';
 
 export default function LandingPage() {
+    const router = useRouter();
+    const { user, loading, getHomeRoute } = useAuth();
+
+    useEffect(() => {
+        if (!loading && user) {
+            console.log('[LandingPage] Authenticated user detected, checking destination...');
+            
+            // Check if onboarding is in progress
+            const progress = localStorage.getItem('diic_onboarding_progress');
+            if (progress) {
+                console.log('[LandingPage] Resuming onboarding...');
+                router.push('/onboarding');
+            } else {
+                const home = getHomeRoute(user.role);
+                console.log(`[LandingPage] Moving to home: ${home}`);
+                router.push(home);
+            }
+        }
+    }, [user, loading, router, getHomeRoute]);
+
+    if (loading) return null; // Prevent flicker
+
     return (
         <div className="min-h-screen bg-[#050510] text-white selection:bg-primary/30">
             {/* Navbar */}

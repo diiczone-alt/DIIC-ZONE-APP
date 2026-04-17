@@ -26,11 +26,23 @@ export default function LoginPage() {
         console.log('[LoginPage] handleSubmit starting');
         setError('');
         setLoading(true);
+        
+        // Safety Timeout: 15 seconds
+        const timeoutId = setTimeout(() => {
+            if (loading) {
+                console.warn('[LoginPage] Login timeout reached (15s)');
+                setLoading(false);
+                setError('La conexión está tardando demasiado. Por favor, intenta de nuevo o revisa tu conexión.');
+            }
+        }, 15000);
 
         try {
             console.log('[LoginPage] Calling login()');
             const { role, error: loginError } = await login(email, password);
             
+            // Clear timeout if we get a response
+            clearTimeout(timeoutId);
+
             if (loginError) {
                 console.warn('[LoginPage] Login error received (expected):', loginError);
                 setError('Credenciales incorrectas o acceso no autorizado.');
@@ -43,6 +55,7 @@ export default function LoginPage() {
             console.log(`[LoginPage] Redirecting ${role} to ${home}`);
             router.push(home);
         } catch (err) {
+            clearTimeout(timeoutId);
             console.error('[LoginPage] Unexpected exception during handleSubmit (FATAL):', err);
             setError('Error inesperado al iniciar sesión. Por favor intenta de nuevo.');
         } finally {
