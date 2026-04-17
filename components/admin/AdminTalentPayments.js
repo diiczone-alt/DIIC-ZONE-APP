@@ -23,31 +23,8 @@ export default function AdminTalentPayments() {
         { type: "Foto Edición", price: 5, category: "Design" },
     ];
 
-    const settlements = [
-        {
-            id: 1,
-            creative: "Fausto R.",
-            projects: [
-                { name: "Reel Clínica A", amount: 5, status: "approved" },
-                { name: "Video Promo B", amount: 10, status: "approved" },
-                { name: "Carrusel C", amount: 6, status: "approved" }
-            ],
-            total: 21,
-            cycle: "15-20 Ene",
-            status: "pending"
-        },
-        {
-            id: 2,
-            creative: "Andrea P.",
-            projects: [
-                { name: "Docum. Premium Nike", amount: 20, status: "approved" },
-                { name: "Short Edit D", amount: 5, status: "approved" }
-            ],
-            total: 25,
-            cycle: "15-20 Ene",
-            status: "paid"
-        }
-    ];
+    const settlements = [];
+    const contracts = [];
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 text-left pb-10">
@@ -94,6 +71,11 @@ function SettlementsView({ data }) {
                     </div>
 
                     <div className="space-y-6">
+                        {data.length === 0 && (
+                            <div className="py-20 text-center text-gray-500 font-bold italic border border-white/5 rounded-[32px]">
+                                No hay liquidaciones pendientes para este ciclo.
+                            </div>
+                        )}
                         {data.map((settlement) => (
                             <SettlementRow key={settlement.id} settlement={settlement} />
                         ))}
@@ -150,9 +132,9 @@ function ContractsView() {
                 <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-[40px] p-8">
                     <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Firmas Recientes</h4>
                     <div className="space-y-3">
-                        <RecentSignature name="Elena G." date="Hoy, 14:30" role="Junior Editor" />
-                        <RecentSignature name="Samuel T." date="Hoy, 10:15" role="Social Media" />
-                        <RecentSignature name="Marcos L." date="Ayer, 18:40" role="Web Dev" />
+                        <div className="p-4 text-center text-[10px] text-gray-600 font-bold italic border border-white/5 rounded-2xl">
+                            Esperando nuevas firmas digitales...
+                        </div>
                     </div>
                 </div>
                 <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-[40px] p-8">
