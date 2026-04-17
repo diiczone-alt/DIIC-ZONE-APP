@@ -7,7 +7,7 @@ import {
     BarChart3, User, Globe, Search, MoreVertical,
     Clock, CheckCircle, XCircle, ShieldCheck,
     Building2, Smartphone, Cpu, MapPin, BookOpen,
-    ShieldAlert, Flame, Zap, BrainCircuit, Compass, Package, Calculator, Trophy
+    ShieldAlert, Flame, Zap, BrainCircuit, Compass, Package, Calculator, Trophy, Target
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';

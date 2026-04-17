@@ -9,7 +9,7 @@ import {
     Search, Filter, ArrowUpRight,
     TrendingUp, MessageSquare, ShieldCheck,
     Zap, ListOrdered, CheckSquare, BrainCircuit,
-    AlertCircle, Flame, GraduationCap, MapPin, ExternalLink, FileText
+    AlertCircle, Flame, GraduationCap, MapPin, ExternalLink, FileText, Phone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';

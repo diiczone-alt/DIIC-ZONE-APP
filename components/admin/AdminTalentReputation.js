@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Trophy, Star, Clock,
     MessageSquare, ShieldCheck,
@@ -8,7 +8,7 @@ import {
     UserCheck, BadgeCheck,
     Zap, Award, Activity,
     Search, Filter, BrainCircuit,
-    ArrowUpRight, Target, Users,
+    ArrowUpRight, Target, Users, User,
     CheckCircle2, AlertTriangle, XCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';

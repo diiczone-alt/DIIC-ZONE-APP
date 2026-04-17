@@ -126,7 +126,7 @@ export default function PayoutModal({ isOpen, onClose, availableBalance, user, o
                                             <p className="text-xs font-bold text-white uppercase">
                                                 {user.payment_method_config.type === 'bank' ? `Banco: ${user.payment_method_config.bank_name}` : 
                                                  user.payment_method_config.type === 'paypal' ? `PayPal: ${user.payment_method_config.email}` : 
-                                                 `Binance: ${user.payment_method_config.wallet_address.substring(0, 10)}...`}
+                                                 `Binance: ${user.payment_method_config.wallet_address?.substring(0, 10) || 'No set'}...`}
                                             </p>
                                             <p className="text-[9px] text-gray-500 font-bold">CONFIGURACIÓN VERIFICADA</p>
                                         </div>

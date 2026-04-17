@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Sidebar from '@/components/layout/Sidebar';
+import DynamicSidebar from '@/components/shared/DynamicSidebar';
 import { 
     CheckCircle2, Clock, AlertCircle, 
     Play, Pause, Send, Filter, 

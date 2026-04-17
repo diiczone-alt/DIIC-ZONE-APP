@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { 
     X, CreditCard, Building2, Send, 
     Save, CheckCircle2, AlertCircle,
-    Copy, Info, Landmark, Bitcoin
+    Copy, Info, Landmark, Bitcoin,
+    Search, ChevronDown, Check, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
@@ -12,6 +13,8 @@ import { toast } from 'sonner';
 
 export default function PaymentMethodModal({ isOpen, onClose, user, onUpdate }) {
     const [loading, setLoading] = useState(false);
+    const [searchBank, setSearchBank] = useState('');
+    const [isBankOpen, setIsBankOpen] = useState(false);
     const [method, setMethod] = useState({
         type: 'bank',
         bank_name: '',
@@ -28,7 +31,18 @@ export default function PaymentMethodModal({ isOpen, onClose, user, onUpdate }) 
         }
     }, [user]);
 
+    const types = [
+        { id: 'bank', label: 'Banco', icon: Landmark, color: 'text-blue-500' },
+        { id: 'paypal', label: 'PayPal', icon: Send, color: 'text-indigo-400' },
+        { id: 'binance', label: 'Binance', icon: Bitcoin, color: 'text-orange-500' },
+    ];
+
     const handleSave = async () => {
+        if (!user?.id) {
+            toast.error("Sesión de usuario no válida");
+            return;
+        }
+
         // Simple validation
         if (method.type === 'bank' && (!method.bank_name || !method.account_number)) {
             toast.error("Completa los datos bancarios");
@@ -47,11 +61,11 @@ export default function PaymentMethodModal({ isOpen, onClose, user, onUpdate }) 
             if (error) throw error;
 
             toast.success("Método de pago actualizado");
-            onUpdate();
-            onClose();
+            if (onUpdate) await onUpdate();
+            if (onClose) onClose();
         } catch (err) {
             console.error('Error saving payment method:', err);
-            toast.error("Error al guardar la configuración");
+            toast.error("Error al guardar la configuración: " + (err.message || "Error Desconocido"));
         } finally {
             setLoading(false);
         }
@@ -59,11 +73,17 @@ export default function PaymentMethodModal({ isOpen, onClose, user, onUpdate }) 
 
     if (!isOpen) return null;
 
-    const types = [
-        { id: 'bank', label: 'Banco', icon: Landmark, color: 'text-blue-400' },
-        { id: 'paypal', label: 'PayPal', icon: Send, color: 'text-indigo-400' },
-        { id: 'binance', label: 'Binance', icon: Bitcoin, color: 'text-orange-400' }
-    ];
+    const ecuadorBanks = [
+        "Banco Pichincha", "Banco Guayaquil", "Banco del Pacífico", 
+        "Produbanco", "Banco Bolivariano", "Banco Internacional",
+        "Banco del Austro", "Banco Solidario", "Banco General Rumiñahui",
+        "Diners Club del Ecuador", "Banco de Machala", "Banco Loja",
+        "Cooperativa JEP", "Cooperativa 29 de Octubre"
+    ].sort();
+
+    const filteredBanks = ecuadorBanks.filter(b => 
+        b.toLowerCase().includes(searchBank.toLowerCase())
+    );
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl">
@@ -114,12 +134,61 @@ export default function PaymentMethodModal({ isOpen, onClose, user, onUpdate }) 
                         >
                             {method.type === 'bank' && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                                    <InputField 
-                                        label="Nombre del Banco" 
-                                        value={method.bank_name} 
-                                        onChange={(v) => setMethod({ ...method, bank_name: v })} 
-                                        placeholder="Ej: BCP, BBVA..." 
-                                    />
+                                    {/* Ecuadorian Bank Selector */}
+                                    <div className="space-y-2 relative">
+                                        <label className="text-[10px] text-gray-500 font-black uppercase tracking-widest ml-1">Nombre del Banco (Ecuador)</label>
+                                        <div 
+                                            onClick={() => setIsBankOpen(!isBankOpen)}
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white font-bold text-sm flex justify-between items-center cursor-pointer hover:border-purple-500/50 transition-all"
+                                        >
+                                            <span className={method.bank_name ? 'text-white' : 'text-gray-700'}>
+                                                {method.bank_name || 'Selecciona tu banco...'}
+                                            </span>
+                                            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isBankOpen ? 'rotate-180' : ''}`} />
+                                        </div>
+
+                                        <AnimatePresence>
+                                            {isBankOpen && (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: -10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -10 }}
+                                                    className="absolute z-[110] left-0 right-0 top-[calc(100%+8px)] bg-[#0F0F1A] border border-white/10 rounded-2xl shadow-2xl p-2"
+                                                >
+                                                    <div className="relative mb-2">
+                                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500" />
+                                                        <input 
+                                                            autoFocus
+                                                            type="text" 
+                                                            placeholder="Buscar banco..."
+                                                            value={searchBank}
+                                                            onChange={(e) => setSearchBank(e.target.value)}
+                                                            className="w-full bg-white/5 border border-white/5 rounded-xl py-2 pl-9 pr-4 text-[10px] text-white focus:outline-none focus:border-purple-500/50"
+                                                        />
+                                                    </div>
+                                                    <div className="max-h-40 overflow-y-auto custom-scrollbar">
+                                                        {filteredBanks.map((bank) => (
+                                                            <div 
+                                                                key={bank}
+                                                                onClick={() => {
+                                                                    setMethod({ ...method, bank_name: bank });
+                                                                    setIsBankOpen(false);
+                                                                }}
+                                                                className="px-4 py-2 hover:bg-white/5 rounded-xl cursor-pointer text-[10px] font-bold text-gray-400 hover:text-white flex justify-between items-center transition-colors"
+                                                            >
+                                                                {bank}
+                                                                {method.bank_name === bank && <Check className="w-3 h-3 text-emerald-500" />}
+                                                            </div>
+                                                        ))}
+                                                        {filteredBanks.length === 0 && (
+                                                            <div className="py-4 text-center text-[10px] text-gray-600 font-bold uppercase italic">No se encontraron resultados</div>
+                                                        )}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
                                     <InputField 
                                         label="Número de Cuenta" 
                                         value={method.account_number} 
@@ -187,7 +256,7 @@ export default function PaymentMethodModal({ isOpen, onClose, user, onUpdate }) 
                         disabled={loading}
                         className="flex-[2] py-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-2xl text-xs font-black text-white flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20 uppercase tracking-widest"
                     >
-                        {loading ? <span className="animate-spin text-lg">◌</span> : <><Save className="w-4 h-4" /> GUARDAR CONFIGURACIÓN</>}
+                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-4 h-4" /> GUARDAR CONFIGURACIÓN</>}
                     </button>
                 </div>
             </motion.div>

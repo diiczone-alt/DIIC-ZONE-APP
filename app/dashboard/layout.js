@@ -1,6 +1,6 @@
 'use client';
 
-import Sidebar from '../../components/layout/Sidebar';
+import DynamicSidebar from '../../components/shared/DynamicSidebar';
 import AIAssistant from '../../components/ui/AIAssistant';
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -17,7 +17,7 @@ function DashboardContent({ children }) {
 
     return (
         <div className="h-screen bg-[#050511] text-foreground flex overflow-hidden">
-            {!shouldHideSidebar && <Sidebar />}
+            {!shouldHideSidebar && <DynamicSidebar />}
             <main
                 className={`flex-1 flex flex-col min-w-0 h-full relative transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden`}
             >
@@ -61,9 +61,12 @@ export default function DashboardLayout({ children }) {
             if (!allowedAdminPaths.some(p => pathname.startsWith(p))) {
                 router.push(home);
             }
-        } else if (pathname === '/dashboard' || pathname === '/dashboard/') {
-             // If they land on generic dashboard but have a specialized role
-             if (home !== '/dashboard') router.push(home);
+        } else if (pathname === '/dashboard' || pathname === '/dashboard/' || pathname === '/dashboard/hq' || pathname.startsWith('/dashboard/hq')) {
+             // Strict isolation: non-admins cannot stay in /dashboard or enter /dashboard/hq
+             if (role !== 'ADMIN' && home !== pathname) {
+                 console.log(`[DashboardLayout] Restricting access for ${role}. Redirecting to ${home}`);
+                 router.push(home);
+             }
         }
     }, [user, loading, pathname, router]);
 
