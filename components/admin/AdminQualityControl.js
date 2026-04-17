@@ -21,12 +21,7 @@ export default function AdminQualityControl() {
     const [selectedProject, setSelectedProject] = useState(null);
 
     // Mock enhanced with metrics needed for calculation
-    const pendingProjects = [
-        { id: 1, name: "Reel Dr. Patiño", type: "video", author: "Fausto R.", phase: 2, status: "pending", feedbackSentiment: "neutral", revisions: 1 },
-        { id: 2, name: "Branding Nova Clínica", type: "design", author: "Carla M.", phase: 3, status: "pending", feedbackSentiment: "negative", revisions: 4 }, // High risk
-        { id: 3, name: "Web AgroFértil", type: "web", author: "Marcos L.", phase: 1, status: "pending", feedbackSentiment: "positive", revisions: 0 },
-        { id: 4, name: "Shoot Evento Quito", type: "photo", author: "Samuel T.", phase: 2, status: "pending", feedbackSentiment: "neutral", revisions: 2 }
-    ];
+    const pendingProjects = [];
 
     // Mock historial data for a selected author (in production this comes from DB)
     const authorMetrics = {
@@ -69,12 +64,7 @@ export default function AdminQualityControl() {
         ]
     };
 
-    const nodeHealth = [
-        { id: 1, city: "Manta", team: "Vista Media", status: "green", alerts: 0, lastCheck: "Hoy" },
-        { id: 2, city: "Loja", team: "Creativos del Sur", status: "yellow", alerts: 1, lastCheck: "Ayer" },
-        { id: 3, city: "Cuenca", team: "Azuay Films", status: "orange", alerts: 3, lastCheck: "Hace 2 días" },
-        { id: 4, city: "Ibarra", team: "Norte Visual", status: "red", alerts: 5, lastCheck: "Hace 1 semana" }
-    ];
+    const nodeHealth = [];
 
     const penaltiesMatrix = [
         { level: "Amarillo", trigger: "Retraso leve", action: "Advertencia Interna", color: "text-yellow-400" },
@@ -131,6 +121,11 @@ export default function AdminQualityControl() {
                                     {nodeHealth.map(node => (
                                         <NodeHealthCard key={node.id} node={node} />
                                     ))}
+                                    {nodeHealth.length === 0 && (
+                                        <div className="col-span-full py-10 text-center text-gray-600 font-bold italic">
+                                            No se han registrado auditorías de nodos territoriales.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -194,6 +189,11 @@ export default function AdminQualityControl() {
                     {/* PROJECT LIST */}
                     <div className="lg:col-span-1 space-y-4">
                         <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest px-2">Pendientes de Aprobación</h3>
+                        {pendingProjects.length === 0 && (
+                            <div className="py-20 text-center text-gray-500 font-bold italic border border-white/5 rounded-3xl">
+                                No hay proyectos pendientes de QA.
+                            </div>
+                        )}
                         {pendingProjects.map((p) => (
                             <div
                                 key={p.id}
@@ -326,9 +326,9 @@ export default function AdminQualityControl() {
                     <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Enero 2026 Audit Room</div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <PatternCard title="Errores de Branding" rate="12%" trend="-2%" color="blue" desc="Mejorando por checklist automático." />
-                    <PatternCard title="Retrasos en Fase 2" rate="8%" trend="+3%" color="red" desc="Cuello de botella en revisión de CMs." />
-                    <PatternCard title="Ortografía / Copy" rate="5%" trend="-8%" color="emerald" desc="Impacto positivo de corrector IA." />
+                    <PatternCard title="Errores de Branding" rate="0%" trend="-- %" color="blue" desc="Sin datos de auditoría aún." />
+                    <PatternCard title="Retrasos en Fase 2" rate="0%" trend="-- %" color="red" desc="Sin datos de auditoría aún." />
+                    <PatternCard title="Ortografía / Copy" rate="0%" trend="-- %" color="emerald" desc="Sin datos de auditoría aún." />
                 </div>
             </div>
         </div>

@@ -86,12 +86,7 @@ export default function AdminFinancialCore() {
 // --- SUB-MODULES ---
 
 function RevenueModule() {
-    const revenueData = [
-        { type: "Suscripción", client: "Dr. Patiño", plan: "Scale Plan", amount: "$2,500", date: "24 Ene", status: "Pagado" },
-        { type: "Servicio Único", client: "Nova Clínica", plan: "Full Branding", amount: "$4,200", date: "20 Ene", status: "Pagado" },
-        { type: "Servicio Nodo", client: "AgroFértil", plan: "Grabación Campo", amount: "$1,800", date: "15 Ene", status: "Pendiente" },
-        { type: "Suscripción", client: "Inmobiliaria Elite", plan: "Content Plan", amount: "$3,100", date: "12 Ene", status: "Pagado" },
-    ];
+    const revenueData = [];
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
@@ -123,6 +118,11 @@ function RevenueModule() {
                             </div>
                         </div>
                     ))}
+                    {revenueData.length === 0 && (
+                        <div className="py-20 text-center text-gray-500 font-bold italic">
+                            No se han registrado ingresos aún. Las transacciones reales aparecerán aquí.
+                        </div>
+                    )}
                 </div>
             </div>
         </motion.div>
@@ -131,11 +131,11 @@ function RevenueModule() {
 
 function DistributionModule() {
     const splits = [
-        { label: "Producción Creativa", value: "25%", amount: "$4,612", desc: "Edición, Diseño, Guiones", color: "blue", icon: Briefcase },
-        { label: "Nodo Territorial", value: "15%", amount: "$2,767", desc: "Producción local, eventos", color: "indigo", icon: Users },
-        { label: "Tecnología / IA", value: "20%", amount: "$3,690", desc: "Servidores, licencias, bots", color: "purple", icon: Cpu },
-        { label: "Operación & Admin", value: "10%", amount: "$1,845", desc: "Soporte, impuestos, legal", color: "pink", icon: ShieldCheck },
-        { label: "Utilidad DIIC ZONE", value: "30%", amount: "$5,535", desc: "Ganancia real acumulada", color: "emerald", icon: DollarSign },
+        { label: "Producción Creativa", value: "25%", amount: "$0", desc: "Edición, Diseño, Guiones", color: "blue", icon: Briefcase },
+        { label: "Nodo Territorial", value: "15%", amount: "$0", desc: "Producción local, eventos", color: "indigo", icon: Users },
+        { label: "Tecnología / IA", value: "20%", amount: "$0", desc: "Servidores, licencias, bots", color: "purple", icon: Cpu },
+        { label: "Operación & Admin", value: "10%", amount: "$0", desc: "Soporte, impuestos, legal", color: "pink", icon: ShieldCheck },
+        { label: "Utilidad DIIC ZONE", value: "30%", amount: "$0", desc: "Ganancia real acumulada", color: "emerald", icon: DollarSign },
     ];
 
     return (
@@ -182,12 +182,7 @@ function DistributionModule() {
 }
 
 function CostsModule() {
-    const costs = [
-        { item: "Pago Fausto (Senior Editor)", category: "Producción", amount: "$1,200", status: "Liquidado", type: "out" },
-        { item: "Suscripción Supabase / AWS", category: "Tecnología", amount: "$350", status: "Deducido", type: "out" },
-        { item: "Pago CM Agro (Community)", category: "Producción", amount: "$850", status: "Pendiente", type: "pending" },
-        { item: "Licencia Adobe Teams", category: "Tecnología", amount: "$220", status: "Liquidado", type: "out" },
-    ];
+    const costs = [];
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -208,13 +203,18 @@ function CostsModule() {
                             </div>
                         </div>
                     ))}
+                    {costs.length === 0 && (
+                        <div className="py-20 text-center text-gray-500 font-bold italic">
+                            Sin egresos registrados. Las liquidaciones de equipo aparecerán aquí.
+                        </div>
+                    )}
                 </div>
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-center text-center">
                 <div className="mb-6">
                     <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Costo de Operación vs Ingreso</div>
-                    <div className="text-5xl font-black text-white">22.7%</div>
+                    <div className="text-5xl font-black text-white">0%</div>
                 </div>
                 <p className="text-sm text-gray-400 px-6">
                     El sistema mantiene un ratio saludable de costos. Cada dólar invertido en tecnología genera $5.2 en ingresos por escalabilidad.

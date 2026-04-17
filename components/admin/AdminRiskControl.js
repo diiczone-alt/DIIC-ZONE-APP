@@ -129,17 +129,17 @@ export default function AdminRiskControl({ risks = [], stats: globalMetrics = {}
                     <h5 className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Salud Operativa por Departamento</h5>
                     <div className="space-y-6">
                         {[
-                            { dep: 'Edición de Vídeo', level: 85, color: 'emerald' },
-                            { dep: 'Diseño Creativo', level: 40, color: 'red' },
-                            { dep: 'CM & Estrategia', level: 65, color: 'yellow' }
+                            { dep: 'Edición de Vídeo', level: 0, color: 'blue' },
+                            { dep: 'Diseño Creativo', level: 0, color: 'indigo' },
+                            { dep: 'CM & Estrategia', level: 0, color: 'purple' }
                         ].map((d, i) => (
                             <div key={i} className="space-y-2">
                                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                                     <span className="text-white">{d.dep}</span>
-                                    <span className={`text-${d.color}-500`}>{d.level}% CAPACIDAD</span>
+                                    <span className={`text-${d.color}-500`}>{globalMetrics.globalLoad || 0}% CAPACIDAD</span>
                                 </div>
                                 <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                                    <div className={`h-full bg-${d.color}-500`} style={{ width: `${d.level}%` }} />
+                                    <div className={`h-full bg-${d.color}-500`} style={{ width: `${globalMetrics.globalLoad || 0}%` }} />
                                 </div>
                             </div>
                         ))}

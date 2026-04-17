@@ -255,12 +255,7 @@ function TalentExplorer({ teamData = [] }) {
 }
 
 function ReputationModule() {
-    const scores = [
-        { name: "Fausto R.", role: "Senior Editor", score: 98, deliveries: 142, revisions: 1.2, status: "Priority" },
-        { name: "Carla M.", role: "Brand Designer", score: 85, deliveries: 88, revisions: 1.8, status: "Stable" },
-        { name: "Marcos L.", role: "Web Developer", score: 92, deliveries: 45, revisions: 1.1, status: "Priority" },
-        { name: "Samuel T.", role: "Social Media", score: 62, deliveries: 34, revisions: 2.5, status: "Risk" },
-    ];
+    const scores = [];
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6 text-left">
@@ -307,6 +302,11 @@ function ReputationModule() {
                             </div>
                         </div>
                     ))}
+                    {scores.length === 0 && (
+                        <div className="py-20 text-center text-gray-500 font-bold italic">
+                            No hay datos de reputación disponibles. Comienza a asignar tareas para generar métricas.
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -399,11 +399,7 @@ function AssignmentModule() {
         }
     };
 
-    const priorities = [
-        { client: "Dr. Pérez - Clínica Dental", level: "critical", score: 14, reason: "Evento Próximo + Plan Premium + Riesgo" },
-        { client: "G.S.T (Campaña)", level: "high", score: 9, reason: "Impacto Estratégico + Lanzamiento" },
-        { client: "Nova Clínica Santa Anita", level: "critical", score: 11, reason: "Retrasos Previos + Cliente Insatisfecho" },
-    ];
+    const priorities = [];
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6 text-left">
@@ -496,6 +492,11 @@ function AssignmentModule() {
                                 </div>
                             </div>
                         ))}
+                        {priorities.length === 0 && (
+                            <div className="py-20 text-center text-gray-500 font-bold italic">
+                                No hay alertas de priorización. Todos los flujos están estables.
+                            </div>
+                        )}
                     </div>
                 </div>
 

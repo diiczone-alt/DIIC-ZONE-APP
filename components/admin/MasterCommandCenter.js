@@ -28,12 +28,7 @@ import AdminClientEvolution from './AdminClientEvolution';
 import AdminOperationalGovernance from './AdminOperationalGovernance';
 import AdminDualAudit from './AdminDualAudit';
 
-const services = [
-    { name: "Producción de Video (Scale)", sales: "$8,500", cost: "$2,125", profit: "$6,375" },
-    { name: "Automatización IA / SaaS", sales: "$4,200", cost: "$630", profit: "$3,570" },
-    { name: "Design & Branding Elite", sales: "$3,600", cost: "$900", profit: "$2,700" },
-    { name: "Estrategia & Social Opt", sales: "$2,800", cost: "$700", profit: "$2,100" }
-];
+
 
 export default function MasterCommandCenter() {
     const [clients, setClients] = useState([]);
@@ -304,13 +299,16 @@ export default function MasterCommandCenter() {
                                     <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest underline underline-offset-4 decoration-indigo-500">Capacidad: 40h/sem</span>
                                 </div>
                                 <div className="space-y-4">
-                                    {team.slice(0, 5).map((member, i) => (
+                                    {(operationalData?.team || []).slice(0, 5).map((member, i) => (
                                         <TeamRow key={i} data={member} />
                                     ))}
-                                    {team.length > 5 && (
+                                    {(operationalData?.team || []).length > 5 && (
                                         <button onClick={() => setView('team')} className="w-full text-center text-[10px] text-gray-500 font-bold uppercase hover:text-white transition-colors py-2 border-t border-white/5 pt-4">
-                                            Ver todos los {team.length} miembros
+                                            Ver todos los {(operationalData?.team || []).length} miembros
                                         </button>
+                                    )}
+                                    {(!operationalData?.team || operationalData?.team?.length === 0) && (
+                                        <div className="py-10 text-center text-gray-500 text-xs font-bold italic">No hay miembros registrados aún.</div>
                                     )}
                                 </div>
                             </div>
@@ -345,38 +343,8 @@ export default function MasterCommandCenter() {
                                 </div>
                             </div>
                         </div>
-                    </motion.div>
-                ) : view === 'finance' ? (
-                    <motion.div key="finance" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                        <AdminFinancialCore globalData={operationalData} />
-                    </motion.div>
-                ) : view === 'risk' ? (
-                    <motion.div key="risk" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
-                        <AdminRiskControl risks={operationalData?.risks || []} stats={operationalData?.globalMetrics} />
-                    </motion.div>
-                ) : view === 'team' ? (
-                    <motion.div key="team" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                        <AdminTeamReputation teamData={operationalData?.team || []} activeRisks={operationalData?.risks || []} />
-                    </motion.div>
-                ) : view === 'capacity' ? (
-                    <motion.div key="capacity" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <AdminCapacitySystem globalMetrics={operationalData?.globalMetrics} teamData={operationalData?.team || []} />
-                    </motion.div>
-                ) : view === 'operations' ? (
-                    <motion.div key="operations" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                        <AdminOperationsCore productionStats={operationalData?.productionStats} teamData={operationalData?.team || []} />
-                    </motion.div>
-                ) : (
-                    <div className="py-40 text-center">
-                        <div className="text-4xl font-black text-white/20 uppercase italic">Sección en Desarrollo</div>
-                        <p className="text-gray-500 font-bold mt-4">Nivel de acceso detectado: Gran Maestro Administrativo</p>
-                        <button onClick={() => setView('global')} className="mt-8 px-6 py-3 bg-indigo-500 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-indigo-600 transition-all text-[10px]">
-                            Regresar a Base
-                        </button>
-                    </div>
-                )}
-            </AnimatePresence>
 
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <div className="bg-[#0A0A12] border border-emerald-500/20 rounded-3xl p-6 relative overflow-hidden text-left">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
@@ -435,7 +403,7 @@ export default function MasterCommandCenter() {
                                                 <div className="text-xs text-gray-500">Operador Regional • 12 Clientes Activos</div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-sm font-bold text-emerald-400">$1,250/mes</div>
+                                                <div className="text-sm font-bold text-emerald-400">$0/mes</div>
                                                 <div className="text-[10px] text-gray-500 uppercase font-bold">Royalties Split</div>
                                             </div>
                                         </div>
@@ -445,7 +413,7 @@ export default function MasterCommandCenter() {
                                                 <div className="text-xs text-gray-500">Operador Regional • 8 Clientes Activos</div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-sm font-bold text-emerald-400">$850/mes</div>
+                                                <div className="text-sm font-bold text-emerald-400">$0/mes</div>
                                                 <div className="text-[10px] text-gray-500 uppercase font-bold">Royalties Split</div>
                                             </div>
                                         </div>
@@ -464,7 +432,7 @@ export default function MasterCommandCenter() {
                                             <ProfitBento label="Producción (Operación)" value="25%" color="blue" />
                                             <ProfitBento label="Nodo (Presencia)" value="15%" color="indigo" />
                                             <div className="pt-2 text-[10px] text-gray-500 italic">
-                                                * Los servicios digitales automatizados (IA/SaaS) incrementan el margen de la plataforma hasta un 85%.
+                                                * El margen real se calculará en base a la facturación de clientes ingresados.
                                             </div>
                                         </div>
                                     </div>
@@ -482,9 +450,7 @@ export default function MasterCommandCenter() {
                                         <div className="text-right">Costo</div>
                                         <div className="text-right">Utilidad</div>
                                     </div>
-                                    {services.map((svc, i) => (
-                                        <ServiceRow key={i} data={svc} />
-                                    ))}
+                                    <div className="py-20 text-center text-gray-500 text-xs font-bold italic">Esperando ingreso de clientes reales para cálculo de rentabilidad.</div>
                                 </div>
                             </div>
                         </div>

@@ -151,11 +151,11 @@ export default function AdminTeamReputation({ teamData = [], activeRisks = [] })
                                         <span className="text-xs font-black text-indigo-300 uppercase">IA Smart Suggest</span>
                                     </div>
                                     <div className="space-y-3">
-                                        <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-[11px] text-gray-400 leading-relaxed">
-                                            "Se sugiere ascenso de **Marcos L.** a nivel ÉLITE. Ha mantenido 11 pts por 3 meses."
+                                        <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-[11px] text-gray-400 leading-relaxed italic">
+                                            "El sistema de inteligencia sugerirá ascensos basados en la consistencia de entrega y score IQ."
                                         </div>
-                                        <div className="p-3 bg-red-500/5 rounded-xl border border-red-500/10 text-[11px] text-red-400 leading-relaxed">
-                                            "Alerta: **Samuel T.** ha bajado 2 pts en puntualidad este mes. Revisar carga."
+                                        <div className="p-3 bg-red-500/5 rounded-xl border border-red-500/10 text-[11px] text-red-500/60 leading-relaxed italic">
+                                            "Las alertas de riesgo de saturación se activarán cuando la carga de un miembro supere el 90%."
                                         </div>
                                     </div>
                                 </div>
@@ -284,7 +284,7 @@ function AdminIncentivesView({ creatives }) {
                             <span className="text-[10px] font-black text-white uppercase">Growth Alerta</span>
                         </div>
                         <p className="text-[10px] text-gray-500 leading-relaxed italic">
-                            "**Samuel T.** está en 'Desarrollo'. Sugerir curso 'Storytelling para Reels' para subir a nivel Activo."
+                            "Las sugerencias de formación aparecerán aquí basadas en las áreas de mejora detectadas en QA."
                         </p>
                     </div>
                 </div>
