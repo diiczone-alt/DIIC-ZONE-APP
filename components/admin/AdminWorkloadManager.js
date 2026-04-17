@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { assignTask, TEAM_DB } from '../connectivity/WorkloadBalancer';
 
-export default function AdminWorkloadManager() {
+export default function AdminWorkloadManager({ teamData = [], globalMetrics = {} }) {
     // SEMAPHORE LOGIC: 0-60 (Green), 61-80 (Yellow), 81-100 (Red), 100+ (Danger/Black)
     const getStatusColor = (load) => {
         if (load <= 60) return 'emerald';
@@ -70,6 +70,17 @@ export default function AdminWorkloadManager() {
         } else {
             toast.error(`No se pudo asignar: ${result.reason}`);
         }
+    };
+
+    return (
+        <div className="space-y-10 animate-in fade-in duration-500 text-left">
+            {/* 📊 GLOBAL CAPACITY HEADER */}
+            <div className="bg-[#0A0A12] border border-white/10 rounded-[40px] p-10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-10 opacity-5">
+                    <Gauge className="w-40 h-40 text-indigo-500" />
+                </div>
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6">
+                    <div>
                         <h2 className="text-3xl font-black text-white uppercase tracking-tight">
                             Capacidad Usada: <span className={`text-${getStatusColor(globalMetrics.globalLoad)}-500`}>{globalMetrics.globalLoad}%</span>
                         </h2>

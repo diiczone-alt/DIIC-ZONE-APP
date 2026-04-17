@@ -21,7 +21,7 @@ import AdminTalentPayments from './AdminTalentPayments';
 import AdminTalentTraining from './AdminTalentTraining';
 import AdminProductionDashboard from './AdminProductionDashboard';
 
-export default function AdminOperationsCore({ productionStats = {}, teamData = [] }) {
+export default function AdminOperationsCore({ productionStats = {}, teamData = [], globalMetrics = {} }) {
     const [activeTab, setActiveTab] = useState('production');
 
     // Helper component for tabs
@@ -73,7 +73,7 @@ export default function AdminOperationsCore({ productionStats = {}, teamData = [
                 <AnimatePresence mode="wait">
                     {activeTab === 'production' && <AdminProductionDashboard key="production" />}
                     {activeTab === 'talent-explorer' && <TalentExplorer key="talent-explorer" teamData={teamData} />}
-                    {activeTab === 'capacity' && <AdminWorkloadManager key="capacity" teamData={teamData} />}
+                    {activeTab === 'capacity' && <AdminWorkloadManager key="capacity" teamData={teamData} globalMetrics={globalMetrics} />}
                     {activeTab === 'priority' && <AdminClientPrioritization key="priority" />}
                     {activeTab === 'talent' && <AdminTalentReputation key="talent" teamData={teamData} />}
                     {activeTab === 'payments' && <AdminTalentPayments key="payments" />}

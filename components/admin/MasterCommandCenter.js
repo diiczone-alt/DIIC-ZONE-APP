@@ -483,6 +483,7 @@ export default function MasterCommandCenter() {
                         <AdminOperationsCore 
                             productionStats={productionStats} 
                             teamData={team} 
+                            globalMetrics={operationalData?.globalMetrics}
                         />
                     </motion.div>
                 ) : view === 'team' ? (
