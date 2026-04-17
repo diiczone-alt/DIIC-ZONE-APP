@@ -48,17 +48,18 @@ export default function AdminOperationalGovernance() {
         }
     };
 
-    const handleUpdateRate = async (id, field, value) => {
+    const handleUpdateRate = async (id, updates) => {
         try {
             const { error } = await supabase
                 .from('production_rates')
-                .update({ [field]: value })
+                .update(updates)
                 .eq('id', id);
             
             if (error) throw error;
             toast.success("Tasa actualizada correctamente");
             loadData();
         } catch (err) {
+            console.error("Error updating rate:", err);
             toast.error("Error al actualizar tasa");
         }
     };
@@ -127,7 +128,7 @@ export default function AdminOperationalGovernance() {
 
                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                  {data.rates.map((rate) => (
-                                     <RateCard key={rate.id} rate={rate} onSave={(val) => handleUpdateRate(rate.id, 'cost_internal', val)} />
+                                     <RateCard key={rate.id} rate={rate} onSave={(updates) => handleUpdateRate(rate.id, updates)} />
                                  ))}
                              </div>
                         </motion.div>
@@ -223,50 +224,169 @@ function NavTab({ active, onClick, icon: Icon, label }) {
 
 function RateCard({ rate, onSave }) {
     const [isEditing, setIsEditing] = useState(false);
-    const [tempValue, setTempValue] = useState(rate.cost_internal);
+    const [formData, setFormData] = useState({
+        name: rate.name,
+        description: rate.description || '',
+        cost_internal: rate.cost_internal,
+        price_sale: rate.price_sale || 0,
+        profit_margin: rate.profit_margin || 0
+    });
+
+    // Cálculos sugeridos en tiempo real
+    const calculatedProfit = Number(formData.price_sale) - Number(formData.cost_internal);
+    const marginPercent = formData.price_sale > 0 ? (calculatedProfit / formData.price_sale) * 100 : 0;
+
+    const handleSave = () => {
+        onSave(formData);
+        setIsEditing(false);
+    };
 
     return (
-        <motion.div whileHover={{ y: -5 }} className="p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/5 relative group">
-            <div className="absolute top-6 right-6 flex gap-2">
-                 <button onClick={() => {
-                     if (isEditing) {
-                         onSave(tempValue);
-                         setIsEditing(false);
-                     } else {
-                         setIsEditing(true);
-                     }
-                 }} className={`p-2.5 rounded-xl border transition-all ${isEditing ? 'bg-emerald-500 border-emerald-400 text-black' : 'bg-white/5 border-white/10 text-gray-500 hover:text-white'}`}>
-                     {isEditing ? <CheckCircle2 className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-                 </button>
-            </div>
-
-            <div className="space-y-4 pt-2">
-                <div className="p-3 w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center">
-                    <Zap className="w-6 h-6" />
-                </div>
-                <div className="space-y-1">
-                    <h4 className="text-xl font-black text-white italic uppercase tracking-tighter leading-none">{rate.name}</h4>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Costo Interno por Unidad</p>
-                </div>
-
-                <div className="pt-4 flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-white italic tracking-tighter">$</span>
-                    {isEditing ? (
-                        <input 
-                            type="number" 
-                            autoFocus
-                            value={tempValue}
-                            onChange={(e) => setTempValue(e.target.value)}
-                            className="w-32 bg-white/10 border border-white/20 rounded-xl px-4 py-2 font-black text-3xl italic text-white outline-none focus:border-indigo-500 transition-all"
-                        />
-                    ) : (
-                        <span className="text-5xl font-black text-white italic tracking-tighter leading-none group-hover:text-indigo-400 transition-colors">{rate.cost_internal}</span>
+        <motion.div whileHover={{ y: -5 }} className="rounded-[2.5rem] bg-white/[0.03] border border-white/5 relative group overflow-hidden">
+            {/* Background Accent */}
+            <div className={`absolute top-0 left-0 w-2 h-full bg-gradient-to-b ${marginPercent > 40 ? 'from-emerald-500 to-teal-500' : 'from-indigo-500 to-purple-500'} opacity-50`} />
+            
+            <div className="p-8">
+                <div className="absolute top-6 right-6 flex gap-2">
+                    <button onClick={() => {
+                        if (isEditing) handleSave();
+                        else setIsEditing(true);
+                    }} className={`p-2.5 rounded-xl border transition-all ${isEditing ? 'bg-emerald-500 border-emerald-400 text-black shadow-lg shadow-emerald-500/20' : 'bg-white/5 border-white/10 text-gray-500 hover:text-white'}`}>
+                        {isEditing ? <CheckCircle2 className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+                    </button>
+                    {isEditing && (
+                        <button onClick={() => {
+                            setFormData({
+                                name: rate.name,
+                                description: rate.description || '',
+                                cost_internal: rate.cost_internal,
+                                price_sale: rate.price_sale || 0,
+                                profit_margin: rate.profit_margin || 0
+                            });
+                            setIsEditing(false);
+                        }} className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-500 hover:text-red-400">
+                             <ArrowLeft className="w-4 h-4" />
+                        </button>
                     )}
                 </div>
+
+                <div className="space-y-6">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl">
+                            <Zap className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                            {isEditing ? (
+                                <input 
+                                    value={formData.name}
+                                    onChange={e => setFormData({...formData, name: e.target.value})}
+                                    placeholder="Nombre del Formato"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-sm font-black text-white italic uppercase outline-none focus:border-indigo-500"
+                                />
+                            ) : (
+                                <h4 className="text-xl font-black text-white italic uppercase tracking-tighter leading-none">{rate.name}</h4>
+                            )}
+                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1">Configuración de Tasa Operativa</p>
+                        </div>
+                    </div>
+
+                    {/* Descripción */}
+                    <div className="space-y-1">
+                        {isEditing ? (
+                            <textarea 
+                                value={formData.description}
+                                onChange={e => setFormData({...formData, description: e.target.value})}
+                                placeholder="Descripción del servicio (ej. 'Video Reel hasta 60s')"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-gray-400 outline-none focus:border-indigo-500 h-20 resize-none"
+                            />
+                        ) : (
+                            <p className="text-xs text-gray-400 italic line-clamp-2 min-h-[2rem]">
+                                {rate.description || 'Sin descripción detallada en base de datos.'}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Editor de Precios */}
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                        <div className="space-y-2">
+                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Inversión (Costo)</p>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-xs font-bold text-gray-600">$</span>
+                                {isEditing ? (
+                                    <input 
+                                        type="number"
+                                        value={formData.cost_internal}
+                                        onChange={e => setFormData({...formData, cost_internal: e.target.value})}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-sm font-black text-white outline-none"
+                                    />
+                                ) : (
+                                    <span className="text-2xl font-black text-white italic tracking-tighter">${rate.cost_internal}</span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <p className="text-[9px] font-black text-emerald-500/50 uppercase tracking-widest">Venta (Cliente)</p>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-xs font-bold text-emerald-500/50">$</span>
+                                {isEditing ? (
+                                    <input 
+                                        type="number"
+                                        value={formData.price_sale}
+                                        onChange={e => setFormData({...formData, price_sale: e.target.value})}
+                                        className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-2 py-1 text-sm font-black text-emerald-400 outline-none"
+                                    />
+                                ) : (
+                                    <span className="text-2xl font-black text-emerald-400 italic tracking-tighter">${rate.price_sale || 0}</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Margen Destacado */}
+                    <div className="mt-4 p-4 rounded-2xl bg-black/20 border border-white/5 flex items-center justify-between">
+                        <div>
+                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Margen de Ganancia</p>
+                            <div className="flex items-center gap-2">
+                                <span className={`text-xl font-black italic ${marginPercent > 50 ? 'text-emerald-400' : 'text-indigo-400'}`}>
+                                    {isEditing ? `$${calculatedProfit}` : `$${Number(rate.price_sale || 0) - Number(rate.cost_internal)}`}
+                                </span>
+                                <span className="text-[9px] font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded italic">
+                                    {marginPercent.toFixed(0)}%
+                                </span>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                             {isEditing ? (
+                                 <div className="space-y-1">
+                                     <p className="text-[8px] font-black text-gray-600 uppercase">Ajuste Manual</p>
+                                     <input 
+                                        type="number"
+                                        value={formData.profit_margin}
+                                        onChange={e => setFormData({...formData, profit_margin: e.target.value})}
+                                        className="w-16 bg-white/5 border border-white/10 rounded-md px-2 py-0.5 text-[10px] font-black text-white outline-none"
+                                     />
+                                 </div>
+                             ) : (
+                                 <div className="w-8 h-8 rounded-full border-2 border-white/5 flex items-center justify-center">
+                                     <DollarSign className={`w-4 h-4 ${marginPercent > 40 ? 'text-emerald-500' : 'text-gray-500'}`} />
+                                 </div>
+                             )}
+                        </div>
+                    </div>
+                </div>
+
+                {isEditing && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-6 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3"
+                    >
+                        <RefreshCw className="w-3.5 h-3.5 text-emerald-500 animate-spin" />
+                        <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest italic leading-tight">Configuración en memoria... Haz clic en el círculo verde para guardar.</p>
+                    </motion.div>
+                )}
             </div>
-            {isEditing && (
-                <p className="mt-4 text-[9px] text-emerald-400 font-bold uppercase tracking-widest italic animate-pulse">Guardando cambios en Base de Datos...</p>
-            )}
         </motion.div>
     );
 }
