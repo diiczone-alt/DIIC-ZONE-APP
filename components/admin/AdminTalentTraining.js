@@ -17,41 +17,7 @@ export default function AdminTalentTraining() {
     const [activeTab, setActiveTab] = useState('academy'); // 'academy', 'students', 'curriculum'
     const [selectedStudent, setSelectedStudent] = useState(null);
 
-    const students = [
-        {
-            id: 1,
-            name: "Luis M.",
-            role: "Junior Designer",
-            reason: "Reputación Baja (SR 54)",
-            progress: 45,
-            course: "Diseño Estratégico",
-            status: "active",
-            startDate: "15 Ene 2026",
-            deadline: "15 Feb 2026"
-        },
-        {
-            id: 2,
-            name: "Andrea P.",
-            role: "Senior Editor",
-            reason: "Up-skill (Nivel Elite)",
-            progress: 85,
-            course: "Protocolo DIIC Premium",
-            status: "active",
-            startDate: "20 Ene 2026",
-            deadline: "05 Feb 2026"
-        },
-        {
-            id: 3,
-            name: "Samuel T.",
-            role: "Social Media",
-            reason: "Nuevo Ingreso",
-            progress: 15,
-            course: "Protocolo DIIC ZONE",
-            status: "warning",
-            startDate: "25 Ene 2026",
-            deadline: "10 Feb 2026"
-        }
-    ];
+    const students = [];
 
     const courses = [
         {
@@ -188,16 +154,21 @@ export default function AdminTalentTraining() {
                         exit={{ opacity: 0, scale: 0.98 }}
                         className="grid grid-cols-1 lg:grid-cols-4 gap-8"
                     >
-                        <div className="lg:col-span-3 space-y-4">
-                            {students.map(student => (
-                                <StudentRow
-                                    key={student.id}
-                                    data={student}
-                                    onClick={() => setSelectedStudent(student)}
-                                    isSelected={selectedStudent?.id === student.id}
-                                />
-                            ))}
-                        </div>
+                        {students.length === 0 && (
+                            <div className="py-20 text-center text-gray-500 font-bold italic border border-white/5 rounded-[40px] bg-[#0A0A12]">
+                                <GraduationCap className="w-12 h-12 text-gray-700 mx-auto mb-4 opacity-20" />
+                                No hay creativos inscritos en cursos actualmente.
+                            </div>
+                        )}
+                        {students.map(student => (
+                            <StudentRow
+                                key={student.id}
+                                data={student}
+                                onClick={() => setSelectedStudent(student)}
+                                isSelected={selectedStudent?.id === student.id}
+                            />
+                        ))}
+                    </div>
                         {selectedStudent && (
                             <StudentFocusPanel student={selectedStudent} />
                         )}
