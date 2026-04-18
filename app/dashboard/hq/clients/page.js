@@ -365,7 +365,6 @@ export default function HQClientsPage() {
                 </div>
                 <div className="flex flex-wrap gap-3">
                     <InviteButton label="Invitación para SOCIO" type="client" color="indigo" icon={Building2} />
-                    <InviteButton label="Invitación para EQUIPO" type="creative" color="purple" icon={UserPlus} />
                 </div>
             </motion.div>
 

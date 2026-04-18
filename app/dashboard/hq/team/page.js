@@ -10,7 +10,8 @@ import {
     ChevronRight, Target, Flame, Database,
     ChevronDown, Trash2, Edit, MessageSquare, Globe, ListTodo,
     MapPin, DollarSign, FileText,
-    Video, Clapperboard, Palette, Mic, Camera, User, Printer, Ticket, Monitor
+    Video, Clapperboard, Palette, Mic, Camera, User, Printer, Ticket, Monitor,
+    Copy
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
@@ -112,13 +113,11 @@ export default function HQTeamPage() {
                     </div>
                 </div>
                 <div className="flex gap-4">
-                    <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1">
+                    <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1 h-fit">
                         <button onClick={() => setViewMode('squads')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'squads' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Escuadrones</button>
                         <button onClick={() => setViewMode('departments')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'departments' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Departamentos</button>
                     </div>
-                    <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-4 bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl transition-all">
-                        <UserPlus className="w-4 h-4" /> Registrar Talento
-                    </button>
+                    <InviteButton label="Invitación para Equipo" type="creative" color="indigo" icon={UserPlus} />
                 </div>
             </div>
 
@@ -387,37 +386,44 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                 initial={{ scale: 0.95, opacity: 0, y: 50 }} 
                 animate={{ scale: 1, opacity: 1, y: 0 }} 
                 exit={{ scale: 0.95, opacity: 0, y: 50 }} 
-                className="relative w-full max-w-2xl bg-[#0F0F1A]/80 backdrop-blur-3xl border border-white/10 rounded-[3.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)] flex flex-col max-h-[85vh] overflow-hidden"
+                className="relative w-full max-w-5xl bg-[#0F0F1A]/90 backdrop-blur-3xl border border-white/10 rounded-[3.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)] flex flex-row max-h-[85vh] overflow-hidden"
             >
-                {/* Header Section */}
-                <div className="p-8 border-b border-white/5 bg-gradient-to-r from-indigo-600/5 to-transparent">
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-5">
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl font-black text-white italic shadow-lg">
-                                {member.name[0]}
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-black text-white italic tracking-tigh uppercase">Control <span className="text-indigo-400">Operativo</span></h3>
-                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] mt-1">{member.role}</p>
-                            </div>
+                {/* Sidebar Section */}
+                <div className="w-80 border-r border-white/5 bg-white/[0.02] flex flex-col p-10">
+                    <div className="flex flex-col items-center mb-12 text-center">
+                        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-black text-white italic shadow-2xl mb-6 ring-4 ring-indigo-500/20">
+                            {member.name[0]}
                         </div>
-                        <button onClick={onClose} className="p-3 bg-white/5 hover:bg-rose-500/20 hover:text-rose-500 rounded-xl transition-all">
-                            <X className="w-5 h-5" />
-                        </button>
+                        <h3 className="text-xl font-black text-white italic tracking-tighter uppercase w-full truncate">{member.name}</h3>
+                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mt-2 bg-indigo-500/10 px-4 py-1.5 rounded-full border border-indigo-500/20">{member.role}</p>
                     </div>
 
-                    {/* Navigation Tabs */}
-                    <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-2">
+                    <div className="flex-1 space-y-3">
                         <TabButton active={activeTab === 'perfil'} onClick={() => setActiveTab('perfil')} icon={LayoutGrid} label="Perfil" />
                         <TabButton active={activeTab === 'profesional'} onClick={() => setActiveTab('profesional')} icon={Award} label="Expediente" />
                         <TabButton active={activeTab === 'marcas'} onClick={() => setActiveTab('marcas')} icon={Globe} label="Marcas" />
                         <TabButton active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} icon={Shield} label="Squad" />
                         <TabButton active={activeTab === 'tasks'} onClick={() => setActiveTab('tasks')} icon={ListTodo} label="Tasks" />
                     </div>
+
+                    <div className="pt-8 mt-auto border-t border-white/5">
+                        <button onClick={onClose} className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-rose-500/10 hover:text-rose-400 text-gray-500 transition-all font-black uppercase text-[10px] tracking-widest border border-transparent hover:border-rose-500/20">
+                            <X className="w-4 h-4" />
+                            Cerrar Panel
+                        </button>
+                    </div>
                 </div>
 
-                {/* Content Section */}
-                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-[#050510]/30">
+                {/* Main Content Area */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="px-10 py-8 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-indigo-600/5 to-transparent">
+                        <div>
+                            <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Control <span className="text-indigo-400">Operativo</span></h2>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Sincronización en tiempo real</p>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-[#050510]/30">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={activeTab}
@@ -560,55 +566,55 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                             )}
 
                             {activeTab === 'marcas' && (
-                                <div className="space-y-10">
+                                <div className="space-y-6">
                                     <div>
-                                        <h4 className="text-[12px] font-black text-indigo-400 uppercase tracking-[0.2em] italic mb-6 px-4">Vincular Nueva Marca</h4>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] italic mb-4 px-4">Vincular Nueva Marca</h4>
+                                        <div className="grid grid-cols-2 gap-3">
                                             {availableBrands.map(brand => (
                                                 <button 
                                                     key={brand.id} 
                                                     onClick={() => toggleBrand(brand.id)}
-                                                    className="flex items-center justify-between p-6 bg-white/[0.03] border border-white/5 rounded-[2.5rem] hover:bg-white/[0.08] hover:border-indigo-500/30 transition-all group"
+                                                    className="flex items-center justify-between p-3.5 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.08] hover:border-indigo-500/30 transition-all group"
                                                 >
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-xl font-black italic text-indigo-400 border border-indigo-500/20">{brand.name[0]}</div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-sm font-black italic text-indigo-400 border border-indigo-500/20">{brand.name[0]}</div>
                                                         <div className="text-left">
-                                                            <p className="text-[13px] font-black text-white uppercase italic">{brand.name}</p>
-                                                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{brand.type || 'Cliente Regular'}</p>
+                                                            <p className="text-[11px] font-black text-white uppercase italic leading-tight truncate max-w-[120px]">{brand.name}</p>
+                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{brand.type || 'Cliente Regular'}</p>
                                                         </div>
                                                     </div>
-                                                    <Plus className="w-5 h-5 text-gray-600 group-hover:text-indigo-400 transition-colors" />
+                                                    <Plus className="w-4 h-4 text-gray-600 group-hover:text-indigo-400 transition-colors" />
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
 
-                                    <div className="pt-8 border-t border-white/5">
-                                        <h4 className="text-[12px] font-black text-emerald-400 uppercase tracking-[0.2em] italic mb-6 px-4">Marcas Designadas</h4>
-                                        <div className="space-y-4">
+                                    <div className="pt-6 border-t border-white/5">
+                                        <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] italic mb-4 px-4">Marcas Designadas</h4>
+                                        <div className="space-y-3">
                                             {assignedBrands.map(brand => (
-                                                <div key={brand.id} className="flex items-center justify-between p-8 bg-white/[0.03] border border-white/10 rounded-[3rem] hover:bg-white/[0.08] transition-all group">
-                                                    <div className="flex items-center gap-6">
-                                                        <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-2xl font-black italic text-emerald-400 border border-emerald-500/20">
+                                                <div key={brand.id} className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/10 rounded-2xl hover:bg-white/[0.08] transition-all group">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-lg font-black italic text-emerald-400 border border-emerald-500/20">
                                                             {brand.name[0]}
                                                         </div>
                                                         <div>
-                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5">ZONA CREATIVA ACTIVA</p>
-                                                            <p className="text-2xl font-black text-white italic tracking-tighter uppercase">{brand.name} <span className="text-emerald-400 ml-2">// {brand.type}</span></p>
+                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-0.5">ZONA CREATIVA ACTIVA</p>
+                                                            <p className="text-lg font-black text-white italic tracking-tighter uppercase leading-none">{brand.name} <span className="text-emerald-400 text-xs ml-2">// {brand.type}</span></p>
                                                         </div>
                                                     </div>
                                                     <button 
                                                         onClick={() => toggleBrand(brand.id, true)}
-                                                        className="p-4 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-2xl transition-all"
+                                                        className="p-2.5 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all"
                                                     >
-                                                        <X className="w-5 h-5" />
+                                                        <X className="w-4 h-4" />
                                                     </button>
                                                 </div>
                                             ))}
                                             {assignedBrands.length === 0 && (
-                                                <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-[3rem]">
-                                                    <Globe className="w-12 h-12 text-gray-800 mx-auto mb-4 opacity-20" />
-                                                    <p className="text-xs font-black text-gray-600 uppercase tracking-widest">Sin marcas asignadas</p>
+                                                <div className="text-center py-12 border-2 border-dashed border-white/5 rounded-3xl">
+                                                    <Globe className="w-8 h-8 text-gray-800 mx-auto mb-3 opacity-20" />
+                                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Sin marcas asignadas</p>
                                                 </div>
                                             )}
                                         </div>
@@ -707,23 +713,24 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                         </motion.div>
                     </AnimatePresence>
                 </div>
-            </motion.div>
-        </div>
-    );
+            </div>
+        </motion.div>
+    </div>
+);
 }
 
 function TabButton({ active, onClick, icon: Icon, label }) {
     return (
         <button
             onClick={onClick}
-            className={`flex items-center gap-3 px-6 py-4 rounded-xl border transition-all duration-300 whitespace-nowrap ${
+            className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl border transition-all duration-300 ${
                 active 
-                ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg scale-105' 
-                : 'bg-white/5 border-white/5 text-gray-600 hover:bg-white/10 hover:text-gray-400'
+                ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl translate-x-1' 
+                : 'bg-transparent border-transparent text-gray-500 hover:bg-white/5 hover:text-gray-300'
             }`}
         >
-            <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-gray-600'}`} />
-            <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+            <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-gray-600'}`} />
+            <span className="text-[10px] font-black uppercase tracking-[0.15em]">{label}</span>
         </button>
     );
 }
@@ -771,5 +778,31 @@ function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitti
                 </form>
             </motion.div>
         </div>
+    );
+}
+
+function InviteButton({ label, type, color, icon: Icon }) {
+    const [copied, setCopied] = useState(false);
+    const handleCopy = () => {
+        const url = `${window.location.origin}/onboarding?type=${type}`;
+        navigator.clipboard.writeText(url);
+        setCopied(true);
+        toast.success(`Enlace copiado`, {
+            description: `Se ha generado el link de acceso para ${type === 'client' ? 'Socio' : 'Equipo'}.`
+        });
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const colors = {
+        indigo: 'bg-indigo-500/5 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white',
+        purple: 'bg-purple-500/5 text-purple-400 border-purple-500/20 hover:bg-purple-600 hover:text-white'
+    };
+
+    return (
+        <button onClick={handleCopy} className={`flex items-center gap-3 px-6 py-4 rounded-2xl border ${colors[color]} font-black uppercase text-[10px] transition-all active:scale-95 shadow-xl`}>
+            <Icon className="w-4 h-4" />
+            {copied ? '¡COPIADO!' : label}
+            <Copy className="w-3 h-3 opacity-30 ml-2" />
+        </button>
     );
 }
