@@ -193,6 +193,27 @@ export default function HQClientsPage() {
         ];
     }, [team]);
 
+    const editorOptions = useMemo(() => {
+        const staff = team.filter(m => 
+            m.role?.toLowerCase().includes('editor')
+        );
+        return [
+            ...staff.map(m => ({ value: m.name, label: m.name })),
+            { value: 'Sin asignar', label: 'Sin asignar' }
+        ];
+    }, [team]);
+
+    const filmmakerOptions = useMemo(() => {
+        const staff = team.filter(m => 
+            m.role?.toLowerCase().includes('filmmaker') || 
+            m.role?.toLowerCase().includes('videógrafo')
+        );
+        return [
+            ...staff.map(m => ({ value: m.name, label: m.name })),
+            { value: 'Sin asignar', label: 'Sin asignar' }
+        ];
+    }, [team]);
+
     const handleToggleCM = async (id, currentCM) => {
         const cms = cmOptions.map(o => o.value);
         const nextIdx = (cms.indexOf(currentCM) + 1) % cms.length;
@@ -202,17 +223,14 @@ export default function HQClientsPage() {
     const handleOpenEdit = (client) => {
         setEditingClient(client);
         setNewClient({
-            name: client.name || '',
-            plan: client.plan || 'Basic',
-            price: client.price || 0,
-            target: client.target || 0,
-            cm: client.cm || '',
-            email: client.email || '',
-            password_initial: client.password_initial || '',
-            whatsapp_number: client.whatsapp_number || '',
-            google_drive_folder_id: client.google_drive_folder_id || '',
-            notes: client.notes || '',
-            onboarding_data: client.onboarding_data || {}
+            ...client,
+            onboarding_data: client.onboarding_data || {},
+            editor: client.editor || '',
+            filmmaker: client.filmmaker || '',
+            growth_level: client.growth_level || 1,
+            business_type: client.business_type || '',
+            industry: client.industry || '',
+            city: client.city || ''
         });
         setActiveEditTab('operative');
         setIsEditModalOpen(true);
@@ -301,11 +319,12 @@ export default function HQClientsPage() {
 
     return (
         <div className="p-8 space-y-8 relative">
+            <div className="fixed inset-0 pointer-events-none opacity-20" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 80%)' }}></div>
             {/* Header */}
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-end relative z-10">
                 <div>
                     <h1 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">Cartera de Clientes</h1>
-                    <p className="text-gray-400">Gestión centralizada de socios y cuentas activas.</p>
+                    <p className="text-gray-400 font-medium">Gestión centralizada de socios y cuentas activas.</p>
                 </div>
                 <div className="flex gap-4 items-center">
                     <div className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest flex items-center gap-2 ${
@@ -333,7 +352,7 @@ export default function HQClientsPage() {
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-indigo-600/10 border border-indigo-500/20 rounded-[2.5rem] p-6 flex flex-col md:flex-row items-center justify-between gap-6"
+                className="bg-indigo-600/10 border border-indigo-500/20 rounded-[2.5rem] p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10"
             >
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center border border-indigo-500/30">
@@ -351,7 +370,7 @@ export default function HQClientsPage() {
             </motion.div>
 
             {/* Stats Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
                 <StatCard title="Clientes Activos" value={activeCount} icon={Users} color="indigo" isActive={activeFilter === 'active'} onClick={() => setActiveFilter(activeFilter === 'active' ? 'all' : 'active')} />
                 <StatCard title="MRR Proyectado" value={`$${mrr}`} icon={TrendingUp} color="green" isActive={false} onClick={() => setActiveFilter('all')} />
                 <StatCard title="En Riesgo" value={riskCount} icon={AlertCircle} color="red" isActive={activeFilter === 'risk'} onClick={() => setActiveFilter(activeFilter === 'risk' ? 'all' : 'risk')} />
@@ -359,7 +378,7 @@ export default function HQClientsPage() {
             </div>
 
             {/* Filters & Search */}
-            <div className="flex gap-4">
+            <div className="flex gap-4 relative z-10">
                 <div className="flex-1 relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                     <input
@@ -367,7 +386,7 @@ export default function HQClientsPage() {
                         placeholder="Buscar por nombre o marca..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-[#0E0E18] border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-white focus:outline-none focus:border-indigo-500/50 transition-all border-dashed"
+                        className="w-full bg-[#0E0E18]/80 backdrop-blur-md border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-white focus:outline-none focus:border-indigo-500/50 transition-all border-dashed"
                     />
                 </div>
                 <button className="px-6 rounded-2xl border border-white/5 text-gray-400 hover:bg-white/5 transition-all flex items-center gap-2">
@@ -376,7 +395,7 @@ export default function HQClientsPage() {
             </div>
 
             {/* Table */}
-            <div className="bg-[#0E0E18] border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
+            <div className="bg-[#0E0E18]/80 backdrop-blur-md border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative z-10">
                 <table className="w-full text-left">
                     <thead>
                         <tr className="border-b border-white/5 bg-white/[0.02]">
@@ -401,7 +420,7 @@ export default function HQClientsPage() {
                                             </div>
                                             <div>
                                                 <div className="text-white font-bold">{client?.name || 'Cliente sin nombre'}</div>
-                                                <div className="text-xs text-gray-500">Ubicación: {client?.city || '-'}</div>
+                                                <div className="text-xs text-gray-500 font-medium">Ubicación: {client?.city || '-'}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -410,7 +429,7 @@ export default function HQClientsPage() {
                                             {client?.plan || 'Básico'}
                                         </button>
                                     </td>
-                                    <td className="px-6 py-6">
+                                    <td className="px-6 py-6 font-medium">
                                         <button onClick={() => handleToggleCM(client.id, client.cm)} className="flex items-center gap-2 hover:bg-white/5 p-2 rounded-xl transition-all active:scale-95 group/cm">
                                             <div className="w-6 h-6 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-[10px] text-purple-400 font-bold group-hover/cm:border-indigo-500">
                                                 {client?.cm?.[0] || '?'}
@@ -429,8 +448,8 @@ export default function HQClientsPage() {
                                         </button>
                                     </td>
                                     <td className="px-6 py-6 text-right whitespace-nowrap relative">
-                                        <div className="flex justify-end items-center gap-2">
-                                            <button className="px-4 py-2 bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all" onClick={() => handleOpenPreview(client)}>
+                                        <div className="flex justify-end items-center gap-2 font-black uppercase tracking-widest text-[10px]">
+                                            <button className="px-4 py-2 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all" onClick={() => handleOpenPreview(client)}>
                                                 Ver Estrategia
                                             </button>
                                             <button onClick={() => handleDeleteClient(client.id)} className="p-2 bg-white/5 hover:bg-red-500/10 rounded-xl text-gray-400 hover:text-red-500 transition-all border border-white/5">
@@ -474,33 +493,215 @@ export default function HQClientsPage() {
                 )}
             </AnimatePresence>
 
-            {/* Edit Modal */}
+            {/* Edit Modal (Strategist Hub) */}
             <AnimatePresence>
                 {isEditModalOpen && (
                     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-lg" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative w-full max-w-xl bg-[#080814] border border-white/10 rounded-[3rem] p-10 overflow-hidden">
-                            <h2 className="text-2xl font-black text-white mb-6 uppercase">Editar Socio</h2>
-                            <form onSubmit={handleSaveEdit} className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Nombre / Marca</label>
-                                    <input type="text" required value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none font-bold" />
+                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative w-full max-w-4xl bg-[#080814] border border-white/10 rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col h-[85vh]">
+                            
+                            {/* Modal Banner */}
+                            <div className="h-32 bg-indigo-600/20 relative overflow-hidden flex items-end p-8 border-b border-white/5">
+                                <div className="absolute top-0 right-0 p-8">
+                                    <div className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] opacity-40">Administrative Unit // HQ</div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest font-mono">Inversión (USD)</label>
-                                        <input type="number" value={newClient.price} onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" />
+                                <div className="relative z-10 flex items-center gap-4">
+                                    <div className="w-16 h-16 rounded-[20px] bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-black text-2xl shadow-lg">
+                                        {editingClient?.name?.[0] || 'D'}
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">WhatsApp</label>
-                                        <input type="text" value={newClient.whatsapp_number} onChange={(e) => setNewClient({ ...newClient, whatsapp_number: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" />
+                                    <div>
+                                        <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-none">Identidad de Socio</h2>
+                                        <p className="text-gray-400 text-xs font-medium tracking-tight mt-2 opacity-60 flex items-center gap-2">
+                                            <Shield className="w-3 h-3" /> Ecosistema de Datos Activo
+                                        </p>
                                     </div>
                                 </div>
-                                <div className="flex gap-4 pt-4">
-                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 text-gray-500 font-bold uppercase tracking-widest text-xs">Cerrar</button>
-                                    <button type="submit" disabled={isSubmitting} className="flex-[2] py-4 bg-indigo-600 text-white font-bold rounded-2xl uppercase tracking-widest text-xs">Guardar</button>
+                            </div>
+
+                            {/* Tabs Navigation */}
+                            <div className="flex px-8 pt-6 border-b border-white/5 bg-white/[0.01]">
+                                {[
+                                    { id: 'operative', label: 'Logística Corazón', icon: Layout },
+                                    { id: 'team', label: 'Escuadra Pro', icon: Users },
+                                    { id: 'strategy', label: 'Reporte Estratégico', icon: Target },
+                                    { id: 'growth', label: 'Performance', icon: TrendingUp }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveEditTab(tab.id)}
+                                        className={`flex items-center gap-3 px-6 py-4 border-b-2 transition-all text-[10px] font-black uppercase tracking-widest ${
+                                            activeEditTab === tab.id 
+                                                ? 'border-indigo-500 text-white bg-indigo-500/5' 
+                                                : 'border-transparent text-gray-500 hover:text-white hover:bg-white/5'
+                                        }`}
+                                    >
+                                        <tab.icon className="w-4 h-4" />
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Tab Content */}
+                            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                                <form onSubmit={handleSaveEdit} id="edit-client-form">
+                                    {activeEditTab === 'operative' && (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 gap-8">
+                                            <div className="space-y-6">
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Nombre de la Marca</label>
+                                                    <div className="relative group">
+                                                        <input 
+                                                            type="text" 
+                                                            value={newClient.name} 
+                                                            onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} 
+                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-6 text-white outline-none focus:border-indigo-500/50 transition-all font-black text-lg" 
+                                                        />
+                                                        <Building2 className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-700 pointer-events-none" />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Ciudad Base</label>
+                                                    <input type="text" value={newClient.city} onChange={(e) => setNewClient({ ...newClient, city: e.target.value })} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none transition-all font-bold" placeholder="Ej: Santo Domingo" />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Industria / Sector</label>
+                                                    <input type="text" value={newClient.industry} onChange={(e) => setNewClient({ ...newClient, industry: e.target.value })} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none transition-all font-bold" placeholder="Ej: Médico, Real Estate" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-6">
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">WhatsApp Contacto</label>
+                                                    <div className="relative group">
+                                                        <input type="text" value={newClient.whatsapp_number} onChange={(e) => setNewClient({ ...newClient, whatsapp_number: e.target.value })} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-emerald-400 outline-none transition-all font-mono" placeholder="+593 ..." />
+                                                        <MessageSquare className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500/20" />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Inversión Mensual (USD)</label>
+                                                    <div className="relative">
+                                                        <input type="number" value={newClient.price} onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none transition-all font-black text-xl" />
+                                                        <DollarSign className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-700" />
+                                                    </div>
+                                                </div>
+                                                <PremiumDropdown label="Tipo de Negocio" value={newClient.business_type} onChange={(val) => setNewClient({ ...newClient, business_type: val })} options={[{ value: 'Servicios', label: 'Servicios' }, { value: 'Productos', label: 'E-commerce / Productos' }, { value: 'Personal', label: 'Marca Personal' }]} />
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {activeEditTab === 'team' && (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                                            <div className="p-8 rounded-[30px] bg-white/[0.02] border border-white/5 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <PremiumDropdown label="Community Manager Responsable" icon={Star} value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
+                                                <PremiumDropdown label="Editor de Video Asignado" icon={Zap} value={newClient.editor} onChange={(val) => setNewClient({ ...newClient, editor: val })} options={editorOptions} />
+                                                <PremiumDropdown label="Filmmaker / Videógrafo" icon={Zap} value={newClient.filmmaker} onChange={(val) => setNewClient({ ...newClient, filmmaker: val })} options={filmmakerOptions} />
+                                                <PremiumDropdown label="Plan de Servicio" icon={Shield} value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={[{ value: 'Basic', label: 'DIIC Basic' }, { value: 'Premium', label: 'DIIC Premium' }, { value: 'Agency', label: 'DIIC Full Agency' }]} />
+                                            </div>
+                                            <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/10 flex items-start gap-4">
+                                                <AlertCircle className="w-5 h-5 text-amber-500 mt-1" />
+                                                <p className="text-xs text-amber-500/80 font-medium leading-relaxed uppercase tracking-tight">Cualquier cambio en la escuadra afectará el cálculo de rentabilidad del cliente y las notificaciones de tareas automáticas.</p>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {activeEditTab === 'strategy' && (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                                <div className="space-y-6">
+                                                    <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest pl-2">Información de Onboarding</h4>
+                                                    <div className="p-8 rounded-[30px] bg-white/[0.02] border border-white/5 space-y-8">
+                                                        <div>
+                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-3">¿A qué se dedican?</p>
+                                                            <p className="text-white text-sm font-bold italic leading-relaxed">"{newClient.onboarding_data?.whatTheyDo || 'Sin definir en onboarding'}"</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-3">Diferenciación Única</p>
+                                                            <p className="text-indigo-300 text-sm font-bold italic leading-relaxed">"{newClient.onboarding_data?.differentiation || 'Sin definir'}"</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-3">Nicho Objetivo</p>
+                                                            <div className="px-5 py-3 rounded-2xl bg-white/5 border border-white/5 text-white font-black uppercase text-[10px] tracking-widest inline-block">
+                                                                {newClient.onboarding_data?.niche || 'General'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-6">
+                                                    <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest pl-2">Objetivos de Venta</h4>
+                                                    <div className="p-8 rounded-[30px] bg-emerald-500/5 border border-emerald-500/10 space-y-6">
+                                                        <div className="flex justify-between items-center bg-black/20 p-4 rounded-2xl border border-white/5">
+                                                            <span className="text-[10px] font-black text-gray-400 uppercase">Conversiones Meta</span>
+                                                            <span className="text-emerald-400 font-black text-xl italic">{newClient.onboarding_data?.monthlyGoal || 0}</span>
+                                                        </div>
+                                                        <p className="text-[10px] text-emerald-500/60 font-medium italic">"El cliente prioriza la generación de leads calificados sobre el alcance masivo."</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {activeEditTab === 'growth' && (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-full max-w-md space-y-8">
+                                                    <div className="text-center space-y-4">
+                                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Nivel de Crecimiento Actual</p>
+                                                        <div className="flex justify-center gap-4">
+                                                            {[1, 2, 3, 4, 5].map(level => (
+                                                                <button
+                                                                    key={level}
+                                                                    type="button"
+                                                                    onClick={() => setNewClient({ ...newClient, growth_level: level })}
+                                                                    className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center text-xl font-black transition-all ${
+                                                                        newClient.growth_level >= level 
+                                                                            ? 'bg-indigo-600 border-indigo-400 text-white shadow-[0_0_30px_rgba(79,70,229,0.3)]' 
+                                                                            : 'bg-white/5 border-white/5 text-gray-700'
+                                                                    }`}
+                                                                >
+                                                                    {level}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                        <p className="text-[10px] font-black text-indigo-400 tracking-widest pt-2">
+                                                            {['Estancado', 'Estable', 'En Crecimiento', 'Aceleración', 'Escalado Total'][newClient.growth_level - 1]}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="space-y-4 pt-10 border-t border-white/5">
+                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                                            <BookOpen className="w-3 h-3" /> Bitácora de Estratega
+                                                        </label>
+                                                        <textarea 
+                                                            value={newClient.notes} 
+                                                            onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })} 
+                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-3xl p-8 text-gray-300 outline-none focus:border-indigo-500/50 transition-all font-medium text-sm italic resize-none" 
+                                                            rows="5"
+                                                            placeholder="Anota aquí las observaciones estratégicas, cuellos de botella o hitos alcanzados..."
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </form>
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="p-8 border-t border-white/5 bg-black/20 flex justify-between items-center">
+                                <div className="flex items-center gap-3 text-gray-500 text-[10px] font-black uppercase tracking-widest hidden md:flex">
+                                    <Shield className="w-4 h-4" /> Secure Admin Hub v4.1
                                 </div>
-                            </form>
+                                <div className="flex gap-4 w-full md:w-auto">
+                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-10 py-4 text-gray-500 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all">Cancelar</button>
+                                    <button 
+                                        form="edit-client-form"
+                                        type="submit" 
+                                        disabled={isSubmitting} 
+                                        className="flex-1 md:flex-none px-12 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-600/20 active:scale-95 transition-all"
+                                    >
+                                        {isSubmitting ? 'Sincronizando...' : 'Guardar Hojas de Ruta'}
+                                    </button>
+                                </div>
+                            </div>
                         </motion.div>
                     </div>
                 )}
@@ -524,7 +725,7 @@ export default function HQClientsPage() {
                             exit={{ scale: 0.95, opacity: 0, y: 30 }} 
                             className="relative w-full max-w-[95vw] h-[90vh] bg-[#0A0B14] border border-white/10 rounded-[40px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row"
                         >
-                            {/* Left: Strategic Outliner (The Missing Implementation) */}
+                            {/* Left: Strategic Outliner */}
                             <div className="hidden md:block w-80 h-full border-r border-white/5">
                                 <StrategicOutliner 
                                     nodes={activeStrategyNodes} 
@@ -612,8 +813,8 @@ export default function HQClientsPage() {
                             <h3 className="text-xl font-black text-white mb-2">¿Eliminar Socio?</h3>
                             <p className="text-gray-500 mb-8">Esta acción es permanente.</p>
                             <div className="grid grid-cols-2 gap-4">
-                                <button onClick={() => setIsDeleteModalOpen(false)} className="py-3 bg-white/5 text-gray-400 font-bold rounded-xl">Cancelar</button>
-                                <button onClick={confirmDelete} disabled={isSubmitting} className="py-3 bg-red-600 text-white font-bold rounded-xl">{isSubmitting ? 'Eliminando...' : 'Eliminar'}</button>
+                                <button onClick={() => setIsDeleteModalOpen(false)} className="py-3 bg-white/5 text-gray-400 font-bold rounded-xl font-black uppercase tracking-widest text-[10px]">Cancelar</button>
+                                <button onClick={confirmDelete} disabled={isSubmitting} className="py-3 bg-red-600 text-white font-bold rounded-xl font-black uppercase tracking-widest text-[10px]">{isSubmitting ? 'Eliminando...' : 'Eliminar'}</button>
                             </div>
                         </motion.div>
                     </div>
@@ -625,23 +826,24 @@ export default function HQClientsPage() {
 
 function StatCard({ title, value, icon: Icon, color, isActive, onClick }) {
     const colors = {
-        indigo: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20',
-        green: 'text-green-500 bg-green-500/10 border-green-500/20',
-        red: 'text-red-500 bg-red-500/10 border-red-500/20',
-        blue: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+        indigo: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+        green: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+        red: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+        blue: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
     };
 
     return (
         <motion.div 
-            whileHover={{ y: -4 }}
+            whileHover={{ y: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={onClick}
-            className={`p-6 border rounded-3xl cursor-pointer bg-[#0E0E18] ${isActive ? 'border-indigo-500/50' : 'border-white/5'}`}
+            className={`p-6 border rounded-3xl cursor-pointer bg-[#0E0E18]/60 backdrop-blur-sm transition-all ${isActive ? 'border-indigo-500/50 shadow-[0_0_30px_rgba(79,70,229,0.15)] bg-indigo-500/5' : 'border-white/5 hover:border-white/10'}`}
         >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${colors[color]}`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 border ${colors[color]}`}>
                 <Icon className="w-5 h-5" />
             </div>
-            <div className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-1">{title}</div>
-            <div className="text-2xl font-black text-white italic">{value}</div>
+            <div className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">{title}</div>
+            <div className="text-2xl font-black text-white italic tracking-tighter">{value}</div>
         </motion.div>
     );
 }
@@ -665,17 +867,19 @@ function InviteButton({ label, type, color, icon: Icon }) {
         const url = `${window.location.origin}/onboarding?type=${type}`;
         navigator.clipboard.writeText(url);
         setCopied(true);
-        toast.success(`Enlace copiado`);
+        toast.success(`Enlace copiado`, {
+            description: `Se ha generado el link de acceso para ${type === 'client' ? 'Socio' : 'Equipo'}.`
+        });
         setTimeout(() => setCopied(false), 2000);
     };
 
     const colors = {
-        indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500 hover:text-white',
-        purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500 hover:text-white'
+        indigo: 'bg-indigo-500/5 text-indigo-400 border-indigo-500/20 hover:bg-indigo-600 hover:text-white',
+        purple: 'bg-purple-500/5 text-purple-400 border-purple-500/20 hover:bg-purple-600 hover:text-white'
     };
 
     return (
-        <button onClick={handleCopy} className={`flex items-center gap-3 px-6 py-4 rounded-2xl border ${colors[color]} font-black uppercase text-[10px] transition-all`}>
+        <button onClick={handleCopy} className={`flex items-center gap-3 px-6 py-4 rounded-2xl border ${colors[color]} font-black uppercase text-[10px] transition-all active:scale-95 shadow-lg`}>
             <Icon className="w-4 h-4" />
             {copied ? '¡COPIADO!' : label}
             <Copy className="w-3 h-3 opacity-30 ml-2" />

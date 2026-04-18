@@ -42,12 +42,11 @@ export const agencyService = {
         console.log(`🚀 [${timestamp}] Service: Creating New Client...`);
         try {
             // Pick only valid columns that exist in the DB schema
-            const validFields = [
                 'id', 'name', 'city', 'type', 'status', 'cm', 'priority', 'plan', 
                 'projects', 'nextpost', 'price', 'target', 'email', 
                 'password_initial', 'whatsapp_number', 'google_drive_folder_id',
-                'onboarding_data', 'notes', 'created_at'
-            ];
+                'onboarding_data', 'notes', 'created_at',
+                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry'
             const sanitizedData = {};
             validFields.forEach(field => {
                 if (clientData[field] !== undefined) sanitizedData[field] = clientData[field];
@@ -95,7 +94,8 @@ export const agencyService = {
                 'name', 'city', 'type', 'status', 'cm', 'priority', 'plan', 
                 'projects', 'nextpost', 'price', 'target', 'email', 
                 'password_initial', 'whatsapp_number', 'google_drive_folder_id',
-                'onboarding_data', 'notes'
+                'onboarding_data', 'notes',
+                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry'
             ];
             const sanitizedUpdates = {};
             validFields.forEach(field => {

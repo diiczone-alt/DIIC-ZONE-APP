@@ -163,13 +163,6 @@ export default function CMWorkstationLayout() {
     ] : [
         { id: 'dashboard_cm', label: 'Dashboard CM', icon: LayoutDashboard },
         { id: 'clients', label: 'Empresas', icon: Users },
-        { id: 'tasks', label: 'Mis Tareas', icon: Edit3 },
-        { 
-            id: 'notifications', 
-            label: 'Notificaciones', 
-            icon: Bell, 
-            badge: notifications.filter(n => n.status === 'unread').length 
-        },
     ];
 
     if (!loading && (!user || (user.role !== 'COMMUNITY' && user.role !== 'CM'))) {
@@ -249,6 +242,44 @@ export default function CMWorkstationLayout() {
             )}
 
             <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Global Workstation Header */}
+                <header className="h-20 border-b border-white/5 px-8 flex items-center justify-between bg-[#050511]/50 backdrop-blur-md z-40">
+                    <div className="flex items-center gap-4">
+                        <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
+                        <h1 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">
+                            System <span className="text-white">Live</span> / {activeTab?.toUpperCase()}
+                        </h1>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        <button 
+                            onClick={() => setActiveTab('notifications')}
+                            className={`relative p-3 rounded-2xl border transition-all group ${
+                                activeTab === 'notifications' 
+                                ? 'bg-cyan-600/10 border-cyan-500/30 text-cyan-400' 
+                                : 'bg-white/5 border-white/5 text-gray-500 hover:text-white'
+                            }`}
+                        >
+                            <Bell className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                            {notifications.filter(n => n.status === 'unread').length > 0 && (
+                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[#050511] animate-pulse">
+                                    {notifications.filter(n => n.status === 'unread').length}
+                                </span>
+                            )}
+                        </button>
+
+                        <div className="flex items-center gap-3 pl-6 border-l border-white/5">
+                            <div className="text-right hidden sm:block">
+                                <p className="text-[10px] font-black text-white uppercase tracking-tight leading-none mb-1">{user?.full_name || 'Leslie'}</p>
+                                <p className="text-[8px] font-bold text-cyan-400 uppercase tracking-widest leading-none opacity-60">Lead Estratega</p>
+                            </div>
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-cyan-500/20">
+                                {user?.full_name?.charAt(0) || 'L'}
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
                     <AnimatePresence mode="wait">
                         <motion.div
