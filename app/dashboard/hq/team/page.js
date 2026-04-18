@@ -120,12 +120,18 @@ export default function HQTeamPage() {
                         {viewMode === 'squads' ? (
                             getSquads().map((squad) => (
                                 <div key={squad.id} className="space-y-8">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`p-3 bg-gradient-to-br ${squad.color} rounded-2xl text-white shadow-lg`}><squad.icon className="w-6 h-6" /></div>
-                                        <h2 className="text-2xl font-black text-white uppercase tracking-widest">{squad.label}</h2>
+                                    <div className="flex items-center gap-6">
+                                        <div className={`p-4 bg-gradient-to-br ${squad.color} rounded-3xl text-white shadow-[0_0_30px_rgba(79,70,229,0.2)]`}><squad.icon className="w-8 h-8" /></div>
+                                        <div className="flex flex-col">
+                                            <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none">{squad.label}</h2>
+                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] flex items-center gap-2 mt-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
+                                                Lid Operativo: {squad.lead.name}
+                                            </p>
+                                        </div>
                                         <div className="h-px flex-1 bg-white/5" />
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                                         <TeamMemberCard member={squad.lead} team={team} allClients={clients} variant="lead" onAudit={() => openAudit(squad.lead)} />
                                         {squad.members.map((member) => (
                                             <TeamMemberCard key={member.id} member={member} team={team} allClients={clients} onAudit={() => openAudit(member)} />
@@ -135,13 +141,13 @@ export default function HQTeamPage() {
                             ))
                         ) : (
                             getDepartments().map((dept) => dept.members.length > 0 && (
-                                <div key={dept.id} className="space-y-8">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`p-3 bg-gradient-to-br ${dept.color} rounded-2xl text-white shadow-lg`}><dept.icon className="w-6 h-6" /></div>
-                                        <h2 className="text-2xl font-black text-white uppercase tracking-widest">{dept.label}</h2>
+                                <div key={dept.id} className="space-y-10">
+                                    <div className="flex items-center gap-6">
+                                        <div className={`p-4 bg-gradient-to-br ${dept.color} rounded-3xl text-white shadow-lg`}><dept.icon className="w-8 h-8" /></div>
+                                        <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter">{dept.label}</h2>
                                         <div className="h-px flex-1 bg-white/5" />
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                                         {dept.members.map((member) => (
                                             <TeamMemberCard key={member.id} member={member} team={team} allClients={clients} onAudit={() => openAudit(member)} />
                                         ))}
@@ -195,56 +201,90 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
     const squadMembers = variant === 'lead' ? team.filter(m => m.squad_lead_id === member.id) : [];
     
     return (
-        <motion.div whileHover={{ y: -5 }} className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 space-y-6 relative overflow-hidden group flex flex-col h-full">
-            <div className={`absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[50px] rounded-full group-hover:bg-indigo-500/10 transition-all`} />
+        <motion.div 
+            whileHover={{ y: -8, scale: 1.02 }} 
+            className="relative w-full aspect-[2/3] max-w-[320px] mx-auto bg-[#0A0B1A]/80 backdrop-blur-2xl border border-white/10 rounded-[4rem] p-10 flex flex-col items-center shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] group overflow-hidden"
+        >
+            {/* Background Effects */}
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/[0.03] to-transparent pointer-events-none" />
+            <div className={`absolute top-0 right-0 w-40 h-40 bg-indigo-500/10 blur-[80px] rounded-full group-hover:bg-indigo-500/20 transition-all duration-700`} />
             
-            <div className="flex flex-col items-center text-center flex-1">
-                <div className={`w-24 h-24 rounded-[2rem] bg-gradient-to-br ${isCM ? 'from-indigo-500 to-purple-500' : 'from-white/10 to-transparent'} p-[2px] mb-6`}>
-                    <div className="w-full h-full rounded-[1.9rem] bg-[#0A0A12] flex items-center justify-center text-3xl font-black text-white italic">
+            {/* Top Stat Pills */}
+            <div className="w-full flex justify-between items-center mb-10 relative z-10">
+                <div className="px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">System Active</span>
+                </div>
+                <div className="px-4 py-2 rounded-full bg-white/5 border border-white/5">
+                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Santo Domingo</span>
+                </div>
+            </div>
+
+            {/* Avatar Section (Pink/Purple Glow as Image 2) */}
+            <div className="relative mb-8 pt-4">
+                <div className="absolute inset-0 bg-pink-500/20 blur-3xl rounded-full scale-150 group-hover:scale-[2] transition-transform duration-700 opacity-0 group-hover:opacity-100" />
+                <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.3)] group-hover:shadow-[0_0_60px_rgba(236,72,153,0.5)] transition-all">
+                    <div className="w-full h-full rounded-full bg-[#050510] flex items-center justify-center border-4 border-[#08081A] text-5xl font-black text-white italic group-hover:rotate-6 transition-transform">
                         {member.name[0]}
                     </div>
                 </div>
-                <h3 className="text-xl font-black text-white uppercase tracking-tight">{member.name}</h3>
-                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-6">{member.role}</p>
-                
-                <div className="w-full h-px bg-white/5 mb-6" />
+            </div>
 
-                {/* Empresas Designadas */}
-                <div className="w-full space-y-3 mb-6">
-                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em]">Marcas Designadas</p>
-                    <div className="flex flex-wrap justify-center gap-2">
-                        {assignedBrands.length > 0 ? (
-                            assignedBrands.map(brand => (
-                                <span key={brand.id} className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-[9px] font-bold text-gray-300 group-hover:border-indigo-500/30 transition-all">
-                                    {brand.name}
-                                </span>
-                            ))
-                        ) : (
-                            <span className="text-[9px] text-gray-600 italic">Sin marcas activas</span>
-                        )}
+            {/* Member Info */}
+            <div className="text-center space-y-3 mb-12 relative z-10">
+                <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-none group-hover:text-indigo-400 transition-colors">
+                    {member.name.split(' ')[0]}
+                </h3>
+                <div className="inline-block px-5 py-2 rounded-full bg-indigo-500 text-white text-[9px] font-black uppercase tracking-[0.2em] shadow-lg shadow-indigo-600/20">
+                    Equipo Zona Creativa
+                </div>
+                <div className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] py-2 border border-white/5 rounded-full bg-white/[0.02]">
+                    {member.role}
+                </div>
+            </div>
+
+            {/* Progress / Assignment Stats */}
+            <div className="w-full space-y-4 mb-10 relative z-10">
+                <div className="bg-black/40 rounded-3xl p-5 border border-white/5 flex items-center justify-between group/stat">
+                    <div className="flex flex-col text-left">
+                        <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">Zona Creativa Designada</p>
+                        <div className="flex items-center gap-3">
+                            <Users className="w-3 h-3 text-gray-600" />
+                            <span className="text-xs font-black text-white">{assignedBrands.length} Personas</span>
+                        </div>
                     </div>
+                    <button className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">+</button>
                 </div>
 
-                {/* Squad Members (Only for Leads) */}
-                {variant === 'lead' && squadMembers.length > 0 && (
-                    <div className="w-full space-y-3 mb-6">
-                        <p className="text-[8px] font-black text-purple-400/60 uppercase tracking-[0.2em]">Escuadrón a Cargo</p>
-                        <div className="flex justify-center -space-x-2">
-                            {squadMembers.map(m => (
-                                <div key={m.id} title={m.name} className="w-8 h-8 rounded-full bg-[#0A0A12] border border-white/10 flex items-center justify-center text-[10px] font-black text-white hover:z-10 hover:border-indigo-500 transition-all cursor-help bg-gradient-to-tr from-white/5 to-transparent">
+                <div className="bg-black/20 rounded-3xl p-5 border border-white/5 flex items-center justify-between">
+                    <div className="flex flex-col text-left">
+                        <p className="text-[8px] font-black text-purple-400 uppercase tracking-widest mb-1">Squad Táctico</p>
+                        <div className="flex items-center gap-3">
+                            <Shield className="w-3 h-3 text-gray-600" />
+                            <span className="text-xs font-black text-white tracking-widest leading-none">
+                                {variant === 'lead' ? `${squadMembers.length} Personas` : 'Miembro Operativo'}
+                            </span>
+                        </div>
+                    </div>
+                    {variant === 'lead' && (
+                        <div className="flex -space-x-2">
+                            {squadMembers.slice(0, 3).map(m => (
+                                <div key={m.id} className="w-6 h-6 rounded-full border border-black bg-indigo-600 flex items-center justify-center text-[8px] font-black text-white">
                                     {m.name[0]}
                                 </div>
                             ))}
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
-            <div className="mt-auto pt-4">
-                <button onClick={onAudit} className="w-full py-4 bg-white/5 hover:bg-white/10 rounded-2xl text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all border border-white/5">
-                    Detalles Operativos
-                </button>
-            </div>
+            {/* Bottom Button */}
+            <button 
+                onClick={onAudit}
+                className="mt-auto w-full py-5 rounded-3xl bg-indigo-600/5 hover:bg-indigo-600 border border-indigo-500/20 hover:border-indigo-400 text-indigo-400 hover:text-white font-black uppercase text-[10px] tracking-[0.3em] transition-all shadow-xl hover:shadow-indigo-600/30 group-hover:translate-y-[-4px]"
+            >
+                Detalles Operativos
+            </button>
         </motion.div>
     );
 }
