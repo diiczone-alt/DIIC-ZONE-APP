@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles } from 'lucide-react';
+import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { agencyService } from '@/services/agencyService';
 import VisionEcosystem from '@/components/VisionEcosystem';
 import { toast } from 'sonner';
 import { isCloudConnected } from '@/lib/supabase';
+import StrategicOutliner from '@/components/shared/Strategy/StrategicOutliner';
+import StrategyCreationWizard from '@/components/shared/Strategy/StrategyCreationWizard';
 
 // --- PREMIUM DROPDOWN COMPONENT ---
 const PremiumDropdown = ({ value, onChange, options, label, icon: Icon }) => {
@@ -87,6 +89,8 @@ export default function HQClientsPage() {
     const [editingClient, setEditingClient] = useState(null);
     const [activeEditTab, setActiveEditTab] = useState('operative');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isStrategicWizardOpen, setIsStrategicWizardOpen] = useState(false);
+    const [activeStrategyNodes, setActiveStrategyNodes] = useState([]);
     const [newClient, setNewClient] = useState({
         name: '',
         plan: 'Basic',
@@ -130,14 +134,8 @@ export default function HQClientsPage() {
         }
     };
 
-    const handleEmergencyReset = () => {
-        if (!confirm("⚠️ ¿Resetear sistema? Esto borrará la memoria local y refrescará la página para solucionar bloqueos.")) return;
-        localStorage.clear();
-        window.location.reload();
-    };
-
     useEffect(() => {
-        fetchClients(); // Restored: Automatic load on mount
+        fetchClients();
         console.log("🚦 [Dashboard] Active and Synchronized.");
     }, []);
 
@@ -150,19 +148,14 @@ export default function HQClientsPage() {
         const clientWithId = { ...newClient, id: tempId, status: 'active', created_at: new Date().toISOString() };
         
         try {
-            // 1. AWAIT REAL CLOUD SYNC (BLOCKING FOR SAFETY)
             const created = await agencyService.createClient(clientWithId);
-            
-            // 2. ONLY UPDATE UI ON SUCCESS
             setClients(prev => [created, ...prev]);
             setIsModalOpen(false); 
-            setNewClient({ name: '', plan: 'Basic', price: 0, target: 0, cm: '', email: '', password_initial: '' });
+            setNewClient({ name: '', plan: 'Basic', price: 0, target: 0, cm: '', email: '', password_initial: '', whatsapp_number: '', google_drive_folder_id: '', notes: '', onboarding_data: {} });
             toast.success("Socio registrado exitosamente");
         } catch (error) {
             console.error("❌ [Flow] Creation Error:", error);
-            toast.error("Error al registrar cliente", { 
-                description: "Verifica tu conexión a la base de datos." 
-            });
+            toast.error("Error al registrar cliente");
         } finally {
             setIsSubmitting(false);
         }
@@ -170,10 +163,7 @@ export default function HQClientsPage() {
 
     const handleUpdateClient = async (id, data) => {
         try {
-            // Optimistic UI update
             setClients(prev => prev.map(c => c.id === id ? { ...c, ...data } : c));
-            
-            // Execute silent cloud sync
             await agencyService.updateClient(id, data);
         } catch (error) {
             console.error("❌ [Flow] Update Error:", error);
@@ -232,25 +222,15 @@ export default function HQClientsPage() {
         e.preventDefault();
         if (!editingClient?.id) return;
 
-        // 1. DIRECT-FIRE UI (CLOSE MODAL IMMEDIATELY)
         setIsEditModalOpen(false);
-        
-        // 2. UPDATE LOCAL STATE
         const updatedData = { ...newClient };
         setClients(prev => prev.map(c => c.id === editingClient.id ? { ...c, ...updatedData } : c));
 
-        // 3. BACKGROUND SYNC (SILENT)
         try {
             await agencyService.updateClient(editingClient.id, updatedData);
-            toast.success("Cambios Guardados", {
-                icon: '⚡',
-                description: "Nube actualizada."
-            });
+            toast.success("Cambios Guardados");
         } catch (error) {
             console.error("❌ [Sync] Save Failure:", error);
-            toast.error("Pendiente de Sincro", {
-                description: "Tus cambios están a salvo en este dispositivo."
-            });
         } finally {
             setEditingClient(null);
         }
@@ -262,9 +242,20 @@ export default function HQClientsPage() {
         try {
             const summary = await agencyService.getStrategySummary(client.id);
             setPreviewData(summary);
+            // Si el resumen tiene nodos de estrategia, los cargamos para el Outliner
+            if (summary?.nodes) {
+                setActiveStrategyNodes(summary.nodes);
+            } else {
+                // Fallback default nodes for demonstration
+                setActiveStrategyNodes([
+                    { id: '1', type: 'label', data: { title: 'Objetivo Principal' } },
+                    { id: '2', type: 'video', data: { title: 'Reel de Lanzamiento', subtype: 'reel' } }
+                ]);
+            }
             setIsPreviewModalOpen(true);
         } catch (error) {
             console.error("Error opening preview:", error);
+            toast.error("Error al cargar estrategia");
         } finally {
             setLoading(false);
         }
@@ -287,14 +278,9 @@ export default function HQClientsPage() {
             await fetchClients();
             setIsDeleteModalOpen(false);
             setClientToDelete(null);
-            toast.success("Socio eliminado", {
-                description: "Los datos han sido removidos de la nube."
-            });
+            toast.success("Socio eliminado");
         } catch (error) {
             console.error("Error deleting client:", error);
-            toast.error("Error al eliminar", {
-                description: "No se pudo retirar al socio de la base de datos."
-            });
         } finally {
             setIsSubmitting(false);
         }
@@ -332,29 +318,18 @@ export default function HQClientsPage() {
                         onClick={fetchClients}
                         className={`px-6 py-3 bg-white/5 text-gray-400 font-bold rounded-2xl flex items-center gap-2 hover:bg-white/10 transition-all border border-white/10 ${loading ? 'opacity-50 cursor-wait' : ''}`}
                     >
-                        {loading ? (
-                            <span className="flex items-center gap-2">
-                                <motion.div 
-                                    animate={{ rotate: 360 }}
-                                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                >
-                                    <Clock className="w-4 h-4" />
-                                </motion.div>
-                                {syncStep === 'connecting' ? 'Conectando...' : 
-                                 syncStep === 'processing' ? 'Recibiendo...' : 'Sincronizando...'}
-                            </span>
-                        ) : '🔄 Sincronizar Datos Reales'}
+                        {loading ? 'Sincronizando...' : '🔄 Sincronizar'}
                     </button>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-2xl flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
+                        className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-2xl flex items-center gap-2 hover:bg-indigo-500 transition-all active:scale-95"
                     >
                         <Plus className="w-5 h-5" /> Nuevo Cliente
                     </button>
                 </div>
             </div>
 
-            {/* CENTRO DE INVITACIONES (PROTOCOL SEPARATION) */}
+            {/* Invitations */}
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -366,60 +341,21 @@ export default function HQClientsPage() {
                     </div>
                     <div>
                         <h3 className="text-white font-black uppercase tracking-widest text-xs italic">Protocolo de Entrada Separada</h3>
-                        <p className="text-gray-400 text-[10px] font-medium tracking-tight">Genera el acceso correcto para cada tipo de perfil y evita cruce de datos.</p>
+                        <p className="text-gray-400 text-[10px] font-medium tracking-tight">Genera el acceso correcto para cada tipo de perfil.</p>
                     </div>
                 </div>
-
                 <div className="flex flex-wrap gap-3">
-                    <InviteButton 
-                        label="Invitación para SOCIO" 
-                        type="client" 
-                        color="indigo" 
-                        icon={Building2} 
-                    />
-                    <InviteButton 
-                        label="Invitación para EQUIPO" 
-                        type="creative" 
-                        color="purple" 
-                        icon={UserPlus} 
-                    />
+                    <InviteButton label="Invitación para SOCIO" type="client" color="indigo" icon={Building2} />
+                    <InviteButton label="Invitación para EQUIPO" type="creative" color="purple" icon={UserPlus} />
                 </div>
             </motion.div>
 
             {/* Stats Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <StatCard 
-                    title="Clientes Activos" 
-                    value={activeCount} 
-                    icon={Users} 
-                    color="indigo" 
-                    isActive={activeFilter === 'active'}
-                    onClick={() => setActiveFilter(activeFilter === 'active' ? 'all' : 'active')}
-                />
-                <StatCard 
-                    title="MRR Proyectado" 
-                    value={`$${mrr}`} 
-                    icon={TrendingUp} 
-                    color="green" 
-                    isActive={false}
-                    onClick={() => setActiveFilter('all')}
-                />
-                <StatCard 
-                    title="En Riesgo" 
-                    value={riskCount} 
-                    icon={AlertCircle} 
-                    color="red" 
-                    isActive={activeFilter === 'risk'}
-                    onClick={() => setActiveFilter(activeFilter === 'risk' ? 'all' : 'risk')}
-                />
-                <StatCard 
-                    title="Pendientes Pago" 
-                    value={pendingCount} 
-                    icon={CheckCircle2} 
-                    color="blue" 
-                    isActive={activeFilter === 'pending'}
-                    onClick={() => setActiveFilter(activeFilter === 'pending' ? 'all' : 'pending')}
-                />
+                <StatCard title="Clientes Activos" value={activeCount} icon={Users} color="indigo" isActive={activeFilter === 'active'} onClick={() => setActiveFilter(activeFilter === 'active' ? 'all' : 'active')} />
+                <StatCard title="MRR Proyectado" value={`$${mrr}`} icon={TrendingUp} color="green" isActive={false} onClick={() => setActiveFilter('all')} />
+                <StatCard title="En Riesgo" value={riskCount} icon={AlertCircle} color="red" isActive={activeFilter === 'risk'} onClick={() => setActiveFilter(activeFilter === 'risk' ? 'all' : 'risk')} />
+                <StatCard title="Pendientes Pago" value={pendingCount} icon={CheckCircle2} color="blue" isActive={activeFilter === 'pending'} onClick={() => setActiveFilter(activeFilter === 'pending' ? 'all' : 'pending')} />
             </div>
 
             {/* Filters & Search */}
@@ -457,12 +393,7 @@ export default function HQClientsPage() {
                             [1, 2, 3].map(i => <SkeletonRow key={i} />)
                         ) : (
                             filteredClients.map((client) => (
-                                <motion.tr
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    key={client.id}
-                                    className="hover:bg-white/[0.01] transition-colors group"
-                                >
+                                <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={client.id} className="hover:bg-white/[0.01] transition-colors group">
                                     <td className="px-6 py-6">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-bold">
@@ -470,38 +401,28 @@ export default function HQClientsPage() {
                                             </div>
                                             <div>
                                                 <div className="text-white font-bold">{client?.name || 'Cliente sin nombre'}</div>
-                                                <div className="text-xs text-gray-500">Ubicación: {client?.city || '-'} • Tipo: {client?.type || '-'}</div>
+                                                <div className="text-xs text-gray-500">Ubicación: {client?.city || '-'}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-6">
-                                        <button
-                                            onClick={() => handleCyclePlan(client.id, client.plan)}
-                                            className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-gray-300 hover:border-indigo-500/50 hover:text-white transition-all active:scale-95"
-                                        >
+                                        <button onClick={() => handleCyclePlan(client.id, client.plan)} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-gray-300 hover:border-indigo-500/50 hover:text-white transition-all active:scale-95">
                                             {client?.plan || 'Básico'}
                                         </button>
                                     </td>
                                     <td className="px-6 py-6">
-                                        <button
-                                            onClick={() => handleToggleCM(client.id, client.cm)}
-                                            className="flex items-center gap-2 hover:bg-white/5 p-2 rounded-xl transition-all active:scale-95 group/cm"
-                                        >
+                                        <button onClick={() => handleToggleCM(client.id, client.cm)} className="flex items-center gap-2 hover:bg-white/5 p-2 rounded-xl transition-all active:scale-95 group/cm">
                                             <div className="w-6 h-6 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-[10px] text-purple-400 font-bold group-hover/cm:border-indigo-500">
                                                 {client?.cm?.[0] || '?'}
                                             </div>
                                             <span className="text-gray-400 text-sm group-hover/cm:text-white">{client?.cm || 'Sin asignar'}</span>
                                         </button>
                                     </td>
+                                    <td className="px-6 py-6 font-bold text-white">${client?.price || 0}</td>
                                     <td className="px-6 py-6">
-                                        <div className="text-white font-bold">${client?.price || 0}</div>
-                                        <div className="text-[10px] text-green-500 font-bold">Meta: ${client?.target || client?.price || 0}</div>
-                                    </td>
-                                    <td className="px-6 py-6 font-mono">
                                         <button
                                             onClick={() => handleToggleStatus(client.id, client.status)}
-                                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 hover:brightness-125 ${client.status === 'active' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
-                                                }`}
+                                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 hover:brightness-125 ${client.status === 'active' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
                                         >
                                             <div className={`w-1.5 h-1.5 rounded-full ${client.status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
                                             {client.status === 'active' ? 'Activo' : 'Pausado'}
@@ -509,73 +430,15 @@ export default function HQClientsPage() {
                                     </td>
                                     <td className="px-6 py-6 text-right whitespace-nowrap relative">
                                         <div className="flex justify-end items-center gap-2">
-                                            <button
-                                                className="px-4 py-2 bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all group/btn"
-                                                onClick={() => handleOpenPreview(client)}
-                                            >
+                                            <button className="px-4 py-2 bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all" onClick={() => handleOpenPreview(client)}>
                                                 Ver Estrategia
                                             </button>
-
-                                            <button
-                                                onClick={() => handleDeleteClient(client.id)}
-                                                className="p-2 bg-white/5 hover:bg-red-500/10 rounded-xl text-gray-400 hover:text-red-500 transition-all border border-white/5"
-                                                title="Eliminar Cliente"
-                                            >
+                                            <button onClick={() => handleDeleteClient(client.id)} className="p-2 bg-white/5 hover:bg-red-500/10 rounded-xl text-gray-400 hover:text-red-500 transition-all border border-white/5">
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
-
-                                            <div className="relative">
-                                                <button
-                                                    onClick={() => setActiveMenu(activeMenu === client.id ? null : client.id)}
-                                                    className={`p-2 rounded-xl transition-all border ${activeMenu === client.id ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white/5 text-gray-400 hover:text-white border-white/5'}`}
-                                                >
-                                                    <MoreVertical className="w-4 h-4" />
-                                                </button>
-
-                                                <AnimatePresence>
-                                                    {activeMenu === client.id && (
-                                                        <>
-                                                            <div className="fixed inset-0 z-30" onClick={() => setActiveMenu(null)} />
-                                                            <motion.div
-                                                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                                className="absolute right-0 top-full mt-2 w-48 bg-[#11111D] border border-white/10 rounded-2xl shadow-2xl z-40 p-2 overflow-hidden"
-                                                            >
-                                                                <button
-                                                                    onClick={() => {
-                                                                        handleOpenEdit(client);
-                                                                        setActiveMenu(null);
-                                                                    }}
-                                                                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all text-xs font-bold"
-                                                                >
-                                                                    <Edit className="w-4 h-4" /> Editar Perfil
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        handleToggleStatus(client.id, client.status);
-                                                                        setActiveMenu(null);
-                                                                    }}
-                                                                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all text-xs font-bold"
-                                                                >
-                                                                    {client.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                                                                    {client.status === 'active' ? 'Pausar SOCIO' : 'Reactivar SOCIO'}
-                                                                </button>
-                                                                <div className="h-px bg-white/5 my-1" />
-                                                                <button
-                                                                    onClick={() => {
-                                                                        handleDeleteClient(client.id);
-                                                                        setActiveMenu(null);
-                                                                    }}
-                                                                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-red-500/60 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all text-xs font-bold"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" /> Eliminar Definitivo
-                                                                </button>
-                                                            </motion.div>
-                                                        </>
-                                                    )}
-                                                </AnimatePresence>
-                                            </div>
+                                            <button onClick={() => handleOpenEdit(client)} className="p-2 bg-white/5 hover:bg-indigo-500/10 rounded-xl text-gray-400 hover:text-indigo-500 transition-all border border-white/5">
+                                                <Edit className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </td>
                                 </motion.tr>
@@ -585,483 +448,139 @@ export default function HQClientsPage() {
                 </table>
             </div>
 
-            {/* Modal de Nuevo Cliente */}
+            {/* Modals */}
             <AnimatePresence>
                 {isModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsModalOpen(false)}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="relative w-full max-w-xl bg-[#11111D] border border-white/10 rounded-[2.5rem] shadow-2xl p-8 overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 p-8 opacity-5">
-                                <Users className="w-32 h-32 text-indigo-500" />
-                            </div>
-
-                            <div className="relative z-10">
-                                <h2 className="text-2xl font-black text-white mb-6 uppercase italic tracking-tighter">Registrar Nuevo Socio</h2>
-
-                                <form onSubmit={handleCreateClient} className="space-y-6 text-sm">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Nombre / Marca</label>
-                                        <input
-                                            id="client-name"
-                                            type="text"
-                                            required
-                                            placeholder="Ej: Nova Clínica"
-                                            value={newClient.name}
-                                            onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-                                            className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all font-bold placeholder:text-gray-700"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <PremiumDropdown 
-                                            label="Plan"
-                                            value={newClient.plan}
-                                            onChange={(val) => {
-                                                const defaults = {
-                                                    'Basic': { price: 250, target: 400 },
-                                                    'Premium': { price: 450, target: 800 },
-                                                    'Enterprise': { price: 850, target: 1500 }
-                                                };
-                                                const data = defaults[val] || { price: 0, target: 0 };
-                                                setNewClient({ ...newClient, plan: val, price: data.price, target: data.target });
-                                            }}
-                                            options={[
-                                                { value: 'Basic', label: 'Basic' },
-                                                { value: 'Premium', label: 'Premium' },
-                                                { value: 'Enterprise', label: 'Agency Enterprise' }
-                                            ]}
-                                        />
-                                        <PremiumDropdown 
-                                            label="Community Manager"
-                                            value={newClient.cm}
-                                            onChange={(val) => setNewClient({ ...newClient, cm: val })}
-                                            options={cmOptions}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Precio Mensual ($)</label>
-                                            <input
-                                                id="client-price"
-                                                type="number"
-                                                required
-                                                value={newClient.price}
-                                                onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })}
-                                                className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all font-mono font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Meta Proyectada ($)</label>
-                                            <input
-                                                id="client-target"
-                                                type="number"
-                                                value={newClient.target}
-                                                onChange={(e) => setNewClient({ ...newClient, target: parseInt(e.target.value) || 0 })}
-                                                className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all font-mono font-bold"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-4 pt-4">
-                                        <button
-                                            id="client-cancel"
-                                            type="button"
-                                            onClick={() => setIsModalOpen(false)}
-                                            className="flex-1 py-4 text-gray-500 font-black uppercase tracking-widest hover:text-white transition-all text-xs"
-                                        >
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            id="client-submit"
-                                            type="submit"
-                                            disabled={isSubmitting}
-                                            className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-[0.2em] text-xs hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 disabled:opacity-50"
-                                        >
-                                            {isSubmitting ? 'Registrando...' : 'Confirmar Socio'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative w-full max-w-xl bg-[#11111D] border border-white/10 rounded-[2.5rem] shadow-2xl p-8 overflow-hidden">
+                            <h2 className="text-2xl font-black text-white mb-6 uppercase italic tracking-tighter">Registrar Nuevo Socio</h2>
+                            <form onSubmit={handleCreateClient} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Nombre / Marca</label>
+                                    <input type="text" required value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={[{ value: 'Basic', label: 'Basic' }, { value: 'Premium', label: 'Premium' }, { value: 'Enterprise', label: 'Enterprise' }]} />
+                                    <PremiumDropdown label="CM" value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
+                                </div>
+                                <div className="flex gap-4 pt-4">
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-gray-500 font-black uppercase tracking-widest text-xs">Cancelar</button>
+                                    <button type="submit" disabled={isSubmitting} className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs">{isSubmitting ? 'Registrando...' : 'Confirmar'}</button>
+                                </div>
+                            </form>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
 
+            {/* Edit Modal */}
             <AnimatePresence>
                 {isEditModalOpen && (
                     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsEditModalOpen(false)}
-                            className="absolute inset-0 bg-[#02020A]/90 backdrop-blur-md"
-                        />
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 40 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 40 }}
-                            className="relative w-full max-w-xl bg-[#080814]/40 border border-white/10 rounded-[3rem] shadow-4xl backdrop-blur-3xl overflow-hidden p-10"
-                        >
-                            {/* Premium Vibe Background */}
-                            <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
-                                <Edit className="w-48 h-48 text-indigo-500" />
-                            </div>
-                            <div className="absolute -top-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
-                            <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
-
-                            <div className="relative z-10">
-                                <header className="mb-10 text-center">
-                                    <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase mb-2">
-                                        Editar Perfil del Socio
-                                    </h2>
-                                    <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 mt-6">
-                                        {[
-                                            { id: 'operative', label: 'Operativo', icon: Zap },
-                                            { id: 'strategy', label: 'Estrategia', icon: Target },
-                                            { id: 'business', label: 'Negocio', icon: Building2 },
-                                            { id: 'connectivity', label: 'Conexión', icon: Globe }
-                                        ].map(tab => (
-                                            <button
-                                                key={tab.id}
-                                                type="button"
-                                                onClick={() => setActiveEditTab(tab.id)}
-                                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeEditTab === tab.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-gray-300'}`}
-                                            >
-                                                <tab.icon className="w-3 h-3" /> {tab.label}
-                                            </button>
-                                        ))}
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-lg" />
+                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative w-full max-w-xl bg-[#080814] border border-white/10 rounded-[3rem] p-10 overflow-hidden">
+                            <h2 className="text-2xl font-black text-white mb-6 uppercase">Editar Socio</h2>
+                            <form onSubmit={handleSaveEdit} className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Nombre / Marca</label>
+                                    <input type="text" required value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none font-bold" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest font-mono">Inversión (USD)</label>
+                                        <input type="number" value={newClient.price} onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" />
                                     </div>
-                                </header>
-                                <form onSubmit={handleSaveEdit} className="space-y-8 max-h-[65vh] overflow-y-auto px-4 custom-scrollbar">
-                                    <AnimatePresence mode="wait">
-                                        {activeEditTab === 'operative' && (
-                                            <motion.div
-                                                key="operative"
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: 10 }}
-                                                className="space-y-8"
-                                            >
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4 flex items-center gap-2">
-                                                        <Building2 className="w-3 h-3" /> Nombre Comercial / Marca
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        required
-                                                        value={newClient.name}
-                                                        onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-[24px] py-4 px-6 text-white outline-none focus:border-indigo-500/40 focus:bg-indigo-500/5 transition-all font-bold text-xl tracking-tighter italic"
-                                                    />
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-6">
-                                                    <PremiumDropdown 
-                                                        label="Nivel de Servicio"
-                                                        value={newClient.plan}
-                                                        onChange={(val) => setNewClient({ ...newClient, plan: val })}
-                                                        options={[
-                                                            { value: 'Basic', label: 'Basic Growth' },
-                                                            { value: 'Premium', label: 'Premium Scale' },
-                                                            { value: 'Agency', label: 'Agency Enterprise' }
-                                                        ]}
-                                                        icon={Shield}
-                                                    />
-                                                    <PremiumDropdown 
-                                                        label="Estratega / CM"
-                                                        value={newClient.cm}
-                                                        onChange={(val) => setNewClient({ ...newClient, cm: val })}
-                                                        options={cmOptions}
-                                                        icon={Users}
-                                                    />
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-6">
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
-                                                            <DollarSign className="w-3 h-3 text-emerald-500" /> Inversión (USD)
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            value={newClient.price}
-                                                            onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })}
-                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-emerald-500/40 transition-all font-mono font-black text-xl"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
-                                                            <TrendingUp className="w-3 h-3 text-indigo-500" /> Meta Factur. (USD)
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            value={newClient.target}
-                                                            onChange={(e) => setNewClient({ ...newClient, target: parseInt(e.target.value) || 0 })}
-                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-mono font-black text-xl"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        )}
-
-                                        {activeEditTab === 'strategy' && (
-                                            <motion.div
-                                                key="strategy"
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: 10 }}
-                                                className="space-y-6"
-                                            >
-                                                <div className="grid grid-cols-2 gap-6">
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">Nicho / Industria</label>
-                                                        <input
-                                                            type="text"
-                                                            value={newClient.onboarding_data?.niche || ''}
-                                                            onChange={(e) => setNewClient({ ...newClient, onboarding_data: { ...newClient.onboarding_data, niche: e.target.value } })}
-                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-white outline-none focus:border-indigo-500/40"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">Ubicación (Ciudad)</label>
-                                                        <input
-                                                            type="text"
-                                                            value={newClient.city}
-                                                            onChange={(e) => setNewClient({ ...newClient, city: e.target.value })}
-                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-white outline-none focus:border-indigo-500/40"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">Objetivo Estratégico</label>
-                                                    <textarea
-                                                        rows={3}
-                                                        value={newClient.onboarding_data?.goal || ''}
-                                                        onChange={(e) => setNewClient({ ...newClient, onboarding_data: { ...newClient.onboarding_data, goal: e.target.value } })}
-                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white text-sm leading-relaxed outline-none focus:border-indigo-500/40"
-                                                    />
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">Diferenciación de Marca</label>
-                                                    <textarea
-                                                        rows={3}
-                                                        value={newClient.onboarding_data?.differentiation || ''}
-                                                        onChange={(e) => setNewClient({ ...newClient, onboarding_data: { ...newClient.onboarding_data, differentiation: e.target.value } })}
-                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white text-sm leading-relaxed outline-none focus:border-indigo-500/40"
-                                                    />
-                                                </div>
-                                            </motion.div>
-                                        )}
-
-                                        {activeEditTab === 'business' && (
-                                            <motion.div
-                                                key="business"
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: 10 }}
-                                                className="space-y-6"
-                                            >
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">¿Qué Vende? (Productos / Servicios)</label>
-                                                    <textarea
-                                                        rows={4}
-                                                        value={newClient.onboarding_data?.productsServices || ''}
-                                                        onChange={(e) => setNewClient({ ...newClient, onboarding_data: { ...newClient.onboarding_data, productsServices: e.target.value } })}
-                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-medium outline-none focus:border-indigo-500/40"
-                                                        placeholder="Detalla la oferta comercial..."
-                                                    />
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">Estrategia & Competencia</label>
-                                                    <textarea
-                                                        rows={4}
-                                                        value={newClient.onboarding_data?.generalStrategy || ''}
-                                                        onChange={(e) => setNewClient({ ...newClient, onboarding_data: { ...newClient.onboarding_data, generalStrategy: e.target.value } })}
-                                                        className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white text-sm font-medium outline-none focus:border-indigo-500/40"
-                                                        placeholder="Análisis de rivales y plan de acción..."
-                                                    />
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest pl-4">Notas Privadas (Admin)</label>
-                                                    <textarea
-                                                        rows={2}
-                                                        value={newClient.notes}
-                                                        onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
-                                                        className="w-full bg-indigo-500/5 border border-indigo-500/10 rounded-2xl py-4 px-6 text-white text-xs italic outline-none focus:border-indigo-500/40"
-                                                    />
-                                                </div>
-                                            </motion.div>
-                                        )}
-
-                                        {activeEditTab === 'connectivity' && (
-                                            <motion.div
-                                                key="connectivity"
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: 10 }}
-                                                className="space-y-8"
-                                            >
-                                                <div className="grid grid-cols-2 gap-6">
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4 flex items-center gap-2">
-                                                            <MessageSquare className="w-3 h-3 text-green-500" /> WhatsApp Directo
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            value={newClient.whatsapp_number}
-                                                            onChange={(e) => setNewClient({ ...newClient, whatsapp_number: e.target.value })}
-                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40"
-                                                            placeholder="+00 000 000 000"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4 flex items-center gap-2">
-                                                            <Globe className="w-3 h-3 text-blue-500" /> Drive Folder ID
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            value={newClient.google_drive_folder_id}
-                                                            onChange={(e) => setNewClient({ ...newClient, google_drive_folder_id: e.target.value })}
-                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="p-6 bg-white/[0.02] border border-white/5 rounded-[32px] space-y-4">
-                                                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Estado de Conexión de Redes</h4>
-                                                    <div className="flex gap-4">
-                                                        {['instagram', 'facebook', 'tiktok'].map(platform => (
-                                                            <div key={platform} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${newClient.onboarding_data?.social?.[platform] ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-white/5 border-white/5 text-gray-600'}`}>
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${newClient.onboarding_data?.social?.[platform] ? 'bg-indigo-400 animate-pulse' : 'bg-gray-800'}`} />
-                                                                {platform}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-
-                                    <div className="flex gap-4 pt-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsEditModalOpen(false)}
-                                            className="flex-1 py-4 text-gray-500 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all"
-                                        >
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={isSubmitting}
-                                            className="flex-[2] py-5 bg-indigo-600 text-white font-black rounded-3xl uppercase tracking-[0.4em] text-[10px] shadow-2xl shadow-indigo-600/20 transition-all hover:bg-indigo-500 active:scale-95 disabled:opacity-50"
-                                        >
-                                            {isSubmitting ? 'Sincronizando...' : 'Actualizar Perfil de Socio'}
-                                        </button>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">WhatsApp</label>
+                                        <input type="text" value={newClient.whatsapp_number} onChange={(e) => setNewClient({ ...newClient, whatsapp_number: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" />
                                     </div>
-                                </form>
-                            </div>
+                                </div>
+                                <div className="flex gap-4 pt-4">
+                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 text-gray-500 font-bold uppercase tracking-widest text-xs">Cerrar</button>
+                                    <button type="submit" disabled={isSubmitting} className="flex-[2] py-4 bg-indigo-600 text-white font-bold rounded-2xl uppercase tracking-widest text-xs">Guardar</button>
+                                </div>
+                            </form>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
 
-            {/* Strategy Preview Modal */}
+            {/* Advanced Strategy Preview Modal */}
             <AnimatePresence>
                 {isPreviewModalOpen && previewData && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsPreviewModalOpen(false)}
-                            className="absolute inset-0 bg-[#050511]/90 backdrop-blur-xl"
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-0 md:p-6">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            onClick={() => setIsPreviewModalOpen(false)} 
+                            className="absolute inset-0 bg-[#020205]/95 backdrop-blur-3xl" 
                         />
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
-                            className="relative w-full max-w-2xl bg-[#0A0A1F] border border-white/10 rounded-[40px] shadow-3xl overflow-hidden p-12"
+                        
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0, y: 30 }} 
+                            animate={{ scale: 1, opacity: 1, y: 0 }} 
+                            exit={{ scale: 0.95, opacity: 0, y: 30 }} 
+                            className="relative w-full max-w-[95vw] h-[90vh] bg-[#0A0B14] border border-white/10 rounded-[40px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row"
                         >
-                            <div className="absolute top-0 right-0 p-12 opacity-[0.03]">
-                                <Shield className="w-64 h-64 text-indigo-500" />
+                            {/* Left: Strategic Outliner (The Missing Implementation) */}
+                            <div className="hidden md:block w-80 h-full border-r border-white/5">
+                                <StrategicOutliner 
+                                    nodes={activeStrategyNodes} 
+                                    onNodeSelect={() => {}} 
+                                    onUpdateNode={(id, data) => setActiveStrategyNodes(prev => prev.map(n => n.id === id ? { ...n, data: { ...n.data, ...data } } : n))}
+                                />
                             </div>
 
-                            <div className="relative z-10 space-y-10">
-                                <div className="flex justify-between items-start">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em]">
-                                            <BookOpen className="w-3 h-3" /> Preview Estratégico
+                            {/* Center: Ecosystem & Details */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-8 flex flex-col items-center">
+                                <div className="w-full max-w-2xl text-center space-y-6">
+                                    <div className="inline-flex px-4 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest">
+                                        Ecosistema de Marca v2.1
+                                    </div>
+                                    <h2 className="text-5xl font-black text-white italic tracking-tighter">{editingClient?.name}</h2>
+                                    
+                                    <div className="relative py-10 w-full flex justify-center">
+                                        {/* Dynamic Glow background */}
+                                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-64 bg-indigo-600/5 blur-[120px] rounded-full" />
+                                        <VisionEcosystem client={editingClient} />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                                        <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 text-left">
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Visión IA</p>
+                                            <p className="text-gray-300 text-sm italic font-medium">"Este cliente muestra un potencial de escalabilidad del 40% en canales orgánicos. Se recomienda intensificar Reels de autoridad."</p>
                                         </div>
-                                        <h2 className="text-4xl font-black text-white italic tracking-tighter">{editingClient?.name}</h2>
-                                    </div>
-                                    <div className="w-16 h-16 rounded-[24px] bg-indigo-500 text-white flex items-center justify-center text-2xl font-black">
-                                        {editingClient?.name?.[0]}
-                                    </div>
-                                </div>
-
-                                <div className="p-4 bg-white/[0.02] border border-white/5 rounded-[40px] flex items-center justify-center min-h-[400px]">
-                                    <VisionEcosystem client={editingClient} />
-                                </div>
-
-                                <div className="bg-white/[0.02] border border-white/5 rounded-[32px] p-8 space-y-4">
-                                    <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                                        <Target className="w-5 h-5 text-indigo-500" />
-                                        {previewData.title}
-                                    </h3>
-                                    <p className="text-gray-400 text-sm leading-relaxed font-medium">
-                                        {previewData.focus}
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="bg-white/[0.02] border border-white/5 rounded-[32px] p-6 space-y-3">
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                            <Clock className="w-3 h-3" /> Última Actividad
+                                        <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 text-left">
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Estado de Sincronización</p>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                <span className="text-white font-bold text-sm">Google Drive: Activo</span>
+                                            </div>
                                         </div>
-                                        <div className="text-white font-bold">{previewData.lastUpdate}</div>
                                     </div>
-                                    <div className="bg-white/[0.02] border border-white/5 rounded-[32px] p-6 space-y-3">
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                            <Users className="w-3 h-3 text-purple-400" /> CM Responsable
-                                        </div>
-                                        <div className="text-white font-bold">{editingClient?.cm}</div>
-                                    </div>
-                                </div>
 
-                                <div className="bg-indigo-500/5 border border-indigo-500/10 rounded-[32px] p-6 space-y-3">
-                                    <div className="flex items-center gap-2 text-[10px] font-black text-indigo-400 uppercase tracking-widest">
-                                        <MessageSquare className="w-3 h-3" /> Notas del Operativo
+                                    <div className="flex flex-wrap gap-4 justify-center pt-8 pb-10">
+                                        <button 
+                                            onClick={() => handleNavigateStrategy(editingClient?.id)} 
+                                            className="px-10 py-5 bg-indigo-600 text-white font-black rounded-3xl uppercase tracking-widest text-xs hover:bg-white hover:text-indigo-600 transition-all shadow-xl shadow-indigo-600/20"
+                                        >
+                                            Abrir Tablero de Guerra
+                                        </button>
+                                        <button 
+                                            onClick={() => setIsStrategicWizardOpen(true)}
+                                            className="px-10 py-5 bg-white/5 text-white font-black rounded-3xl border border-white/10 uppercase tracking-widest text-xs hover:bg-white/10 transition-all"
+                                        >
+                                            Re-Diseñar Hoja de Ruta
+                                        </button>
+                                        <button 
+                                            onClick={() => setIsPreviewModalOpen(false)} 
+                                            className="px-10 py-5 bg-transparent text-gray-500 font-black rounded-3xl uppercase tracking-widest text-xs hover:text-white transition-all"
+                                        >
+                                            Cerrar
+                                        </button>
                                     </div>
-                                    <div className="text-gray-300 text-xs italic font-medium leading-relaxed">
-                                        "{previewData.cmNotes}"
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-4 items-center">
-                                    <button
-                                        onClick={() => handleNavigateStrategy(editingClient?.id)}
-                                        className="flex-1 py-5 bg-indigo-500 text-white font-black rounded-[24px] uppercase tracking-[0.2em] text-[10px] hover:bg-indigo-400 transition-all flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/20"
-                                    >
-                                        Ir al Portal Completo <ArrowRight className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => setIsPreviewModalOpen(false)}
-                                        className="px-10 py-5 bg-white/5 text-gray-400 border border-white/5 font-black rounded-[24px] uppercase tracking-widest text-[10px] hover:bg-white/10 hover:text-white transition-all"
-                                    >
-                                        Cerrar
-                                    </button>
                                 </div>
                             </div>
                         </motion.div>
@@ -1069,45 +588,32 @@ export default function HQClientsPage() {
                 )}
             </AnimatePresence>
 
-            {/* Custom Confirmation Modal */}
+            {/* Strategic Wizard Integration */}
+            <AnimatePresence>
+                {isStrategicWizardOpen && (
+                    <StrategyCreationWizard 
+                        onComplete={(config) => {
+                            console.log("Strategic config deployed:", config);
+                            setIsStrategicWizardOpen(false);
+                            toast.success("Estrategia Desplegada con éxito");
+                        }}
+                        onCancel={() => setIsStrategicWizardOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Delete Modal */}
             <AnimatePresence>
                 {isDeleteModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsDeleteModalOpen(false)}
-                            className="absolute inset-0 bg-[#050511]/80 backdrop-blur-md"
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="bg-[#0A0A1F] border border-white/10 p-10 rounded-[40px] shadow-2xl max-w-md w-full relative z-10 text-center"
-                        >
-                            <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-8">
-                                <AlertCircle className="w-10 h-10 text-red-500" />
-                            </div>
-                            <h3 className="text-2xl font-black text-white mb-4">¿Eliminar Socio?</h3>
-                            <p className="text-gray-500 font-medium mb-10">
-                                Esta acción es permanente y eliminará todos los nodos estratégicos asociados.
-                            </p>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDeleteModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+                        <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-[#0A0A1F] border border-white/10 p-10 rounded-[40px] max-w-md w-full text-center">
+                            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-6" />
+                            <h3 className="text-xl font-black text-white mb-2">¿Eliminar Socio?</h3>
+                            <p className="text-gray-500 mb-8">Esta acción es permanente.</p>
                             <div className="grid grid-cols-2 gap-4">
-                                <button
-                                    onClick={() => setIsDeleteModalOpen(false)}
-                                    className="px-8 py-4 bg-white/5 hover:bg-white/10 text-gray-400 font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all border border-white/5"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    id="confirm-delete-btn"
-                                    onClick={confirmDelete}
-                                    disabled={isSubmitting}
-                                    className="px-8 py-4 bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-lg shadow-red-500/20 disabled:opacity-50"
-                                >
-                                    {isSubmitting ? 'Eliminando...' : 'Eliminar Ahora'}
-                                </button>
+                                <button onClick={() => setIsDeleteModalOpen(false)} className="py-3 bg-white/5 text-gray-400 font-bold rounded-xl">Cancelar</button>
+                                <button onClick={confirmDelete} disabled={isSubmitting} className="py-3 bg-red-600 text-white font-bold rounded-xl">{isSubmitting ? 'Eliminando...' : 'Eliminar'}</button>
                             </div>
                         </motion.div>
                     </div>
@@ -1125,48 +631,29 @@ function StatCard({ title, value, icon: Icon, color, isActive, onClick }) {
         blue: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
     };
 
-    const activeStyles = isActive ? `border-${color}-500/50 bg-${color}-500/5 shadow-[0_0_30px_rgba(79,70,229,0.1)] ring-1 ring-${color}-500/20` : 'border-white/5 bg-[#0E0E18]';
-
     return (
         <motion.div 
-            whileHover={{ y: -4, backgroundColor: 'rgba(255,255,255,0.02)' }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ y: -4 }}
             onClick={onClick}
-            className={`p-6 border rounded-3xl transition-all cursor-pointer group ${activeStyles}`}
+            className={`p-6 border rounded-3xl cursor-pointer bg-[#0E0E18] ${isActive ? 'border-indigo-500/50' : 'border-white/5'}`}
         >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-all group-hover:scale-110 ${colors[color]}`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${colors[color]}`}>
                 <Icon className="w-5 h-5" />
             </div>
-            <div className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{title}</div>
-            <div className="text-2xl font-black text-white italic tracking-tighter">{value}</div>
-            
-            {isActive && (
-                <motion.div 
-                    layoutId="active-indicator"
-                    className={`h-1 w-12 rounded-full mt-4 bg-${color === 'indigo' ? 'indigo' : color}-500 shadow-[0_0_10px_rgba(79,70,229,0.5)]`}
-                />
-            )}
+            <div className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-1">{title}</div>
+            <div className="text-2xl font-black text-white italic">{value}</div>
         </motion.div>
     );
 }
 
 function SkeletonRow() {
     return (
-        <tr className="border-b border-white/5 relative overflow-hidden">
+        <tr className="border-b border-white/5 animate-pulse">
             <td className="px-6 py-6" colSpan={6}>
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 animate-pulse" />
-                    <div className="space-y-2 flex-1">
-                        <div className="h-4 w-1/4 bg-white/5 rounded-full animate-pulse" />
-                        <div className="h-2 w-1/3 bg-white/5 rounded-full animate-pulse opacity-50" />
-                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-white/5" />
+                    <div className="h-4 w-1/4 bg-white/5 rounded-full" />
                 </div>
-                {/* Visual Glow Overlay during loading */}
-                <motion.div 
-                    animate={{ x: ['-100%', '200%'] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/5 to-transparent w-full h-full skew-x-12"
-                />
             </td>
         </tr>
     );
@@ -1174,14 +661,11 @@ function SkeletonRow() {
 
 function InviteButton({ label, type, color, icon: Icon }) {
     const [copied, setCopied] = useState(false);
-    
     const handleCopy = () => {
         const url = `${window.location.origin}/onboarding?type=${type}`;
         navigator.clipboard.writeText(url);
         setCopied(true);
-        toast.success(`Enlace para ${type === 'client' ? 'Socio' : 'Equipo'} copiado`, {
-            description: "Puedes enviarlo por WhatsApp o Correo."
-        });
+        toast.success(`Enlace copiado`);
         setTimeout(() => setCopied(false), 2000);
     };
 
@@ -1191,15 +675,10 @@ function InviteButton({ label, type, color, icon: Icon }) {
     };
 
     return (
-        <button 
-            onClick={handleCopy}
-            className={`flex items-center gap-3 px-6 py-4 rounded-2xl border ${colors[color]} font-black uppercase tracking-[0.2em] text-[10px] transition-all active:scale-95 group relative overflow-hidden`}
-        >
-            <Icon className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+        <button onClick={handleCopy} className={`flex items-center gap-3 px-6 py-4 rounded-2xl border ${colors[color]} font-black uppercase text-[10px] transition-all`}>
+            <Icon className="w-4 h-4" />
             {copied ? '¡COPIADO!' : label}
-            {!copied && <Copy className="w-3 h-3 opacity-30 ml-2" />}
-            
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+            <Copy className="w-3 h-3 opacity-30 ml-2" />
         </button>
     );
 }

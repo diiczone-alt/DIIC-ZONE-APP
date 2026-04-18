@@ -58,6 +58,7 @@ function DashboardContent({ children }) {
                         <AnimatePresence>
                             {/* Fluid Path: Cyan */}
                             <motion.path 
+                                key="neon-cyan"
                                 d="M 0 45 L 26 90 L 78 90 L 104 45 L 156 45 L 182 90 L 234 90" 
                                 stroke="#22d3ee" 
                                 strokeWidth="2" 
@@ -79,6 +80,7 @@ function DashboardContent({ children }) {
 
                             {/* Fluid Path: Magenta (Offset) */}
                             <motion.path 
+                                key="neon-magenta"
                                 d="M 500 200 L 526 245 L 578 245 L 604 200 L 656 200 L 682 245" 
                                 stroke="#f472b6" 
                                 strokeWidth="2" 
@@ -101,6 +103,7 @@ function DashboardContent({ children }) {
 
                             {/* Fluid Path: Gold (Global Scale) */}
                             <motion.path 
+                                key="neon-gold"
                                 d="M 800 600 L 852 600 L 878 645 L 930 645 L 956 600 L 1008 600" 
                                 stroke="#fbbf24" 
                                 strokeWidth="2" 
