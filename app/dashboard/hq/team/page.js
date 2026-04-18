@@ -9,7 +9,8 @@ import {
     Activity, Layout, LayoutGrid, Plus, Check, X,
     ChevronRight, Target, Flame, Database,
     ChevronDown, Trash2, Edit, MessageSquare, Globe, ListTodo,
-    MapPin, DollarSign, FileText
+    MapPin, DollarSign, FileText,
+    Video, Clapperboard, Palette, Mic, Camera, User, Printer, Ticket, Monitor
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
@@ -79,9 +80,15 @@ export default function HQTeamPage() {
     const getDepartments = () => {
         return [
             { id: 'gestion', label: 'Estrategia & CMs', icon: Shield, color: 'from-indigo-500 to-blue-600', members: team.filter(m => m.role?.toLowerCase().includes('estratega') || m.role?.toLowerCase().includes('community manager')) },
-            { id: 'produccion', label: 'Producción VFX', icon: Zap, color: 'from-purple-500 to-pink-600', members: team.filter(m => m.role.toLowerCase().includes('filmmaker') || m.role.toLowerCase().includes('editor')) },
-            { id: 'design', label: 'Creative Design', icon: Star, color: 'from-blue-400 to-indigo-600', members: team.filter(m => m.role.toLowerCase().includes('diseña')) },
-            { id: 'tech', label: 'Development', icon: Cpu, color: 'from-emerald-500 to-teal-600', members: team.filter(m => m.role.toLowerCase().includes('programador')) }
+            { id: 'diseno', label: 'Diseño Gráfico', icon: Palette, color: 'from-pink-500 to-rose-600', members: team.filter(m => m.role?.toLowerCase().includes('diseña')) },
+            { id: 'edicion', label: 'Edición de Video', icon: Video, color: 'from-purple-500 to-indigo-600', members: team.filter(m => m.role?.toLowerCase().includes('editor')) },
+            { id: 'film', label: 'Filmmakers', icon: Clapperboard, color: 'from-orange-500 to-red-600', members: team.filter(m => m.role?.toLowerCase().includes('film')) },
+            { id: 'foto', label: 'Fotografía', icon: Camera, color: 'from-amber-400 to-orange-500', members: team.filter(m => m.role?.toLowerCase().includes('foto')) },
+            { id: 'audio', label: 'Ingeniería de Audio', icon: Mic, color: 'from-emerald-400 to-teal-500', members: team.filter(m => m.role?.toLowerCase().includes('audio')) },
+            { id: 'web', label: 'Desarrollo Web', icon: Globe, color: 'from-blue-500 to-cyan-600', members: team.filter(m => m.role?.toLowerCase().includes('web') || m.role?.toLowerCase().includes('programador')) },
+            { id: 'modelos', label: 'Modelos', icon: User, color: 'from-fuchsia-500 to-pink-600', members: team.filter(m => m.role?.toLowerCase().includes('modelo')) },
+            { id: 'imprenta', label: 'Imprenta / Merch', icon: Printer, color: 'from-slate-500 to-slate-700', members: team.filter(m => m.role?.toLowerCase().includes('imprenta') || m.role?.toLowerCase().includes('merch')) },
+            { id: 'eventos', label: 'Eventos / Prod', icon: Ticket, color: 'from-indigo-400 to-purple-500', members: team.filter(m => m.role?.toLowerCase().includes('evento')) }
         ];
     };
 
@@ -102,11 +109,6 @@ export default function HQTeamPage() {
                         <p className="text-gray-400 font-bold uppercase text-[12px] tracking-[0.5em] flex items-center gap-2">
                             <Target className="w-4 h-4 text-pink-500" /> Operational Mastery — HQ Dashboard 2026
                         </p>
-                        <div className="h-4 w-px bg-white/10 hidden md:block" />
-                        <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
-                            <Shield className="w-3 h-3 text-indigo-400" />
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Encargado: <span className="text-white">Fausto</span></span>
-                        </div>
                     </div>
                 </div>
                 <div className="flex gap-4">
@@ -745,7 +747,13 @@ function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitti
                             <option value="Community Manager">Community Manager</option>
                             <option value="Diseñador">Diseñador</option>
                             <option value="Filmmaker">Filmmaker</option>
-                            <option value="Programador">Programador</option>
+                            <option value="Estratega">Estratega</option>
+                            <option value="Ingeniería de Audio">Ingeniería de Audio</option>
+                            <option value="Fotografía">Fotografía</option>
+                            <option value="Modelos">Modelos</option>
+                            <option value="Desarrollo Web">Desarrollo Web</option>
+                            <option value="Imprenta / Merch">Imprenta / Merch</option>
+                            <option value="Eventos / Prod">Eventos / Prod</option>
                         </select>
                         <select className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none appearance-none text-sm cursor-pointer" value={newMember.city} onChange={(e) => setNewMember({ ...newMember, city: e.target.value })}>
                             <option value="Quito">Quito</option>
