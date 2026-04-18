@@ -184,11 +184,21 @@ export default function HQTeamPage() {
 function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal', onAudit }) {
     const isCM = member.role.toLowerCase().includes('community manager');
     
+    // Filtrar marcas donde este miembro está asignado
+    const assignedBrands = allClients.filter(c => 
+        c.cm === member.name || 
+        c.editor === member.name || 
+        c.filmmaker === member.name
+    );
+
+    // Si es líder, encontrar miembros de su escuadrón
+    const squadMembers = variant === 'lead' ? team.filter(m => m.squad_lead_id === member.id) : [];
+    
     return (
-        <motion.div whileHover={{ y: -5 }} className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 space-y-6 relative overflow-hidden group">
+        <motion.div whileHover={{ y: -5 }} className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 space-y-6 relative overflow-hidden group flex flex-col h-full">
             <div className={`absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[50px] rounded-full group-hover:bg-indigo-500/10 transition-all`} />
             
-            <div className="flex flex-col items-center text-center">
+            <div className="flex flex-col items-center text-center flex-1">
                 <div className={`w-24 h-24 rounded-[2rem] bg-gradient-to-br ${isCM ? 'from-indigo-500 to-purple-500' : 'from-white/10 to-transparent'} p-[2px] mb-6`}>
                     <div className="w-full h-full rounded-[1.9rem] bg-[#0A0A12] flex items-center justify-center text-3xl font-black text-white italic">
                         {member.name[0]}
@@ -196,7 +206,41 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
                 </div>
                 <h3 className="text-xl font-black text-white uppercase tracking-tight">{member.name}</h3>
                 <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-6">{member.role}</p>
+                
                 <div className="w-full h-px bg-white/5 mb-6" />
+
+                {/* Empresas Designadas */}
+                <div className="w-full space-y-3 mb-6">
+                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em]">Marcas Designadas</p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                        {assignedBrands.length > 0 ? (
+                            assignedBrands.map(brand => (
+                                <span key={brand.id} className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-[9px] font-bold text-gray-300 group-hover:border-indigo-500/30 transition-all">
+                                    {brand.name}
+                                </span>
+                            ))
+                        ) : (
+                            <span className="text-[9px] text-gray-600 italic">Sin marcas activas</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Squad Members (Only for Leads) */}
+                {variant === 'lead' && squadMembers.length > 0 && (
+                    <div className="w-full space-y-3 mb-6">
+                        <p className="text-[8px] font-black text-purple-400/60 uppercase tracking-[0.2em]">Escuadrón a Cargo</p>
+                        <div className="flex justify-center -space-x-2">
+                            {squadMembers.map(m => (
+                                <div key={m.id} title={m.name} className="w-8 h-8 rounded-full bg-[#0A0A12] border border-white/10 flex items-center justify-center text-[10px] font-black text-white hover:z-10 hover:border-indigo-500 transition-all cursor-help bg-gradient-to-tr from-white/5 to-transparent">
+                                    {m.name[0]}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="mt-auto pt-4">
                 <button onClick={onAudit} className="w-full py-4 bg-white/5 hover:bg-white/10 rounded-2xl text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all border border-white/5">
                     Detalles Operativos
                 </button>
