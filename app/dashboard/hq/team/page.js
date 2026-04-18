@@ -202,74 +202,84 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
     
     return (
         <motion.div 
-            whileHover={{ y: -8, scale: 1.02 }} 
-            className="relative w-full aspect-[2/3] max-w-[320px] mx-auto bg-[#0A0B1A]/80 backdrop-blur-2xl border border-white/10 rounded-[4rem] p-10 flex flex-col items-center shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] group overflow-hidden"
+            whileHover={{ y: -12, scale: 1.02 }} 
+            className="relative w-full aspect-[1/1.6] max-w-[320px] mx-auto bg-[#0A0B1A]/80 backdrop-blur-2xl border border-white/10 rounded-[4.5rem] p-10 flex flex-col items-center shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] group overflow-hidden"
         >
             {/* Background Effects */}
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/[0.03] to-transparent pointer-events-none" />
-            <div className={`absolute top-0 right-0 w-40 h-40 bg-indigo-500/10 blur-[80px] rounded-full group-hover:bg-indigo-500/20 transition-all duration-700`} />
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/[0.05] to-transparent pointer-events-none" />
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full group-hover:bg-indigo-500/20 transition-all duration-1000" />
             
             {/* Top Stat Pills */}
             <div className="w-full flex justify-between items-center mb-10 relative z-10">
-                <div className="px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">System Active</span>
+                <div className="px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]" />
+                    <span className="text-[7px] font-black text-emerald-400 uppercase tracking-[0.2em]">System Active</span>
                 </div>
-                <div className="px-4 py-2 rounded-full bg-white/5 border border-white/5">
-                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Santo Domingo</span>
+                <div className="px-4 py-2 rounded-full bg-white/5 border border-white/5 shadow-sm">
+                    <span className="text-[7px] font-black text-gray-500 uppercase tracking-[0.2em]">Santo Domingo</span>
                 </div>
             </div>
 
-            {/* Avatar Section (Pink/Purple Glow as Image 2) */}
+            {/* Avatar Section (Image 2 Squircle Style) */}
             <div className="relative mb-8 pt-4">
-                <div className="absolute inset-0 bg-pink-500/20 blur-3xl rounded-full scale-150 group-hover:scale-[2] transition-transform duration-700 opacity-0 group-hover:opacity-100" />
-                <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.3)] group-hover:shadow-[0_0_60px_rgba(236,72,153,0.5)] transition-all">
-                    <div className="w-full h-full rounded-full bg-[#050510] flex items-center justify-center border-4 border-[#08081A] text-5xl font-black text-white italic group-hover:rotate-6 transition-transform">
+                {/* Glow behind avatar */}
+                <div className="absolute inset-0 bg-purple-600/30 blur-[60px] rounded-full scale-125 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                
+                <div className="w-36 h-36 rounded-[2.8rem] p-1 bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 shadow-[0_0_40px_rgba(147,51,234,0.3)] group-hover:shadow-[0_0_60px_rgba(147,51,234,0.6)] transition-all duration-500">
+                    <div className="w-full h-full rounded-[2.6rem] bg-[#050510] flex items-center justify-center border-4 border-[#08081A] text-6xl font-black text-white italic tracking-tighter group-hover:scale-105 transition-transform">
                         {member.name[0]}
                     </div>
                 </div>
             </div>
 
-            {/* Member Info */}
-            <div className="text-center space-y-3 mb-12 relative z-10">
-                <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-none group-hover:text-indigo-400 transition-colors">
+            {/* Member Identity */}
+            <div className="text-center space-y-4 mb-10 relative z-10 w-full">
+                <h3 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none group-hover:text-indigo-400 transition-colors duration-500">
                     {member.name.split(' ')[0]}
                 </h3>
-                <div className="inline-block px-5 py-2 rounded-full bg-indigo-500 text-white text-[9px] font-black uppercase tracking-[0.2em] shadow-lg shadow-indigo-600/20">
+                <div className="inline-block px-5 py-2 rounded-full bg-indigo-500 text-white text-[9px] font-black uppercase tracking-[0.25em] shadow-[0_10px_20px_rgba(99,102,241,0.3)]">
                     Equipo Zona Creativa
                 </div>
-                <div className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] py-2 border border-white/5 rounded-full bg-white/[0.02]">
-                    {member.role}
+                <div className="w-full py-4 border border-white/5 rounded-3xl bg-white/[0.03] backdrop-blur-md">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">
+                        {member.role}
+                    </span>
                 </div>
             </div>
 
-            {/* Progress / Assignment Stats */}
+            {/* Tactical Stats (Connected to Data) */}
             <div className="w-full space-y-4 mb-10 relative z-10">
-                <div className="bg-black/40 rounded-3xl p-5 border border-white/5 flex items-center justify-between group/stat">
+                {/* Marcas Designadas */}
+                <div className="bg-black/60 rounded-[2rem] p-5 border border-white/5 flex items-center justify-between group/stat hover:border-indigo-500/30 transition-all">
                     <div className="flex flex-col text-left">
-                        <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">Zona Creativa Designada</p>
+                        <p className="text-[8px] font-black text-indigo-400/80 uppercase tracking-widest mb-1.5">Zona Creativa Designada</p>
                         <div className="flex items-center gap-3">
-                            <Users className="w-3 h-3 text-gray-600" />
-                            <span className="text-xs font-black text-white">{assignedBrands.length} Personas</span>
+                            <div className="p-1.5 bg-indigo-500/10 rounded-lg">
+                                <Users className="w-3.5 h-3.5 text-indigo-400" />
+                            </div>
+                            <span className="text-[11px] font-black text-white tracking-widest">{assignedBrands.length} Personas</span>
                         </div>
                     </div>
-                    <button className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">+</button>
+                    <button className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-gray-500 hover:bg-indigo-500 hover:text-white transition-all border border-white/5">+</button>
                 </div>
 
-                <div className="bg-black/20 rounded-3xl p-5 border border-white/5 flex items-center justify-between">
+                {/* Squad Tracker */}
+                <div className="bg-black/40 rounded-[2rem] p-5 border border-white/5 flex items-center justify-between hover:border-purple-500/30 transition-all">
                     <div className="flex flex-col text-left">
-                        <p className="text-[8px] font-black text-purple-400 uppercase tracking-widest mb-1">Squad Táctico</p>
+                        <p className="text-[8px] font-black text-purple-400/80 uppercase tracking-widest mb-1.5">Squad Táctico</p>
                         <div className="flex items-center gap-3">
-                            <Shield className="w-3 h-3 text-gray-600" />
-                            <span className="text-xs font-black text-white tracking-widest leading-none">
-                                {variant === 'lead' ? `${squadMembers.length} Personas` : 'Miembro Operativo'}
+                            <div className="p-1.5 bg-purple-500/10 rounded-lg">
+                                <Shield className="w-3.5 h-3.5 text-purple-400" />
+                            </div>
+                            <span className="text-[11px] font-black text-white tracking-widest uppercase leading-none">
+                                {variant === 'lead' ? `${squadMembers.length} Personas` : 'Activo'}
                             </span>
                         </div>
                     </div>
                     {variant === 'lead' && (
                         <div className="flex -space-x-2">
                             {squadMembers.slice(0, 3).map(m => (
-                                <div key={m.id} className="w-6 h-6 rounded-full border border-black bg-indigo-600 flex items-center justify-center text-[8px] font-black text-white">
+                                <div key={m.id} className="w-7 h-7 rounded-full border-2 border-[#0A0B1A] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[8px] font-black text-white shadow-lg">
                                     {m.name[0]}
                                 </div>
                             ))}
@@ -278,16 +288,17 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
                 </div>
             </div>
 
-            {/* Bottom Button */}
+            {/* Operational Action */}
             <button 
                 onClick={onAudit}
-                className="mt-auto w-full py-5 rounded-3xl bg-indigo-600/5 hover:bg-indigo-600 border border-indigo-500/20 hover:border-indigo-400 text-indigo-400 hover:text-white font-black uppercase text-[10px] tracking-[0.3em] transition-all shadow-xl hover:shadow-indigo-600/30 group-hover:translate-y-[-4px]"
+                className="mt-auto w-full py-5 rounded-[2rem] bg-indigo-600/10 hover:bg-indigo-600 border border-indigo-500/20 hover:border-indigo-400 text-indigo-400 hover:text-white font-black uppercase text-[10px] tracking-[0.4em] transition-all duration-500 shadow-xl hover:shadow-indigo-600/40"
             >
                 Detalles Operativos
             </button>
         </motion.div>
     );
 }
+
 
 function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave }) {
     const [formData, setFormData] = useState({ ...member });
