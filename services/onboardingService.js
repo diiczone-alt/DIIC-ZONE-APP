@@ -15,100 +15,119 @@ export const onboardingService = {
         const city = formData.city || user.user_metadata?.city || 'Santo Domingo';
         const profileType = formData.type || 'client'; // creative or client
 
+        console.log('[OnboardingService] Iniciando finalización para:', user.email);
+
         try {
-            let clientId = null;
+            // A. Obtener el perfil actual para ver si ya tenemos un ID asociado
+            const { data: currentProfile } = await supabase
+                .from('profiles')
+                .select('client_id, team_id')
+                .eq('id', user.id)
+                .single();
 
-            // 2. Si es un CLIENTE, crear/actualizar su entrada en public.clients
-            if (profileType === 'client') {
-                // Generamos un ID amigable si no existe (ej: MARCA-123)
-                const generatedClientId = `${brandName.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
-                
-                const { data: clientData, error: clientError } = await supabase
-                    .from('clients')
-                    .insert({
-                        id: generatedClientId, // Asumimos que id es text
-                        name: brandName,
-                        city: city,
-                        type: formData.profileType || 'Business',
-                        status: 'ONBOARDING_COMPLETED',
-                        priority: 'MEDIUM',
-                        plan: 'STARTUP', // Default
-                        onboarding_data: formData // STORE FULL FORM DATA FOR ADMIN REFERENCE
-                    })
-                    .select()
-                    .single();
+            let clientId = currentProfile?.client_id;
+            let teamId = currentProfile?.team_id;
 
-                if (clientError) {
-                    console.error('Error creating client entry:', clientError);
-                    // Si el error es por ID duplicado, intentamos un update o simplemente seguimos
-                } else {
-                    clientId = clientData.id;
+            // 2. Sincronización de Base de Datos (Clients or Team)
+            try {
+                if (profileType === 'client') {
+                    // Si no tenemos ID, generamos uno nuevo, pero mejor usamos upsert con el ID existente si existe
+                    const targetId = clientId || `${brandName.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+                    
+                    const { data: clientData, error: clientError } = await supabase
+                        .from('clients')
+                        .upsert({
+                            id: targetId,
+                            name: brandName,
+                            city: city,
+                            type: formData.profileType || 'Business',
+                            status: 'ONBOARDING_COMPLETED',
+                            priority: 'MEDIUM',
+                            plan: 'STARTUP',
+                            onboarding_data: formData 
+                        }, { onConflict: 'id' })
+                        .select()
+                        .single();
+
+                    if (!clientError) clientId = clientData.id;
+                    else console.warn('[OnboardingService] Error en upsert de cliente:', clientError);
+
+                } else if (profileType === 'creative') {
+                    const targetTeamId = teamId || `TEAM-${Math.floor(1000 + Math.random() * 9000)}`;
+                    
+                    const { data: teamData, error: teamError } = await supabase
+                        .from('team')
+                        .upsert({
+                            id: targetTeamId,
+                            name: fullName,
+                            email: user.email || formData.email || '',
+                            role: formData.role || 'Creative',
+                            status: 'activo',
+                            city: city,
+                            availability: 'full-time',
+                            activetasks: 0,
+                            cv_url: formData.cv_url || '',
+                            cv_summary: formData.cv_summary || '',
+                            skills: formData.skills || [],
+                            whatsapp: formData.whatsapp || ''
+                        }, { onConflict: 'id' })
+                        .select()
+                        .single();
+
+                    if (!teamError) teamId = teamData.id;
+                    else console.warn('[OnboardingService] Error en upsert de equipo:', teamError);
                 }
-            } else if (profileType === 'creative') {
-                // Registrar en la tabla de EQUIPO (TEAM)
-                // Usamos el ID del usuario de Auth para vincularlos directamente si es posible,
-                // o mantenemos el TEAM-XXXX pero aseguramos el email.
-                const teamMemberId = `TEAM-${Math.floor(1000 + Math.random() * 9000)}`;
-                const { error: teamError } = await supabase
-                    .from('team')
-                    .insert({
-                        id: teamMemberId,
-                        name: fullName,
-                        email: user.email || formData.email || '', // CRITICO: Guardar email
-                        role: formData.role || 'Creative',
-                        status: 'activo',
-                        city: city,
-                        availability: 'full-time',
-                        activetasks: 0,
-                        cv_url: formData.cv_url || '',
-                        cv_summary: formData.cv_summary || '',
-                        skills: formData.skills || [],
-                        whatsapp: formData.whatsapp || ''
-                    });
-
-                if (teamError) {
-                    console.error('Error creating team entry:', teamError);
-                }
+            } catch (dbErr) {
+                console.error('[OnboardingService] Error crítico en DB Sync:', dbErr);
             }
 
             // 3. Actualizar el Perfil del Usuario
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .update({
+            try {
+                const profileUpdate = {
                     full_name: fullName,
                     role: profileType === 'creative' ? (formData.role || 'CREATIVE').toUpperCase() : profileType.toUpperCase(),
                     client_id: clientId,
+                    team_id: teamId,
                     cv_url: formData.cv_url || '',
                     cv_summary: formData.cv_summary || '',
                     skills: formData.skills || [],
                     whatsapp: formData.whatsapp || ''
-                })
-                .eq('id', user.id);
+                };
 
-            if (profileError) throw profileError;
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update(profileUpdate)
+                    .eq('id', user.id);
 
-            // 4. Guardar Metadatos extendidos (CRM, Metas, Drive, Social) en user_metadata de Auth
-            await supabase.auth.updateUser({
-                data: {
-                    onboarding_completed: true,
-                    brand: brandName,
-                    city: city,
-                    profile_type: profileType,
-                    crm_usage: formData.businessInfo?.usesCRM || false,
-                    crm_name: formData.businessInfo?.crmName || '',
-                    appointment_tool: formData.businessInfo?.appointmentTool || '',
-                    whatsapp: formData.businessInfo?.whatsapp || '',
-                    goal: formData.goal || '',
-                    niche: formData.niche || '',
-                    drive_data: formData.drive || formData.driveData || null,
-                    social_links: formData.social || {}
-                }
-            });
+                if (profileError) console.warn('[OnboardingService] Error actualizando perfil:', profileError);
+            } catch (profErr) {
+                console.error('[OnboardingService] Error crítico en Profile Update:', profErr);
+            }
 
-            return { success: true, clientId };
+            // 4. Guardar Metadatos extendidos en Auth
+            try {
+                await supabase.auth.updateUser({
+                    data: {
+                        onboarding_completed: true,
+                        brand: brandName,
+                        city: city,
+                        profile_type: profileType,
+                        crm_usage: formData.businessInfo?.usesCRM || false,
+                        goal: formData.goal || '',
+                        niche: formData.niche || '',
+                        drive_data: formData.drive || formData.driveData || null,
+                        social_links: formData.social || {}
+                    }
+                });
+            } catch (authErr) {
+                console.error('[OnboardingService] Error actualizando Auth Metadata:', authErr);
+            }
+
+            return { success: true, clientId, isUpdate: !!currentProfile?.client_id };
 
         } catch (error) {
-            console.error('[OnboardingService] Error in finalization:', error);
+            console.error('[OnboardingService] Error fatal en finalización:', error);
+            // Re-lanzamos para que la UI sepa que algo falló seriamente
             throw error;
         }
     }

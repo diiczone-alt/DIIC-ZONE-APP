@@ -321,22 +321,27 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
 function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave }) {
     const [formData, setFormData] = useState({ ...member });
     const [saving, setSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState('perfil'); // 'perfil', 'marcas', 'squad', 'tasks'
+    const [activeTab, setActiveTab] = useState('perfil');
     const [activeTasks, setActiveTasks] = useState([]);
+    const [skillsInput, setSkillsInput] = useState(Array.isArray(member.skills) ? member.skills.join(', ') : '');
     
     // Fetch member tasks
     useEffect(() => {
         const loadData = async () => {
-            const tasks = await agencyService.getTasksByMember(member.id);
+            const tasks = await agencyService.getTasksByMember(member.name);
             setActiveTasks(tasks);
         };
         loadData();
-    }, [member.id]);
+    }, [member.name]);
 
     const handleSave = async () => {
         setSaving(true);
         try {
-            await agencyService.updateTeamMember(member.id, formData);
+            // Process skills from input string
+            const updatedSkills = skillsInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            const finalData = { ...formData, skills: updatedSkills };
+            
+            await agencyService.updateTeamMember(member.id, finalData);
             toast.success("HQ Sincronizado");
             onSave();
             onClose();
@@ -529,16 +534,19 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                                                 </div>
 
                                                 <div className="space-y-3 pt-4">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Habilidades Destacadas</label>
-                                                    <div className="flex flex-wrap gap-2 p-4 bg-black/20 rounded-2xl border border-white/5">
-                                                        {(Array.isArray(formData.skills) ? formData.skills : []).map((skill, i) => (
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Gestión de Habilidades</label>
+                                                    <input 
+                                                        className="w-full bg-black/40 border border-white/5 rounded-xl py-3 px-4 text-[11px] text-indigo-300 outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                                                        value={skillsInput}
+                                                        onChange={(e) => setSkillsInput(e.target.value)}
+                                                        placeholder="Ej: Photoshop, After Effects, Estrategia..."
+                                                    />
+                                                    <div className="flex flex-wrap gap-2 p-4 bg-black/20 rounded-2xl border border-white/5 mt-2">
+                                                        {skillsInput.split(',').map(s => s.trim()).filter(s => s.length > 0).map((skill, i) => (
                                                             <span key={i} className="px-3 py-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-500/30">
                                                                 {skill}
                                                             </span>
                                                         ))}
-                                                        {(!formData.skills || formData.skills.length === 0) && (
-                                                            <span className="text-[10px] font-bold text-gray-600 uppercase p-2 italic">Sin habilidades registradas</span>
-                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

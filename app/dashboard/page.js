@@ -9,7 +9,8 @@ import {
   CheckCircle2, AlertCircle, Users, Play, 
   Layout, MessageCircle, MoreVertical, 
   ChevronRight, TrendingUp, PieChart, Video, 
-  Palette, FileText, ArrowRight, Settings, LogOut, User, Shield
+  Palette, FileText, ArrowRight, Settings, LogOut, User, Shield,
+  Globe, UserPlus
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';

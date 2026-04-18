@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Server, FolderGit2, LayoutDashboard, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -32,51 +32,92 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
     const { user, session, refreshUser } = useAuth();
     const currentUser = user || session?.user;
     const [retryCount, setRetryCount] = useState(0);
+    const [isAlreadyMember, setIsAlreadyMember] = useState(false);
+    const isMounted = useRef(true);
+    const retryTimeoutRef = useRef(null);
+
+    useEffect(() => {
+        isMounted.current = true;
+        return () => {
+            isMounted.current = false;
+            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         const runFinalization = async () => {
-            if (status === 'ready' || status === 'processing') return;
+            // Guard: Prevent double execution
+            if (hasExecuted.current) return;
+            hasExecuted.current = true;
 
             let activeUser = currentUser;
 
-            // Intento de recuperación directa
+            // Direct recovery attempt
             if (!activeUser) {
-                const { data: { session: directSession } } = await supabase.auth.getSession();
-                activeUser = directSession?.user;
+                try {
+                    const { data: { session: directSession } } = await supabase.auth.getSession();
+                    activeUser = directSession?.user;
+                } catch (e) {
+                    console.warn('Silent session recovery failed:', e);
+                }
             }
 
-            // Si no hay usuario tras 2 reintentos, permitimos avanzar en modo "Local" para evitar bloqueos
+            // Fallback for missing user
             if (!activeUser && retryCount < 2) {
-                if (retryCount === 0) setLogs(prev => [...prev, 'Buscando protocolo de identidad...']);
-                setTimeout(() => setRetryCount(prev => prev + 1), 2000);
+                if (isMounted.current) setLogs(prev => [...prev, 'Buscando protocolo de identidad...']);
+                retryTimeoutRef.current = setTimeout(() => {
+                    if (isMounted.current) {
+                        hasExecuted.current = false; // Allow retry
+                        setRetryCount(prev => prev + 1);
+                    }
+                }, 2000);
                 return;
             }
 
             try {
-                setStatus('processing');
+                if (isMounted.current) setStatus('processing');
+                
                 if (activeUser) {
-                    setLogs(prev => [...prev, 'Identidad detectada. Sincronizando perfil...']);
-                    await onboardingService.finalizeOnboarding(formData, activeUser);
-                    setLogs(prev => [...prev, 'Persistencia en nube completada.']);
+                    if (isMounted.current) setLogs(prev => [...prev, 'Identidad detectada. Sincronizando perfil...']);
+                    const result = await onboardingService.finalizeOnboarding(formData, activeUser);
+                    
+                    if (isMounted.current) {
+                        if (result?.isUpdate) {
+                            setIsAlreadyMember(true);
+                            setLogs(prev => [...prev, 'Registro previo detectado. Actualizando credenciales...']);
+                        } else {
+                            setLogs(prev => [...prev, 'Nueva identidad vinculada exitosamente.']);
+                        }
+                        setLogs(prev => [...prev, 'Persistencia en nube completada.']);
+                    }
                 } else {
-                    setLogs(prev => [...prev, 'Modo autónomo activado (Sin sesión global).']);
-                    setLogs(prev => [...prev, 'Guardando configuración en caché local...']);
+                    if (isMounted.current) {
+                        setLogs(prev => [...prev, 'Modo autónomo activado (Sin sesión global).']);
+                        setLogs(prev => [...prev, 'Guardando configuración en caché local...']);
+                    }
                 }
                 
-                await new Promise(r => setTimeout(r, 1000));
-                setLogs(prev => [...prev, 'Inicialización de ecosistema finalizada.']);
+                await new Promise(r => setTimeout(r, 1200));
                 
-                // Generar Código de Identidad (Simulado si no hay datos)
-                const brandPref = (formData.brand || 'CORP').substring(0, 4).toUpperCase();
-                setIdentityCode(`DIIC-${brandPref}-${Math.floor(1000 + Math.random() * 9000)}`);
+                if (isMounted.current) {
+                    setLogs(prev => [...prev, 'Inicialización de ecosistema finalizada.']);
+                    
+                    // Identity Code Generation
+                    const brandPref = (formData.brand || 'CORP').substring(0, 4).toUpperCase();
+                    setIdentityCode(`DIIC-${brandPref}-${Math.floor(1000 + Math.random() * 9000)}`);
 
-                setStatus('ready');
-                toast.success('Entorno activado con éxito.');
+                    setStatus('ready');
+                    toast.success(isAlreadyMember ? 'Bienvenido de nuevo a la Zona.' : 'Entorno activado con éxito.');
+                }
 
             } catch (err) {
+                if (err.name === 'AbortError') return;
                 console.error('Finalization partially failed:', err);
-                setLogs(prev => [...prev, 'Aviso: Persistencia parcial. Accediendo al entorno...']);
-                setStatus('ready'); // Forzamos Ready para que el usuario no se quede atrapado
+                if (isMounted.current) {
+                    setLogs(prev => [...prev, 'Aviso: Optimización terminada con advertencias.']);
+                    setLogs(prev => [...prev, 'Accediendo al entorno seguro...']);
+                    setStatus('ready'); // Force ready to unblock user
+                }
             }
         };
 
@@ -172,11 +213,16 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                     </div>
 
                     <div className="space-y-4">
-                        <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">¡Entorno Listo!</h2>
+                        <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">
+                            {isAlreadyMember ? '¡Bienvenido de Nuevo!' : '¡Entorno Listo!'}
+                        </h2>
                         <p className="text-gray-400 text-lg">
-                            {formData.type === 'creative' 
-                                ? `Bienvenido al equipo, ${formData.name || 'Creativo'}. Tu nodo de trabajo está configurado.`
-                                : 'Ya tienes un equipo digital acompañándote. Tu sistema de producción y ventas está activo.'
+                            {isAlreadyMember 
+                                ? 'Tu perfil ha sido actualizado y sincronizado. Tu sistema de producción y ventas te espera.'
+                                : (formData.type === 'creative' 
+                                    ? `Bienvenido al equipo, ${formData.name || 'Creativo'}. Tu nodo de trabajo está configurado.`
+                                    : 'Ya tienes un equipo digital acompañándote. Tu sistema de producción y ventas está activo.'
+                                )
                             }
                         </p>
                         
