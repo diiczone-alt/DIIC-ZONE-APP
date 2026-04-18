@@ -8,7 +8,7 @@ import {
     Mail, Briefcase, Award, Cpu,
     Activity, Layout, LayoutGrid, Plus, Check, X,
     ChevronRight, Target, Flame, Database,
-    ChevronDown, Trash2, Edit, MessageSquare, Globe
+    ChevronDown, Trash2, Edit, MessageSquare, Globe, ListTodo
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
@@ -203,28 +203,26 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
     return (
         <motion.div 
             whileHover={{ y: -12, scale: 1.02 }} 
-            className="relative w-full aspect-[1/1.6] max-w-[320px] mx-auto bg-[#0A0B1A]/80 backdrop-blur-2xl border border-white/10 rounded-[4.5rem] p-10 flex flex-col items-center shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] group overflow-hidden"
+            className="relative w-full h-auto min-h-[680px] max-w-[340px] mx-auto bg-[#0A0B1A]/80 backdrop-blur-2xl border border-white/10 rounded-[4.5rem] p-8 flex flex-col items-center shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] group overflow-hidden"
         >
             {/* Background Effects */}
             <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/[0.05] to-transparent pointer-events-none" />
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full group-hover:bg-indigo-500/20 transition-all duration-1000" />
             
             {/* Top Stat Pills */}
-            <div className="w-full flex justify-between items-center mb-10 relative z-10">
-                <div className="px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+            <div className="w-full flex justify-between items-center mb-10 relative z-10 gap-2">
+                <div className="px-3 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.1)] flex-shrink-0">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]" />
-                    <span className="text-[7px] font-black text-emerald-400 uppercase tracking-[0.2em]">System Active</span>
+                    <span className="text-[7px] font-black text-emerald-400 uppercase tracking-[0.2em] whitespace-nowrap">System Active</span>
                 </div>
-                <div className="px-4 py-2 rounded-full bg-white/5 border border-white/5 shadow-sm">
-                    <span className="text-[7px] font-black text-gray-500 uppercase tracking-[0.2em]">Santo Domingo</span>
+                <div className="px-3 py-2 rounded-full bg-white/5 border border-white/5 shadow-sm overflow-hidden">
+                    <span className="text-[7px] font-black text-gray-500 uppercase tracking-[0.2em] whitespace-nowrap">Santo Domingo</span>
                 </div>
             </div>
 
             {/* Avatar Section (Image 2 Squircle Style) */}
-            <div className="relative mb-8 pt-4">
-                {/* Glow behind avatar */}
+            <div className="relative mb-6 pt-2">
                 <div className="absolute inset-0 bg-purple-600/30 blur-[60px] rounded-full scale-125 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                
                 <div className="w-36 h-36 rounded-[2.8rem] p-1 bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 shadow-[0_0_40px_rgba(147,51,234,0.3)] group-hover:shadow-[0_0_60px_rgba(147,51,234,0.6)] transition-all duration-500">
                     <div className="w-full h-full rounded-[2.6rem] bg-[#050510] flex items-center justify-center border-4 border-[#08081A] text-6xl font-black text-white italic tracking-tighter group-hover:scale-105 transition-transform">
                         {member.name[0]}
@@ -233,14 +231,14 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
             </div>
 
             {/* Member Identity */}
-            <div className="text-center space-y-4 mb-10 relative z-10 w-full">
+            <div className="text-center space-y-4 mb-8 relative z-10 w-full">
                 <h3 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none group-hover:text-indigo-400 transition-colors duration-500">
                     {member.name.split(' ')[0]}
                 </h3>
                 <div className="inline-block px-5 py-2 rounded-full bg-indigo-500 text-white text-[9px] font-black uppercase tracking-[0.25em] shadow-[0_10px_20px_rgba(99,102,241,0.3)]">
                     Equipo Zona Creativa
                 </div>
-                <div className="w-full py-4 border border-white/5 rounded-3xl bg-white/[0.03] backdrop-blur-md">
+                <div className="w-full py-4 border border-white/5 rounded-[1.8rem] bg-white/[0.03] backdrop-blur-md">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">
                         {member.role}
                     </span>
@@ -248,38 +246,36 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
             </div>
 
             {/* Tactical Stats (Connected to Data) */}
-            <div className="w-full space-y-4 mb-10 relative z-10">
-                {/* Marcas Designadas */}
-                <div className="bg-black/60 rounded-[2rem] p-5 border border-white/5 flex items-center justify-between group/stat hover:border-indigo-500/30 transition-all">
+            <div className="w-full space-y-3 mb-8 relative z-10">
+                <div className="bg-black/60 rounded-[1.8rem] p-4 border border-white/5 flex items-center justify-between group/stat hover:border-indigo-500/30 transition-all">
                     <div className="flex flex-col text-left">
                         <p className="text-[8px] font-black text-indigo-400/80 uppercase tracking-widest mb-1.5">Zona Creativa Designada</p>
                         <div className="flex items-center gap-3">
                             <div className="p-1.5 bg-indigo-500/10 rounded-lg">
-                                <Users className="w-3.5 h-3.5 text-indigo-400" />
+                                <Users className="w-3 h-3 text-indigo-400" />
                             </div>
-                            <span className="text-[11px] font-black text-white tracking-widest">{assignedBrands.length} Personas</span>
+                            <span className="text-[10px] font-black text-white tracking-widest">{assignedBrands.length} Personas</span>
                         </div>
                     </div>
-                    <button className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-gray-500 hover:bg-indigo-500 hover:text-white transition-all border border-white/5">+</button>
+                    <button className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-500 hover:bg-indigo-500 hover:text-white transition-all border border-white/5">+</button>
                 </div>
 
-                {/* Squad Tracker */}
-                <div className="bg-black/40 rounded-[2rem] p-5 border border-white/5 flex items-center justify-between hover:border-purple-500/30 transition-all">
+                <div className="bg-black/40 rounded-[1.8rem] p-4 border border-white/5 flex items-center justify-between hover:border-purple-500/30 transition-all">
                     <div className="flex flex-col text-left">
                         <p className="text-[8px] font-black text-purple-400/80 uppercase tracking-widest mb-1.5">Squad Táctico</p>
                         <div className="flex items-center gap-3">
                             <div className="p-1.5 bg-purple-500/10 rounded-lg">
-                                <Shield className="w-3.5 h-3.5 text-purple-400" />
+                                <Shield className="w-3 h-3 text-purple-400" />
                             </div>
-                            <span className="text-[11px] font-black text-white tracking-widest uppercase leading-none">
+                            <span className="text-[10px] font-black text-white tracking-widest uppercase leading-none">
                                 {variant === 'lead' ? `${squadMembers.length} Personas` : 'Activo'}
                             </span>
                         </div>
                     </div>
                     {variant === 'lead' && (
-                        <div className="flex -space-x-2">
+                        <div className="flex -space-x-1.5">
                             {squadMembers.slice(0, 3).map(m => (
-                                <div key={m.id} className="w-7 h-7 rounded-full border-2 border-[#0A0B1A] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[8px] font-black text-white shadow-lg">
+                                <div key={m.id} className="w-6 h-6 rounded-full border-2 border-[#0A0B1A] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[7px] font-black text-white shadow-lg">
                                     {m.name[0]}
                                 </div>
                             ))}
@@ -291,7 +287,7 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
             {/* Operational Action */}
             <button 
                 onClick={onAudit}
-                className="mt-auto w-full py-5 rounded-[2rem] bg-indigo-600/10 hover:bg-indigo-600 border border-indigo-500/20 hover:border-indigo-400 text-indigo-400 hover:text-white font-black uppercase text-[10px] tracking-[0.4em] transition-all duration-500 shadow-xl hover:shadow-indigo-600/40"
+                className="mt-auto w-full py-5 rounded-[1.8rem] bg-indigo-600/10 hover:bg-indigo-600 border border-indigo-500/20 hover:border-indigo-400 text-indigo-400 hover:text-white font-black uppercase text-[10px] tracking-[0.4em] transition-all duration-500 shadow-xl hover:shadow-indigo-600/40"
             >
                 Detalles Operativos
             </button>
@@ -300,10 +296,21 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
 }
 
 
+
 function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave }) {
     const [formData, setFormData] = useState({ ...member });
     const [saving, setSaving] = useState(false);
-    const isCM = member.role.toLowerCase().includes('community manager');
+    const [activeTab, setActiveTab] = useState('perfil'); // 'perfil', 'marcas', 'squad', 'tasks'
+    const [activeTasks, setActiveTasks] = useState([]);
+    
+    // Fetch member tasks
+    useEffect(() => {
+        const loadData = async () => {
+            const tasks = await agencyService.getTasksByMember(member.id);
+            setActiveTasks(tasks);
+        };
+        loadData();
+    }, [member.id]);
 
     const handleSave = async () => {
         setSaving(true);
@@ -319,35 +326,287 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
         }
     };
 
+    const toggleMember = async (memberId, remove = false) => {
+        try {
+            if (remove) {
+                await agencyService.updateTeamMember(memberId, { squad_lead_id: null });
+            } else {
+                await agencyService.updateTeamMember(memberId, { squad_lead_id: member.id });
+            }
+            onSave();
+            toast.success(remove ? "Retirado del escuadrón" : "Vínculo de escuadrón activo");
+        } catch (error) {
+            toast.error("Error en vinculación");
+        }
+    };
+
+    const toggleBrand = async (clientId, remove = false) => {
+        try {
+            if (remove) {
+                await agencyService.updateClient(clientId, { cm: null });
+            } else {
+                await agencyService.assignClientToCM(clientId, member.name);
+            }
+            onSave();
+            toast.success(remove ? "Marca desvinculada" : "Marca asignada con éxito");
+        } catch (error) {
+            toast.error("Error al gestionar marca");
+        }
+    };
+
+    const squadMembers = team.filter(m => m.squad_lead_id === member.id);
+    const assignedBrands = allClients.filter(c => c.cm === member.name);
+    const availableBrands = allClients.filter(c => c.cm !== member.name);
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/90 backdrop-blur-xl" />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-2xl bg-[#0A0A1F] border border-white/10 rounded-[3rem] p-10 overflow-hidden">
-                <div className="flex justify-between items-start mb-8">
-                    <div>
-                        <h3 className="text-3xl font-black text-white uppercase italic italic">Control Operativo</h3>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{member.name} // {member.role}</p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/95 backdrop-blur-3xl" />
+            <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 30 }} 
+                animate={{ scale: 1, opacity: 1, y: 0 }} 
+                exit={{ scale: 0.9, opacity: 0, y: 30 }} 
+                className="relative w-full max-w-4xl bg-[#0A0A1F] border border-white/10 rounded-[3rem] shadow-3xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+                {/* Header Section */}
+                <div className="p-10 border-b border-white/5 bg-gradient-to-r from-indigo-600/10 to-transparent">
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-6">
+                            <div className="w-20 h-20 rounded-[1.8rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-black text-white italic shadow-[0_0_30px_rgba(99,102,241,0.3)]">
+                                {member.name[0]}
+                            </div>
+                            <div>
+                                <h3 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-1">Control <span className="text-indigo-500">Operativo</span></h3>
+                                <div className="flex items-center gap-3">
+                                    <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-black text-gray-400 uppercase tracking-widest">{member.role}</span>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]" />
+                                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">En Línea</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={onClose} className="p-4 bg-white/5 hover:bg-rose-500/20 hover:text-rose-500 rounded-2xl transition-all">
+                            <X className="w-6 h-6" />
+                        </button>
                     </div>
-                    <button onClick={onClose} className="p-3 bg-white/5 hover:bg-rose-500/20 rounded-xl text-gray-400 hover:text-rose-500 transition-all"><X className="w-5 h-5" /></button>
+
+                    {/* Navigation Tabs */}
+                    <div className="flex gap-4 mt-10">
+                        <TabButton active={activeTab === 'perfil'} onClick={() => setActiveTab('perfil')} icon={LayoutGrid} label="Perfil" />
+                        <TabButton active={activeTab === 'marcas'} onClick={() => setActiveTab('marcas')} icon={Globe} label="Marcas" />
+                        <TabButton active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} icon={Shield} label="Escuadrón" />
+                        <TabButton active={activeTab === 'tasks'} onClick={() => setActiveTab('tasks')} icon={ListTodo} label="Tareas Activas" />
+                    </div>
                 </div>
 
-                <div className="space-y-6">
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Nombre</label>
-                        <input className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-                    </div>
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Salario (USD)</label>
-                        <input type="number" className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" value={formData.salary || ''} onChange={(e) => setFormData({...formData, salary: e.target.value})} />
-                    </div>
-                    <button onClick={handleSave} disabled={saving} className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-white font-black uppercase tracking-widest text-[11px] shadow-xl disabled:opacity-50 transition-all">
-                        {saving ? 'Guardando...' : 'Sincronizar Perfil'}
-                    </button>
+                {/* Content Section */}
+                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-[#050510]/30">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="w-full"
+                        >
+                            {activeTab === 'perfil' && (
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="space-y-6">
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">Nombre Completo</label>
+                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">Salario (USD)</label>
+                                            <input type="number" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold" value={formData.salary || ''} onChange={(e) => setFormData({...formData, salary: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-6">
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">Email Corporativo</label>
+                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold" value={formData.email || ''} readOnly />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">WhatsApp</label>
+                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold" value={formData.whatsapp || ''} readOnly />
+                                        </div>
+                                    </div>
+                                    <div className="col-span-2 pt-6">
+                                        <button onClick={handleSave} disabled={saving} className="w-full py-6 bg-indigo-600 hover:bg-indigo-500 rounded-3xl text-white font-black uppercase tracking-[0.3em] text-[11px] shadow-3xl shadow-indigo-600/30 transition-all disabled:opacity-50">
+                                            {saving ? 'Sincronizando...' : 'Sincronizar Perfil'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'marcas' && (
+                                <div className="space-y-10">
+                                    <div>
+                                        <h4 className="text-[12px] font-black text-indigo-400 uppercase tracking-[0.2em] italic mb-6 px-4">Vincular Nueva Marca</h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {availableBrands.map(brand => (
+                                                <button 
+                                                    key={brand.id} 
+                                                    onClick={() => toggleBrand(brand.id)}
+                                                    className="flex items-center justify-between p-6 bg-white/[0.03] border border-white/5 rounded-[2.5rem] hover:bg-white/[0.08] hover:border-indigo-500/30 transition-all group"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-xl font-black italic text-indigo-400 border border-indigo-500/20">{brand.name[0]}</div>
+                                                        <div className="text-left">
+                                                            <p className="text-[13px] font-black text-white uppercase italic">{brand.name}</p>
+                                                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{brand.type || 'Cliente Regular'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <Plus className="w-5 h-5 text-gray-600 group-hover:text-indigo-400 transition-colors" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-8 border-t border-white/5">
+                                        <h4 className="text-[12px] font-black text-emerald-400 uppercase tracking-[0.2em] italic mb-6 px-4">Marcas Designadas</h4>
+                                        <div className="space-y-4">
+                                            {assignedBrands.map(brand => (
+                                                <div key={brand.id} className="flex items-center justify-between p-8 bg-white/[0.03] border border-white/10 rounded-[3rem] hover:bg-white/[0.08] transition-all group">
+                                                    <div className="flex items-center gap-6">
+                                                        <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-2xl font-black italic text-emerald-400 border border-emerald-500/20">
+                                                            {brand.name[0]}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5">ZONA CREATIVA ACTIVA</p>
+                                                            <p className="text-2xl font-black text-white italic tracking-tighter uppercase">{brand.name} <span className="text-emerald-400 ml-2">// {brand.type}</span></p>
+                                                        </div>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => toggleBrand(brand.id, true)}
+                                                        className="p-4 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-2xl transition-all"
+                                                    >
+                                                        <X className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {assignedBrands.length === 0 && (
+                                                <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-[3rem]">
+                                                    <Globe className="w-12 h-12 text-gray-800 mx-auto mb-4 opacity-20" />
+                                                    <p className="text-xs font-black text-gray-600 uppercase tracking-widest">Sin marcas asignadas</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'squad' && (
+                                <div className="space-y-8">
+                                    <div className="flex justify-between items-center px-4">
+                                        <h4 className="text-[12px] font-black text-indigo-400 uppercase tracking-[0.2em] italic">Vincular Talento al Escuadrón</h4>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {team.filter(m => !m.squad_lead_id && m.id !== member.id && !m.role.toLowerCase().includes('community manager')).map(m => (
+                                            <button 
+                                                key={m.id}
+                                                onClick={() => toggleMember(m.id)}
+                                                className="flex items-center justify-between p-6 bg-white/[0.03] border border-white/5 rounded-[2.5rem] hover:bg-white/[0.08] hover:border-indigo-500/30 transition-all group"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-xl font-black italic text-indigo-400 border border-indigo-500/20">{m.name[0]}</div>
+                                                    <div className="text-left">
+                                                        <p className="text-[13px] font-black text-white uppercase italic">{m.name}</p>
+                                                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{m.role}</p>
+                                                    </div>
+                                                </div>
+                                                <Plus className="w-5 h-5 text-gray-600 group-hover:text-indigo-400 transition-colors" />
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-12 pt-8 border-t border-white/5">
+                                        <h4 className="text-[12px] font-black text-purple-400 uppercase tracking-[0.2em] italic mb-6 px-4">Escuadrón Táctico Designado</h4>
+                                        <div className="space-y-4">
+                                            {squadMembers.map(m => (
+                                                <div key={m.id} className="flex items-center justify-between p-8 bg-white/[0.03] border border-white/10 rounded-[3rem] hover:bg-white/[0.08] transition-all group">
+                                                    <div className="flex items-center gap-6">
+                                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black italic text-white shadow-xl ${
+                                                            m.role.toLowerCase().includes('editor') ? 'bg-purple-600' : 'bg-blue-600'
+                                                        }`}>
+                                                            {m.name[0]}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5">MIEMBRO OPERATIVO</p>
+                                                            <p className="text-2xl font-black text-white italic tracking-tighter uppercase">{m.name} <span className="text-indigo-400 ml-2">// {m.role}</span></p>
+                                                        </div>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => toggleMember(m.id, true)}
+                                                        className="p-4 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-2xl transition-all"
+                                                    >
+                                                        <X className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {squadMembers.length === 0 && (
+                                                <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-[3rem]">
+                                                    <Shield className="w-12 h-12 text-gray-800 mx-auto mb-4 opacity-20" />
+                                                    <p className="text-xs font-black text-gray-600 uppercase tracking-widest">Sin miembros vinculados</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'tasks' && (
+                                <div className="space-y-8">
+                                    <h4 className="text-[12px] font-black text-indigo-400 uppercase tracking-[0.2em] italic px-4">Pipeline de Operaciones</h4>
+                                    <div className="space-y-4">
+                                        {activeTasks.map(task => (
+                                            <div key={task.id} className="p-10 bg-white/[0.03] border border-white/5 rounded-[3rem] flex items-center justify-between group hover:bg-white/[0.08] transition-all">
+                                                <div className="flex items-center gap-10">
+                                                    <div className="w-5 h-5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.5)]" />
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-3 italic">{task.client?.replace(/_/g, ' ') || 'PROYECTO INTERNO'}</p>
+                                                        <h5 className="text-3xl font-black text-white uppercase tracking-tighter italic leading-none">{task.title}</h5>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] bg-white/5 px-6 py-3 rounded-2xl border border-white/5">
+                                                        Octubre 2026
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {activeTasks.length === 0 && (
+                                            <div className="text-center py-32 border-2 border-dashed border-white/5 rounded-[4rem]">
+                                                <ListTodo className="w-16 h-16 text-gray-800 mx-auto mb-6 opacity-20" />
+                                                <p className="text-sm font-black text-gray-600 uppercase tracking-[0.3em] italic">Pipeline despejado // Sin tareas activas</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </motion.div>
         </div>
     );
 }
+
+function TabButton({ active, onClick, icon: Icon, label }) {
+    return (
+        <button
+            onClick={onClick}
+            className={`flex items-center gap-4 px-8 py-5 rounded-2xl border transition-all duration-300 ${
+                active 
+                ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/30 scale-105' 
+                : 'bg-white/5 border-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300'
+            }`}
+        >
+            <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-gray-500'}`} />
+            <span className="text-[11px] font-black uppercase tracking-[0.2em]">{label}</span>
+        </button>
+    );
+}
+
 
 function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitting }) {
     return (
