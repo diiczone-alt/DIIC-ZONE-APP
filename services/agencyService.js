@@ -351,7 +351,10 @@ export const agencyService = {
         const timestamp = new Date().toLocaleTimeString();
         console.log(`🚀 [${timestamp}] Service: Creating New Team Member...`);
         try {
-            const validFields = ['id', 'name', 'role', 'status', 'city', 'whatsapp', 'salary', 'email'];
+            const validFields = [
+                'id', 'name', 'role', 'status', 'city', 'whatsapp', 
+                'salary', 'email', 'cv_url', 'cv_summary', 'skills'
+            ];
             const sanitizedData = {};
             validFields.forEach(field => {
                 if (memberData[field] !== undefined) sanitizedData[field] = memberData[field];

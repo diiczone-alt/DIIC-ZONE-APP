@@ -46,12 +46,15 @@ export const onboardingService = {
                 }
             } else if (profileType === 'creative') {
                 // Registrar en la tabla de EQUIPO (TEAM)
+                // Usamos el ID del usuario de Auth para vincularlos directamente si es posible,
+                // o mantenemos el TEAM-XXXX pero aseguramos el email.
                 const teamMemberId = `TEAM-${Math.floor(1000 + Math.random() * 9000)}`;
                 const { error: teamError } = await supabase
                     .from('team')
                     .insert({
                         id: teamMemberId,
                         name: fullName,
+                        email: user.email || formData.email || '', // CRITICO: Guardar email
                         role: formData.role || 'Creative',
                         status: 'activo',
                         city: city,

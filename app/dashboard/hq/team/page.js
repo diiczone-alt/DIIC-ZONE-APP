@@ -8,7 +8,8 @@ import {
     Mail, Briefcase, Award, Cpu,
     Activity, Layout, LayoutGrid, Plus, Check, X,
     ChevronRight, Target, Flame, Database,
-    ChevronDown, Trash2, Edit, MessageSquare, Globe, ListTodo
+    ChevronDown, Trash2, Edit, MessageSquare, Globe, ListTodo,
+    MapPin, DollarSign, FileText
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
@@ -97,9 +98,16 @@ export default function HQTeamPage() {
             <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8">
                 <div>
                     <h1 className="text-6xl font-black text-white mb-2 uppercase tracking-tighter italic">ZONA <span className="text-indigo-500">CREATIVA</span></h1>
-                    <p className="text-gray-400 font-bold uppercase text-[12px] tracking-[0.5em] flex items-center gap-2">
-                        <Target className="w-4 h-4 text-pink-500" /> Operational Mastery — HQ Dashboard 2026
-                    </p>
+                    <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        <p className="text-gray-400 font-bold uppercase text-[12px] tracking-[0.5em] flex items-center gap-2">
+                            <Target className="w-4 h-4 text-pink-500" /> Operational Mastery — HQ Dashboard 2026
+                        </p>
+                        <div className="h-4 w-px bg-white/10 hidden md:block" />
+                        <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                            <Shield className="w-3 h-3 text-indigo-400" />
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Encargado: <span className="text-white">Fausto</span></span>
+                        </div>
+                    </div>
                 </div>
                 <div className="flex gap-4">
                     <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1">
@@ -190,104 +198,116 @@ export default function HQTeamPage() {
 function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal', onAudit }) {
     const isCM = member.role.toLowerCase().includes('community manager');
     
-    // Filtrar marcas donde este miembro está asignado
+    // Filter brands assigned to this member
     const assignedBrands = allClients.filter(c => 
         c.cm === member.name || 
         c.editor === member.name || 
         c.filmmaker === member.name
     );
 
-    // Si es líder, encontrar miembros de su escuadrón
+    // If lead, find squad members
     const squadMembers = variant === 'lead' ? team.filter(m => m.squad_lead_id === member.id) : [];
     
+    // Internal summary tags
+    const skills = member.skills || (isCM ? ['Estrategia', 'Gestión', 'Brands'] : ['VFX', 'Edición', 'Ritmo']);
+
     return (
         <motion.div 
-            whileHover={{ y: -12, scale: 1.02 }} 
-            className="relative w-full h-auto min-h-[680px] max-w-[340px] mx-auto bg-[#0A0B1A]/80 backdrop-blur-2xl border border-white/10 rounded-[4.5rem] p-8 flex flex-col items-center shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] group overflow-hidden"
+            whileHover={{ y: -8, scale: 1.01 }} 
+            className="relative w-full h-auto min-h-[520px] max-w-[310px] mx-auto bg-white/[0.02] backdrop-blur-3xl border border-white/10 rounded-[3rem] p-6 flex flex-col shadow-2xl group overflow-hidden"
         >
-            {/* Background Effects */}
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/[0.05] to-transparent pointer-events-none" />
-            <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full group-hover:bg-indigo-500/20 transition-all duration-1000" />
+            {/* Premium Glass Accents */}
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 blur-[90px] rounded-full group-hover:bg-indigo-500/20 transition-all duration-1000" />
             
-            {/* Top Stat Pills */}
-            <div className="w-full flex justify-between items-center mb-10 relative z-10 gap-2">
-                <div className="px-3 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.1)] flex-shrink-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]" />
-                    <span className="text-[7px] font-black text-emerald-400 uppercase tracking-[0.2em] whitespace-nowrap">System Active</span>
+            {/* Identity Header */}
+            <div className="flex flex-col items-center mb-8 pt-4">
+                <div className="relative mb-5">
+                    <div className="absolute inset-0 bg-indigo-500/30 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700 scale-150" />
+                    <div className="w-20 h-20 rounded-[1.8rem] bg-gradient-to-tr from-indigo-600 to-purple-600 p-0.5 shadow-2xl relative z-10 transition-transform duration-500 group-hover:rotate-6">
+                        <div className="w-full h-full rounded-[1.7rem] bg-[#050510] flex items-center justify-center text-3xl font-black text-white italic tracking-tighter shadow-inner">
+                            {member.name ? member.name.charAt(0).toUpperCase() : '?'}
+                        </div>
+                    </div>
                 </div>
-                <div className="px-3 py-2 rounded-full bg-white/5 border border-white/5 shadow-sm overflow-hidden">
-                    <span className="text-[7px] font-black text-gray-500 uppercase tracking-[0.2em] whitespace-nowrap">Santo Domingo</span>
+                <div className="text-center">
+                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-tight group-hover:text-indigo-400 transition-colors duration-500">
+                        {member.name.split(' ')[0]}
+                    </h3>
+                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.4em] mt-2 bg-white/5 py-1 px-3 rounded-full border border-white/5 inline-block">{member.role}</p>
                 </div>
             </div>
 
-            {/* Avatar Section (Image 2 Squircle Style) */}
-            <div className="relative mb-6 pt-2">
-                <div className="absolute inset-0 bg-purple-600/30 blur-[60px] rounded-full scale-125 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                <div className="w-36 h-36 rounded-[2.8rem] p-1 bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 shadow-[0_0_40px_rgba(147,51,234,0.3)] group-hover:shadow-[0_0_60px_rgba(147,51,234,0.6)] transition-all duration-500">
-                    <div className="w-full h-full rounded-[2.6rem] bg-[#050510] flex items-center justify-center border-4 border-[#08081A] text-6xl font-black text-white italic tracking-tighter group-hover:scale-105 transition-transform">
-                        {member.name[0]}
+            {/* Statistics Row (Image 2 style) */}
+            <div className="grid grid-cols-3 gap-2 mb-8 relative z-10">
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 text-center group-hover:border-indigo-500/20 transition-all">
+                    <p className="text-[7px] font-black text-indigo-400/50 uppercase tracking-widest mb-1.5 italic font-mono">Brands</p>
+                    <div className="flex items-center justify-center gap-1.5">
+                        <Activity className="w-2.5 h-2.5 text-indigo-400" />
+                        <span className="text-xs font-black text-white">{assignedBrands.length}</span>
+                    </div>
+                </div>
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 text-center group-hover:border-purple-500/20 transition-all">
+                    <p className="text-[7px] font-black text-purple-400/50 uppercase tracking-widest mb-1.5 italic font-mono">Squad</p>
+                    <div className="flex items-center justify-center gap-1.5">
+                        <Shield className="w-2.5 h-2.5 text-purple-400" />
+                        <span className="text-xs font-black text-white">{variant === 'lead' ? squadMembers.length : 'OK'}</span>
+                    </div>
+                </div>
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 text-center group-hover:border-emerald-500/20 transition-all">
+                    <p className="text-[7px] font-black text-emerald-400/50 uppercase tracking-widest mb-1.5 italic font-mono">Status</p>
+                    <div className="flex items-center justify-center gap-1.5">
+                        <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_5px_rgba(16,185,129,1)]" />
+                        <span className="text-[9px] font-black text-white uppercase tracking-tighter">ACT</span>
                     </div>
                 </div>
             </div>
 
-            {/* Member Identity */}
-            <div className="text-center space-y-4 mb-8 relative z-10 w-full">
-                <h3 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none group-hover:text-indigo-400 transition-colors duration-500">
-                    {member.name.split(' ')[0]}
-                </h3>
-                <div className="inline-block px-5 py-2 rounded-full bg-indigo-500 text-white text-[9px] font-black uppercase tracking-[0.25em] shadow-[0_10px_20px_rgba(99,102,241,0.3)]">
-                    Equipo Zona Creativa
+            {/* Internal Summary (6-Box Grid) */}
+            <div className="flex-1 space-y-4 mb-8">
+                <div className="flex items-center justify-between px-1">
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Resumen Interno</p>
+                    <Database className="w-2 h-2 text-gray-600" />
                 </div>
-                <div className="w-full py-4 border border-white/5 rounded-[1.8rem] bg-white/[0.03] backdrop-blur-md">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">
-                        {member.role}
-                    </span>
+                <div className="grid grid-cols-3 gap-2">
+                    {/* Core Stats Grid */}
+                    <div className="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 group/box hover:bg-white/5 transition-all">
+                        <MapPin className="w-2.5 h-2.5 text-indigo-400" />
+                        <span className="text-[6px] font-black text-gray-600 uppercase tracking-widest leading-none">Sede</span>
+                        <span className="text-[8px] font-black text-white uppercase tracking-tighter truncate w-full text-center">{member.city || '---'}</span>
+                    </div>
+                    <div className="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 group/box hover:bg-white/5 transition-all">
+                        <DollarSign className="w-2.5 h-2.5 text-emerald-400" />
+                        <span className="text-[6px] font-black text-gray-600 uppercase tracking-widest leading-none">Sueldo</span>
+                        <span className="text-[8px] font-black text-white uppercase tracking-tighter truncate w-full text-center">${member.salary || '0'}</span>
+                    </div>
+                    <div className="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 group/box hover:bg-white/5 transition-all">
+                        <Globe className="w-2.5 h-2.5 text-blue-400" />
+                        <span className="text-[6px] font-black text-gray-600 uppercase tracking-widest leading-none">Marcas</span>
+                        <span className="text-[8px] font-black text-white uppercase tracking-tighter truncate w-full text-center">{assignedBrands.length}</span>
+                    </div>
+                    <div className="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 group/box hover:bg-white/5 transition-all">
+                        <Zap className="w-2.5 h-2.5 text-yellow-400" />
+                        <span className="text-[6px] font-black text-gray-600 uppercase tracking-widest leading-none">Skills</span>
+                        <span className="text-[8px] font-black text-white uppercase tracking-tighter truncate w-full text-center">{skills.length}</span>
+                    </div>
+                    <div className="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 group/box hover:bg-white/5 transition-all">
+                        <MessageSquare className="w-2.5 h-2.5 text-pink-400" />
+                        <span className="text-[6px] font-black text-gray-600 uppercase tracking-widest leading-none">WhatsApp</span>
+                        <span className="text-[8px] font-black text-white uppercase tracking-tighter truncate w-full text-center">{member.whatsapp ? 'REG' : '---'}</span>
+                    </div>
+                    <div className="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 group/box hover:bg-white/5 transition-all">
+                        <FileText className="w-2.5 h-2.5 text-indigo-400" />
+                        <span className="text-[6px] font-black text-gray-600 uppercase tracking-widest leading-none">Expediente</span>
+                        <span className="text-[8px] font-black text-white uppercase tracking-tighter truncate w-full text-center">{member.cv_url ? 'CV' : '---'}</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Tactical Stats (Connected to Data) */}
-            <div className="w-full space-y-3 mb-8 relative z-10">
-                <div className="bg-black/60 rounded-[1.8rem] p-4 border border-white/5 flex items-center justify-between group/stat hover:border-indigo-500/30 transition-all">
-                    <div className="flex flex-col text-left">
-                        <p className="text-[8px] font-black text-indigo-400/80 uppercase tracking-widest mb-1.5">Zona Creativa Designada</p>
-                        <div className="flex items-center gap-3">
-                            <div className="p-1.5 bg-indigo-500/10 rounded-lg">
-                                <Users className="w-3 h-3 text-indigo-400" />
-                            </div>
-                            <span className="text-[10px] font-black text-white tracking-widest">{assignedBrands.length} Personas</span>
-                        </div>
-                    </div>
-                    <button className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-500 hover:bg-indigo-500 hover:text-white transition-all border border-white/5">+</button>
-                </div>
-
-                <div className="bg-black/40 rounded-[1.8rem] p-4 border border-white/5 flex items-center justify-between hover:border-purple-500/30 transition-all">
-                    <div className="flex flex-col text-left">
-                        <p className="text-[8px] font-black text-purple-400/80 uppercase tracking-widest mb-1.5">Squad Táctico</p>
-                        <div className="flex items-center gap-3">
-                            <div className="p-1.5 bg-purple-500/10 rounded-lg">
-                                <Shield className="w-3 h-3 text-purple-400" />
-                            </div>
-                            <span className="text-[10px] font-black text-white tracking-widest uppercase leading-none">
-                                {variant === 'lead' ? `${squadMembers.length} Personas` : 'Activo'}
-                            </span>
-                        </div>
-                    </div>
-                    {variant === 'lead' && (
-                        <div className="flex -space-x-1.5">
-                            {squadMembers.slice(0, 3).map(m => (
-                                <div key={m.id} className="w-6 h-6 rounded-full border-2 border-[#0A0B1A] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[7px] font-black text-white shadow-lg">
-                                    {m.name[0]}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Operational Action */}
+            {/* Tactical Action */}
             <button 
                 onClick={onAudit}
-                className="mt-auto w-full py-5 rounded-[1.8rem] bg-indigo-600/10 hover:bg-indigo-600 border border-indigo-500/20 hover:border-indigo-400 text-indigo-400 hover:text-white font-black uppercase text-[10px] tracking-[0.4em] transition-all duration-500 shadow-xl hover:shadow-indigo-600/40"
+                className="w-full py-4 rounded-2xl bg-white/[0.03] hover:bg-indigo-600 border border-white/5 hover:border-indigo-400 text-gray-500 hover:text-white font-black uppercase text-[8px] tracking-[0.4em] transition-all duration-500 shadow-xl"
             >
                 Detalles Operativos
             </button>
@@ -359,41 +379,38 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
     const availableBrands = allClients.filter(c => c.cm !== member.name);
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/95 backdrop-blur-3xl" />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12 overflow-hidden">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-indigo-950/20 backdrop-blur-xl" />
             <motion.div 
-                initial={{ scale: 0.9, opacity: 0, y: 30 }} 
+                initial={{ scale: 0.95, opacity: 0, y: 50 }} 
                 animate={{ scale: 1, opacity: 1, y: 0 }} 
-                exit={{ scale: 0.9, opacity: 0, y: 30 }} 
-                className="relative w-full max-w-4xl bg-[#0A0A1F] border border-white/10 rounded-[3rem] shadow-3xl overflow-hidden flex flex-col max-h-[90vh]"
+                exit={{ scale: 0.95, opacity: 0, y: 50 }} 
+                className="relative w-full max-w-2xl bg-[#0F0F1A]/80 backdrop-blur-3xl border border-white/10 rounded-[3.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)] flex flex-col max-h-[85vh] overflow-hidden"
             >
                 {/* Header Section */}
-                <div className="p-10 border-b border-white/5 bg-gradient-to-r from-indigo-600/10 to-transparent">
-                    <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-6">
-                            <div className="w-20 h-20 rounded-[1.8rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-black text-white italic shadow-[0_0_30px_rgba(99,102,241,0.3)]">
+                <div className="p-8 border-b border-white/5 bg-gradient-to-r from-indigo-600/5 to-transparent">
+                    <div className="flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-5">
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl font-black text-white italic shadow-lg">
                                 {member.name[0]}
                             </div>
                             <div>
-                                <h3 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-1">Control <span className="text-indigo-500">Operativo</span></h3>
-                                <div className="flex items-center gap-3">
-                                    <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-black text-gray-400 uppercase tracking-widest">{member.role}</span>
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]" />
-                                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">En Línea</span>
-                                </div>
+                                <h3 className="text-2xl font-black text-white italic tracking-tigh uppercase">Control <span className="text-indigo-400">Operativo</span></h3>
+                                <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] mt-1">{member.role}</p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-4 bg-white/5 hover:bg-rose-500/20 hover:text-rose-500 rounded-2xl transition-all">
-                            <X className="w-6 h-6" />
+                        <button onClick={onClose} className="p-3 bg-white/5 hover:bg-rose-500/20 hover:text-rose-500 rounded-xl transition-all">
+                            <X className="w-5 h-5" />
                         </button>
                     </div>
 
                     {/* Navigation Tabs */}
-                    <div className="flex gap-4 mt-10">
+                    <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-2">
                         <TabButton active={activeTab === 'perfil'} onClick={() => setActiveTab('perfil')} icon={LayoutGrid} label="Perfil" />
+                        <TabButton active={activeTab === 'profesional'} onClick={() => setActiveTab('profesional')} icon={Award} label="Expediente" />
                         <TabButton active={activeTab === 'marcas'} onClick={() => setActiveTab('marcas')} icon={Globe} label="Marcas" />
-                        <TabButton active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} icon={Shield} label="Escuadrón" />
-                        <TabButton active={activeTab === 'tasks'} onClick={() => setActiveTab('tasks')} icon={ListTodo} label="Tareas Activas" />
+                        <TabButton active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} icon={Shield} label="Squad" />
+                        <TabButton active={activeTab === 'tasks'} onClick={() => setActiveTab('tasks')} icon={ListTodo} label="Tasks" />
                     </div>
                 </div>
 
@@ -409,30 +426,132 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                             className="w-full"
                         >
                             {activeTab === 'perfil' && (
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div className="space-y-6">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">Nombre Completo</label>
-                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-5">
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">Identidad</label>
+                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                                         </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">Salario (USD)</label>
-                                            <input type="number" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold" value={formData.salary || ''} onChange={(e) => setFormData({...formData, salary: e.target.value})} />
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">Salario Base (USD)</label>
+                                            <input type="number" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm placeholder:text-gray-700" placeholder="Ej: 800" value={formData.salary || ''} onChange={(e) => setFormData({...formData, salary: e.target.value})} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">Ubicación Estratégica</label>
+                                            <select 
+                                                className="w-full bg-[#0F0F1A] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm appearance-none cursor-pointer" 
+                                                value={formData.city || ''} 
+                                                onChange={(e) => setFormData({...formData, city: e.target.value})}
+                                            >
+                                                <option value="" disabled>Seleccionar Ciudad</option>
+                                                <option value="Quito">Quito</option>
+                                                <option value="Santo Domingo">Santo Domingo</option>
+                                                <option value="Guayaquil">Guayaquil</option>
+                                                <option value="Cuenca">Cuenca</option>
+                                                <option value="Manta">Manta</option>
+                                                <option value="Portoviejo">Portoviejo</option>
+                                                <option value="Ambato">Ambato</option>
+                                                <option value="Loja">Loja</option>
+                                                <option value="Machala">Machala</option>
+                                                <option value="Remoto">Remoto (Global)</option>
+                                            </select>
                                         </div>
                                     </div>
-                                    <div className="space-y-6">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">Email Corporativo</label>
-                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold" value={formData.email || ''} readOnly />
+                                    <div className="space-y-5">
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">Email</label>
+                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm" value={formData.email || ''} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="email@diiczone.com" />
                                         </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4">WhatsApp</label>
-                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-indigo-500/40 transition-all font-bold" value={formData.whatsapp || ''} readOnly />
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">WhatsApp</label>
+                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm" value={formData.whatsapp || ''} onChange={(e) => setFormData({...formData, whatsapp: e.target.value})} placeholder="+593 ..." />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">Rol Operativo</label>
+                                            <select className="w-full bg-[#0F0F1A] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm appearance-none cursor-pointer" value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})}>
+                                                <option value="Editor de Video">Editor de Video</option>
+                                                <option value="Community Manager">Community Manager</option>
+                                                <option value="Filmmaker">Filmmaker</option>
+                                                <option value="Diseñador">Diseñador</option>
+                                                <option value="Estratega">Estratega</option>
+                                                <option value="Director General">Director General</option>
+                                            </select>
                                         </div>
                                     </div>
-                                    <div className="col-span-2 pt-6">
-                                        <button onClick={handleSave} disabled={saving} className="w-full py-6 bg-indigo-600 hover:bg-indigo-500 rounded-3xl text-white font-black uppercase tracking-[0.3em] text-[11px] shadow-3xl shadow-indigo-600/30 transition-all disabled:opacity-50">
-                                            {saving ? 'Sincronizando...' : 'Sincronizar Perfil'}
+                                    <div className="md:col-span-2 pt-4">
+                                        <button onClick={handleSave} disabled={saving} className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-white font-black uppercase tracking-[0.2em] text-[10px] transition-all disabled:opacity-50">
+                                            {saving ? 'Guardando...' : 'Sincronizar Perfil'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'profesional' && (
+                                <div className="space-y-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-4">
+                                            <h4 className="text-[12px] font-black text-indigo-400 uppercase tracking-[0.2em] px-4">Recursos de Talento</h4>
+                                            <div className="p-8 bg-white/[0.03] border border-white/5 rounded-[3rem] space-y-6">
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Vínculo de CV / Portfolio</label>
+                                                    {formData.cv_url ? (
+                                                        <a 
+                                                            href={formData.cv_url} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center justify-between p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl group hover:bg-indigo-500 transition-all"
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <Database className="w-5 h-5 text-indigo-400 group-hover:text-white" />
+                                                                <span className="text-xs font-bold text-white uppercase tracking-tighter">Ver Documento Oficial</span>
+                                                            </div>
+                                                            <ChevronRight className="w-4 h-4 text-indigo-400 group-hover:text-white" />
+                                                        </a>
+                                                    ) : (
+                                                        <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-2xl text-center">
+                                                            <span className="text-[10px] font-bold text-gray-600 uppercase">Sin CV adjunto</span>
+                                                        </div>
+                                                    )}
+                                                    <input 
+                                                        className="w-full bg-black/40 border border-white/5 rounded-xl py-3 px-4 text-[10px] text-gray-400 outline-none focus:border-indigo-500 transition-all font-mono"
+                                                        value={formData.cv_url || ''}
+                                                        onChange={(e) => setFormData({...formData, cv_url: e.target.value})}
+                                                        placeholder="URL del CV (Google Drive / PDF)"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-3 pt-4">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Habilidades Destacadas</label>
+                                                    <div className="flex flex-wrap gap-2 p-4 bg-black/20 rounded-2xl border border-white/5">
+                                                        {(Array.isArray(formData.skills) ? formData.skills : []).map((skill, i) => (
+                                                            <span key={i} className="px-3 py-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-500/30">
+                                                                {skill}
+                                                            </span>
+                                                        ))}
+                                                        {(!formData.skills || formData.skills.length === 0) && (
+                                                            <span className="text-[10px] font-bold text-gray-600 uppercase p-2 italic">Sin habilidades registradas</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-[12px] font-black text-purple-400 uppercase tracking-[0.2em] px-4">Resumen de Trayectoria</h4>
+                                            <div className="p-8 bg-white/[0.03] border border-white/5 rounded-[3rem] h-full min-h-[300px]">
+                                                <textarea 
+                                                    className="w-full h-full min-h-[220px] bg-transparent text-gray-300 text-sm leading-relaxed outline-none resize-none font-medium placeholder:text-gray-700"
+                                                    placeholder="El resumen profesional del talento aparecerá aquí..."
+                                                    value={formData.cv_summary || ''}
+                                                    onChange={(e) => setFormData({...formData, cv_summary: e.target.value})}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-6">
+                                        <button onClick={handleSave} disabled={saving} className="w-full py-6 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl text-white font-black uppercase tracking-[0.3em] text-[11px] shadow-3xl hover:shadow-indigo-500/30 transition-all disabled:opacity-50">
+                                            {saving ? 'Guardando Historial...' : 'Actualizar Expediente Profesional'}
                                         </button>
                                     </div>
                                 </div>
@@ -595,14 +714,14 @@ function TabButton({ active, onClick, icon: Icon, label }) {
     return (
         <button
             onClick={onClick}
-            className={`flex items-center gap-4 px-8 py-5 rounded-2xl border transition-all duration-300 ${
+            className={`flex items-center gap-3 px-6 py-4 rounded-xl border transition-all duration-300 whitespace-nowrap ${
                 active 
-                ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/30 scale-105' 
-                : 'bg-white/5 border-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300'
+                ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg scale-105' 
+                : 'bg-white/5 border-white/5 text-gray-600 hover:bg-white/10 hover:text-gray-400'
             }`}
         >
-            <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-gray-500'}`} />
-            <span className="text-[11px] font-black uppercase tracking-[0.2em]">{label}</span>
+            <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-gray-600'}`} />
+            <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
         </button>
     );
 }
@@ -611,8 +730,8 @@ function TabButton({ active, onClick, icon: Icon, label }) {
 function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitting }) {
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/95 backdrop-blur-2xl" />
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="relative w-full max-w-xl bg-[#0A0A1F] border border-white/10 rounded-[3rem] p-10 shadow-2xl">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-indigo-950/20 backdrop-blur-xl" />
+            <motion.div initial={{ scale: 0.95, y: 30, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 30, opacity: 0 }} className="relative w-full max-w-md bg-[#0F0F1A]/90 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 shadow-3xl">
                 <h3 className="text-3xl font-black text-white uppercase italic italic mb-8">Nuevo Talento</h3>
                 <form onSubmit={onSubmit} className="space-y-6">
                     <input required className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" placeholder="Nombre" value={newMember.name} onChange={(e) => setNewMember({ ...newMember, name: e.target.value })} />
@@ -620,13 +739,23 @@ function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitti
                         <input type="email" required className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none text-sm" placeholder="Email" value={newMember.email} onChange={(e) => setNewMember({ ...newMember, email: e.target.value })} />
                         <input className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none text-sm" placeholder="WhatsApp" value={newMember.whatsapp} onChange={(e) => setNewMember({ ...newMember, whatsapp: e.target.value })} />
                     </div>
-                    <select className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none appearance-none" value={newMember.role} onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}>
-                        <option value="Editor de Video">Editor de Video</option>
-                        <option value="Community Manager">Community Manager</option>
-                        <option value="Diseñador">Diseñador</option>
-                        <option value="Filmmaker">Filmmaker</option>
-                        <option value="Programador">Programador</option>
-                    </select>
+                    <div className="grid grid-cols-2 gap-4">
+                        <select className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none appearance-none text-sm cursor-pointer" value={newMember.role} onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}>
+                            <option value="Editor de Video">Editor de Video</option>
+                            <option value="Community Manager">Community Manager</option>
+                            <option value="Diseñador">Diseñador</option>
+                            <option value="Filmmaker">Filmmaker</option>
+                            <option value="Programador">Programador</option>
+                        </select>
+                        <select className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none appearance-none text-sm cursor-pointer" value={newMember.city} onChange={(e) => setNewMember({ ...newMember, city: e.target.value })}>
+                            <option value="Quito">Quito</option>
+                            <option value="Santo Domingo">Santo Domingo</option>
+                            <option value="Guayaquil">Guayaquil</option>
+                            <option value="Cuenca">Cuenca</option>
+                            <option value="Manta">Manta</option>
+                            <option value="Remoto">Remoto</option>
+                        </select>
+                    </div>
                     <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest text-[11px] hover:bg-indigo-500 transition-all opacity-100 disabled:opacity-50">
                         {isSubmitting ? 'Registrando...' : 'Confirmar Ingreso'}
                     </button>
