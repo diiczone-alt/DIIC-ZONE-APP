@@ -8,9 +8,10 @@ export const socialService = {
      * Start OAuth flow for a specific provider
      * @param {string} provider - 'facebook', 'google', 'twitter', 'linkedin', etc.
      */
-    connect: async (provider) => {
+    connect: async (provider, redirectPath = null) => {
+        const targetPath = redirectPath || window.location.pathname;
         let options = {
-            redirectTo: window.location.origin + '/onboarding'
+            redirectTo: window.location.origin + targetPath
         };
 
         // Platform specific scopes
@@ -21,7 +22,8 @@ export const socialService = {
             options.scopes = 'public_profile,email,pages_show_list,instagram_basic,instagram_manage_insights,ads_read';
         } else if (provider === 'tiktok') {
             const clientKey = 'sbawcgte68gzlgcfeo';
-            const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback/tiktok');
+            const targetPath = redirectPath || window.location.pathname;
+            const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback/tiktok?next=' + targetPath);
             // Nota: Para TikTok Ads se requiere una App de tipo "Marketing" en su portal.
             // Por ahora mantenemos los básicos y agregamos ads.read si la app lo permite.
             const scope = 'user.info.basic,video.list'; 

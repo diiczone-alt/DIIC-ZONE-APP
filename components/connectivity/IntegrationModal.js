@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    X, ShieldCheck, Instagram, Facebook, 
+    X, ShieldCheck, Instagram, Facebook, Youtube, Video, Twitter, Linkedin,
     Zap, Lock, CheckCircle2, RefreshCw, 
     ArrowRight, AlertCircle, ExternalLink 
 } from 'lucide-react';
+import { socialService } from '@/services/socialService';
+import { toast } from 'sonner';
 
 export default function IntegrationModal({ 
     isOpen, 
@@ -19,17 +21,33 @@ export default function IntegrationModal({
 
     if (!isOpen) return null;
 
-    const handleConnectMeta = async () => {
+    const handleConnect = async () => {
         setLoading(true);
         setStep('CONNECTING');
         
-        // Simulación del flujo de Meta SDK (FB.login)
-        setTimeout(() => {
+        try {
+            toast.info(`Abriendo portal oficial de ${platform}...`);
+            await socialService.connect(platform);
+        } catch (err) {
+            console.error("Error al conectar:", err);
+            toast.error(`Error al iniciar conexión con ${platform}`);
+            setStep('CHOICE');
             setLoading(false);
-            setStep('SUCCESS');
-            if (onSuccess) onSuccess();
-        }, 2000);
+        }
     };
+
+    const getPlatformConfig = () => {
+        switch(platform) {
+            case 'facebook': return { name: 'Facebook & Instagram', icon: Facebook, color: '#1877F2', label: 'Continuar con Facebook' };
+            case 'tiktok': return { name: 'TikTok', icon: Video, color: '#000000', label: 'Conectar TikTok Business' };
+            case 'google': return { name: 'YouTube & Google', icon: Youtube, color: '#FF0000', label: 'Acceder con Google' };
+            case 'twitter': return { name: 'X / Twitter', icon: Twitter, color: '#000000', label: 'Vincular X' };
+            case 'linkedin': return { name: 'LinkedIn', icon: Linkedin, color: '#0077B5', label: 'Vincular LinkedIn' };
+            default: return { name: 'Meta Ecosystem', icon: Facebook, color: '#1877F2', label: 'Iniciar Conexión' };
+        }
+    };
+
+    const config = getPlatformConfig();
 
     return (
         <AnimatePresence>
@@ -80,14 +98,16 @@ export default function IntegrationModal({
 
                                 <div className="grid grid-cols-1 gap-4">
                                     <button 
-                                        onClick={handleConnectMeta}
-                                        className="w-full bg-[#1877F2] hover:bg-[#166fe1] text-white p-6 rounded-2xl flex items-center justify-between group transition-all"
+                                        onClick={handleConnect}
+                                        disabled={loading}
+                                        className="w-full text-white p-6 rounded-2xl flex items-center justify-between group transition-all"
+                                        style={{ backgroundColor: config.color }}
                                     >
                                         <div className="flex items-center gap-4 text-left">
-                                            <Facebook className="w-6 h-6" />
+                                            <config.icon className="w-6 h-6" />
                                             <div>
-                                                <p className="text-sm font-bold">Continuar con Facebook</p>
-                                                <p className="text-[9px] font-medium opacity-70 italic">Vincular Instagram & Ads Business</p>
+                                                <p className="text-sm font-bold">{config.label}</p>
+                                                <p className="text-[9px] font-medium opacity-70 italic">Sincronización segura de Activos & Ads</p>
                                             </div>
                                         </div>
                                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

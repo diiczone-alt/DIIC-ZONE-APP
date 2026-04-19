@@ -264,8 +264,8 @@ function DashboardContent() {
   };
 
   // Dynamic Stats calculation
-  const totalInteractions = socialMetrics?.reduce((acc, curr) => acc + (curr.total_interactions || 0), 0) || 24519;
-  const totalAudience = socialMetrics?.reduce((acc, curr) => acc + (curr.followers_count || 0), 0) || 18400;
+  const totalInteractions = socialMetrics?.reduce((acc, curr) => acc + (curr.total_interactions || 0), 0) || 0;
+  const totalAudience = socialMetrics?.reduce((acc, curr) => acc + (curr.followers_count || 0), 0) || 0;
   
   // Niche Config for guidance
   const currentNiche = clientData?.niche || 'medical';
@@ -306,11 +306,11 @@ function DashboardContent() {
     },
     { 
         title: 'Audiencia Total', 
-        value: formatValue(totalAudience), 
-        delta: '+3.2%', 
+        value: totalAudience > 0 ? formatValue(totalAudience) : '0', 
+        delta: totalAudience > 0 ? '+3.2%' : 'Pendiente', 
         icon: Users, 
         color: '#ec4899', 
-        chartData: "M 0,40 Q 40,30 70,10 T 100,5" 
+        chartData: totalAudience > 0 ? "M 0,40 Q 40,30 70,10 T 100,5" : "M 0,20 L 100,20" 
     }
   ];
 

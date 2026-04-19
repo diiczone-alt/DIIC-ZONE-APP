@@ -1,9 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Instagram, Facebook, Link as LinkIcon, CheckCircle2, RefreshCw, ShieldCheck, Zap } from 'lucide-react';
+import { 
+    Instagram, Facebook, Youtube, Twitter, 
+    Linkedin, Video, Link as LinkIcon, 
+    CheckCircle2, RefreshCw, ShieldCheck, Zap 
+} from 'lucide-react';
 import IntegrationModal from '@/components/connectivity/IntegrationModal';
+import { socialService } from '@/services/socialService';
 import { metaService } from '@/lib/metaService';
 import { useAuth } from '@/context/AuthContext';
 
@@ -14,31 +19,59 @@ export default function ConnectivityPage() {
     
     // Mock state for connected status (will be populated from real DB in prod)
     const [connections, setConnections] = useState({
-        instagram: 'CONNECTED',
-        facebook: 'CONNECTED',
+        instagram: 'PENDING',
+        facebook: 'PENDING',
+        tiktok: 'PENDING',
+        youtube: 'PENDING',
+        twitter: 'PENDING',
+        linkedin: 'PENDING',
         whatsapp: 'PENDING'
     });
 
+    useEffect(() => {
+        const syncConnections = async () => {
+            try {
+                const linkedProviders = await socialService.getLinkedAccounts();
+                const newConnections = { ...connections };
+                
+                if (linkedProviders.includes('facebook')) {
+                    newConnections.facebook = 'CONNECTED';
+                    newConnections.instagram = 'CONNECTED';
+                }
+                if (linkedProviders.includes('google')) newConnections.youtube = 'CONNECTED';
+                if (linkedProviders.includes('tiktok')) newConnections.tiktok = 'CONNECTED';
+                if (linkedProviders.includes('twitter')) newConnections.twitter = 'CONNECTED';
+                if (linkedProviders.includes('linkedin')) newConnections.linkedin = 'CONNECTED';
+                
+                setConnections(newConnections);
+            } catch (err) {
+                console.error("[Connectivity] Sync failed:", err);
+            }
+        };
+        syncConnections();
+    }, [user]);
+
     const platforms = [
-        { id: 'instagram', name: 'Instagram Professional', icon: Instagram, status: connections.instagram, handle: '@dra.jessica_reyes', color: '#E1306C' },
-        { id: 'facebook', name: 'Facebook Business', icon: Facebook, status: connections.facebook, handle: 'Nova Estética Clínica', color: '#1877F2' },
-        { id: 'whatsapp', name: 'WhatsApp API', icon: Zap, status: connections.whatsapp, handle: connections.whatsapp === 'CONNECTED' ? '+593 XXXXXXX' : 'Vinculación en curso...', color: '#25D366' },
+        { id: 'instagram', name: 'Instagram Professional', icon: Instagram, status: connections.instagram, handle: '@dra.jessica_reyes', color: '#E1306C', provider: 'facebook' },
+        { id: 'facebook', name: 'Facebook Business', icon: Facebook, status: connections.facebook, handle: 'Nova Estética Clínica', color: '#1877F2', provider: 'facebook' },
+        { id: 'tiktok', name: 'TikTok Professional', icon: Video, status: connections.tiktok, handle: 'Dra. Jessica Reyes', color: '#00F2EA', provider: 'tiktok' },
+        { id: 'youtube', name: 'YouTube Channel', icon: Youtube, status: connections.youtube, handle: 'DIIC HEALTH Academy', color: '#FF0000', provider: 'google' },
+        { id: 'twitter', name: 'X / Twitter', icon: Twitter, status: connections.twitter, handle: 'jessicareyes_md', color: '#ffffff', provider: 'twitter' },
+        { id: 'linkedin', name: 'LinkedIn Professional', icon: Linkedin, status: connections.linkedin, handle: 'Dra. Jessica Reyes Reyes', color: '#0077B5', provider: 'linkedin' },
+        { id: 'whatsapp', name: 'WhatsApp API', icon: Zap, status: connections.whatsapp, handle: connections.whatsapp === 'CONNECTED' ? '+593 XXXXXXX' : 'Vinculación en curso...', color: '#25D366', provider: 'whatsapp' },
     ];
 
     const handleConfigure = (p) => {
-        setSelectedPlatform(p.id === 'whatsapp' ? 'whatsapp' : 'meta');
+        setSelectedPlatform(p.provider);
         setIsModalOpen(true);
     };
 
     const handleIntegrationSuccess = async () => {
-        // En un flujo real aquí capturaríamos el authResponse del SDK
-        const mockAuthResponse = { userID: '12345', accessToken: 'real_token_demo_123', expiresIn: 3600 };
-        
-        if (selectedPlatform === 'meta') {
-            await metaService.saveConnection(user.id, 'META', mockAuthResponse);
-            setConnections(prev => ({ ...prev, instagram: 'CONNECTED', facebook: 'CONNECTED' }));
-        } else {
-            setConnections(prev => ({ ...prev, whatsapp: 'CONNECTED' }));
+        // Al usar socialService real, esta función será llamada tras el redirect exitoso.
+        // Para el modal, simplemente refrescamos para mostrar el éxito visual.
+        const linkedProviders = await socialService.getLinkedAccounts();
+        if (linkedProviders.includes(selectedPlatform)) {
+             setConnections(prev => ({ ...prev, [selectedPlatform]: 'CONNECTED' }));
         }
     };
 
