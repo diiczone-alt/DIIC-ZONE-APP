@@ -1,201 +1,147 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { 
-    Users, Target, Zap, Clock, 
-    MessageSquare, Phone, Mail, 
-    ChevronRight, Filter, Plus,
-    Search, AlertCircle, TrendingUp,
-    Calendar, CheckCircle2
+    Users, Search, Filter, MoreHorizontal, 
+    Instagram, Facebook, Zap, TrendingUp,
+    Target, UserPlus, Phone, Mail
 } from 'lucide-react';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
-export default function DashboardCRMPage() {
-    const [activeTab, setActiveTab] = useState('pipeline');
+export default function CRMPage() {
+    const { user } = useAuth();
+    const [leads, setLeads] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const pipelineStages = [
-        { id: 'lead', name: 'Nuevo Lead', count: 3, color: 'blue' },
-        { id: 'interested', name: 'Interesado', count: 2, color: 'purple' },
-        { id: 'proposal', name: 'Propuesta', count: 1, color: 'amber' },
-        { id: 'closed', name: 'Cerrado', count: 12, color: 'emerald' },
-    ];
-
-    const leads = [
-        { 
-            id: 'l1', 
-            name: 'Carlos Mendoza', 
-            company: 'Mendoza Logistics', 
-            stage: 'lead', 
-            time: '2h ago',
-            score: 85,
-            lastAction: 'Registro Web',
-            needsFollowup: true
-        },
-        { 
-            id: 'l2', 
-            name: 'Dra. Ana Rivas', 
-            company: 'Clínica Dental Rivas', 
-            stage: 'interested', 
-            time: '1d ago',
-            score: 92,
-            lastAction: 'Descargó Guía Estratégica',
-            needsFollowup: true
-        },
-        { 
-            id: 'l3', 
-            name: 'Roberto Gómez', 
-            company: 'FitCenter', 
-            stage: 'proposal', 
-            time: '3d ago',
-            score: 70,
-            lastAction: 'Propuesta Enviada',
-            needsFollowup: false
+    useEffect(() => {
+        async function loadLeads() {
+            setLoading(true);
+            try {
+                const { MOCK_DATA } = require('@/lib/mockData');
+                // En un entorno real esto vendría de Supabase
+                setLeads(MOCK_DATA.crm_leads.filter(l => l.user_id === 'jessica_user_id'));
+            } catch (err) {
+                console.error('Error loading leads:', err);
+            } finally {
+                setLoading(false);
+            }
         }
-    ];
+        loadLeads();
+    }, [user]);
 
     return (
-        <div className="flex-1 overflow-y-auto p-10 bg-[#050511]">
-            <header className="mb-10 flex justify-between items-end">
-                <div>
-                    <h1 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter italic">CRM Inteligente</h1>
-                    <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px] tracking-[0.2em]">Crecimiento Digital & Seguimiento IA</p>
+        <main className="min-h-screen bg-[#050510] text-white p-8 md:p-16 space-y-12">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 border-b border-white/5 pb-10">
+                <div className="space-y-3">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                            <Users className="w-6 h-6" />
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">CRM Inteligente</h1>
+                    </div>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Gestionando {leads.length} Pacientes Potenciales</p>
                 </div>
-                
+
                 <div className="flex gap-4">
                     <div className="relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                         <input 
                             type="text" 
-                            placeholder="Buscar contacto..." 
-                            className="h-12 pl-12 pr-6 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-indigo-500 transition-all w-64"
+                            placeholder="Buscar paciente..."
+                            className="bg-white/5 border border-white/10 rounded-xl pl-12 pr-6 py-4 text-sm font-bold focus:border-indigo-500 outline-none w-64 transition-all"
                         />
                     </div>
-                    <button className="h-12 px-6 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-xl flex items-center gap-2 text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-indigo-600/20">
-                        <Plus className="w-4 h-4" /> Nuevo Lead
+                    <button className="p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
+                        <Filter className="w-5 h-5 text-gray-400" />
+                    </button>
+                    <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+                        <UserPlus className="w-4 h-4" /> Nuevo Paciente
                     </button>
                 </div>
-            </header>
+            </div>
 
-            {/* Pipeline Visualizer */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-                {pipelineStages.map((stage) => (
-                    <div key={stage.id} className="bg-[#0A0A12] border border-white/5 rounded-3xl p-6 relative overflow-hidden group">
-                        <div className={`absolute top-0 left-0 w-1 h-full ${
-                            stage.color === 'blue' ? 'bg-blue-500/50' :
-                            stage.color === 'purple' ? 'bg-purple-500/50' :
-                            stage.color === 'amber' ? 'bg-amber-500/50' :
-                            'bg-emerald-500/50'
-                        }`} />
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{stage.name}</h3>
-                            <span className={`text-xl font-black text-white`}>{stage.count}</span>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                    { label: 'Leads Nuevos', val: '24', icon: Zap, color: '#f59e0b' },
+                    { label: 'En Calificación', val: '12', icon: Target, color: '#10b981' },
+                    { label: 'Citas Próximas', val: '8', icon: TrendingUp, color: '#6366f1' },
+                    { label: 'Facturación Est.', val: '$12,400', icon: TrendingUp, color: '#ec4899' },
+                ].map((s, i) => (
+                    <div key={i} className="bg-white/[0.03] border border-white/10 p-6 rounded-[2rem] flex items-center gap-5">
+                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${s.color}10`, color: s.color, border: `1px solid ${s.color}20` }}>
+                            <s.icon className="w-6 h-6" />
                         </div>
-                        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                            <div className={`h-full ${
-                                stage.color === 'blue' ? 'bg-blue-500' :
-                                stage.color === 'purple' ? 'bg-purple-500' :
-                                stage.color === 'amber' ? 'bg-amber-500' :
-                                'bg-emerald-500'
-                            }`} style={{ width: `${(stage.count / 20) * 100}%` }} />
+                        <div>
+                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{s.label}</p>
+                            <p className="text-xl font-black text-white italic">{s.val}</p>
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Leads List */}
-                <div className="lg:col-span-2 space-y-4">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-black text-white uppercase tracking-tighter italic">Leads Activos</h2>
-                        <div className="flex gap-2">
-                            <button className="p-2 rounded-lg bg-white/5 text-gray-500 hover:text-white transition-all">
-                                <Filter className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {leads.map((lead) => (
-                        <motion.div 
-                            key={lead.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-[#0A0A12] border border-white/5 rounded-[2rem] p-6 hover:border-white/10 transition-all group flex items-center justify-between"
-                        >
-                            <div className="flex items-center gap-6">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center text-indigo-400 font-black text-lg border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
-                                    {lead.name.split(' ').map(n => n[0]).join('')}
-                                </div>
-                                <div>
-                                    <h4 className="text-base font-black text-white uppercase tracking-tight mb-1">{lead.name}</h4>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">{lead.company}</span>
-                                        <div className="w-1 h-1 rounded-full bg-gray-800" />
-                                        <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">{lead.lastAction}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-10">
-                                <div className="text-center">
-                                    <div className="text-[10px] font-black text-white mb-1">{lead.score}%</div>
-                                    <div className="text-[7px] font-bold text-gray-700 uppercase tracking-widest">IA Score</div>
-                                </div>
-                                
-                                <div className="flex gap-2">
-                                    <button className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
-                                        <MessageSquare className="w-4 h-4" />
-                                    </button>
-                                    <button className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
-                                        <Phone className="w-4 h-4" />
-                                    </button>
-                                    {lead.needsFollowup && (
-                                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/10 animate-pulse">
-                                            <AlertCircle className="w-4 h-4" />
+            {/* Leads Table */}
+            <div className="bg-white/[0.03] border border-white/10 rounded-[2.5rem] overflow-hidden">
+                <table className="w-full text-left">
+                    <thead>
+                        <tr className="border-b border-white/5">
+                            <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Paciente</th>
+                            <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Fuente</th>
+                            <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Tratamiento</th>
+                            <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Estado</th>
+                            <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                        {leads.map((lead, i) => (
+                            <motion.tr 
+                                key={i} 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: i * 0.05 }}
+                                className="hover:bg-white/[0.02] transition-colors"
+                            >
+                                <td className="px-8 py-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-black text-xs">
+                                            {lead.full_name?.charAt(0)}
                                         </div>
-                                    )}
-                                </div>
-                                
-                                <button className="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center hover:bg-indigo-500 hover:text-white transition-all">
-                                    <ChevronRight className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
-
-                {/* AI Intelligence Panel */}
-                <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="relative z-10 h-full flex flex-col">
-                        <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-8 shadow-xl">
-                            <Zap className="w-6 h-6 text-white" />
-                        </div>
-                        
-                        <h2 className="text-2xl font-black uppercase tracking-tighter italic mb-4">Cerebro de Cierre</h2>
-                        <p className="text-indigo-100 text-xs font-medium opacity-80 mb-8 leading-relaxed">
-                            Detecto que 3 clientes están listos para renovar su plan este mes basándome en su engagement actual.
-                        </p>
-
-                        <div className="space-y-4 flex-1">
-                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                                <h5 className="text-[9px] font-black uppercase tracking-widest mb-1">Próxima Venta Sugerida</h5>
-                                <p className="text-[10px] font-bold opacity-90">Upgrade "Plan Autoridad" para Hospital Nova.</p>
-                            </div>
-                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                                <h5 className="text-[9px] font-black uppercase tracking-widest mb-1">Alerta de Inactividad</h5>
-                                <p className="text-[10px] font-bold opacity-90">Ana Rivas no responde hace 3 días. Enviar oferta recordatorio.</p>
-                            </div>
-                        </div>
-
-                        <button className="w-full mt-10 h-14 bg-white text-indigo-600 font-black rounded-2xl hover:bg-indigo-50 transition-all uppercase text-[10px] tracking-widest shadow-2xl">
-                            Ejecutar Seguimiento IA
-                        </button>
-                    </div>
-
-                    {/* Decorative elements */}
-                    <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-                    <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-                </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-white">{lead.full_name}</p>
+                                            <p className="text-[10px] text-gray-500 font-medium">{lead.email || 'Sin email'}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-8 py-6 text-gray-400 italic">
+                                   <div className="flex items-center gap-2">
+                                       {lead.source === 'INSTAGRAM' ? <Instagram className="w-3 h-3 text-pink-500" /> : <Zap className="w-3 h-3 text-emerald-500" />}
+                                       <span className="text-[10px] font-black uppercase tracking-widest">{lead.source}</span>
+                                   </div>
+                                </td>
+                                <td className="px-8 py-6">
+                                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{lead.campaign_id ? 'Anuncio' : 'Orgánico'}</span>
+                                </td>
+                                <td className="px-8 py-6">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        <span className="text-[10px] font-black text-white uppercase tracking-widest italic">{lead.status}</span>
+                                    </div>
+                                </td>
+                                <td className="px-8 py-6 text-right">
+                                    <div className="flex items-center justify-end gap-4">
+                                        <button className="p-2 text-gray-600 hover:text-white transition-colors"><Phone className="w-4 h-4" /></button>
+                                        <button className="p-2 text-gray-600 hover:text-white transition-colors"><Mail className="w-4 h-4" /></button>
+                                        <button className="p-2 text-gray-600 hover:text-white transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
+                                    </div>
+                                </td>
+                            </motion.tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
-        </div>
+        </main>
     );
 }

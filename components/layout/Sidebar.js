@@ -42,7 +42,7 @@ const ACCORDION_GROUPS = [
             { name: 'Planes y Crecimiento', icon: Rocket, href: '/dashboard/growth', color: 'text-cyan-400', special: true },
             { name: 'CRM Inteligente', icon: Users, href: '/dashboard/crm', color: 'text-indigo-400' },
             { name: 'Conectividad & Auto.', icon: Share2, href: '/dashboard/connectivity' },
-            { name: 'Ventas & IA', icon: Zap, href: '/dashboard/sales' },
+            { name: 'Ventas & IA', icon: Zap, href: '/dashboard/intelligence' },
             { name: 'Tienda Online', icon: ShoppingBag, href: '/dashboard/store' },
             { name: 'Analíticas', icon: BarChart3, href: '/dashboard/analytics' },
             { name: 'Finanzas', icon: CreditCard, href: '/dashboard/finance' },

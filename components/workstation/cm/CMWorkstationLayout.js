@@ -268,15 +268,18 @@ export default function CMWorkstationLayout() {
                             )}
                         </button>
 
-                        <div className="flex items-center gap-3 pl-6 border-l border-white/5">
+                        <button 
+                            onClick={() => setActiveTab('profile')}
+                            className="flex items-center gap-3 pl-6 border-l border-white/5 hover:bg-white/5 transition-all group"
+                        >
                             <div className="text-right hidden sm:block">
                                 <p className="text-[10px] font-black text-white uppercase tracking-tight leading-none mb-1">{user?.full_name || 'Leslie'}</p>
                                 <p className="text-[8px] font-bold text-cyan-400 uppercase tracking-widest leading-none opacity-60">Lead Estratega</p>
                             </div>
-                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-cyan-500/20">
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
                                 {user?.full_name?.charAt(0) || 'L'}
                             </div>
-                        </div>
+                        </button>
                     </div>
                 </header>
 
@@ -306,6 +309,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         if (tab === 'growth') return <CMGrowth />;
         if (tab === 'tasks') return <GlobalTasksView tasks={globalTasks} loading={loadingTasks} onSelectClient={(c) => { setSelectedClient(c); setActiveTab('dashboard'); }} />;
         if (tab === 'notifications') return <NotificationsView notifications={notifications} loading={loadingNotifications} onMarkAsRead={handleMarkAsRead} />;
+        if (tab === 'profile') return <CMProfileView user={user} />;
         
         return (
             <CMSettingsClients 
@@ -331,6 +335,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'creative': return <CreativeStudio isSubcomponent={true} />;
         case 'team': return <TeamView client={selectedClient} tasks={clientTasks} squad={squad} />;
         case 'reports': return <CMReports client={selectedClient} />;
+        case 'profile': return <CMProfileView user={user} />;
         case 'academy': return <CMAcademy />;
         case 'growth': return <CMGrowth />;
         default: return <CMDashboard client={selectedClient} />;
@@ -2899,6 +2904,50 @@ function NotificationsView({ notifications, loading, onMarkAsRead }) {
         </div>
     );
 }
+function CMProfileView({ user }) {
+    return (
+        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
+            <div className="bg-gradient-to-br from-[#0E0E18] to-[#050511] border border-white/5 rounded-[3rem] p-12 relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-600/10 blur-[100px] rounded-full" />
+                
+                <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
+                    <div className="w-32 h-32 rounded-[2.5rem] bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white text-5xl font-black shadow-2xl shadow-cyan-500/20">
+                        {user?.full_name?.charAt(0) || "R"}
+                    </div>
+                    <div className="text-center md:text-left">
+                        <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-2">{user?.full_name || "Reyshell"}</h2>
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                            <span className="px-4 py-1 bg-cyan-600/10 border border-cyan-500/20 text-cyan-400 rounded-full text-[10px] font-black uppercase tracking-widest">Lead Estratega</span>
+                            <span className="px-4 py-1 bg-white/5 border border-white/5 text-gray-500 rounded-full text-[10px] font-black uppercase tracking-widest">DIIC Zone HQ</span>
+                        </div>
+                    </div>
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
+                    <div className="bg-white/5 border border-white/5 p-6 rounded-3xl">
+                        <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Ecosistemas</p>
+                        <h4 className="text-2xl font-black text-white italic tracking-tighter">14 ACTIVOS</h4>
+                    </div>
+                    <div className="bg-white/5 border border-white/5 p-6 rounded-3xl">
+                        <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Rendimiento</p>
+                        <h4 className="text-2xl font-black text-emerald-400 italic tracking-tighter">98.4% SCORE</h4>
+                    </div>
+                    <div className="bg-white/5 border border-white/5 p-6 rounded-3xl">
+                        <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Sincronización</p>
+                        <h4 className="text-2xl font-black text-cyan-400 italic tracking-tighter">NIVEL ÉLITE</h4>
+                    </div>
+                </div>
+            </div>
 
-
+            <div className="bg-[#0E0E18] border border-white/5 rounded-[3rem] p-10">
+                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-8 flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
+                    Configuración de Operaciones
+                </h3>
+                <div className="space-y-4">
+                    <p className="text-gray-500 text-sm font-medium italic">Próximamente: Personalización de notificaciones y temas de workstation.</p>
+                </div>
+            </div>
+        </div>
+    );
+}

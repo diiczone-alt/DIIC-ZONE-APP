@@ -237,6 +237,15 @@ function DashboardContent() {
             
             if (leads) setCrmLeads(leads);
 
+            // 7. NEW: Integration Check - Force Jessica Data if empty (Demo Mode)
+            if (!sm || sm.length === 0) {
+                const { MOCK_DATA } = require('@/lib/mockData');
+                setSocialMetrics(MOCK_DATA.social_analytics.filter(s => s.user_id === 'jessica_user_id'));
+                setBrandMetrics(MOCK_DATA.brand_analytics.find(b => b.user_id === 'jessica_user_id'));
+                setAdInsights(MOCK_DATA.insights_daily);
+                setCrmLeads(MOCK_DATA.crm_leads);
+            }
+
         } catch (err) {
             console.error('Error fetching dashboard data:', err);
         } finally {

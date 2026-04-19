@@ -18,13 +18,23 @@ export default function ActionProtocol({
 
     // Inicializar tareas con estado local (demo)
     useEffect(() => {
-        const initialTasks = protocols[level]?.map(t => ({
-            ...t,
-            completed: false,
-            completedBy: null,
-            completedAt: null
-        })) || [];
-        setTasks(initialTasks);
+        if (!protocols || !protocols[level]) return;
+
+        setTasks(prev => {
+            // Solo actualizar si la longitud es diferente o el nivel cambió
+            const newTasks = protocols[level].map(t => ({
+                ...t,
+                completed: false,
+                completedBy: null,
+                completedAt: null
+            }));
+            
+            // Si ya tenemos tareas y son del mismo nivel (por longitud), no sobreescribir para evitar loop
+            if (prev.length === newTasks.length && prev[0]?.id === newTasks[0]?.id) {
+                return prev;
+            }
+            return newTasks;
+        });
     }, [protocols, level]);
 
     useEffect(() => {
