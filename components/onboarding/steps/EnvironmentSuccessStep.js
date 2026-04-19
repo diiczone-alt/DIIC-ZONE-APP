@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { onboardingService } from '@/services/onboardingService';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { driveService } from '@/services/driveService';
 import { toast } from 'sonner';
 
 export default function EnvironmentSuccessStep({ onNext, formData }) {
@@ -35,6 +36,7 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
     const [isAlreadyMember, setIsAlreadyMember] = useState(false);
     const isMounted = useRef(true);
     const retryTimeoutRef = useRef(null);
+    const hasExecuted = useRef(false);
 
     useEffect(() => {
         isMounted.current = true;
@@ -97,6 +99,43 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                     }
                 }
                 
+                // 2. Google Drive Ecosystem Setup (Final Phase)
+                const backupToken = localStorage.getItem('diic_google_token');
+                const providerToken = session?.provider_token || backupToken;
+
+                if (providerToken && isMounted.current) {
+                    try {
+                        setLogs(prev => [...prev, 'Sincronizando con Google Drive...']);
+                        const brandName = formData.brand || activeUser?.user_metadata?.brand || 'Mi Marca';
+                        
+                        const driveResult = await driveService.automatedSetup(providerToken, brandName);
+                        
+                        // Discover folders visually
+                        for (const folder of driveResult.subfolders) {
+                            if (!isMounted.current) break;
+                            setLogs(prev => [...prev, `Activando nodo: ${folder.name}...`]);
+                            await new Promise(r => setTimeout(r, 400));
+                        }
+                        
+                        if (isMounted.current) {
+                            setLogs(prev => [...prev, 'Ecosistema Cloud activado correctamente.']);
+                            
+                            // Important: Persist the drive root link in the profile
+                            await supabase.from('profiles').update({
+                                drive_root_link: driveResult.rootLink,
+                                drive_root_id: driveResult.rootId
+                            }).eq('id', activeUser.id);
+
+                            // Clean up backup token
+                            localStorage.removeItem('diic_google_token');
+                            localStorage.removeItem('diic_waiting_oauth');
+                        }
+                    } catch (driveErr) {
+                        console.error('Drive Finalization failed:', driveErr);
+                        if (isMounted.current) setLogs(prev => [...prev, 'Aviso: La sincronización de Drive se completará en segundo plano.']);
+                    }
+                }
+
                 await new Promise(r => setTimeout(r, 1200));
                 
                 if (isMounted.current) {

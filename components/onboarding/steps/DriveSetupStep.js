@@ -8,12 +8,13 @@ import { Loader2, Folder, CheckCircle, HardDrive, AlertCircle, Cloud } from 'luc
 import { toast } from 'sonner';
 
 export default function DriveSetupStep({ onNext, updateData, data }) {
-    const { session } = useAuth();
+    const { session, loading } = useAuth();
     const [status, setStatus] = useState('initializing'); // initializing, idle, connecting, creating, complete, error
     const [folders, setFolders] = useState([]);
     const [currentAction, setCurrentAction] = useState('Verificando estado de sincronización...');
     const [error, setError] = useState(null);
     const [showBypass, setShowBypass] = useState(false);
+    const [showRescue, setShowRescue] = useState(false);
 
     const [selectedCloud, setSelectedCloud] = useState('google');
 
@@ -51,14 +52,45 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
     const providerToken = session?.provider_token;
 
     useEffect(() => {
-        // ... (existing logic remains same)
-        if ((data.driveData?.drive?.rootId || data.driveData?.rootId) && status === 'initializing') {
+        // --- SENSOR DE CAPTURA RELÁMPAGO (BAJO NIVEL) ---
+        const scanForToken = () => {
+            try {
+                const hash = window.location.hash;
+                if (hash && hash.includes('provider_token')) {
+                    const params = new URLSearchParams(hash.substring(1));
+                    const token = params.get('provider_token');
+                    if (token) {
+                        console.log('[DriveSetupStep] ¡Llave detectada en URL! Captura directa exitosa.');
+                        localStorage.setItem('diic_google_token', token);
+                        
+                        // Limpiar URL para seguridad
+                        window.history.replaceState(null, null, window.location.pathname);
+                        onNext();
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.warn('Error en sensor de URL:', e);
+            }
+            return false;
+        };
+
+        if (scanForToken()) return;
+
+        if (loading) return; // Esperar a que la sesión se hidrate
+
+        // Si ya tenemos datos de drive o el token, avanzamos al FINAL (Paso 15)
+        if (data.driveData || providerToken) {
+            console.log('[DriveSetupStep] Conexión verificada. Procediendo al cierre del ecosistema...');
             onNext();
             return;
         }
 
-        if (providerToken && (status === 'initializing' || status === 'idle')) {
-            handleAutomatedSetup(providerToken);
+        // Si recordamos que estábamos esperando (vuelta de OAuth)
+        const waitingForGoogle = localStorage.getItem('diic_waiting_oauth') === 'true';
+        if (waitingForGoogle && !providerToken && status === 'initializing') {
+            setStatus('connecting');
+            setCurrentAction('Validando acceso con Google Drive...');
             return;
         }
 
@@ -66,14 +98,34 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
             const timer = setTimeout(() => {
                 setStatus('idle');
                 setCurrentAction('');
-            }, 3000);
+            }, 4000); 
             return () => clearTimeout(timer);
         }
 
-        const bypassTimer = setTimeout(() => setShowBypass(true), 3000);
+        // Aumentar la paciencia del bypass
+        const bypassTimer = setTimeout(() => {
+            if (status !== 'creating' && status !== 'complete') {
+                setShowBypass(true);
+            }
+        }, 30000);
         return () => clearTimeout(bypassTimer);
 
-    }, [providerToken, data.driveData, status]);
+    }, [providerToken, data.driveData, status, loading]);
+
+    // Timer de Rescate Independiente (Para evitar reseteos por render)
+    useEffect(() => {
+        let rescueTimer;
+        if (status === 'connecting' && !providerToken) {
+            rescueTimer = setTimeout(() => {
+                setShowRescue(true);
+            }, 4000);
+        } else {
+            setShowRescue(false);
+        }
+        return () => {
+            if (rescueTimer) clearTimeout(rescueTimer);
+        };
+    }, [status, providerToken]);
 
     const handleConnectClick = async () => {
         if (selectedCloud === 'google') {
@@ -86,57 +138,12 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
                 setStatus('error');
             }
         } else {
-            // Simulated activation for other clouds
             toast.info(`Iniciando protocolo de enlace con ${selectedCloud.toUpperCase()}...`);
             setStatus('connecting');
             setTimeout(() => {
                 toast.success(`Conexión con ${selectedCloud.toUpperCase()} establecida (Modo Demo).`);
-                setStatus('complete');
-                setTimeout(onNext, 2000);
+                onNext();
             }, 2000);
-        }
-    };
-
-    const handleAutomatedSetup = async (token) => {
-        setStatus('creating');
-        setCurrentAction('Inicializando arquitectura de carpetas...');
-        
-        try {
-            const brandName = data.brand || session?.user?.user_metadata?.brand || 'Mi Marca';
-            toast.info(`Configurando ecosistema para: ${brandName}`);
-            const result = await driveService.automatedSetup(token, brandName);
-            const standardSubfolders = result.subfolders;
-            const discovered = [];
-            
-            for (const folder of standardSubfolders) {
-                setCurrentAction(`Sincronizando: ${folder.name}...`);
-                discovered.push({
-                    id: folder.id,
-                    name: folder.name,
-                    icon: driveService.StandardStructure.find(s => s.name === folder.name)?.icon || '📂'
-                });
-                setFolders([...discovered]);
-                await new Promise(r => setTimeout(r, 400));
-            }
-
-            updateData({ 
-                drive: { 
-                    rootId: result.rootId, 
-                    rootLink: result.rootLink,
-                    setupAt: new Date().toISOString() 
-                } 
-            });
-
-            setStatus('complete');
-            setCurrentAction('¡Ecosistema Cloud listo!');
-            toast.success('Google Drive configurado con éxito.');
-            setTimeout(onNext, 2000);
-
-        } catch (err) {
-            console.error('Drive Setup Error:', err);
-            setError(err.message);
-            setStatus('error');
-            toast.error('Error al configurar Drive: ' + err.message);
         }
     };
 
@@ -154,8 +161,7 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
                     </span>
                     <h2 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter text-white leading-none">
                         {status === 'idle' && <>Cloud <span className="text-indigo-500">Sync</span></>}
-                        {status === 'creating' && <>Arquitectura <span className="text-indigo-500">Activa</span></>}
-                        {status === 'complete' && <>Sistema <span className="text-emerald-500">Listo</span></>}
+                        {status === 'connecting' && <>Conectando <span className="text-indigo-500">Cloud</span></>}
                         {status === 'error' && <>Error de <span className="text-red-500">Protocolo</span></>}
                     </h2>
                 </motion.div>
@@ -173,7 +179,6 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
 
             {status === 'idle' && !providerToken ? (
                 <div className="w-full space-y-10">
-                    {/* Multi-Cloud Grid Selector */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full px-4 max-w-4xl mx-auto">
                         {clouds.map((cloud) => (
                             <motion.button
@@ -205,7 +210,6 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
                         ))}
                     </div>
 
-                    {/* Action Button */}
                     <div className="w-full max-w-sm mx-auto space-y-6">
                         <motion.button
                             whileHover={{ scale: 1.02, y: -2 }}
@@ -215,7 +219,7 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-gradient-x opacity-40 group-hover:opacity-100 transition-opacity" />
                             <div className="relative bg-[#0A0A12]/90 backdrop-blur-xl rounded-[1.9rem] flex items-center justify-center gap-4 py-5 px-10 text-white font-black text-lg uppercase tracking-[0.2em] border border-white/5 group-hover:bg-indigo-500/10 transition-colors">
-                                <span>GENERAR <span className="text-indigo-400">ECOSISTEMA</span></span>
+                                <span>CONECTAR <span className="text-indigo-400">CLOUD</span></span>
                             </div>
                         </motion.button>
 
@@ -233,31 +237,18 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
                     </div>
                 </div>
             ) : (
-                /* Progress / Connection UI */
                 <div className="w-full flex flex-col items-center gap-12">
                      <div className="relative group">
                         <div className="absolute inset-0 bg-indigo-500/10 blur-[100px] rounded-full opacity-50" />
-                        <div className={`w-40 h-40 rounded-[3.5rem] flex items-center justify-center transition-all duration-1000 relative z-10 border ${
-                            status === 'complete' ? 'bg-emerald-500/5 border-emerald-500/30 text-emerald-500 shadow-[0_0_60px_rgba(16,185,129,0.2)]' : 
-                            status === 'error' ? 'bg-red-500/5 border-red-500/30 text-red-500' :
-                            'bg-white/[0.03] border-white/10 text-white'
-                        }`}>
-                            {status === 'connecting' || status === 'creating' ? (
-                                <div className="relative">
-                                    <Loader2 className="w-20 h-20 animate-spin opacity-20" />
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-                                            <HardDrive className="w-10 h-10 text-indigo-500" />
-                                        </motion.div>
-                                    </div>
+                        <div className={`w-40 h-40 rounded-[3.5rem] flex items-center justify-center transition-all duration-1000 relative z-10 border bg-white/[0.03] border-white/10 text-white`}>
+                            <div className="relative">
+                                <Loader2 className="w-20 h-20 animate-spin opacity-20" />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+                                        <HardDrive className="w-10 h-10 text-indigo-500" />
+                                    </motion.div>
                                 </div>
-                            ) : status === 'complete' ? (
-                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
-                                    <CheckCircle className="w-24 h-24" />
-                                </motion.div>
-                            ) : (
-                                <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
-                            )}
+                            </div>
                         </div>
                     </div>
 
@@ -265,33 +256,28 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
                         <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden p-[1px] border border-white/5">
                             <motion.div 
                                 initial={{ width: 0 }}
-                                animate={{ width: status === 'complete' ? '100%' : '60%' }}
-                                className={`h-full rounded-full relative ${status === 'complete' ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                                animate={{ width: '60%' }}
+                                className="h-full rounded-full relative bg-indigo-500"
                             />
                         </div>
                         <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block font-mono">
-                            STATUS: {status.toUpperCase()}
+                            VERIFICANDO ACCESO CON GOOGLE...
                         </span>
                     </div>
 
-                    {/* Folder Discovery */}
-                    {(status === 'creating' || status === 'complete') && (
-                        <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 px-6">
-                            <AnimatePresence>
-                                {folders.map((folder, i) => (
-                                    <motion.div
-                                        key={folder.id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: i * 0.1 }}
-                                        className="bg-white/5 border border-white/5 p-4 rounded-3xl flex flex-col items-center gap-3 backdrop-blur-3xl"
-                                    >
-                                        <span className="text-3xl">{folder.icon}</span>
-                                        <span className="text-[10px] font-black text-white/80 uppercase truncate w-full px-2">{folder.name}</span>
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </div>
+                    {showRescue && (
+                        <motion.button
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            onClick={() => {
+                                setShowRescue(false);
+                                handleConnectClick();
+                            }}
+                            className="px-6 py-3 bg-red-500/20 border border-red-500/30 rounded-2xl text-[10px] font-black text-red-400 hover:bg-red-500 hover:text-white transition-all uppercase tracking-widest flex items-center gap-2"
+                        >
+                            <AlertCircle className="w-4 h-4" />
+                            ¿Tarda mucho? Reintentar Verificación
+                        </motion.button>
                     )}
                 </div>
             )}

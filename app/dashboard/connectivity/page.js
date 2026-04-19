@@ -10,6 +10,7 @@ import {
 import IntegrationModal from '@/components/connectivity/IntegrationModal';
 import { socialService } from '@/services/socialService';
 import { metaService } from '@/lib/metaService';
+import { aiService } from '@/lib/aiService';
 import { useAuth } from '@/context/AuthContext';
 
 export default function ConnectivityPage() {
@@ -27,6 +28,9 @@ export default function ConnectivityPage() {
         linkedin: 'PENDING',
         whatsapp: 'PENDING'
     });
+
+    const [isLearning, setIsLearning] = useState(false);
+    const [aiBrainData, setAiBrainData] = useState(null);
 
     useEffect(() => {
         const syncConnections = async () => {
@@ -68,10 +72,23 @@ export default function ConnectivityPage() {
 
     const handleIntegrationSuccess = async () => {
         // Al usar socialService real, esta función será llamada tras el redirect exitoso.
-        // Para el modal, simplemente refrescamos para mostrar el éxito visual.
         const linkedProviders = await socialService.getLinkedAccounts();
         if (linkedProviders.includes(selectedPlatform)) {
              setConnections(prev => ({ ...prev, [selectedPlatform]: 'CONNECTED' }));
+             
+             // Disparar Sincronización de Identidad e Inteligencia
+             setIsLearning(true);
+             try {
+                const brandData = await metaService.syncBrandIdentity(user.id);
+                if (brandData) {
+                    await aiService.trainFromSocialContent(user.id, brandData);
+                    setAiBrainData(brandData);
+                }
+             } catch (err) {
+                 console.error("AI Training failed:", err);
+             } finally {
+                 setIsLearning(false);
+             }
         }
     };
 
@@ -101,6 +118,51 @@ export default function ConnectivityPage() {
                     <RefreshCw className="w-4 h-4" /> Forzar Sincronización
                 </button>
             </div>
+
+            {/* IA Learning Status - Se muestra cuando la IA está analizando las redes */}
+            { (isLearning || aiBrainData) && (
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-12 p-8 rounded-[3rem] bg-indigo-600/5 border border-indigo-500/20 backdrop-blur-xl relative overflow-hidden"
+                >
+                    <div className="absolute top-0 right-0 p-4">
+                        <Zap className={`w-8 h-8 ${isLearning ? 'text-indigo-500 animate-pulse' : 'text-indigo-400 opacity-50'}`} />
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row items-center gap-10">
+                        <div className="flex-1 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${isLearning ? 'bg-indigo-500 text-white animate-pulse' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                    {isLearning ? 'Sincronizando Identidad...' : 'ADN de Marca Sincronizado'}
+                                </span>
+                            </div>
+                            <h3 className="text-3xl font-black italic uppercase italic tracking-tighter text-white">
+                                {isLearning ? 'La IA está conociéndote...' : `Hola, ${aiBrainData?.name}`}
+                            </h3>
+                            <p className="text-gray-400 text-xs leading-relaxed max-w-xl">
+                                {isLearning 
+                                    ? 'Estamos analizando tus últimas publicaciones y biografía en redes sociales para captar tu tono de voz y especialidades médicas. Esto permitirá que la IA proponga respuestas que suenen exactamente como tú.'
+                                    : `He analizado tu presencia digital. He detectado que tu tono es profesional y experto, con un enfoque principal en ${aiBrainData?.category}. Ya estoy listo para asistirte.`
+                                }
+                            </p>
+                        </div>
+
+                        {!isLearning && aiBrainData && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                                    <p className="text-[8px] font-black text-gray-500 uppercase">Especialidad Detectada</p>
+                                    <p className="text-xs font-bold text-white uppercase">{aiBrainData.category}</p>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                                    <p className="text-[8px] font-black text-gray-500 uppercase">Posts Analizados</p>
+                                    <p className="text-xs font-bold text-white uppercase">{aiBrainData.recent_captions?.length || 0} RECIENTES</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+            )}
 
             {/* Platform Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

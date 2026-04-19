@@ -27,20 +27,14 @@ export async function POST(req) {
 
         const rootId = rootFolder.data.id;
 
-        // 2. Estructura de Subcarpetas
+        // 2. Estructura de Subcarpetas Paralela (Más rápido y robusto)
         const subfolders = [
-            '01_Identidad',
-            '02_Recursos',
-            '03_Producción',
-            '04_Publicaciones',
-            '05_Finanzas',
-            '06_Web',
-            '07_Automatización',
-            '08_Métricas'
+            '01_Identidad', '02_Recursos', '03_Producción', 
+            '04_Publicaciones', '05_Finanzas', '06_Web', 
+            '07_Automatización', '08_Métricas'
         ];
-
-        const results = [];
-        for (const name of subfolders) {
+        
+        const results = await Promise.all(subfolders.map(async (name) => {
             const metadata = {
                 name,
                 mimeType: 'application/vnd.google-apps.folder',
@@ -50,8 +44,8 @@ export async function POST(req) {
                 resource: metadata,
                 fields: 'id, name',
             });
-            results.push({ id: folder.data.id, name: folder.data.name });
-        }
+            return { id: folder.data.id, name: folder.data.name };
+        }));
 
         return NextResponse.json({
             success: true,
