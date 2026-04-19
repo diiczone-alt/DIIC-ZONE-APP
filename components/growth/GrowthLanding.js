@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 import GrowthHero from './GrowthHero';
 import GrowthProblem from './GrowthProblem';
 import GrowthSolution from './GrowthSolution';
@@ -10,12 +11,27 @@ import GrowthLevels from './GrowthLevels';
 import GrowthPricing from './GrowthPricing';
 import GrowthUpsell from './GrowthUpsell';
 import GrowthFinalCTA from './GrowthFinalCTA';
+import StrategicGuidance from './StrategicGuidance';
+import { getNicheConfig } from './nicheConfig';
 
 export default function GrowthLanding() {
+    const { user } = useAuth();
     const pricingRef = useRef(null);
 
     const scrollToPlans = () => {
         pricingRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Personalización por Nicho
+    const config = getNicheConfig(user?.user_metadata?.niche || '');
+    
+    // Función para manejar el género "Médico" vs "Médica"
+    const getAdaptedTitle = (base) => {
+        if (config.gender === 'dynamic') {
+            const isFemale = user?.user_metadata?.first_name?.toLowerCase().endsWith('a');
+            return isFemale ? base.replace('Médico', 'Médica') : base;
+        }
+        return base;
     };
 
     return (
@@ -27,19 +43,33 @@ export default function GrowthLanding() {
             </div>
 
             <div className="relative z-10">
-                <GrowthHero onScrollToPlans={scrollToPlans} />
+                <GrowthHero 
+                    config={config} 
+                    onScrollToPlans={scrollToPlans} 
+                    adaptedLabel={getAdaptedTitle(config.label)}
+                />
                 
                 <div className="max-w-7xl mx-auto px-6 space-y-32 py-20 pb-40">
-                    <GrowthProblem />
-                    <GrowthSolution />
-                    <GrowthProcess />
-                    <GrowthLevels />
+                    <StrategicGuidance 
+                        config={config} 
+                        userName={user?.user_metadata?.first_name}
+                        adaptedLabel={getAdaptedTitle(config.label)}
+                    />
+                    
+                    <GrowthProblem config={config} />
+                    <GrowthSolution config={config} />
+                    <GrowthProcess config={config} />
+                    
+                    <GrowthLevels 
+                        config={config} 
+                        nicheType={config.id}
+                    />
                     
                     <div ref={pricingRef} className="scroll-mt-20">
-                        <GrowthPricing />
+                        <GrowthPricing config={config} />
                     </div>
                     
-                    <GrowthUpsell />
+                    <GrowthUpsell config={config} />
                     
                     {/* Aclaración Section */}
                     <motion.div 
@@ -55,13 +85,6 @@ export default function GrowthLanding() {
 
                     <GrowthFinalCTA />
                 </div>
-            </div>
-
-            {/* Footer Phrase */}
-            <div className="py-20 text-center border-t border-white/5 opacity-50">
-                <p className="text-2xl font-black italic uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-gray-600">
-                    “Esto ya no es una página… es tu vendedor digital.”
-                </p>
             </div>
         </div>
     );

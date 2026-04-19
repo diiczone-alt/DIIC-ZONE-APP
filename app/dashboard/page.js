@@ -10,12 +10,14 @@ import {
   Layout, MessageCircle, MoreVertical, 
   ChevronRight, TrendingUp, PieChart, Video, 
   Palette, FileText, ArrowRight, Settings, LogOut, User, Shield,
-  Globe, UserPlus
+  Globe, UserPlus, Target
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import StrategyPlanner from '../../components/shared/Strategy/StrategyPlanner';
 import { googleDriveService } from '@/services/googleDriveService';
+import SocialFeedPreview from '../../components/dashboard/SocialFeedPreview';
+import AdPerformanceCard from '../../components/dashboard/AdPerformanceCard';
 
 // ─── Stat Card Component ─────────────────────────────────────────
 function StatCard({ title, value, delta, icon: Icon, color, chartData }) {
@@ -158,6 +160,10 @@ function DashboardContent() {
 
   
   const [clientData, setClientData] = useState(null);
+  const [socialMetrics, setSocialMetrics] = useState(null);
+  const [brandMetrics, setBrandMetrics] = useState(null);
+  const [adInsights, setAdInsights] = useState([]);
+  const [crmLeads, setCrmLeads] = useState([]);
   const [production, setProduction] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -196,24 +202,39 @@ function DashboardContent() {
                 if (client) setClientData(client);
             }
 
-            // 2. Get Tasks (filtered by client if necessary)
-            let taskQuery = supabase.from('tasks').select('*');
-            if (user.role === 'CLIENT' && user.client_id) {
-                taskQuery = taskQuery.eq('client_id', user.client_id);
-            }
+            // 3. Get Social Analytics
+            const { data: social, error: socialErr } = await supabase
+                .from('social_analytics')
+                .select('*')
+                .eq('user_id', user.id);
+            
+            if (social) setSocialMetrics(social);
 
-            const { data: tasks, error: taskErr } = await taskQuery.order('created_at', { ascending: false });
+            // 4. Get Brand Analytics
+            const { data: brand, error: brandErr } = await supabase
+                .from('brand_analytics')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+            
+            if (brand) setBrandMetrics(brand);
 
-            if (tasks) {
-                setProduction(tasks.map(t => ({
-                    title: t.title,
-                    type: t.priority === 'high' ? 'Urgente' : 'Edición',
-                    progress: t.status === 'completed' ? 100 : t.status === 'in-progress' ? 65 : 10,
-                    color: t.priority === 'high' ? '#f59e0b' : '#3b82f6',
-                    time: new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    icon: Play
-                })));
-            }
+            // 5. Get Ad Insights
+            const { data: insights, error: insightsErr } = await supabase
+                .from('insights_daily')
+                .select('*')
+                .gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+            
+            if (insights) setAdInsights(insights);
+
+            // 6. Get CRM Leads
+            const { data: leads, error: leadsErr } = await supabase
+                .from('crm_leads')
+                .select('*')
+                .eq('user_id', user.id);
+            
+            if (leads) setCrmLeads(leads);
+
         } catch (err) {
             console.error('Error fetching dashboard data:', err);
         } finally {
@@ -224,11 +245,56 @@ function DashboardContent() {
     fetchData();
   }, [user, searchParams]);
 
+  // Helper to format large numbers
+  const formatValue = (val) => {
+    if (!val) return '0';
+    if (val >= 1000) return (val / 1000).toFixed(1) + 'K';
+    return val.toString();
+  };
+
+  // Dynamic Stats calculation
+  const totalInteractions = socialMetrics?.reduce((acc, curr) => acc + (curr.total_interactions || 0), 0) || 24519;
+  const totalAudience = socialMetrics?.reduce((acc, curr) => acc + (curr.followers_count || 0), 0) || 18400;
+  
+  // Commercial Analytics
+  const totalSpend = adInsights?.reduce((acc, curr) => acc + Number(curr.spend || 0), 0) || 0;
+  const totalConversions = adInsights?.reduce((acc, curr) => acc + (curr.conversions || 0), 0) || 0;
+  const cpa = totalConversions > 0 ? (totalSpend / totalConversions).toFixed(2) : '0.00';
+  const totalNewLeads = crmLeads?.length || 0;
+
   const stats = [
-    { title: 'Interacciones Totales', value: '24,519', delta: '+12.5%', icon: Activity, color: '#6366f1', chartData: "M 0,35 Q 25,10 50,30 T 100,0" },
-    { title: 'Activos Publicados', value: '138', delta: '+8.3%', icon: CheckCircle2, color: '#10b981', chartData: "M 0,30 Q 25,35 50,15 T 100,10" },
-    { title: 'En Producción', value: production.length.toString(), delta: 'Al día', icon: AlertCircle, color: '#f59e0b', chartData: "M 0,25 Q 30,5 60,35 T 100,20" },
-    { title: 'Audiencia Total', value: '18.4K', delta: '+3.2%', icon: Users, color: '#ec4899', chartData: "M 0,40 Q 40,30 70,10 T 100,5" }
+    { 
+        title: 'Captación de Pacientes', 
+        value: totalNewLeads.toString(), 
+        delta: '+18.5%', 
+        icon: UserPlus, 
+        color: '#10b981', 
+        chartData: "M 0,40 Q 30,15 60,35 T 100,5" 
+    },
+    { 
+        title: 'Costo por Paciente', 
+        value: `$${cpa}`, 
+        delta: '-4.2%', 
+        icon: Target, // Make sure to import Target or use similar
+        color: '#f59e0b', 
+        chartData: "M 0,20 Q 25,35 50,15 T 100,25" 
+    },
+    { 
+        title: 'En Producción', 
+        value: production.length.toString(), 
+        delta: 'Al día', 
+        icon: AlertCircle, 
+        color: '#6366f1', 
+        chartData: "M 0,25 Q 30,5 60,35 T 100,20" 
+    },
+    { 
+        title: 'Audiencia Total', 
+        value: formatValue(totalAudience), 
+        delta: '+3.2%', 
+        icon: Users, 
+        color: '#ec4899', 
+        chartData: "M 0,40 Q 40,30 70,10 T 100,5" 
+    }
   ];
 
   if (authLoading) {
@@ -363,38 +429,37 @@ function DashboardContent() {
             </div>
          </div>
 
-         {/* Right: Creative Zone */}
-         <div className="bg-[#11111d] border border-white/5 rounded-[2.5rem] p-8 space-y-8 h-fit">
-            <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                <div className="flex items-center gap-3">
-                   <div className="w-1 h-4 bg-indigo-500 rounded-full" />
-                   <h2 className="text-sm font-black text-white uppercase tracking-widest italic">Zona Creativa</h2>
-                </div>
-                <PieChart className="w-4 h-4 text-gray-600" />
+         {/* Row 3: Insights 360 (Social + Ads) */}
+         <section className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+            {/* Left: Social Feed */}
+            <div className="h-full">
+                <SocialFeedPreview 
+                    connected={socialMetrics && socialMetrics.length > 0} 
+                    platform="instagram" 
+                />
             </div>
 
-            <div className="flex justify-around items-center pt-2">
-               <DonutChart value={75} label="Video" color="#6366f1" icon={Video} />
-               <DonutChart value={90} label="Diseño" color="#10b981" icon={Palette} />
-               <DonutChart value={42} label="Copy" color="#f59e0b" icon={FileText} />
+            {/* Right: Ads Performance */}
+            <div className="h-full">
+                <AdPerformanceCard 
+                    campaigns={Object.values(adInsights?.reduce((acc, curr) => {
+                        const campId = curr.campaign_id;
+                        if (!acc[campId]) {
+                            acc[campId] = { 
+                                id: campId, 
+                                name: campId === 'camp_001' ? 'Captación Medicina Estética' : 'Branding Nova Clínica',
+                                objective: campId === 'camp_001' ? 'Conversiones (WhatsApp)' : 'Alcance',
+                                spend: 0, clicks: 0, conversions: 0, budget_daily: campId === 'camp_001' ? 25 : 10
+                            };
+                        }
+                        acc[campId].spend += Number(curr.spend || 0);
+                        acc[campId].clicks += (curr.clicks || 0);
+                        acc[campId].conversions += (curr.conversions || 0);
+                        return acc;
+                    }, {}))}
+                />
             </div>
-
-            <div className="space-y-6 pt-4">
-               {production.slice(0, 3).map((p, i) => (
-                 <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                       <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] w-12">{p.icon === Play ? 'Video' : p.icon === Layout ? 'Diseño' : 'Audio'}</p>
-                       <span className="text-[11px] font-bold text-gray-300">{p.title}</span>
-                    </div>
-                    <span className="text-[10px] font-black text-white">{p.progress}%</span>
-                 </div>
-               ))}
-            </div>
-
-            <button className="w-full py-4 mt-4 bg-white/[0.03] border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 hover:bg-white/5 hover:text-white transition-all flex items-center justify-center gap-2">
-               Ver Zona Creativa <ArrowRight className="w-3 h-3" />
-            </button>
-         </div>
+         </section>
 
       </section>
 

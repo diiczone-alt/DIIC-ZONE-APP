@@ -12,7 +12,9 @@ const SOLUTIONS = [
     { text: "Escala", icon: Users, color: "text-cyan-400", bg: "bg-cyan-500/10" }
 ];
 
-export default function GrowthSolution() {
+export default function GrowthSolution({ config }) {
+    const terms = config?.terms || {};
+
     return (
         <section className="relative py-20 px-6">
             <div className="max-w-4xl mx-auto space-y-16">
@@ -25,8 +27,8 @@ export default function GrowthSolution() {
                     <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[9px] font-black text-emerald-400 uppercase tracking-widest">
                         Nuestra Solución
                     </span>
-                    <h2 className="text-4xl md:text-5xl lg:text-7xl font-black text-white italic tracking-tight leading-[1.1] pb-2">
-                        SISTEMA DE CRECIMIENTO <span className="inline-block px-1 text-emerald-500 underline decoration-emerald-500/30 font-black">DIGITAL DIIC ZONE</span>
+                    <h2 className="text-4xl md:text-5xl lg:text-7xl font-black text-white italic tracking-tight leading-[1.1] pb-2 uppercase">
+                        {terms.strategyLabel} <span className="inline-block px-1 text-emerald-500 underline decoration-emerald-500/30 font-black">DIIC ZONE</span>
                     </h2>
                     <p className="text-gray-400 text-lg font-bold uppercase tracking-widest max-w-xl ml-auto pt-4 leading-relaxed">
                         Trabajamos con un proceso estructurado que permite escalar tu marca paso a paso.

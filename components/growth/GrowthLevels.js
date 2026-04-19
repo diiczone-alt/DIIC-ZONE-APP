@@ -70,8 +70,23 @@ const LEVELS = [
     }
 ];
 
-export default function GrowthLevels() {
+export default function GrowthLevels({ config, nicheType }) {
     const [selectedLevel, setSelectedLevel] = useState(null);
+
+    // Si el nicho tiene niveles específicos cargados en el config, los usamos.
+    // De lo contrario, usamos los genéricos definiéndolos dentro del componente o importándolos.
+    const getLevels = () => {
+        if (config?.levels) {
+            // Mapeamos los niveles del config para inyectarles la data visual (iconos, colores)
+            return LEVELS.map(standardLevel => ({
+                ...standardLevel,
+                ...config.levels[standardLevel.id]
+            }));
+        }
+        return LEVELS;
+    };
+
+    const activeLevels = getLevels();
 
     return (
         <section className="relative py-20">
@@ -94,7 +109,7 @@ export default function GrowthLevels() {
                 </motion.div>
 
                 <div className="space-y-4 max-w-3xl">
-                    {LEVELS.map((level, idx) => {
+                    {activeLevels.map((level, idx) => {
                         const pureBg = level.bg.replace('/10', '');
                         return (
                             <motion.div 

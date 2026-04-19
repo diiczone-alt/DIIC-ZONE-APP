@@ -4,7 +4,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Rocket, MessageCircle, ChevronDown, Sparkles } from 'lucide-react';
 
-export default function GrowthHero({ onScrollToPlans }) {
+export default function GrowthHero({ onScrollToPlans, config, adaptedLabel }) {
+    const terms = config.terms || {};
+
     return (
         <section className="relative min-h-[90vh] flex flex-col items-center justify-center pt-20 px-6 overflow-hidden">
             {/* Animated Glows */}
@@ -18,7 +20,7 @@ export default function GrowthHero({ onScrollToPlans }) {
                 >
                     <span className="px-4 py-1.5 bg-blue-500/20 border border-blue-500/30 rounded-full text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
                         <Sparkles className="w-3 h-3" />
-                        Planes y Crecimiento 2026
+                        {terms.strategyLabel} 2026
                     </span>
                 </motion.div>
 
@@ -28,7 +30,7 @@ export default function GrowthHero({ onScrollToPlans }) {
                     transition={{ delay: 0.1 }}
                     className="text-5xl md:text-7xl lg:text-8xl font-black text-white italic tracking-tight leading-[1.1] md:leading-[1.0]"
                 >
-                    HAZ CRECER TU MARCA CON <span className="inline-block pb-2 px-1 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600">ESTRATEGIA, CONTENIDO Y SISTEMAS</span>
+                    {terms.heroTitle} <span className="inline-block pb-2 px-1 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 uppercase">{terms.heroGradient}</span>
                 </motion.h1>
 
                 <motion.p
@@ -37,7 +39,7 @@ export default function GrowthHero({ onScrollToPlans }) {
                     transition={{ delay: 0.2 }}
                     className="text-gray-400 text-lg md:text-2xl font-bold uppercase tracking-widest max-w-2xl mx-auto leading-relaxed"
                 >
-                    No se trata solo de publicar. <span className="text-white">Construimos un sistema</span> que atrae, posiciona y convierte clientes.
+                    No se trata solo de publicar. <span className="text-white">Construimos un {terms.protocolLabel.toLowerCase()}</span> que atrae, posiciona y convierte {terms.customerLabel.toLowerCase()}.
                 </motion.p>
 
                 <motion.div
@@ -51,7 +53,7 @@ export default function GrowthHero({ onScrollToPlans }) {
                         className="group relative px-8 py-5 bg-emerald-500 text-black font-black uppercase tracking-widest rounded-2xl flex items-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(16,185,129,0.3)]"
                     >
                         <MessageCircle className="w-5 h-5" />
-                        Solicitar asesoría (WhatsApp)
+                        {terms.ctaLabel}
                     </button>
                     
                     <button 

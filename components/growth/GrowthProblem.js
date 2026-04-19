@@ -11,7 +11,8 @@ const PROBLEMS = [
     { text: "No tienes un sistema de crecimiento", icon: XCircle }
 ];
 
-export default function GrowthProblem() {
+export default function GrowthProblem({ config }) {
+    const terms = config?.terms || {};
     return (
         <section className="relative py-20 px-6">
             <div className="max-w-4xl mx-auto space-y-16">
@@ -25,7 +26,7 @@ export default function GrowthProblem() {
                         El Problema
                     </span>
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white italic tracking-tight leading-[1.1]">
-                        ¿POR QUÉ TU NEGOCIO NO ESTÁ CRECIENDO <span className="inline-block px-1 text-rose-500 underline decoration-rose-500/30">COMO DEBERÍA?</span>
+                        ¿POR QUÉ TU <span className="text-rose-500 uppercase">{terms.businessLabel}</span> NO ESTÁ CRECIENDO <span className="inline-block px-1 text-rose-500 underline decoration-rose-500/30">COMO DEBERÍA?</span>
                     </h2>
                 </motion.div>
 
@@ -55,7 +56,7 @@ export default function GrowthProblem() {
                     viewport={{ once: true }}
                     className="text-3xl font-black text-center text-white italic uppercase tracking-tighter pt-10"
                 >
-                    EL PROBLEMA NO ES EL CONTENIDO, ES LA <span className="text-rose-500">FALTA DE ESTRUCTURA.</span>
+                    EL PROBLEMA NO ES EL CONTENIDO, ES LA <span className="text-rose-500">FALTA DE {terms.protocolLabel.toUpperCase()}.</span>
                 </motion.p>
             </div>
         </section>

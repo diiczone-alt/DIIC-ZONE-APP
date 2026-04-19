@@ -70,6 +70,20 @@ export default function Sidebar() {
     const [openGroup, setOpenGroup] = useState(null); // 'growth' | 'evolution' | null
     const { setIsExpanded } = useSidebar();
     const { user } = useAuth();
+    const [hasConnectivity, setHasConnectivity] = useState(true);
+
+    useEffect(() => {
+        const checkConnectivity = async () => {
+            if (!user) return;
+            const { data } = await supabase
+                .from('social_analytics')
+                .select('id')
+                .eq('user_id', user.id);
+            
+            setHasConnectivity(data && data.length > 0);
+        };
+        checkConnectivity();
+    }, [user]);
 
     // Auto-expand group if active route is inside
     useEffect(() => {
@@ -154,11 +168,18 @@ export default function Sidebar() {
                                     const isActive = pathname === item.href;
                                     return (
                                         <Link key={item.href} href={item.href} className="block pl-12 pr-3">
-                                            <div className={`flex items-center gap-3 py-2 rounded-lg transition-colors ${isActive ? (item.color || 'text-indigo-400') + ' font-medium' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'} ${item.special ? 'bg-amber-500/10 border border-amber-500/20 my-1' : ''}`}>
-                                                {!isActive && !item.special && <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50" />}
-                                                {isActive && <div className={`w-1.5 h-1.5 rounded-full shadow-[0_0_5px_currentColor] ${item.color?.replace('text-', 'bg-') || 'bg-indigo-500'}`} />}
-                                                {item.special && !isActive && <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
-                                                <span className={`text-xs ${item.special ? 'text-amber-400 font-bold' : ''}`}>{item.name}</span>
+                                            <div className={`flex items-center justify-between py-2 rounded-lg transition-colors ${isActive ? (item.color || 'text-indigo-400') + ' font-medium' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'} ${item.special ? 'bg-amber-500/10 border border-amber-500/20 my-1' : ''}`}>
+                                                <div className="flex items-center gap-3">
+                                                    {!isActive && !item.special && <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50" />}
+                                                    {isActive && <div className={`w-1.5 h-1.5 rounded-full shadow-[0_0_5px_currentColor] ${item.color?.replace('text-', 'bg-') || 'bg-indigo-500'}`} />}
+                                                    {item.special && !isActive && <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
+                                                    <span className={`text-xs ${item.special ? 'text-amber-400 font-bold' : ''}`}>{item.name}</span>
+                                                </div>
+                                                
+                                                {/* Connectivity Alert Badge */}
+                                                {item.href === '/dashboard/connectivity' && !hasConnectivity && (
+                                                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_#f59e0b]" />
+                                                )}
                                             </div>
                                         </Link>
                                     );
