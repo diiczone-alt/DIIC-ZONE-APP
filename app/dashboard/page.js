@@ -18,6 +18,8 @@ import StrategyPlanner from '../../components/shared/Strategy/StrategyPlanner';
 import { googleDriveService } from '@/services/googleDriveService';
 import SocialFeedPreview from '../../components/dashboard/SocialFeedPreview';
 import AdPerformanceCard from '../../components/dashboard/AdPerformanceCard';
+import ActionProtocol from '../../components/growth/ActionProtocol';
+import { getNicheConfig } from '../../components/growth/nicheConfig';
 
 // ─── Stat Card Component ─────────────────────────────────────────
 function StatCard({ title, value, delta, icon: Icon, color, chartData }) {
@@ -256,6 +258,12 @@ function DashboardContent() {
   const totalInteractions = socialMetrics?.reduce((acc, curr) => acc + (curr.total_interactions || 0), 0) || 24519;
   const totalAudience = socialMetrics?.reduce((acc, curr) => acc + (curr.followers_count || 0), 0) || 18400;
   
+  // Niche Config for guidance
+  const currentNiche = clientData?.niche || 'medical';
+  const nicheData = getNicheConfig(currentNiche);
+  const levelKeys = ['presencia', 'crecimiento', 'autoridad', 'sistemas', 'escala'];
+  const currentLevelKey = levelKeys[(brandMetrics?.current_level || 2) - 1];
+
   // Commercial Analytics
   const totalSpend = adInsights?.reduce((acc, curr) => acc + Number(curr.spend || 0), 0) || 0;
   const totalConversions = adInsights?.reduce((acc, curr) => acc + (curr.conversions || 0), 0) || 0;
@@ -409,6 +417,16 @@ function DashboardContent() {
               </div>
           </section>
       )}
+
+      {/* ─── Strategic Protocol Section ─── */}
+      <section className="mb-10 px-2">
+         <ActionProtocol 
+            protocols={nicheData.dailyProtocols} 
+            level={currentLevelKey}
+            role="CLIENT"
+            onComplete={(id) => console.log('Tarea completada:', id)}
+         />
+      </section>
 
       {/* ─── Main Content Grid ─── */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-10">

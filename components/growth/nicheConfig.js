@@ -77,9 +77,32 @@ export const nicheConfig = {
                 fullDesc: "El nivel de máxima facturación. Escalamos la inversión para llenar su agenda de procedimientos quirúrgicos o tratamientos premium.",
                 features: ["Escalada de pauta para cirugía", "Lanzamiento de programas de salud", "Expansión institucional", "Optimización de ROI médico"]
             }
+        },
+        dailyProtocols: {
+            presencia: [
+                { id: 'bio', task: 'Completar perfil y biografía ética', impact: 'Confianza' },
+                { id: 'photo', task: 'Validar 1 fotografía de autoridad', impact: 'Impacto' }
+            ],
+            crecimiento: [
+                { id: 'leads', task: 'Calificar 5 nuevos pacientes en CRM', impact: 'Facturación' },
+                { id: 'comments', task: 'Responder a 3 comentarios de valor', impact: 'Alcance' }
+            ],
+            autoridad: [
+                { id: 'script', task: 'Revisar guion de video de autoridad', impact: 'Reputación' },
+                { id: 'testimony', task: 'Solicitar 1 testimonio de éxito', impact: 'Confianza' }
+            ],
+            sistemas: [
+                { id: 'agenda', task: 'Verificar confirmaciones automáticas', impact: 'Tiempo' },
+                { id: 'automation', task: 'Revisar flujo de bot de WhatsApp', impact: 'Eficiencia' }
+            ],
+            escala: [
+                { id: 'roi', task: 'Analizar ROI de tratamientos premium', impact: 'Facturación' },
+                { id: 'scale', task: 'Autorizar escala de presupuesto publicitario', impact: 'Dominio' }
+            ]
         }
     }
 };
+
 
 /**
  * Helper para obtener la configuración según el nicho
