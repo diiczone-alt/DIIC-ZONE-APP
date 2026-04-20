@@ -469,15 +469,11 @@ export const agencyService = {
             const profit = totalMRR - totalProductionCosts;
             const margin = totalMRR > 0 ? (profit / totalMRR) * 100 : 0;
 
-            // 4. Generate transaction feed from real data
-            const recentTransactions = analyzedClients.slice(0, 5).map(c => ({
-                id: `TX-${c.id}`,
-                client: c.name,
-                desc: `Plan ${c.plan} (Utility: $${(Number(c.price) - c.calculated_cost).toFixed(0)})`,
-                amount: Number(c.price) || 0,
-                type: 'income',
-                date: 'Activo'
-            }));
+            // 4. Fetch Real Ledger Transactions (New)
+            const { data: ledgerTxs, error: txError } = await supabase
+                .from('financial_transactions')
+                .select('*')
+                .order('date', { ascending: false });
 
             // 5. Integrate Fixed Costs (Overhead) from getScaleData logic
             const [team, expenses] = await Promise.all([
@@ -499,7 +495,7 @@ export const agencyService = {
                     net_profit: netProfit,
                     gross_margin: Math.round(margin * 10) / 10
                 },
-                transactions: recentTransactions
+                transactions: ledgerTxs || []
             };
         } catch (err) {
             console.error("Error in getFinancialSummary (Unit Cost Model):", err);
@@ -507,6 +503,106 @@ export const agencyService = {
                 metrics: { income: 0, variable_costs: 0, gross_profit: 0, gross_margin: 0 },
                 transactions: []
             };
+        }
+    },
+
+    getTransactions: async (billingCycle = null) => {
+        try {
+            let query = supabase.from('financial_transactions').select('*').order('date', { ascending: false });
+            if (billingCycle) {
+                query = query.eq('billing_cycle', billingCycle);
+            }
+            const { data, error } = await query;
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error("Error fetching transactions:", error);
+            return [];
+        }
+    },
+
+    projectMonthlyCycle: async (cycle) => {
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`🚀 [${timestamp}] Projecting Cycle: ${cycle}`);
+        try {
+            const [clients, team] = await Promise.all([
+                agencyService.getClients(),
+                agencyService.getTeam()
+            ]);
+
+            const pendingTransactions = [];
+
+            // 1. Project Client Incomes
+            clients.filter(c => Number(c.price) > 0 && c.status === 'active').forEach(c => {
+                pendingTransactions.push({
+                    type: 'income',
+                    category: 'Clientes',
+                    subcategory: c.plan || 'Plan Individual',
+                    amount: Number(c.price),
+                    description: `Cobro Mensual: ${c.name}`,
+                    billing_cycle: cycle,
+                    status: 'pending',
+                    reference_id: c.id,
+                    date: new Date().toISOString()
+                });
+            });
+
+            // 2. Project Team Expenses (Salaries)
+            team.filter(m => Number(m.salary) > 0 && m.status === 'Active').forEach(m => {
+                pendingTransactions.push({
+                    type: 'expense',
+                    category: 'Pago a Profesionales',
+                    subcategory: m.role,
+                    amount: Number(m.salary),
+                    description: `Sueldo Mensual: ${m.name}`,
+                    billing_cycle: cycle,
+                    status: 'pending',
+                    reference_id: m.id,
+                    date: new Date().toISOString()
+                });
+            });
+
+            if (pendingTransactions.length === 0) return { count: 0 };
+
+            const { data, error } = await supabase
+                .from('financial_transactions')
+                .insert(pendingTransactions)
+                .select();
+
+            if (error) throw error;
+            return { count: data.length };
+        } catch (error) {
+            console.error("Error projecting monthly cycle:", error);
+            throw error;
+        }
+    },
+
+    certifyTransaction: async (id) => {
+        try {
+            const { data, error } = await supabase
+                .from('financial_transactions')
+                .update({ status: 'completed', date: new Date().toISOString() })
+                .eq('id', id)
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            console.error("Error certifying transaction:", error);
+            throw error;
+        }
+    },
+
+    registerTransaction: async (txData) => {
+        try {
+            const { data, error } = await supabase
+                .from('financial_transactions')
+                .insert([{ ...txData, status: txData.status || 'completed' }])
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            console.error("Error registering manual transaction:", error);
+            throw error;
         }
     },
 

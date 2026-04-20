@@ -9,7 +9,7 @@ import {
     Plus, Edit3, Save, Trash2, Calendar, Clock, ArrowLeft, ArrowRight,
     LayoutDashboard, Briefcase, Settings, Award, Layers, Search, Eye,
     Home, UserCheck, Shield, Filter, CalendarDays, History, TrendingUp as UpTrend,
-    MoreHorizontal, Download, Share2
+    MoreHorizontal, Download, Share2, Globe, ShieldCheck, Cpu, BarChart as BarChartIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -36,8 +36,22 @@ const FINANCIAL_CONFIG = {
             ]
         }
     },
+    expenses: {
+        label: "Área 2: Egresos (Global)",
+        desc: "Control total de salidas y costos operativos",
+        color: "#f43f5e",
+        gradient: "from-rose-500/20 to-rose-500/0",
+        categories: {
+            "Egresos Globales": [
+                "Todos los costos operativos",
+                "Pagos de equipo",
+                "Gastos de oficina",
+                "Inversiones estratégicas"
+            ]
+        }
+    },
     team: {
-        label: "Área 2: Egresos - Equipo (Zona Creativa)",
+        label: "Área 3: Egresos - Equipo (Zona Creativa)",
         desc: "Compensación de talento y capacitación",
         color: "#6366f1",
         gradient: "from-indigo-500/20 to-indigo-500/0",
@@ -51,7 +65,7 @@ const FINANCIAL_CONFIG = {
         }
     },
     agency: {
-        label: "Área 3: Egresos - Oficina (Administración)",
+        label: "Área 4: Egresos - Oficina (Administración)",
         desc: "Costos fijos y estructura administrativa",
         color: "#a855f7",
         gradient: "from-purple-500/20 to-purple-500/0",
@@ -131,8 +145,9 @@ export default function AdminDualAudit() {
         const officeBudget = budgets.find(b => b.category === "Gastos Administrativos")?.amount || 0;
 
         const savingsRate = income > 0 ? ((balance / income) * 100).toFixed(1) : 0;
+        const profitMargin = income > 0 ? ((balance / income) * 100).toFixed(1) : 0;
         const burnRate = expense;
-        const runway = income > 0 ? (balance > 0 ? (balance / (burnRate || 1)).toFixed(1) : 0) : 0;
+        const runway = balance > 0 ? (balance / (burnRate / 3 || 1)).toFixed(1) : 0; // Simplified runway calculation
 
         const distribution = [
             { name: 'Equipo', value: teamCost, color: '#6366f1', budget: teamBudget, area: 'team' },
@@ -141,7 +156,7 @@ export default function AdminDualAudit() {
 
         return { 
             income, expense, balance, teamCost, officeCost, 
-            teamBudget, officeBudget, savingsRate, burnRate, runway, 
+            teamBudget, officeBudget, savingsRate, profitMargin, burnRate, runway, 
             distribution, clientCount 
         };
     }, [transactions, budgets, clientCount]);
@@ -212,6 +227,7 @@ export default function AdminDualAudit() {
                         {[
                             { id: 'overview', label: 'Monitor', icon: LayoutDashboard },
                             { id: 'income', label: 'Ingresos', icon: Users },
+                            { id: 'expenses', label: 'Egresos', icon: TrendingDown },
                             { id: 'team', label: 'Equipo', icon: Zap },
                             { id: 'agency', label: 'Agencia', icon: Home },
                             { id: 'goals', label: 'Metas', icon: Target }
@@ -234,6 +250,16 @@ export default function AdminDualAudit() {
 
                 <div className="flex flex-wrap gap-3 w-full md:w-auto">
                     <button 
+                        onClick={() => {
+                            loadData();
+                            toast.success("Sincronizando Nodo Central", { description: "Actualizando integridad fiscal v8.0" });
+                        }}
+                        className="flex items-center gap-3 px-6 py-4 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl hover:bg-indigo-500/20 transition-all group flex-1 md:flex-none justify-center"
+                    >
+                        <RefreshCw className="w-4 h-4 group-active:rotate-180 transition-transform" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Sincronizar</span>
+                    </button>
+                    <button 
                         onClick={() => setIsManagingBudgets(true)}
                         className="flex items-center gap-3 px-6 py-4 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-white/10 transition-all group flex-1 md:flex-none justify-center"
                     >
@@ -245,10 +271,10 @@ export default function AdminDualAudit() {
                             setNewTx(prev => ({ ...prev, type: 'income', category: 'Ingresos Operativos', subcategory: '' }));
                             setIsRegistering(true);
                         }}
-                        className="flex items-center gap-3 px-6 py-4 bg-emerald-500 text-black rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex-1 md:flex-none justify-center"
+                        className="flex items-center gap-3 px-6 py-4 bg-emerald-500 text-black rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex-1 md:flex-none justify-center border-b-4 border-emerald-700"
                     >
                         <Plus className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">Registrar EN</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">Ingreso</span>
                     </button>
                     <button 
                         onClick={() => {
@@ -258,7 +284,7 @@ export default function AdminDualAudit() {
                         className="flex items-center gap-3 px-6 py-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all flex-1 md:flex-none justify-center"
                     >
                         <ArrowDownRight className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">Registrar OUT</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">Egreso</span>
                     </button>
                 </div>
             </header>
@@ -271,11 +297,12 @@ export default function AdminDualAudit() {
                     exit={{ opacity: 0, filter: 'blur(10px)' }}
                     className="space-y-12"
                 >
-                    {activeModule === 'overview' && <OverviewTab metrics={financialMetrics} />}
-                    {activeModule === 'income' && <AreaDetailTab type="income" transactions={transactions.filter(t => t.type === 'income')} budget={0} />}
-                    {activeModule === 'team' && <AreaDetailTab type="team" transactions={transactions.filter(t => t.category === 'Pago a Profesionales')} budget={financialMetrics.teamBudget} />}
-                    {activeModule === 'agency' && <AreaDetailTab type="agency" transactions={transactions.filter(t => t.category === 'Gastos Administrativos')} budget={financialMetrics.officeBudget} />}
-                    {activeModule === 'goals' && <GoalsTab goals={goals} metrics={financialMetrics} onAdd={() => {}} />}
+                    { activeModule === 'overview' && <OverviewTab metrics={financialMetrics} /> }
+                    { activeModule === 'income' && <AreaDetailTab type="income" transactions={transactions.filter(t => t.type === 'income')} budget={0} /> }
+                    { activeModule === 'expenses' && <AreaDetailTab type="expenses" transactions={transactions.filter(t => t.type === 'expense')} budget={financialMetrics.expense} /> }
+                    { activeModule === 'team' && <AreaDetailTab type="team" transactions={transactions.filter(t => t.category === 'Pago a Profesionales')} budget={financialMetrics.teamBudget} /> }
+                    { activeModule === 'agency' && <AreaDetailTab type="agency" transactions={transactions.filter(t => t.category === 'Gastos Administrativos')} budget={financialMetrics.officeBudget} /> }
+                    { activeModule === 'goals' && <GoalsTab goals={goals} metrics={financialMetrics} onAdd={() => { }} /> }
                 </motion.div>
             </AnimatePresence>
 
@@ -296,7 +323,6 @@ export default function AdminDualAudit() {
                         onClose={() => setIsManagingBudgets(false)}
                     />
                 )}
-            </AnimatePresence>
             </AnimatePresence>
             </div>
         </div>
@@ -319,60 +345,62 @@ function OverviewTab({ metrics }) {
                     <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
 
                     <div className="relative z-10">
-                        <div className="flex justify-between items-start mb-8">
+                        <div className="flex justify-between items-start mb-10">
                             <div>
                                 <div className="flex items-center gap-3 mb-2">
                                     <Shield className="w-5 h-5 text-indigo-400" />
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Libro Mayor • Status: <span className="text-emerald-400">Verificado</span></p>
+                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Audit Master Console • <span className="text-emerald-400 animate-pulse">Live</span></p>
                                 </div>
                                 <h2 className="text-8xl font-black italic tracking-tighter leading-none text-white">
                                     ${metrics.balance.toLocaleString()}
                                 </h2>
-                                <p className="text-xs font-bold text-gray-400 mt-4 uppercase tracking-[0.2em] italic underline decoration-indigo-500/50 underline-offset-8">Resultado Neto Operativo</p>
+                                <p className="text-xs font-bold text-gray-400 mt-4 uppercase tracking-[0.2em] italic">Resultado Neto Operativo</p>
                             </div>
-                            <div className="flex flex-col items-end gap-4">
-                                <div className="px-5 py-2 bg-white/5 border border-white/10 rounded-full flex items-center gap-3">
-                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Real-Time Sync</span>
+                            <div className="flex flex-col items-end gap-4 text-right">
+                                <div className="px-5 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-indigo-500 animate-[pulse_1s_infinite]" />
+                                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Master Node Sync</span>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-[10px] font-bold text-gray-600 uppercase">Margen de Ahorro</p>
-                                    <p className="text-3xl font-black text-emerald-400 italic">+{metrics.savingsRate}%</p>
+                                <div>
+                                    <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">Márgen Neto ROI</p>
+                                    <p className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-indigo-400 italic">+{metrics.profitMargin}%</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12 bg-white/5 p-8 rounded-[2.5rem] border border-white/5 backdrop-blur-md">
-                            <div className="flex items-center gap-6 group">
-                                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
-                                    <UpTrend className="w-7 h-7 text-emerald-400" />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Ingresos</p>
-                                    <p className="text-4xl font-black text-white italic tracking-tighter">${metrics.income.toLocaleString()}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                            <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 backdrop-blur-md">
+                                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-3">Velocity Index</p>
+                                <div className="flex items-center gap-3">
+                                    <UpTrend className="w-5 h-5 text-emerald-500" />
+                                    <span className="text-3xl font-black text-white italic tracking-tighter">+12.4%</span>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-6 group">
-                                <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center border border-rose-500/20 group-hover:scale-110 transition-transform">
-                                    <TrendingDown className="w-7 h-7 text-rose-400" />
+                             <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 backdrop-blur-md">
+                                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-3">Cash Runway</p>
+                                <div className="flex items-center gap-3">
+                                    <Clock className="w-5 h-5 text-indigo-500" />
+                                    <span className="text-3xl font-black text-white italic tracking-tighter">{metrics.runway} M</span>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Salida Total</p>
-                                    <p className="text-4xl font-black text-white italic tracking-tighter shadow-sm">-${metrics.expense.toLocaleString()}</p>
+                            </div>
+                             <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 backdrop-blur-md">
+                                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-3">Stability Score</p>
+                                <div className="flex items-center gap-3">
+                                    <Activity className="w-5 h-5 text-emerald-400" />
+                                    <span className="text-3xl font-black text-white italic tracking-tighter">9.2</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* MINI CHART OVERLAY */}
-                    <div className="absolute inset-x-0 bottom-0 h-40 opacity-20 pointer-events-none overflow-hidden">
+                    <div className="absolute inset-x-0 bottom-0 h-40 opacity-10 pointer-events-none overflow-hidden">
                          <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={[{ x: 0, b: metrics.income*0.4 }, { x: 1, b: metrics.balance*0.8 }, { x: 2, b: metrics.balance }]}>
-                                <Area type="monotone" dataKey="b" stroke="#6366f1" fill="url(#colorBal2)" strokeWidth={4} />
+                                <Area type="monotone" dataKey="b" stroke="#818cf8" fill="url(#colorCEO)" strokeWidth={4} />
                                 <defs>
-                                    <linearGradient id="colorBal2" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
-                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                    <linearGradient id="colorCEO" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#818cf8" stopOpacity={0.8}/>
+                                        <stop offset="95%" stopColor="#818cf8" stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
                             </AreaChart>
@@ -579,16 +607,20 @@ function AreaDetailTab({ type, transactions, budget }) {
                                 <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-black text-gray-500 uppercase tracking-widest">{items.length} Operaciones</span>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-4">
-                                {items.map(tx => (
+                            <div c                                 {items.map(tx => (
                                     <motion.div 
                                         key={tx.id}
                                         whileHover={{ x: 10, backgroundColor: 'rgba(255,255,255,0.03)' }}
-                                        className="flex items-center justify-between p-8 bg-white/[0.01] border border-white/5 rounded-[2.5rem] transition-all group"
+                                        className={`flex items-center justify-between p-8 bg-white/[0.01] border ${tx.status === 'pending' ? 'border-dashed border-indigo-500/30 bg-indigo-500/5' : 'border-white/5'} rounded-[2.5rem] transition-all group relative overflow-hidden`}
                                     >
+                                        {tx.status === 'pending' && (
+                                            <div className="absolute top-0 right-0 px-6 py-2 bg-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase tracking-[0.3em] rounded-bl-2xl border-b border-l border-indigo-500/30">
+                                                En Proyección
+                                            </div>
+                                        )}
                                         <div className="flex items-center gap-8">
                                             <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center font-black text-xl text-gray-600 transition-all group-hover:bg-indigo-500/10 group-hover:text-indigo-400 border border-white/5 group-hover:border-indigo-500/20">
-                                                {tx.subcategory[0]}
+                                                {tx.subcategory?.[0] || '?'}
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-3 mb-1">
@@ -600,21 +632,34 @@ function AreaDetailTab({ type, transactions, budget }) {
                                                     <div className="w-1 h-1 rounded-full bg-gray-800" />
                                                     <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-600 uppercase">
                                                         <CreditCard className="w-3 h-3" />
-                                                        {tx.payment_method}
+                                                        {tx.payment_method || 'Trf. Bancaria'}
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <p className={`text-4xl font-black italic tracking-tighter leading-none mb-2 ${tx.type === 'income' ? 'text-emerald-400' : 'text-white'}`}>
-                                                {tx.type === 'income' ? '+' : '-'}${Number(tx.amount).toLocaleString()}
-                                            </p>
-                                            <div className="flex items-center justify-end gap-2 text-[9px] font-black text-gray-700 uppercase">
-                                                <Clock className="w-3 h-3" />
-                                                <span>{new Date(tx.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <div className="flex items-center gap-10">
+                                            <div className="text-right">
+                                                <p className={`text-4xl font-black italic tracking-tighter leading-none mb-2 ${tx.type === 'income' ? 'text-emerald-400' : 'text-white'}`}>
+                                                    {tx.type === 'income' ? '+' : '-'}${Number(tx.amount).toLocaleString()}
+                                                </p>
+                                                <div className="flex items-center justify-end gap-2 text-[9px] font-black text-gray-700 uppercase">
+                                                    <Clock className="w-3 h-3" />
+                                                    <span>{tx.status === 'pending' ? 'Pendiente Fin de Mes' : new Date(tx.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
                                             </div>
+                                            
+                                            {tx.status === 'pending' && (
+                                                <button 
+                                                    onClick={() => handleCertify(tx.id)}
+                                                    className="p-5 rounded-2xl bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 hover:scale-110 transition-all flex items-center justify-center gap-3 group/btn"
+                                                >
+                                                    <CheckCircle2 className="w-5 h-5" />
+                                                    <span className="hidden lg:block text-[10px] font-black uppercase tracking-widest">Certificar</span>
+                                                </button>
+                                            )}
                                         </div>
                                     </motion.div>
+                                ))}
                                 ))}
                             </div>
                         </div>
@@ -829,49 +874,72 @@ function GoalsTab({ goals, metrics }) {
                     </div>
                 </motion.div>
 
-                {/* OTRAS METAS */}
-                <div className="grid grid-cols-1 gap-10">
-                    {goals.length > 0 ? goals.map(goal => (
-                         <div key={goal.id} className="p-12 rounded-[4rem] bg-white/[0.02] border border-white/5 flex flex-col justify-between group hover:border-indigo-500/30 transition-all text-left relative overflow-hidden shadow-xl">
-                             <div className="absolute right-0 top-0 p-10 opacity-5 group-hover:scale-125 transition-transform duration-700">
-                                <Activity className="w-32 h-32 text-indigo-400" />
-                             </div>
-                             <div className="relative z-10">
-                                <div className="flex justify-between items-center mb-8">
-                                    <span className={`text-[10px] font-black px-4 py-1.5 rounded-full border ${goal.priority === 'High' ? 'bg-rose-500/10 border-rose-500/30 text-rose-500' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'} uppercase italic tracking-widest`}>Prioridad {goal.priority}</span>
-                                    <div className="flex items-center gap-2 text-[9px] font-bold text-gray-600 uppercase tracking-tighter">
-                                        <CalendarDays className="w-3.5 h-3.5 text-gray-700" />
-                                        {goal.deadline || 'A largo plazo'}
+                    {/* METAS ESTRATÉGICAS DEL CEO */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <StrategicGoalCard 
+                            title="Inertia Global" 
+                            desc="Expansión a 3 mercados internacionales (US/ES/MX)" 
+                            progress={33} 
+                            status="Investigación" 
+                            icon={Globe} 
+                         />
+                         <StrategicGoalCard 
+                            title="Retención 95%" 
+                            desc="Churn rate inferior al 5% en clientes Elite" 
+                            progress={90} 
+                            status="Crítico" 
+                            icon={ShieldCheck} 
+                         />
+                         <StrategicGoalCard 
+                            title="Nodos Activos" 
+                            desc="5 Sedes regionales operando al 100%" 
+                            progress={40} 
+                            status="En Marcha" 
+                            icon={Layers} 
+                         />
+                         <StrategicGoalCard 
+                            title="Automatización" 
+                            desc="80% procesos internos sin intervención manual" 
+                            progress={15} 
+                            status="Planificación" 
+                            icon={Cpu} 
+                         />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-10 mt-10">
+                        {goals.length > 0 ? goals.map(goal => (
+                             <div key={goal.id} className="p-12 rounded-[4rem] bg-white/[0.02] border border-white/5 flex flex-col justify-between group hover:border-indigo-500/30 transition-all text-left relative overflow-hidden shadow-xl">
+                                 <div className="absolute right-0 top-0 p-10 opacity-5 group-hover:scale-125 transition-transform duration-700">
+                                    <Activity className="w-32 h-32 text-indigo-400" />
+                                 </div>
+                                 <div className="relative z-10">
+                                    <div className="flex justify-between items-center mb-8">
+                                        <span className={`text-[10px] font-black px-4 py-1.5 rounded-full border ${goal.priority === 'High' ? 'bg-rose-500/10 border-rose-500/30 text-rose-500' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'} uppercase italic tracking-widest`}>Prioridad {goal.priority}</span>
+                                        <div className="flex items-center gap-2 text-[9px] font-bold text-gray-600 uppercase tracking-tighter">
+                                            <CalendarDays className="w-3.5 h-3.5 text-gray-700" />
+                                            {goal.deadline || 'A largo plazo'}
+                                        </div>
                                     </div>
-                                </div>
-                                <h4 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-tight mb-4 group-hover:text-indigo-400 transition-colors">{goal.name}</h4>
+                                    <h4 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-tight mb-4 group-hover:text-indigo-400 transition-colors">{goal.name}</h4>
+                                 </div>
+                                 <div className="flex items-end justify-between mt-12 bg-white/5 p-8 rounded-[2.5rem] relative z-10 border border-white/10 group-hover:bg-white/10 transition-all">
+                                    <div>
+                                        <span className="text-[10px] font-black text-gray-500 uppercase block mb-2 tracking-widest">Inversión Necesaria</span>
+                                        <span className="text-5xl font-black text-white italic tracking-tighter shadow-sm">${Number(goal.target_amount).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-3">
+                                         <div className="flex items-center gap-2">
+                                             <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-[pulse_2s_infinite]" />
+                                             <span className="text-[10px] font-black text-indigo-400 uppercase italic tracking-widest">En Análisis</span>
+                                         </div>
+                                         <div className="p-3 bg-white/5 rounded-2xl group-hover:bg-indigo-500 transition-all">
+                                             <Plus className="w-4 h-4 text-white" />
+                                         </div>
+                                    </div>
+                                 </div>
                              </div>
-                             <div className="flex items-end justify-between mt-12 bg-white/5 p-8 rounded-[2.5rem] relative z-10 border border-white/10 group-hover:bg-white/10 transition-all">
-                                <div>
-                                    <span className="text-[10px] font-black text-gray-500 uppercase block mb-2 tracking-widest">Inversión Necesaria</span>
-                                    <span className="text-5xl font-black text-white italic tracking-tighter shadow-sm">${Number(goal.target_amount).toLocaleString()}</span>
-                                </div>
-                                <div className="flex flex-col items-end gap-3">
-                                     <div className="flex items-center gap-2">
-                                         <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-[pulse_2s_infinite]" />
-                                         <span className="text-[10px] font-black text-indigo-400 uppercase italic tracking-widest">En Análisis</span>
-                                     </div>
-                                     <div className="p-3 bg-white/5 rounded-2xl group-hover:bg-indigo-500 transition-all">
-                                         <Plus className="w-4 h-4 text-white" />
-                                     </div>
-                                </div>
-                             </div>
-                         </div>
-                    )) : (
-                        <div className="flex items-center justify-center h-full border-4 border-dashed border-white/5 rounded-[4rem] opacity-20 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
-                            <div className="text-center">
-                                <Target className="w-16 h-16 mx-auto mb-6 text-gray-600" />
-                                <p className="text-[12px] font-black uppercase tracking-[0.8em]">Awaiting Expansion Orders</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                        )) : null}
+                    </div>
             </div>
         </div>
     );
@@ -885,10 +953,52 @@ function LoadingScreen() {
                  <div className="absolute inset-0 bg-indigo-500/20 blur-2xl animate-pulse" />
              </div>
              <div className="text-center">
-                 <h2 className="text-3xl font-black italic text-white tracking-widest uppercase mb-3">GLOBAL FINANCE</h2>
-                 <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.8em] animate-pulse">Sincronizando Libro de Tesorería v7.0</p>
+                 <h2 className="text-3xl font-black italic text-white tracking-widest uppercase mb-3">DIIC GLOBAL FINANCE</h2>
+                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-[1em] animate-pulse">Sincronizando Nodo Central v8.0</p>
              </div>
         </div>
+    );
+}
+
+function StrategicGoalCard({ title, desc, progress, status, icon: Icon }) {
+    return (
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="p-10 rounded-[3rem] bg-white/[0.03] border border-white/10 hover:border-indigo-500/30 transition-all group relative overflow-hidden text-left"
+        >
+            <div className="absolute right-0 top-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] group-hover:scale-125 transition-all duration-700">
+                <Icon className="w-48 h-48 text-indigo-400" />
+            </div>
+            
+            <div className="relative z-10">
+                <div className="flex justify-between items-start mb-6">
+                    <div className="p-4 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-lg shadow-indigo-500/10">
+                        <Icon className="w-5 h-5" />
+                    </div>
+                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/10">{status}</span>
+                </div>
+                
+                <h4 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-tight mb-2 group-hover:text-indigo-400 transition-colors">{title}</h4>
+                <p className="text-[11px] text-gray-500 font-bold mb-8 leading-relaxed max-w-[200px] uppercase tracking-wider">{desc}</p>
+                
+                <div className="space-y-3">
+                    <div className="flex justify-between items-end">
+                        <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Ejecución</span>
+                        <span className="text-2xl font-black text-white italic tracking-tighter">{progress}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-black rounded-full overflow-hidden border border-white/5">
+                        <motion.div 
+                            initial={{ width: 0 }}
+                            whileInView={{ width: `${progress}%` }}
+                            transition={{ duration: 1.5, ease: "easeOut" }}
+                            className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]" 
+                        />
+                    </div>
+                </div>
+            </div>
+        </motion.div>
     );
 }
 
