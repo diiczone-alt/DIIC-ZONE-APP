@@ -27,6 +27,7 @@ export default function AdminNodeManagement() {
     const [branchOffices, setBranchOffices] = useState([]);
     const [clients, setClients] = useState([]);
     const [fullTeam, setFullTeam] = useState([]);
+    const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isAddingCity, setIsAddingCity] = useState(false);
     const [newCityName, setNewCityName] = useState('');
@@ -41,14 +42,16 @@ export default function AdminNodeManagement() {
         const loadAllData = async () => {
             setLoading(true);
             try {
-                const [branches, teamData, clientData] = await Promise.all([
+                const [branches, teamData, clientData, txData] = await Promise.all([
                     agencyService.getBranchOffices(),
                     agencyService.getTeam(),
-                    agencyService.getClients()
+                    agencyService.getClients(),
+                    agencyService.getTransactions()
                 ]);
                 setBranchOffices(branches || []);
                 setFullTeam(teamData || []);
                 setClients(clientData || []);
+                setTransactions(txData || []);
             } catch (err) {
                 console.error("Error loading HQ Control data:", err);
                 toast.error("Error sincronizando el Centro de Control");
@@ -59,13 +62,31 @@ export default function AdminNodeManagement() {
         loadAllData();
     }, []);
 
-    // Calcular nodos dinámicamente basados en datos reales
+    // Calcular nodos dinámicamente basados en datos reales y sincronización financiera
     const nodes = useMemo(() => {
         return branchOffices.map(branch => {
             const cityClients = clients.filter(c => c.city?.toLowerCase() === branch.city?.toLowerCase());
             const cityTeam = fullTeam.filter(m => m.city?.toLowerCase() === branch.city?.toLowerCase());
             
+            // 1. FACTURACIÓN (MRR)
             const revenue = cityClients.reduce((acc, c) => acc + (Number(c.price) || 0), 0);
+            
+            // 2. GASTO OPERATIVO: Nómina Local + Fee de Producción (25%) + Gastos Directos
+            const payroll = cityTeam.reduce((acc, m) => acc + (Number(m.salary) || 0), 0);
+            const productionFee = revenue * 0.25;
+            
+            // Buscar gastos reales vinculados a clientes de esta ciudad
+            const cityClientIds = cityClients.map(c => c.id);
+            const cityExpenses = transactions
+                .filter(tx => tx.type === 'expense' && cityClientIds.includes(tx.reference_id))
+                .reduce((acc, tx) => acc + (Number(tx.amount) || 0), 0);
+            
+            const totalOpEx = payroll + productionFee + cityExpenses;
+            
+            // 3. MARGEN
+            const margin = revenue - totalOpEx;
+            const marginPct = revenue > 0 ? (margin / revenue) * 100 : 0;
+
             const creativesCount = cityTeam.filter(m => 
                 ['filmmaker', 'editor de video', 'diseñador'].includes(m.role?.toLowerCase())
             ).length;
@@ -80,7 +101,10 @@ export default function AdminNodeManagement() {
                 level: branch.level || "basico",
                 creatives: creativesCount,
                 activeProjects: cityClients.filter(c => c.status === 'active').length,
-                monthlyRevenue: `$${revenue.toLocaleString()}`,
+                monthlyRevenue: revenue,
+                monthlyOpEx: totalOpEx,
+                monthlyMargin: margin,
+                marginPercentage: marginPct,
                 health: branch.health || 100,
                 team: cityTeam.map(m => m.name),
                 reputation: {
@@ -91,7 +115,7 @@ export default function AdminNodeManagement() {
                 }
             };
         });
-    }, [branchOffices, clients, fullTeam]);
+    }, [branchOffices, clients, fullTeam, transactions]);
 
     const handleAddCity = async (name) => {
         const targetCity = name || newCityName;
@@ -433,17 +457,44 @@ function NodeCard({ data, onClick, isSelected, onDelete }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6 mb-8 relative border-t border-white/5 pt-8">
+            <div className="grid grid-cols-2 gap-6 mb-6 relative border-t border-white/5 pt-6">
                 <MiniBar label="Calidad de Captura" value={data.reputation?.quality || 90} color="indigo" />
                 <MiniBar label="Puntualidad" value={data.reputation?.puntuality || 95} color="blue" />
             </div>
 
-            <div className="flex justify-between items-center text-[10px] font-black uppercase text-gray-500 tracking-tighter">
+            <div className="space-y-4 relative border-t border-white/5 pt-6">
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="text-left">
+                        <div className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Facturado</div>
+                        <div className="text-sm font-black text-white">${data.monthlyRevenue.toLocaleString()}</div>
+                    </div>
+                    <div className="text-center border-l border-white/5">
+                        <div className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Egreso</div>
+                        <div className="text-sm font-black text-rose-500/80">${data.monthlyOpEx.toLocaleString()}</div>
+                    </div>
+                    <div className="text-right border-l border-white/5">
+                        <div className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Margen</div>
+                        <div className={`text-sm font-black ${data.monthlyMargin >= 0 ? 'text-emerald-400' : 'text-red-500'}`}>
+                            {data.monthlyMargin >= 0 ? '+' : ''}{Math.round(data.marginPercentage)}%
+                        </div>
+                    </div>
+                </div>
+
+                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.max(0, Math.min(100, data.marginPercentage))}%` }}
+                        className={`h-full rounded-full ${data.monthlyMargin >= 0 ? 'bg-emerald-500' : 'bg-red-500'} shadow-[0_0_10px_rgba(16,185,129,0.3)]`}
+                    />
+                </div>
+            </div>
+
+            <div className="flex justify-between items-center mt-6 text-[10px] font-black uppercase text-gray-500 tracking-tighter">
                 <div className="flex items-center gap-2">
                     <Users className="w-4 h-4" /> {data.creatives} Creativos
                 </div>
-                <div className="text-white bg-white/5 px-4 py-1.5 rounded-xl border border-white/5">
-                    {data.monthlyRevenue} <span className="text-gray-600 ml-1">Facturado</span>
+                <div className={`px-3 py-1 rounded-lg border ${data.monthlyMargin > 0 ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' : 'bg-red-500/5 border-red-500/20 text-red-500'}`}>
+                    ${data.monthlyMargin.toLocaleString()} <span className="opacity-60 ml-1">Utilidad</span>
                 </div>
             </div>
         </motion.div>
@@ -571,14 +622,18 @@ function NodeFocusPanel({ node, team }) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/5">
+                <div className="grid grid-cols-3 gap-3 pt-6 border-t border-white/5">
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
-                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Facturación Sede</p>
-                        <p className="text-sm font-black text-white">{node.monthlyRevenue || '$0'}</p>
+                        <p className="text-[7px] font-black text-gray-500 uppercase tracking-widest mb-1">Facturación</p>
+                        <p className="text-sm font-black text-white">${node.monthlyRevenue.toLocaleString()}</p>
                     </div>
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
-                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Nivel Nodo</p>
-                        <p className="text-xs font-black text-amber-400">{node.level.toUpperCase()}</p>
+                    <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/10 text-center">
+                        <p className="text-[7px] font-black text-rose-500/60 uppercase tracking-widest mb-1">Gastos Op.</p>
+                        <p className="text-sm font-black text-rose-400">${node.monthlyOpEx.toLocaleString()}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-center">
+                        <p className="text-[7px] font-black text-emerald-500/60 uppercase tracking-widest mb-1">Margen Neto</p>
+                        <p className="text-sm font-black text-emerald-400">${node.monthlyMargin.toLocaleString()}</p>
                     </div>
                 </div>
             </div>
