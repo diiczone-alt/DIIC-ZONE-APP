@@ -92,9 +92,7 @@ export default function AdminDualAudit() {
     const [clientCount, setClientCount] = useState(0);
     const [currentMonth] = useState(new Date().toISOString().substring(0, 7));
     
-    // Form States
-    const [isRegistering, setIsRegistering] = useState(false);
-    const [isManagingBudgets, setIsManagingBudgets] = useState(false);
+    const [isProjecting, setIsProjecting] = useState(false);
     
     const [newTx, setNewTx] = useState({
         type: 'income',
@@ -104,7 +102,8 @@ export default function AdminDualAudit() {
         currency: 'USD',
         payment_method: 'Transferencia',
         description: '',
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        status: 'completed'
     });
 
     useEffect(() => {
@@ -115,20 +114,47 @@ export default function AdminDualAudit() {
         setLoading(true);
         try {
             const [txs, goalsData, budgetsData, count] = await Promise.all([
-                agencyService.getFinancialTransactions(),
+                agencyService.getTransactions(),
                 agencyService.getFinancialGoals(),
                 agencyService.getFinancialBudgets(currentMonth),
                 agencyService.getClientCount()
             ]);
-            setTransactions(txs);
-            setGoals(goalsData);
-            setBudgets(budgetsData);
+            setTransactions(txs || []);
+            setGoals(goalsData || []);
+            setBudgets(budgetsData || []);
             setClientCount(count);
         } catch (err) {
             console.error("Error loading financial data:", err);
             toast.error("Error de sincronización financiera");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleProjectCycle = async () => {
+        setIsProjecting(true);
+        try {
+            const result = await agencyService.projectMonthlyCycle(currentMonth);
+            if (result.count > 0) {
+                toast.success(`Ciclo ${currentMonth} proyectado: ${result.count} operaciones generadas.`);
+                loadData();
+            } else {
+                toast.info("No hay nuevas operaciones recurrentes para proyectar este mes.");
+            }
+        } catch (error) {
+            toast.error("Fallo al proyectar ciclo");
+        } finally {
+            setIsProjecting(false);
+        }
+    };
+
+    const handleCertify = async (id) => {
+        try {
+            await agencyService.certifyTransaction(id);
+            toast.success("Operación Certificada", { description: "Registrada en el balance maestro v8.0" });
+            loadData();
+        } catch (error) {
+            toast.error("Error al certificar transacción");
         }
     };
 
@@ -250,14 +276,22 @@ export default function AdminDualAudit() {
 
                 <div className="flex flex-wrap gap-3 w-full md:w-auto">
                     <button 
+                        onClick={handleProjectCycle}
+                        disabled={isProjecting}
+                        className="flex items-center gap-3 px-6 py-4 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl hover:bg-indigo-500/20 transition-all group flex-1 md:flex-none justify-center disabled:opacity-50"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isProjecting ? 'animate-spin' : 'group-hover:rotate-180 transition-transform'}`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{isProjecting ? 'Proyectando...' : 'Proyectar Ciclo'}</span>
+                    </button>
+                    <button 
                         onClick={() => {
                             loadData();
                             toast.success("Sincronizando Nodo Central", { description: "Actualizando integridad fiscal v8.0" });
                         }}
-                        className="flex items-center gap-3 px-6 py-4 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl hover:bg-indigo-500/20 transition-all group flex-1 md:flex-none justify-center"
+                        className="flex items-center gap-3 px-6 py-4 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-white/10 transition-all group flex-1 md:flex-none justify-center"
                     >
-                        <RefreshCw className="w-4 h-4 group-active:rotate-180 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Sincronizar</span>
+                        <Activity className="w-4 h-4 text-gray-400" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Master Sync</span>
                     </button>
                     <button 
                         onClick={() => setIsManagingBudgets(true)}
@@ -298,10 +332,10 @@ export default function AdminDualAudit() {
                     className="space-y-12"
                 >
                     { activeModule === 'overview' && <OverviewTab metrics={financialMetrics} /> }
-                    { activeModule === 'income' && <AreaDetailTab type="income" transactions={transactions.filter(t => t.type === 'income')} budget={0} /> }
-                    { activeModule === 'expenses' && <AreaDetailTab type="expenses" transactions={transactions.filter(t => t.type === 'expense')} budget={financialMetrics.expense} /> }
-                    { activeModule === 'team' && <AreaDetailTab type="team" transactions={transactions.filter(t => t.category === 'Pago a Profesionales')} budget={financialMetrics.teamBudget} /> }
-                    { activeModule === 'agency' && <AreaDetailTab type="agency" transactions={transactions.filter(t => t.category === 'Gastos Administrativos')} budget={financialMetrics.officeBudget} /> }
+                    { activeModule === 'income' && <AreaDetailTab type="income" transactions={transactions.filter(t => t.type === 'income')} budget={0} onCertify={handleCertify} /> }
+                    { activeModule === 'expenses' && <AreaDetailTab type="expenses" transactions={transactions.filter(t => t.type === 'expense')} budget={financialMetrics.expense} onCertify={handleCertify} /> }
+                    { activeModule === 'team' && <AreaDetailTab type="team" transactions={transactions.filter(t => t.category === 'Pago a Profesionales')} budget={financialMetrics.teamBudget} onCertify={handleCertify} /> }
+                    { activeModule === 'agency' && <AreaDetailTab type="agency" transactions={transactions.filter(t => t.category === 'Gastos Administrativos')} budget={financialMetrics.officeBudget} onCertify={handleCertify} /> }
                     { activeModule === 'goals' && <GoalsTab goals={goals} metrics={financialMetrics} onAdd={() => { }} /> }
                 </motion.div>
             </AnimatePresence>
@@ -546,7 +580,7 @@ function OverviewTab({ metrics }) {
     );
 }
 
-function AreaDetailTab({ type, transactions, budget }) {
+function AreaDetailTab({ type, transactions, budget, onCertify }) {
     const config = FINANCIAL_CONFIG[type];
     const total = transactions.reduce((acc, t) => acc + Number(t.amount), 0);
     const usage = budget > 0 ? (total / budget) * 100 : 0;
@@ -607,7 +641,8 @@ function AreaDetailTab({ type, transactions, budget }) {
                                 <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-black text-gray-500 uppercase tracking-widest">{items.length} Operaciones</span>
                             </div>
 
-                            <div c                                 {items.map(tx => (
+                            <div className="grid grid-cols-1 gap-4">
+                                {items.map(tx => (
                                     <motion.div 
                                         key={tx.id}
                                         whileHover={{ x: 10, backgroundColor: 'rgba(255,255,255,0.03)' }}
@@ -643,14 +678,14 @@ function AreaDetailTab({ type, transactions, budget }) {
                                                     {tx.type === 'income' ? '+' : '-'}${Number(tx.amount).toLocaleString()}
                                                 </p>
                                                 <div className="flex items-center justify-end gap-2 text-[9px] font-black text-gray-700 uppercase">
-                                                    <Clock className="w-3 h-3" />
-                                                    <span>{tx.status === 'pending' ? 'Pendiente Fin de Mes' : new Date(tx.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    {tx.status === 'pending' ? <AlertCircle className="w-3 h-3 text-indigo-400 animate-pulse" /> : <Clock className="w-3 h-3" />}
+                                                    <span>{tx.status === 'pending' ? 'Pendiente Certificar' : new Date(tx.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
                                                 </div>
                                             </div>
                                             
                                             {tx.status === 'pending' && (
                                                 <button 
-                                                    onClick={() => handleCertify(tx.id)}
+                                                    onClick={() => onCertify(tx.id)}
                                                     className="p-5 rounded-2xl bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 hover:scale-110 transition-all flex items-center justify-center gap-3 group/btn"
                                                 >
                                                     <CheckCircle2 className="w-5 h-5" />
@@ -659,7 +694,6 @@ function AreaDetailTab({ type, transactions, budget }) {
                                             )}
                                         </div>
                                     </motion.div>
-                                ))}
                                 ))}
                             </div>
                         </div>
