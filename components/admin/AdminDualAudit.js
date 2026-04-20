@@ -145,19 +145,18 @@ export default function AdminDualAudit() {
             distribution, clientCount 
         };
     }, [transactions, budgets, clientCount]);
-+
-+    // --- HELPER: GROUP TRANSACTIONS BY DATE ---
-+    const groupedTransactions = useMemo(() => {
-+        const groups = {};
-+        transactions.forEach(tx => {
-+            const date = tx.date.split('T')[0];
-+            if (!groups[date]) groups[date] = [];
-+            groups[date].push(tx);
-+        });
-+        return Object.entries(groups)
-+            .sort(([a], [b]) => b.localeCompare(a))
-+            .map(([date, items]) => ({ date, items }));
-+    }, [transactions]);
+    // --- HELPER: GROUP TRANSACTIONS BY DATE ---
+    const groupedTransactions = useMemo(() => {
+        const groups = {};
+        transactions.forEach(tx => {
+            const date = tx.date.split('T')[0];
+            if (!groups[date]) groups[date] = [];
+            groups[date].push(tx);
+        });
+        return Object.entries(groups)
+            .sort(([a], [b]) => b.localeCompare(a))
+            .map(([date, items]) => ({ date, items }));
+    }, [transactions]);
 
     const handleAddTransaction = async () => {
         if (!newTx.subcategory || !newTx.amount) {
@@ -183,82 +182,83 @@ export default function AdminDualAudit() {
     if (loading) return <LoadingScreen />;
 
     return (
-        <div className="relative min-h-screen py-10 px-4 lg:px-12 overflow-hidden selection:bg-indigo-500/30 text-left">
+        <div className="relative min-h-screen py-10 px-4 lg:px-8 overflow-hidden selection:bg-indigo-500/30 text-left">
+            <div className="max-w-[1600px] mx-auto relative z-10">
             {/* AMBIENT EFFECTS */}
             <div className="fixed inset-0 pointer-events-none">
                 <div className="absolute top-[-5%] left-[-5%] w-[30%] h-[30%] bg-emerald-500/5 rounded-full blur-[120px]" />
                 <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-indigo-500/5 rounded-full blur-[120px]" />
             </div>
 
-            <header className="relative mb-20 flex flex-col lg:flex-row justify-between items-end gap-10">
-                <div className="flex flex-col gap-10 w-full lg:w-auto">
+            <header className="relative mb-12 flex flex-col xl:flex-row justify-between items-start xl:items-end gap-8 bg-white/[0.02] border border-white/5 p-8 rounded-[2.5rem] backdrop-blur-sm">
+                <div className="flex flex-col gap-8 w-full md:w-auto">
                      <motion.div 
-                        initial={{ opacity: 0, x: -50 }}
+                        initial={{ opacity: 0, x: -30 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-8 group"
+                        className="flex items-center gap-6"
                     >
-                        <div className="w-3 h-24 bg-gradient-to-b from-emerald-400 via-indigo-500 to-purple-600 rounded-full shadow-[0_0_30px_rgba(99,102,241,0.5)] group-hover:h-28 transition-all duration-500" />
+                        <div className="w-1.5 h-16 bg-gradient-to-b from-emerald-400 to-indigo-600 rounded-full shadow-[0_0_20px_rgba(99,102,241,0.3)]" />
                         <div>
-                            <div className="flex items-center gap-3 mb-2">
-                                <Shield className="w-4 h-4 text-indigo-400 animate-pulse" />
-                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Audit Mode Active</span>
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <Shield className="w-3.5 h-3.5 text-indigo-400/80" />
+                                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.3em]">Core Audit Active</span>
                             </div>
-                            <h1 className="text-8xl font-black italic uppercase tracking-tighter text-white leading-[0.8]">FINANZAS<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-emerald-400 to-purple-500">GLOBALES</span></h1>
-                            <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.5em] mt-6 italic opacity-60">DIIC HQ — Control Central de Tesorería v8.0</p>
+                            <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white leading-none">FINANZAS<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400 px-2">GLOBALES</span></h1>
+                            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.4em] mt-3 opacity-80">DIIC HQ — Control Central de Tesorería v8.0</p>
                         </div>
                     </motion.div>
 
-                    <nav className="flex items-center gap-2 bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-2 overflow-x-auto no-scrollbar shadow-2xl">
+                    <nav className="flex items-center gap-1.5 bg-black/60 backdrop-blur-3xl border border-white/5 rounded-2xl p-1.5 overflow-x-auto no-scrollbar shadow-xl max-w-full">
                         {[
-                            { id: 'overview', label: 'Monitor Global', icon: LayoutDashboard },
-                            { id: 'income', label: 'Ingresos (Área 1)', icon: Users },
-                            { id: 'team', label: 'Equipo (Área 2)', icon: Zap },
-                            { id: 'agency', label: 'Agencia (Área 3)', icon: Home },
-                            { id: 'goals', label: 'Metas de Expansión', icon: Target }
+                            { id: 'overview', label: 'Monitor', icon: LayoutDashboard },
+                            { id: 'income', label: 'Ingresos', icon: Users },
+                            { id: 'team', label: 'Equipo', icon: Zap },
+                            { id: 'agency', label: 'Agencia', icon: Home },
+                            { id: 'goals', label: 'Metas', icon: Target }
                         ].map((mod) => (
                             <button
                                 key={mod.id}
                                 onClick={() => setActiveModule(mod.id)}
-                                className={`flex items-center gap-3 px-10 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
                                     activeModule === mod.id 
-                                    ? 'bg-white text-black shadow-[0_0_30px_rgba(255,255,255,0.2)] scale-105' 
+                                    ? 'bg-white text-black shadow-lg scale-[1.02]' 
                                     : 'text-gray-500 hover:text-white hover:bg-white/5'
                                 }`}
                             >
-                                <mod.icon className="w-4 h-4" />
+                                <mod.icon className="w-3.5 h-3.5" />
                                 <span>{mod.label}</span>
                             </button>
                         ))}
                     </nav>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-3 w-full md:w-auto">
                     <button 
                         onClick={() => setIsManagingBudgets(true)}
-                        className="p-8 bg-white/5 border border-white/10 text-white rounded-[3rem] hover:bg-white/10 transition-all flex flex-col items-center justify-center min-w-[140px] group border-dashed"
+                        className="flex items-center gap-3 px-6 py-4 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-white/10 transition-all group flex-1 md:flex-none justify-center"
                     >
-                        <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform text-gray-400 group-hover:text-white" />
-                        <span className="text-[9px] font-black uppercase mt-4 tracking-widest text-gray-500 group-hover:text-white">Presupuestos</span>
+                        <Settings className="w-4 h-4 text-gray-400 group-hover:rotate-90 transition-transform" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Presupuestos</span>
                     </button>
                      <button 
                         onClick={() => {
                             setNewTx(prev => ({ ...prev, type: 'income', category: 'Ingresos Operativos', subcategory: '' }));
                             setIsRegistering(true);
                         }}
-                        className="p-8 bg-emerald-500 text-black rounded-[3rem] hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/30 flex flex-col items-center justify-center min-w-[160px] group"
+                        className="flex items-center gap-3 px-6 py-4 bg-emerald-500 text-black rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex-1 md:flex-none justify-center"
                     >
-                        <Plus className="w-6 h-6 group-hover:scale-125 transition-transform" />
-                        <span className="text-[10px] font-black uppercase mt-4 tracking-[0.2em]">Registrar EN</span>
+                        <Plus className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">Registrar EN</span>
                     </button>
                     <button 
                         onClick={() => {
                             setNewTx(prev => ({ ...prev, type: 'expense', category: 'Pago a Profesionales', subcategory: '' }));
                             setIsRegistering(true);
                         }}
-                        className="p-8 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-[3rem] hover:bg-rose-500 hover:text-white transition-all flex flex-col items-center justify-center min-w-[160px] group"
+                        className="flex items-center gap-3 px-6 py-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all flex-1 md:flex-none justify-center"
                     >
-                        <ArrowDownRight className="w-6 h-6 group-hover:translate-y-1 transition-transform" />
-                        <span className="text-[10px] font-black uppercase mt-4 tracking-[0.2em]">Registrar OUT</span>
+                        <ArrowDownRight className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">Registrar OUT</span>
                     </button>
                 </div>
             </header>
@@ -297,6 +297,8 @@ export default function AdminDualAudit() {
                     />
                 )}
             </AnimatePresence>
+            </AnimatePresence>
+            </div>
         </div>
     );
 }

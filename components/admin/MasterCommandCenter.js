@@ -75,15 +75,15 @@ export default function MasterCommandCenter() {
         <div className="space-y-8 pb-20 p-6">
 
             {/* HEADER */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
                     <h1 className="text-3xl font-black text-white flex items-center gap-3">
                         <Activity className="w-8 h-8 text-indigo-500" /> Centro de Comando
                     </h1>
                     <p className="text-gray-400">Visión Global de DIIC ZONE</p>
                 </div>
-                <div className="flex gap-4">
-                    <div className="flex p-1 bg-white/5 border border-white/10 rounded-2xl mr-4 overflow-x-auto max-w-full md:max-w-none">
+                <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+                    <div className="flex p-1 bg-white/5 border border-white/10 rounded-2xl overflow-x-auto no-scrollbar max-w-full">
                         <button
                             onClick={() => setView('global')}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${view === 'global' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
@@ -145,8 +145,10 @@ export default function MasterCommandCenter() {
                             Inteligencia Maestra
                         </button>
                     </div>
-                    <StatusBadge label="Sistemas Activos" status="online" />
-                    <StatusBadge label="Alertas" count={operationalData?.risks?.length || 0} status={operationalData?.risks?.length > 0 ? 'alert' : 'online'} />
+                    <div className="flex gap-4 shrink-0 overflow-x-auto no-scrollbar">
+                        <StatusBadge label="Sistemas Activos" status="online" />
+                        <StatusBadge label="Alertas" count={operationalData?.risks?.length || 0} status={operationalData?.risks?.length > 0 ? 'alert' : 'online'} />
+                    </div>
                 </div>
             </div>
 
