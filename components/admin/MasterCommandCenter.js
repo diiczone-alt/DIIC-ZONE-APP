@@ -1,6 +1,6 @@
-'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { agencyService } from '@/services/agencyService';
+import { supabase } from '@/lib/supabase';
 import {
     Activity, Users, TrendingUp, DollarSign,
     AlertTriangle, Video, Layers, Award,
@@ -34,25 +34,64 @@ export default function MasterCommandCenter() {
     const [clients, setClients] = useState([]);
     const [operationalData, setOperationalData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
     const [view, setView] = useState('global');
+    const isMounted = useRef(true);
 
-    useEffect(() => {
-        const fetchMasterData = async () => {
-            try {
-                setLoading(true);
-                const [clientsData, intelligence] = await Promise.all([
-                    agencyService.getClients(),
-                    agencyService.getOperationalIntelligence()
-                ]);
+    const loadMasterData = async (isBackground = false) => {
+        if (!isBackground) setLoading(true);
+        setIsSyncing(true);
+        try {
+            const [clientsData, intelligence] = await Promise.all([
+                agencyService.getClients(),
+                agencyService.getOperationalIntelligence()
+            ]);
+            
+            if (isMounted.current) {
                 setClients(clientsData);
                 setOperationalData(intelligence);
-            } catch (err) {
-                console.error("MasterCommandCenter: Error fetching real data", err);
-            } finally {
-                setLoading(false);
+                // Persistence
+                localStorage.setItem('diic_master_clients', JSON.stringify(clientsData));
+                localStorage.setItem('diic_master_intelligence', JSON.stringify(intelligence));
             }
+        } catch (err) {
+            console.error("MasterCommandCenter: Error fetching real data", err);
+        } finally {
+            if (isMounted.current) {
+                setLoading(false);
+                setIsSyncing(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        isMounted.current = true;
+        
+        // 1. Initial Cache Load
+        const cachedClients = localStorage.getItem('diic_master_clients');
+        const cachedIntel = localStorage.getItem('diic_master_intelligence');
+        
+        if (cachedClients && cachedIntel) {
+            setClients(JSON.parse(cachedClients));
+            setOperationalData(JSON.parse(cachedIntel));
+            setLoading(false);
+        }
+
+        // 2. Background Sync
+        loadMasterData(!!(cachedClients && cachedIntel));
+
+        // 3. Realtime Subscriptions
+        const masterChannel = supabase
+            .channel('master-center-sync')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => loadMasterData(true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'team' }, () => loadMasterData(true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadMasterData(true))
+            .subscribe();
+
+        return () => {
+            isMounted.current = false;
+            supabase.removeChannel(masterChannel);
         };
-        fetchMasterData();
     }, []);
 
     const handleFeatureClick = (feature) => {
@@ -75,12 +114,21 @@ export default function MasterCommandCenter() {
         <div className="space-y-8 pb-20 p-6">
 
             {/* HEADER */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative overflow-hidden">
                 <div>
                     <h1 className="text-3xl font-black text-white flex items-center gap-3">
-                        <Activity className="w-8 h-8 text-indigo-500" /> Centro de Comando
+                        <Activity className={`w-8 h-8 ${isSyncing ? 'text-emerald-400 animate-pulse' : 'text-indigo-500'}`} /> Centro de Comando
                     </h1>
-                    <p className="text-gray-400">Visión Global de DIIC ZONE</p>
+                    <p className="text-gray-400 flex items-center gap-2">
+                        Visión Global de DIIC ZONE 
+                        {isSyncing ? (
+                            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">LIVE SYNCING</span>
+                        ) : (
+                            <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest flex items-center gap-1">
+                                <ShieldCheck className="w-3 h-3 text-emerald-500" /> SIEMPRE CONECTADO
+                            </span>
+                        )}
+                    </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
                     <div className="flex p-1 bg-white/5 border border-white/10 rounded-2xl overflow-x-auto no-scrollbar max-w-full">

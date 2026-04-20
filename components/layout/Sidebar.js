@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 const MAIN_ITEMS = [
     { name: 'Dashboard', icon: Home, href: '/dashboard', color: 'text-blue-400' },
     { name: 'Mi Progreso', icon: Zap, href: '/dashboard/profile', color: 'text-yellow-400' },
+    { name: 'Galería & Recursos', icon: Images, href: '/dashboard/gallery', color: 'text-blue-400', glow: true },
     { name: 'Zona Creativa', icon: LayoutGrid, href: '/dashboard/studio', color: 'text-fuchsia-400', glow: true },
     { name: 'Flujo de Contenido', icon: Kanban, href: '/dashboard/pipeline', color: 'text-emerald-400' },
     { name: 'Calendarios', icon: CalendarDays, href: '/dashboard/calendar', color: 'text-rose-400', glow: true },

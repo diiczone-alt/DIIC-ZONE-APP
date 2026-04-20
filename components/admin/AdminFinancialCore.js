@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
     DollarSign, TrendingUp, PieChart, BarChart3,
     ArrowUpRight, ArrowDownRight, Wallet,
@@ -9,24 +9,82 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { agencyService } from '@/services/agencyService';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminFinancialCore() {
     const [activeTab, setActiveTab] = useState('revenue');
     const [financial, setFinancial] = useState(null);
     const [scale, setScale] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const isMounted = useRef(true);
 
-    useEffect(() => {
-        const fetchData = async () => {
+    const loadData = async (isBackground = false) => {
+        if (!isBackground) setLoading(true);
+        setIsSyncing(true);
+        try {
             const [fin, sc] = await Promise.all([
                 agencyService.getFinancialSummary(),
                 agencyService.getScaleData()
             ]);
-            setFinancial(fin);
-            setScale(sc);
-            setLoading(false);
+            
+            if (isMounted.current) {
+                setFinancial(fin);
+                setScale(sc);
+                // Cache data
+                localStorage.setItem('diic_hq_financial_core', JSON.stringify({ fin, sc }));
+            }
+        } catch (err) {
+            console.error("Error loading Financial Core data:", err);
+            if (!isBackground) toast.error("Error cargando Núcleo Financiero");
+        } finally {
+            if (isMounted.current) {
+                setLoading(false);
+                setIsSyncing(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        isMounted.current = true;
+        
+        // 1. Instant Cache Load
+        const cached = localStorage.getItem('diic_hq_financial_core');
+        if (cached) {
+            try {
+                const { fin, sc } = JSON.parse(cached);
+                setFinancial(fin);
+                setScale(sc);
+                setLoading(false);
+            } catch (e) {
+                console.warn("Financial Cache invalid");
+            }
+        }
+
+        // 2. Background Sync
+        loadData(!!cached);
+
+        // 3. Realtime Listeners
+        const channel = supabase
+            .channel('financial-core-sync')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
+                console.log("💰 [Finance] Realtime Refresh (Clients)");
+                loadData(true);
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+                console.log("💰 [Finance] Realtime Refresh (Transactions)");
+                loadData(true);
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'team' }, () => {
+                console.log("💰 [Finance] Realtime Refresh (Team)");
+                loadData(true);
+            })
+            .subscribe();
+
+        return () => {
+            isMounted.current = false;
+            supabase.removeChannel(channel);
         };
-        fetchData();
     }, []);
 
     const metrics = financial?.metrics || { income: 0, variable_costs: 0, gross_profit: 0, gross_margin: 0 };
@@ -35,7 +93,18 @@ export default function AdminFinancialCore() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500 text-left">
             {/* FINANCIAL HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-emerald-500/5 border border-emerald-500/10 p-6 rounded-3xl">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-emerald-500/5 border border-emerald-500/10 p-6 rounded-3xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4">
+                    {isSyncing ? (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest animate-pulse">
+                            <Activity className="w-3 h-3" /> HQ LIVE SYNC
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                            <ShieldCheck className="w-3 h-3 text-emerald-500" /> SIEMPRE CONECTADO
+                        </div>
+                    )}
+                </div>
                 <div>
                     <h2 className="text-2xl font-black text-white flex items-center gap-2">
                         <Wallet className="w-7 h-7 text-emerald-500" /> Núcleo Financiero Admin

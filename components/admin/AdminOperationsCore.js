@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
     Activity, Clock, Star, Users,
     CheckCircle2, AlertTriangle,
@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { agencyService } from '@/services/agencyService';
+import { supabase } from '@/lib/supabase';
 import AdminWorkloadManager from './AdminWorkloadManager';
 import AdminClientPrioritization from './AdminClientPrioritization';
 import AdminTalentReputation from './AdminTalentReputation';
@@ -21,16 +22,82 @@ import AdminTalentPayments from './AdminTalentPayments';
 import AdminTalentTraining from './AdminTalentTraining';
 import AdminProductionDashboard from './AdminProductionDashboard';
 
-export default function AdminOperationsCore({ productionStats = {}, teamData = [], globalMetrics = {} }) {
+export default function AdminOperationsCore() {
     const [activeTab, setActiveTab] = useState('production');
+    const [teamData, setTeamData] = useState([]);
+    const [globalMetrics, setGlobalMetrics] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const isMounted = useRef(true);
+
+    const loadOperationsData = async (isBackground = false) => {
+        if (!isBackground) setLoading(true);
+        setIsSyncing(true);
+        try {
+            const [team, metrics] = await Promise.all([
+                agencyService.getTeam(),
+                agencyService.getGlobalMetrics() // Using existing service methods
+            ]);
+            
+            if (isMounted.current) {
+                setTeamData(team || []);
+                setGlobalMetrics(metrics || {});
+                
+                // Persistence
+                localStorage.setItem('diic_operations_cache', JSON.stringify({
+                    team, metrics
+                }));
+            }
+        } catch (err) {
+            console.error("OperationsCore: Sync Error", err);
+        } finally {
+            if (isMounted.current) {
+                setLoading(false);
+                setIsSyncing(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        isMounted.current = true;
+
+        // 1. Initial Cache Load
+        const cached = localStorage.getItem('diic_operations_cache');
+        if (cached) {
+            try {
+                const { team, metrics } = JSON.parse(cached);
+                setTeamData(team || []);
+                setGlobalMetrics(metrics || {});
+                setLoading(false);
+            } catch (e) {
+                console.warn("Operations Cache invalid");
+            }
+        }
+
+        // 2. Background Sync
+        loadOperationsData(!!cached);
+
+        // 3. Realtime Listeners
+        const opsChannel = supabase
+            .channel('operations-sync')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'team' }, () => loadOperationsData(true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => loadOperationsData(true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => loadOperationsData(true))
+            .subscribe();
+
+        return () => {
+            isMounted.current = false;
+            supabase.removeChannel(opsChannel);
+        };
+    }, []);
 
     // Helper component for tabs
     const TabBtn = ({ id, label, active, setter }) => (
         <button
             onClick={() => setter(id)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${active === id
-                    ? 'bg-blue-500 text-black'
-                    : 'bg-white/5 text-gray-300 hover:bg-white/10'
+            className={`px-4 py-2 rounded-xl text-sm font-black uppercase tracking-tighter transition-all ${active === id
+                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
                 }`}
         >
             {label}
@@ -40,21 +107,28 @@ export default function AdminOperationsCore({ productionStats = {}, teamData = [
     return (
         <div className="space-y-6 animate-in fade-in duration-500 text-left">
             {/* OPERATIONS HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-blue-500/5 border border-blue-500/10 p-6 rounded-3xl">
-                <div>
-                    <h2 className="text-2xl font-black text-white flex items-center gap-2">
-                        <Gauge className="w-7 h-7 text-blue-500" /> Núcleo de Operaciones Globales
-                    </h2>
-                    <p className="text-gray-400 text-sm">Arquitectura de control: Producción, Calidad y Asignación Inteligente</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-blue-500/5 border border-blue-500/10 p-8 rounded-[40px] relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8">
+                    {isSyncing ? (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-blue-400 uppercase tracking-widest animate-pulse">
+                            <Activity className="w-3 h-3" /> HQ OPS SYNC
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                            <ShieldCheck className="w-3 h-3 text-blue-500" /> SIEMPRE CONECTADO
+                        </div>
+                    )}
                 </div>
-                <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-gray-300 hover:bg-white/10 transition-all">
+                <div>
+                    <h2 className="text-3xl font-black text-white flex items-center gap-2">
+                        <Gauge className="w-8 h-8 text-blue-500" /> Núcleo de Operaciones
+                    </h2>
+                    <p className="text-gray-400 text-xs font-medium uppercase tracking-widest mt-1">Arquitectura de control: Producción, Calidad y Asignación</p>
+                </div>
+                <div className="flex gap-4">
+                    <button className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-300 hover:bg-white/10 transition-all">
                         <Filter className="w-4 h-4" /> Todos los Nodos
                     </button>
-                    <div className="px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center gap-3">
-                         <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                         <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Sincronizado</span>
-                    </div>
                 </div>
             </div>
 

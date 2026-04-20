@@ -1,30 +1,121 @@
 'use client';
 
-import { useState } from 'react';
-import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X, MapPin, Sparkles, Zap, Stethoscope } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { agencyService } from '@/services/agencyService';
+import { supabase } from '@/lib/supabase';
 import GrowthPricing from '../growth/GrowthPricing';
+import PremiumDropdown from '../shared/PremiumDropdown';
+import { motion } from 'framer-motion';
+import { ECUADOR_CITIES, MARKETING_TYPES, PLAN_OPTIONS, MEDICAL_SPECIALTIES } from '@/lib/constants';
 
 export default function ClientAccountSettings() {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [activeSection, setActiveSection] = useState('profile'); // profile, security, billing, notifications
     const [showPlans, setShowPlans] = useState(false);
+    
+    // Sync State
+    const [profileData, setProfileData] = useState({
+        full_name: '',
+        brand_name: '',
+        phone: '',
+        email: '',
+        location: '',
+        marketing_type: 'medicos',
+        specialty: '',
+        plan: 'Basic',
+        bio: ''
+    });
 
-    const full_name = user?.user_metadata?.full_name || user?.full_name || 'DIIC User';
-    const initials = full_name.substring(0, 2).toUpperCase();
-    const brand = user?.user_metadata?.brand || 'CEO / Fundador';
-    const email = user?.email || 'usuario@example.com';
+    useEffect(() => {
+        const fetchSyncData = async () => {
+            if (!user?.id) return;
+            
+            try {
+                // 1. Fetch Profile
+                const { data: profile, error: pError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+                
+                if (pError) throw pError;
 
-    const handleSave = () => {
+                // 2. Fetch Linked Client record if available
+                let clientRecord = null;
+                if (profile?.client_id) {
+                    clientRecord = await agencyService.getClientById(profile.client_id);
+                }
+
+                setProfileData({
+                    full_name: profile?.full_name || user?.user_metadata?.full_name || '',
+                    brand_name: clientRecord?.name || user?.user_metadata?.brand || '',
+                    phone: clientRecord?.whatsapp_number || profile?.whatsapp || '',
+                    email: user?.email || '',
+                    location: clientRecord?.city || profile?.location || 'Santo Domingo',
+                    marketing_type: clientRecord?.industry || profile?.marketing_type || 'medicos',
+                    specialty: clientRecord?.specialty || profile?.specialty || '',
+                    plan: clientRecord?.plan || profile?.plan || 'Basic',
+                    bio: clientRecord?.notes || ''
+                });
+            } catch (error) {
+                console.error("Error fetching sync data:", error);
+            }
+        };
+
+        fetchSyncData();
+    }, [user]);
+
+    const handleSave = async () => {
+        if (!user?.id) return;
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
+        
+        try {
+            // Find client_id first
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('client_id')
+                .eq('id', user.id)
+                .single();
+
+            if (profile?.client_id) {
+                // Perform Bidirectional Sync
+                await agencyService.syncClientProfile(profile.client_id, {
+                    full_name: profileData.brand_name, // Mapping Brand Name to Profile Full Name for aesthetic parity
+                    location: profileData.location,
+                    whatsapp: profileData.phone,
+                    marketing_type: profileData.marketing_type,
+                    specialty: profileData.specialty,
+                    plan: profileData.plan
+                });
+                
+                // Update specific personal profile fields
+                await supabase
+                    .from('profiles')
+                    .update({ 
+                        full_name: profileData.full_name,
+                        location: profileData.location,
+                        whatsapp: profileData.phone,
+                        marketing_type: profileData.marketing_type,
+                        specialty: profileData.specialty,
+                        plan: profileData.plan
+                    })
+                    .eq('id', user.id);
+            }
+
+            toast.success('Perfil y Hub de Datos sincronizados');
+        } catch (error) {
+            console.error("Sync error:", error);
+            toast.error('Error al sincronizar datos');
+        } finally {
             setIsLoading(false);
-            toast.success('Cambios guardados correctamente');
-        }, 1500);
+        }
     };
+
+    const initials = (profileData.full_name || 'DU').substring(0, 2).toUpperCase();
 
     return (
         <div className="flex flex-col lg:flex-row gap-8 items-start relative">
@@ -96,10 +187,75 @@ export default function ClientAccountSettings() {
 
                         {/* Form Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-                            <InputField label="Nombre Completo" placeholder={full_name} defaultValue={full_name} icon={User} />
-                            <InputField label="Cargo / Título" placeholder={brand} defaultValue={brand} icon={Shield} />
-                            <InputField label="Correo Electrónico" placeholder={email} defaultValue={email} type="email" icon={Mail} />
-                            <InputField label="Teléfono" placeholder="+52 55 1234 5678" type="tel" icon={Phone} />
+                            <InputField 
+                                label="Nombre Completo" 
+                                value={profileData.full_name} 
+                                onChange={(e) => setProfileData({...profileData, full_name: e.target.value})} 
+                                icon={User} 
+                            />
+                            <InputField 
+                                label="Cargo / Título" 
+                                value={profileData.brand_name} 
+                                onChange={(e) => setProfileData({...profileData, brand_name: e.target.value})} 
+                                icon={Shield} 
+                                placeholder="Ej: Dra. Jessica Rey"
+                            />
+                            <InputField 
+                                label="Correo Electrónico" 
+                                value={profileData.email} 
+                                type="email" 
+                                icon={Mail} 
+                                readOnly={true}
+                            />
+                            <InputField 
+                                label="Teléfono / WhatsApp" 
+                                value={profileData.phone} 
+                                onChange={(e) => setProfileData({...profileData, phone: e.target.value})} 
+                                type="tel" 
+                                icon={Phone} 
+                            />
+                        </div>
+
+                        {/* Premium Selections */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 pt-4 border-t border-white/5">
+                            <PremiumDropdown 
+                                label="Ubicación / Ciudad"
+                                value={profileData.location}
+                                onChange={(val) => setProfileData({...profileData, location: val})}
+                                options={ECUADOR_CITIES}
+                                icon={MapPin}
+                                searchable={true}
+                            />
+                            <PremiumDropdown 
+                                label="Tipo de Marketing"
+                                value={profileData.marketing_type}
+                                onChange={(val) => setProfileData({...profileData, marketing_type: val})}
+                                options={MARKETING_TYPES}
+                                icon={Sparkles}
+                            />
+                            
+                            {/* Conditional Specialty field */}
+                            {profileData.marketing_type === 'medicos' && (
+                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="md:col-span-2">
+                                    <PremiumDropdown 
+                                        label="Especialidad Médica"
+                                        value={profileData.specialty}
+                                        onChange={(val) => setProfileData({...profileData, specialty: val})}
+                                        options={MEDICAL_SPECIALTIES}
+                                        icon={Stethoscope}
+                                    />
+                                </motion.div>
+                            )}
+
+                            <div className="md:col-span-2">
+                                <PremiumDropdown 
+                                    label="Plan Maestro"
+                                    value={profileData.plan}
+                                    onChange={(val) => setProfileData({...profileData, plan: val})}
+                                    options={PLAN_OPTIONS}
+                                    icon={Zap}
+                                />
+                            </div>
                         </div>
 
                         {/* Bio */}
@@ -108,6 +264,8 @@ export default function ClientAccountSettings() {
                             <textarea
                                 className="w-full bg-black/20 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-blue-500/50 transition-colors min-h-[120px] resize-none placeholder:text-gray-600"
                                 placeholder="Escribe algo sobre ti y tu empresa..."
+                                value={profileData.bio}
+                                onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
                             />
                         </div>
                     </div>
@@ -266,15 +424,17 @@ function NavButton({ id, label, icon: Icon, isActive, onClick }) {
     );
 }
 
-function InputField({ label, placeholder, defaultValue, type = 'text', icon: Icon }) {
+function InputField({ label, placeholder, value, onChange, type = 'text', icon: Icon, readOnly = false }) {
     return (
         <div className="space-y-2">
             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</label>
             <div className="relative group">
                 <input
                     type={type}
-                    defaultValue={defaultValue}
-                    className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:bg-black/40 transition-all placeholder:text-gray-600 group-hover:border-white/20"
+                    value={value}
+                    onChange={onChange}
+                    readOnly={readOnly}
+                    className={`w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:bg-black/40 transition-all placeholder:text-gray-600 group-hover:border-white/20 ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                     placeholder={placeholder}
                 />
                 <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-blue-400 transition-colors" />

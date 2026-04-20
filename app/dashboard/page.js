@@ -20,6 +20,7 @@ import SocialFeedPreview from '../../components/dashboard/SocialFeedPreview';
 import AdPerformanceCard from '../../components/dashboard/AdPerformanceCard';
 import ActionProtocol from '../../components/growth/ActionProtocol';
 import { getNicheConfig } from '../../components/growth/nicheConfig';
+import GalleryPreview from '../../components/dashboard/GalleryPreview';
 
 // ─── Stat Card Component ─────────────────────────────────────────
 function StatCard({ title, value, delta, icon: Icon, color, chartData }) {
@@ -489,6 +490,13 @@ function DashboardContent() {
          </section>
 
       </section>
+
+      {/* ─── Gallery Area (Restored) ─── */}
+      {!isStaff && (
+          <section className="mb-12 mt-10">
+              <GalleryPreview />
+          </section>
+      )}
 
       {/* Background Decor */}
       <div className="fixed -top-40 -left-40 w-[60rem] h-[60rem] bg-indigo-500/5 rounded-full blur-[10rem] -z-10" />

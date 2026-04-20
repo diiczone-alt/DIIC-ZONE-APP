@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { agencyService } from '@/services/agencyService';
+import { supabase } from '@/lib/supabase';
 import {
     MapPin, Globe, Users,
     FileText, TrendingUp, BarChart3,
@@ -29,6 +30,9 @@ export default function AdminNodeManagement() {
     const [fullTeam, setFullTeam] = useState([]);
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const isMounted = useRef(true);
+
     const [isAddingCity, setIsAddingCity] = useState(false);
     const [newCityName, setNewCityName] = useState('');
     const [showCityDropdown, setShowCityDropdown] = useState(false);
@@ -38,28 +42,73 @@ export default function AdminNodeManagement() {
         "Machala", "Durán", "Ibarra", "Riobamba"
     ]);
 
-    useEffect(() => {
-        const loadAllData = async () => {
-            setLoading(true);
-            try {
-                const [branches, teamData, clientData, txData] = await Promise.all([
-                    agencyService.getBranchOffices(),
-                    agencyService.getTeam(),
-                    agencyService.getClients(),
-                    agencyService.getTransactions()
-                ]);
+    const loadAllData = async (isBackground = false) => {
+        if (!isBackground) setLoading(true);
+        setIsSyncing(true);
+        try {
+            const [branches, teamData, clientData, txData] = await Promise.all([
+                agencyService.getBranchOffices(),
+                agencyService.getTeam(),
+                agencyService.getClients(),
+                agencyService.getTransactions()
+            ]);
+            
+            if (isMounted.current) {
                 setBranchOffices(branches || []);
                 setFullTeam(teamData || []);
                 setClients(clientData || []);
                 setTransactions(txData || []);
-            } catch (err) {
-                console.error("Error loading HQ Control data:", err);
-                toast.error("Error sincronizando el Centro de Control");
-            } finally {
-                setLoading(false);
+                
+                // Persistence
+                localStorage.setItem('diic_node_cache', JSON.stringify({
+                    branches, teamData, clientData, txData
+                }));
             }
+        } catch (err) {
+            console.error("Error loading HQ Control data:", err);
+            if (!isBackground) toast.error("Error sincronizando el Centro de Control");
+        } finally {
+            if (isMounted.current) {
+                setLoading(false);
+                setIsSyncing(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        isMounted.current = true;
+
+        // 1. Instant Cache Load
+        const cached = localStorage.getItem('diic_node_cache');
+        if (cached) {
+            try {
+                const { branches, teamData, clientData, txData } = JSON.parse(cached);
+                setBranchOffices(branches || []);
+                setFullTeam(teamData || []);
+                setClients(clientData || []);
+                setTransactions(txData || []);
+                setLoading(false);
+            } catch (e) {
+                console.warn("Node Cache invalid");
+            }
+        }
+
+        // 2. Background Sync
+        loadAllData(!!cached);
+
+        // 3. Realtime Listeners
+        const nodeChannel = supabase
+            .channel('node-management-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'branch_offices' }, () => loadAllData(true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => loadAllData(true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'team' }, () => loadAllData(true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadAllData(true))
+            .subscribe();
+
+        return () => {
+            isMounted.current = false;
+            supabase.removeChannel(nodeChannel);
         };
-        loadAllData();
     }, []);
 
     // Calcular nodos dinámicamente basados en datos reales y sincronización financiera
@@ -107,6 +156,7 @@ export default function AdminNodeManagement() {
                 marginPercentage: marginPct,
                 health: branch.health || 100,
                 team: cityTeam.map(m => m.name),
+                clients: cityClients, // NUEVO: Lista completa de empresas
                 reputation: {
                     puntuality: branch.reputation_puntual || 95,
                     quality: branch.reputation_quality || 90,
@@ -163,8 +213,16 @@ export default function AdminNodeManagement() {
         <div className="space-y-6 animate-in fade-in duration-500 text-left">
             {/* NODE HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-indigo-500/5 border border-indigo-500/10 p-8 rounded-[40px] relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-5">
-                    <Globe className="w-32 h-32" />
+                <div className="absolute top-0 right-0 p-8">
+                    {isSyncing ? (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest animate-pulse">
+                            <Activity className="w-3 h-3" /> HQ LIVE SYNC
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                            <ShieldCheck className="w-3 h-3 text-emerald-500" /> SIEMPRE CONECTADO
+                        </div>
+                    )}
                 </div>
                 <div className="relative z-10">
                     <h2 className="text-3xl font-black text-white flex items-center gap-3">
@@ -462,6 +520,26 @@ function NodeCard({ data, onClick, isSelected, onDelete }) {
                 <MiniBar label="Puntualidad" value={data.reputation?.puntuality || 95} color="blue" />
             </div>
 
+            {/* --- CARTERA DE EMPRESAS (NUEVO: ALL CLIENTS) --- */}
+            <div className="mb-6 space-y-2">
+                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                    <Building2 className="w-3 h-3 text-indigo-400" /> Cartera de Empresas
+                </p>
+                <div className="flex flex-wrap gap-1.5 max-h-[60px] overflow-y-auto custom-scrollbar pr-2">
+                    {data.clients && data.clients.length > 0 ? data.clients.map((client, idx) => (
+                        <div 
+                            key={idx}
+                            title={`${client.name} - ${client.plan || 'Plan Individual'}`}
+                            className="bg-indigo-500/5 border border-indigo-500/20 px-2.5 py-1 rounded-lg text-[9px] font-black text-white hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all cursor-default"
+                        >
+                            {client.name}
+                        </div>
+                    )) : (
+                        <p className="text-[9px] text-gray-700 italic font-bold">Sin empresas asignadas</p>
+                    )}
+                </div>
+            </div>
+
             <div className="space-y-4 relative border-t border-white/5 pt-6">
                 <div className="grid grid-cols-3 gap-2">
                     <div className="text-left">
@@ -617,6 +695,36 @@ function NodeFocusPanel({ node, team }) {
                             <div className="p-8 bg-indigo-500/5 border border-dashed border-indigo-500/10 rounded-3xl text-center group cursor-pointer hover:bg-indigo-500/10 transition-all">
                                 <PlusIcon className="w-5 h-5 text-indigo-500/50 mx-auto mb-2" />
                                 <p className="text-[9px] text-indigo-400 font-black uppercase tracking-widest">Iniciar Reclutamiento</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* --- CARTERA DE CLIENTES (NUEVO: ALL) --- */}
+                <div className="space-y-4 pt-6 border-t border-white/5">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                        <Globe className="w-3 h-3 text-blue-400" /> Cartera de Clientes Completa
+                    </p>
+                    <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                        {node.clients && node.clients.length > 0 ? node.clients.map((client, i) => (
+                            <div key={i} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl group hover:border-indigo-500/20 transition-all">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-black border border-blue-500/20">
+                                        {client.name.charAt(0)}
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-xs font-black text-white uppercase">{client.name}</p>
+                                        <p className="text-[8px] text-gray-500 font-bold uppercase">{client.industry || client.business_type || 'Empresa'}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-black text-emerald-400 tracking-tighter">${(Number(client.price) || 0).toLocaleString()}</p>
+                                    <p className="text-[7px] text-gray-600 font-black uppercase tracking-widest">Aporte Mensual</p>
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="p-8 border border-dashed border-white/10 rounded-3xl text-center">
+                                <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Sin Clientes en esta Sede</p>
                             </div>
                         )}
                     </div>

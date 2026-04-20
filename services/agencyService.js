@@ -91,13 +91,12 @@ export const agencyService = {
         const timestamp = new Date().toLocaleTimeString();
         console.log(`🚀 [${timestamp}] Service: Updating Client ${id}...`);
         try {
-            // Data Guardian: Include price/target/access info for persistence
             const validFields = [
                 'name', 'city', 'type', 'status', 'cm', 'priority', 'plan', 
                 'projects', 'nextpost', 'price', 'target', 'email', 
                 'password_initial', 'whatsapp_number', 'google_drive_folder_id',
                 'onboarding_data', 'notes',
-                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry'
+                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'marketing_type', 'specialty'
             ];
             const sanitizedUpdates = {};
             validFields.forEach(field => {
@@ -111,6 +110,21 @@ export const agencyService = {
                 .select();
 
             if (error) throw error;
+
+            // SYNC TO PROFILE (Propagate Brand Identity)
+            if (updates.name || updates.city || updates.whatsapp_number || updates.marketing_type || updates.plan) {
+                console.log(`🔄 Syncing changes to public profiles for client ${id}`);
+                await supabase
+                    .from('profiles')
+                    .update({
+                        full_name: updates.name,
+                        location: updates.city,
+                        whatsapp: updates.whatsapp_number,
+                        marketing_type: updates.marketing_type,
+                        plan: updates.plan
+                    })
+                    .eq('client_id', id);
+            }
 
             // OPTIMISTIC LOCAL CACHE SYNC
             if (typeof window !== 'undefined') {
@@ -130,6 +144,51 @@ export const agencyService = {
             return data[0];
         } catch (error) {
             console.error(`❌ [${timestamp}] Error updating client:`, error);
+            throw error;
+        }
+    },
+
+    syncClientProfile: async (clientId, updates) => {
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`🚀 [${timestamp}] Service: Bidirectional Sync for ${clientId}...`);
+        try {
+            // 1. Update Profile (Personal side)
+            const profileUpdates = {
+                full_name: updates.full_name,
+                location: updates.location,
+                whatsapp: updates.whatsapp,
+                marketing_type: updates.marketing_type,
+                plan: updates.plan,
+                specialty: updates.specialty
+            };
+            
+            const { error: pError } = await supabase
+                .from('profiles')
+                .update(profileUpdates)
+                .eq('client_id', clientId);
+
+            if (pError) console.warn("Profile sync warning:", pError.message);
+
+            // 2. Update Client (Admin side)
+            const clientUpdates = {
+                name: updates.full_name,
+                city: updates.location,
+                whatsapp_number: updates.whatsapp,
+                industry: updates.marketing_type, // Mapping marketing type to industry for legacy support
+                plan: updates.plan
+            };
+
+            const { data: cData, error: cError } = await supabase
+                .from('clients')
+                .update(clientUpdates)
+                .eq('id', clientId)
+                .select();
+
+            if (cError) throw cError;
+
+            return cData[0];
+        } catch (error) {
+            console.error("❌ Sync Failure:", error);
             throw error;
         }
     },

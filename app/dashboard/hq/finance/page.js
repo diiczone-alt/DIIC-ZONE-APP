@@ -120,16 +120,21 @@ export default function HQFinancePage() {
                     <span>FINANZAS AGENCY</span>
                 </h2>
                 <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4">
                      <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                         <span>Realidad: 13 Abr 2026</span>
+                         {isSyncing ? (
+                             <div className="flex items-center gap-2 text-emerald-400 animate-pulse">
+                                 <Activity className="w-3.5 h-3.5" /> HQ LIVE SYNC
+                             </div>
+                         ) : (
+                             <div className="flex items-center gap-2">
+                                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> SIEMPRE CONECTADO
+                             </div>
+                         )}
                      </div>
-                     {isSyncing && (
-                         <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-xl animate-pulse shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                             <Activity className="w-3.5 h-3.5 text-indigo-400" />
-                             <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest leading-none">Central Sync</span>
-                         </div>
-                     )}
+                     <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                         Audit v8.0
+                     </div>
                      <button 
                        onClick={() => loadFinance()}
                        className={`bg-white text-black px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-wait' : ''}`}

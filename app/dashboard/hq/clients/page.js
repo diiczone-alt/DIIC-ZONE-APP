@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe, Activity } from 'lucide-react';
+import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ArrowLeft, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe, Activity, Mail, Stethoscope } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { agencyService } from '@/services/agencyService';
 import VisionEcosystem from '@/components/VisionEcosystem';
@@ -10,10 +10,9 @@ import { toast } from 'sonner';
 import { isCloudConnected, supabase } from '@/lib/supabase';
 import StrategicOutliner from '@/components/shared/Strategy/StrategicOutliner';
 import StrategyCreationWizard from '@/components/shared/Strategy/StrategyCreationWizard';
-import { ECUADOR_CITIES } from '@/lib/constants';
+import { ECUADOR_CITIES, MEDICAL_SPECIALTIES, MARKETING_TYPES, PLAN_OPTIONS } from '@/lib/constants';
 import PremiumDropdown from '@/components/shared/PremiumDropdown';
-
-
+import GlassInput from '@/components/shared/GlassInput';
 
 export default function HQClientsPage() {
     const [activeMenu, setActiveMenu] = useState(null);
@@ -261,11 +260,9 @@ export default function HQClientsPage() {
         try {
             const summary = await agencyService.getStrategySummary(client.id);
             setPreviewData(summary);
-            // Si el resumen tiene nodos de estrategia, los cargamos para el Outliner
             if (summary?.nodes) {
                 setActiveStrategyNodes(summary.nodes);
             } else {
-                // Fallback default nodes for demonstration
                 setActiveStrategyNodes([
                     { id: '1', type: 'label', data: { title: 'Objetivo Principal' } },
                     { id: '2', type: 'video', data: { title: 'Reel de Lanzamiento', subtype: 'reel' } }
@@ -321,6 +318,7 @@ export default function HQClientsPage() {
     return (
         <div className="p-8 space-y-8 relative">
             <div className="fixed inset-0 pointer-events-none opacity-20" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 80%)' }}></div>
+            
             {/* Header */}
             <div className="flex justify-between items-end relative z-10">
                 <div>
@@ -372,6 +370,7 @@ export default function HQClientsPage() {
                 </div>
                 <div className="flex flex-wrap gap-3">
                     <InviteButton label="Invitación para SOCIO" type="client" color="indigo" icon={Building2} />
+                    <InviteButton label="Acceso para EQUIPO" type="team" color="purple" icon={UserPlus} />
                 </div>
             </motion.div>
 
@@ -484,19 +483,19 @@ export default function HQClientsPage() {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Nombre / Marca</label>
                                     <input type="text" required value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={[{ value: 'Basic', label: 'Basic' }, { value: 'Premium', label: 'Premium' }, { value: 'Enterprise', label: 'Enterprise' }]} />
-                                        <PremiumDropdown label="CM" value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
-                                    </div>
-                                    <PremiumDropdown 
-                                        label="Ciudad Base" 
-                                        value={newClient.city} 
-                                        onChange={(val) => setNewClient({ ...newClient, city: val })} 
-                                        options={ECUADOR_CITIES} 
-                                        searchable={true}
-                                        icon={Globe}
-                                    />
                                 </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={[{ value: 'Basic', label: 'Basic' }, { value: 'Premium', label: 'Premium' }, { value: 'Enterprise', label: 'Enterprise' }]} />
+                                    <PremiumDropdown label="CM" value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
+                                </div>
+                                <PremiumDropdown 
+                                    label="Ciudad Base" 
+                                    value={newClient.city} 
+                                    onChange={(val) => setNewClient({ ...newClient, city: val })} 
+                                    options={ECUADOR_CITIES} 
+                                    searchable={true}
+                                    icon={Globe}
+                                />
                                 <div className="flex gap-4 pt-4">
                                     <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-gray-500 font-black uppercase tracking-widest text-xs">Cancelar</button>
                                     <button type="submit" disabled={isSubmitting} className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs">{isSubmitting ? 'Registrando...' : 'Confirmar'}</button>
@@ -507,101 +506,156 @@ export default function HQClientsPage() {
                 )}
             </AnimatePresence>
 
-            {/* Edit Modal (Strategist Hub) */}
+            {/* Edit Modal (Strategist Hub) - Premium God Mode Redesign */}
             <AnimatePresence>
                 {isEditModalOpen && (
                     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-lg" />
                         <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative w-full max-w-4xl bg-[#080814] border border-white/10 rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col h-[85vh]">
                             
-                            {/* Modal Banner */}
-                            <div className="h-32 bg-indigo-600/20 relative overflow-hidden flex items-end p-8 border-b border-white/5">
-                                <div className="absolute top-0 right-0 p-8">
-                                    <div className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] opacity-40">Administrative Unit // HQ</div>
+                            {/* Modern Identity Header */}
+                            <div className="relative h-48 flex items-end p-10 overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-b from-indigo-600/20 via-indigo-600/5 to-transparent" />
+                                
+                                {/* Background Patterns */}
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] -mr-32 -mt-32" />
+                                <div className="absolute top-10 right-10 text-[10px] font-black text-indigo-400/30 uppercase tracking-[0.5em] hidden md:block">
+                                    Administrative Unit // HQ
                                 </div>
-                                <div className="relative z-10 flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-[20px] bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-black text-2xl shadow-lg">
-                                        {editingClient?.name?.[0] || 'D'}
+
+                                <div className="relative z-10 flex items-center gap-6">
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-[28px] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                                        <div className="relative w-20 h-20 rounded-[24px] bg-[#0A0A1F] border border-white/10 flex items-center justify-center text-3xl font-black text-white shadow-2xl">
+                                            {editingClient?.name?.[0] || 'D'}
+                                        </div>
                                     </div>
                                     <div>
-                                        <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-none">Identidad de Socio</h2>
-                                        <p className="text-gray-400 text-xs font-medium tracking-tight mt-2 opacity-60 flex items-center gap-2">
-                                            <Shield className="w-3 h-3" /> Ecosistema de Datos Activo
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[8px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                <Fingerprint className="w-2.5 h-2.5" /> ID: {editingClient?.id}
+                                            </span>
+                                            <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 ${editingClient?.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${editingClient?.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                                {editingClient.status === 'active' ? 'Activo' : 'Pausado'}
+                                            </span>
+                                        </div>
+                                        <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none flex items-center gap-3">
+                                            Identidad de Socio
+                                        </h2>
+                                        <p className="text-gray-400 text-[11px] font-bold tracking-tight mt-3 opacity-60 flex items-center gap-2">
+                                            <Shield className="w-3.5 h-3.5 text-indigo-400" /> Ecosistema de Datos Operativos e Identidad Visual
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Tabs Navigation */}
-                            <div className="flex px-8 pt-6 border-b border-white/5 bg-white/[0.01]">
-                                {[
-                                    { id: 'operative', label: 'Logística Corazón', icon: Layout },
-                                    { id: 'team', label: 'Escuadra Pro', icon: Users },
-                                    { id: 'strategy', label: 'Reporte Estratégico', icon: Target },
-                                    { id: 'growth', label: 'Performance', icon: TrendingUp }
-                                ].map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveEditTab(tab.id)}
-                                        className={`flex items-center gap-3 px-6 py-4 border-b-2 transition-all text-[10px] font-black uppercase tracking-widest ${
-                                            activeEditTab === tab.id 
-                                                ? 'border-indigo-500 text-white bg-indigo-500/5' 
-                                                : 'border-transparent text-gray-500 hover:text-white hover:bg-white/5'
-                                        }`}
-                                    >
-                                        <tab.icon className="w-4 h-4" />
-                                        {tab.label}
-                                    </button>
-                                ))}
+                            {/* Capsule Navigation */}
+                            <div className="px-10 py-6 border-b border-white/5 bg-white/[0.01]">
+                                <div className="flex p-1.5 bg-white/[0.03] border border-white/5 rounded-[20px] w-fit">
+                                    {[
+                                        { id: 'operative', label: 'Logística', icon: Layout },
+                                        { id: 'team', label: 'Escuadra', icon: Users },
+                                        { id: 'strategy', label: 'Hojas de Ruta', icon: Target },
+                                        { id: 'growth', label: 'Performance', icon: TrendingUp }
+                                    ].map(tab => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveEditTab(tab.id)}
+                                            className={`flex items-center gap-2.5 px-6 py-3 rounded-[15px] transition-all text-[10px] font-black uppercase tracking-widest ${
+                                                activeEditTab === tab.id 
+                                                    ? 'bg-indigo-600 text-white shadow-[0_4px_15px_rgba(79,70,229,0.3)]' 
+                                                    : 'text-gray-500 hover:text-white hover:bg-white/5'
+                                            }`}
+                                        >
+                                            <tab.icon className="w-3.5 h-3.5" />
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
                             {/* Tab Content */}
                             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                                 <form onSubmit={handleSaveEdit} id="edit-client-form">
                                     {activeEditTab === 'operative' && (
-                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 gap-8">
-                                            <div className="space-y-6">
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Nombre de la Marca</label>
-                                                    <div className="relative group">
-                                                        <input 
-                                                            type="text" 
-                                                            value={newClient.name} 
-                                                            onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} 
-                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-6 text-white outline-none focus:border-indigo-500/50 transition-all font-black text-lg" 
-                                                        />
-                                                        <Building2 className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-700 pointer-events-none" />
-                                                    </div>
-                                                </div>
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 p-4">
+                                            <div className="space-y-8">
+                                                <GlassInput 
+                                                    label="Nombre de la Marca" 
+                                                    value={newClient.name} 
+                                                    onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} 
+                                                    icon={Building2}
+                                                    placeholder="Nombre comercial..."
+                                                />
+                                                
                                                 <PremiumDropdown 
-                                                    label="Ciudad Base" 
+                                                    label="Ubicación Estratégica" 
                                                     value={newClient.city} 
                                                     onChange={(val) => setNewClient({ ...newClient, city: val })} 
                                                     options={ECUADOR_CITIES} 
                                                     searchable={true}
                                                     icon={Globe}
                                                 />
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Industria / Sector</label>
-                                                    <input type="text" value={newClient.industry} onChange={(e) => setNewClient({ ...newClient, industry: e.target.value })} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none transition-all font-bold" placeholder="Ej: Médico, Real Estate" />
-                                                </div>
+
+                                                <GlassInput 
+                                                    label="Industria / Sector" 
+                                                    value={newClient.industry} 
+                                                    onChange={(e) => setNewClient({ ...newClient, industry: e.target.value })} 
+                                                    icon={Shield}
+                                                    placeholder="Ej: Médico, Real Estate..."
+                                                />
+
+                                                {newClient.industry?.toLowerCase().includes('médico') && (
+                                                    <PremiumDropdown 
+                                                        label="Especialidad Médica" 
+                                                        value={newClient.specialty} 
+                                                        onChange={(val) => setNewClient({ ...newClient, specialty: val })} 
+                                                        options={MEDICAL_SPECIALTIES} 
+                                                        icon={Stethoscope}
+                                                    />
+                                                )}
                                             </div>
-                                            <div className="space-y-6">
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">WhatsApp Contacto</label>
-                                                    <div className="relative group">
-                                                        <input type="text" value={newClient.whatsapp_number} onChange={(e) => setNewClient({ ...newClient, whatsapp_number: e.target.value })} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-emerald-400 outline-none transition-all font-mono" placeholder="+593 ..." />
-                                                        <MessageSquare className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500/20" />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Inversión Mensual (USD)</label>
-                                                    <div className="relative">
-                                                        <input type="number" value={newClient.price} onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none transition-all font-black text-xl" />
-                                                        <DollarSign className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-700" />
-                                                    </div>
-                                                </div>
-                                                <PremiumDropdown label="Tipo de Negocio" value={newClient.business_type} onChange={(val) => setNewClient({ ...newClient, business_type: val })} options={[{ value: 'Servicios', label: 'Servicios' }, { value: 'Productos', label: 'E-commerce / Productos' }, { value: 'Personal', label: 'Marca Personal' }]} />
+
+                                            <div className="space-y-8">
+                                                <GlassInput 
+                                                    label="WhatsApp de Contacto" 
+                                                    value={newClient.whatsapp_number} 
+                                                    onChange={(e) => setNewClient({ ...newClient, whatsapp_number: e.target.value })} 
+                                                    icon={MessageSquare}
+                                                    placeholder="+593 ..."
+                                                    className="font-mono"
+                                                />
+
+                                                <GlassInput 
+                                                    label="Inversión Mensual (USD)" 
+                                                    value={newClient.price} 
+                                                    onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })} 
+                                                    icon={DollarSign}
+                                                    type="number"
+                                                    placeholder="0.00"
+                                                />
+
+                                                <GlassInput 
+                                                    label="Email Sync (Sincronización)" 
+                                                    value={newClient.email} 
+                                                    onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} 
+                                                    icon={Mail}
+                                                    type="email"
+                                                    placeholder="cliente@ejemplo.com"
+                                                />
+
+                                                <PremiumDropdown 
+                                                    label="Modelo de Negocio" 
+                                                    value={newClient.business_type} 
+                                                    onChange={(val) => setNewClient({ ...newClient, business_type: val })} 
+                                                    options={[
+                                                        { value: 'Servicios', label: 'Servicios Profesionales' }, 
+                                                        { value: 'Productos', label: 'E-commerce / Retail' }, 
+                                                        { value: 'Personal', label: 'Marca Personal' }
+                                                    ]} 
+                                                    icon={Zap}
+                                                />
                                             </div>
                                         </motion.div>
                                     )}
@@ -703,20 +757,30 @@ export default function HQClientsPage() {
                                 </form>
                             </div>
 
-                            {/* Modal Footer */}
-                            <div className="p-8 border-t border-white/5 bg-black/20 flex justify-between items-center">
-                                <div className="flex items-center gap-3 text-gray-500 text-[10px] font-black uppercase tracking-widest hidden md:flex">
-                                    <Shield className="w-4 h-4" /> Secure Admin Hub v4.1
+                            {/* Premium Modal Footer */}
+                            <div className="p-10 border-t border-white/5 bg-black/40 backdrop-blur-md flex flex-col md:flex-row justify-between items-center gap-6">
+                                <div className="flex items-center gap-3 text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] opacity-40">
+                                    <Shield className="w-4 h-4" /> Secure Admin Hub v4.8
                                 </div>
-                                <div className="flex gap-4 w-full md:w-auto">
-                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-10 py-4 text-gray-500 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all">Cancelar</button>
+                                <div className="flex gap-6 w-full md:w-auto">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsEditModalOpen(false)} 
+                                        className="px-8 py-4 text-gray-500 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all active:scale-95"
+                                    >
+                                        Descartar
+                                    </button>
                                     <button 
                                         form="edit-client-form"
                                         type="submit" 
                                         disabled={isSubmitting} 
-                                        className="flex-1 md:flex-none px-12 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-600/20 active:scale-95 transition-all"
+                                        className="group relative flex-1 md:flex-none px-12 py-4 bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-black rounded-2xl uppercase tracking-[0.2em] text-[10px] shadow-[0_10px_30px_rgba(79,70,229,0.3)] hover:shadow-[0_15px_40px_rgba(79,70,229,0.5)] active:scale-95 transition-all overflow-hidden"
                                     >
-                                        {isSubmitting ? 'Sincronizando...' : 'Guardar Hojas de Ruta'}
+                                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                                        <span className="relative flex items-center justify-center gap-3">
+                                            {isSubmitting ? 'Sincronizando...' : 'Guardar Hojas de Ruta'}
+                                            {!isSubmitting && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                                        </span>
                                     </button>
                                 </div>
                             </div>
@@ -729,43 +793,19 @@ export default function HQClientsPage() {
             <AnimatePresence>
                 {isPreviewModalOpen && previewData && (
                     <div className="fixed inset-0 z-[110] flex items-center justify-center p-0 md:p-6">
-                        <motion.div 
-                            initial={{ opacity: 0 }} 
-                            animate={{ opacity: 1 }} 
-                            exit={{ opacity: 0 }} 
-                            onClick={() => setIsPreviewModalOpen(false)} 
-                            className="absolute inset-0 bg-[#020205]/95 backdrop-blur-3xl" 
-                        />
-                        
-                        <motion.div 
-                            initial={{ scale: 0.95, opacity: 0, y: 30 }} 
-                            animate={{ scale: 1, opacity: 1, y: 0 }} 
-                            exit={{ scale: 0.95, opacity: 0, y: 30 }} 
-                            className="relative w-full max-w-[95vw] h-[90vh] bg-[#0A0B14] border border-white/10 rounded-[40px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row"
-                        >
-                            {/* Left: Strategic Outliner */}
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsPreviewModalOpen(false)} className="absolute inset-0 bg-[#020205]/95 backdrop-blur-3xl" />
+                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 30 }} className="relative w-full max-w-[95vw] h-[90vh] bg-[#0A0B14] border border-white/10 rounded-[40px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row">
                             <div className="hidden md:block w-80 h-full border-r border-white/5">
-                                <StrategicOutliner 
-                                    nodes={activeStrategyNodes} 
-                                    onNodeSelect={() => {}} 
-                                    onUpdateNode={(id, data) => setActiveStrategyNodes(prev => prev.map(n => n.id === id ? { ...n, data: { ...n.data, ...data } } : n))}
-                                />
+                                <StrategicOutliner nodes={activeStrategyNodes} onNodeSelect={() => {}} onUpdateNode={(id, data) => setActiveStrategyNodes(prev => prev.map(n => n.id === id ? { ...n, data: { ...n.data, ...data } } : n))} />
                             </div>
-
-                            {/* Center: Ecosystem & Details */}
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-8 flex flex-col items-center">
                                 <div className="w-full max-w-2xl text-center space-y-6">
-                                    <div className="inline-flex px-4 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest">
-                                        Ecosistema de Marca v2.1
-                                    </div>
+                                    <div className="inline-flex px-4 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest">Ecosistema de Marca v2.1</div>
                                     <h2 className="text-5xl font-black text-white italic tracking-tighter">{editingClient?.name}</h2>
-                                    
                                     <div className="relative py-10 w-full flex justify-center">
-                                        {/* Dynamic Glow background */}
                                         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-64 bg-indigo-600/5 blur-[120px] rounded-full" />
                                         <VisionEcosystem client={editingClient} />
                                     </div>
-
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                                         <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 text-left">
                                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Visión IA</p>
@@ -779,26 +819,10 @@ export default function HQClientsPage() {
                                             </div>
                                         </div>
                                     </div>
-
                                     <div className="flex flex-wrap gap-4 justify-center pt-8 pb-10">
-                                        <button 
-                                            onClick={() => handleNavigateStrategy(editingClient?.id)} 
-                                            className="px-10 py-5 bg-indigo-600 text-white font-black rounded-3xl uppercase tracking-widest text-xs hover:bg-white hover:text-indigo-600 transition-all shadow-xl shadow-indigo-600/20"
-                                        >
-                                            Abrir Tablero de Guerra
-                                        </button>
-                                        <button 
-                                            onClick={() => setIsStrategicWizardOpen(true)}
-                                            className="px-10 py-5 bg-white/5 text-white font-black rounded-3xl border border-white/10 uppercase tracking-widest text-xs hover:bg-white/10 transition-all"
-                                        >
-                                            Re-Diseñar Hoja de Ruta
-                                        </button>
-                                        <button 
-                                            onClick={() => setIsPreviewModalOpen(false)} 
-                                            className="px-10 py-5 bg-transparent text-gray-500 font-black rounded-3xl uppercase tracking-widest text-xs hover:text-white transition-all"
-                                        >
-                                            Cerrar
-                                        </button>
+                                        <button onClick={() => handleNavigateStrategy(editingClient?.id)} className="px-10 py-5 bg-indigo-600 text-white font-black rounded-3xl uppercase tracking-widest text-xs hover:bg-white hover:text-indigo-600 transition-all shadow-xl shadow-indigo-600/20">Abrir Tablero de Guerra</button>
+                                        <button onClick={() => setIsStrategicWizardOpen(true)} className="px-10 py-5 bg-white/5 text-white font-black rounded-3xl border border-white/10 uppercase tracking-widest text-xs hover:bg-white/10 transition-all">Re-Diseñar Hoja de Ruta</button>
+                                        <button onClick={() => setIsPreviewModalOpen(false)} className="px-10 py-5 bg-transparent text-gray-500 font-black rounded-3xl uppercase tracking-widest text-xs hover:text-white transition-all">Cerrar</button>
                                     </div>
                                 </div>
                             </div>
