@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import NotificationCenter from '@/components/ui/NotificationCenter';
 import StrategyBoard from '../../shared/Strategy/StrategyBoard';
 import CreativeStudio from '../../events/CreativeBoard';
 import ContentKanban from '../../shared/Kanban/ContentKanban';
@@ -38,6 +39,10 @@ export default function CMWorkstationLayout() {
     const [globalTasks, setGlobalTasks] = useState([]);
     const [notifications, setNotifications] = useState([]);
     const [loadingNotifications, setLoadingNotifications] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [isHQLive, setIsHQLive] = useState(false);
+
+
 
     const handleMarkAsRead = async (id) => {
         try {
@@ -62,8 +67,40 @@ export default function CMWorkstationLayout() {
         
         if (user) {
             if (user.full_name) {
-                fetchClients();
+                // 1. Instant Load from Cache
+                const cachedClients = localStorage.getItem('diic_clients');
+                if (cachedClients) {
+                    try {
+                        const parsed = JSON.parse(cachedClients);
+                        // Filter for this CM
+                        const myClients = parsed.filter(c => c.cm === user.full_name);
+                        if (myClients.length > 0) {
+                            setClients(myClients);
+                            setLoading(false);
+                        }
+                    } catch(e) {}
+                }
+
+                fetchClients(!!cachedClients);
                 if (user.team_id) fetchSquad(user.team_id);
+
+                // 2. Realtime Sync
+                setIsHQLive(true);
+                const cmChannel = supabase
+                    .channel('cm-sync-' + user.id)
+                    .on('postgres_changes', { 
+                        event: '*', 
+                        schema: 'public', 
+                        table: 'clients',
+                        filter: `cm=eq.${user.full_name}`
+                    }, () => fetchClients(true))
+                    .subscribe((status) => {
+                        setIsHQLive(status === 'SUBSCRIBED');
+                    });
+
+                return () => {
+                    supabase.removeChannel(cmChannel);
+                };
             } else {
                 setLoading(false);
             }
@@ -104,16 +141,36 @@ export default function CMWorkstationLayout() {
         }
     }, [selectedClient]);
 
-    const fetchClients = async () => {
+    const fetchClients = async (isBackground = false) => {
         if (!user?.full_name) return;
-        setLoading(true);
-        const { data, error } = await supabase
-            .from('clients')
-            .select('*')
-            .eq('cm', user.full_name);
+        if (!isBackground) setLoading(true);
+        setIsSyncing(true);
         
-        if (data) setClients(data);
-        setLoading(false);
+        try {
+            const { data, error } = await supabase
+                .from('clients')
+                .select('*')
+                .eq('cm', user.full_name);
+            
+            if (data) {
+                setClients(data);
+                // Also update general cache
+                const fullCache = localStorage.getItem('diic_clients');
+                if (fullCache) {
+                    try {
+                        const parsed = JSON.parse(fullCache);
+                        // Merge logic: Replace existing clients with updated ones
+                        const filtered = parsed.filter(c => c.cm !== user.full_name);
+                        localStorage.setItem('diic_clients', JSON.stringify([...data, ...filtered]));
+                    } catch(e) {}
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching clients:', err);
+        } finally {
+            setLoading(false);
+            setIsSyncing(false);
+        }
     };
 
     const fetchAllTasks = async () => {
@@ -130,6 +187,9 @@ export default function CMWorkstationLayout() {
         setLoadingTasks(false);
     };
     
+
+
+
     const fetchNotifications = async () => {
         if (!user?.id) return;
         setLoadingNotifications(true);
@@ -142,7 +202,6 @@ export default function CMWorkstationLayout() {
         if (data) setNotifications(data);
         setLoadingNotifications(false);
     };
-
 
     useEffect(() => {
         if (activeTab === 'tasks') fetchAllTasks();
@@ -245,34 +304,29 @@ export default function CMWorkstationLayout() {
                 {/* Global Workstation Header */}
                 <header className="h-20 border-b border-white/5 px-8 flex items-center justify-between bg-[#050511]/50 backdrop-blur-md z-40">
                     <div className="flex items-center gap-4">
-                        <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
-                        <h1 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">
-                            System <span className="text-white">Live</span> / {activeTab?.toUpperCase()}
+                        <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isHQLive ? 'bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]' : 'bg-red-500 animate-pulse'}`} />
+                        <h1 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                            System <span className="text-white">{isHQLive ? 'LIVE' : 'OFFLINE'}</span> / {activeTab?.toUpperCase()}
+                            {isSyncing && (
+                                <span className="flex items-center gap-1 text-cyan-400 normal-case tracking-normal font-bold">
+                                    <Activity className="w-2.5 h-2.5 animate-pulse" />
+                                    Sincronizando...
+                                </span>
+                            )}
                         </h1>
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <button 
-                            onClick={() => setActiveTab('notifications')}
-                            className={`relative p-3 rounded-2xl border transition-all group ${
-                                activeTab === 'notifications' 
-                                ? 'bg-cyan-600/10 border-cyan-500/30 text-cyan-400' 
-                                : 'bg-white/5 border-white/5 text-gray-500 hover:text-white'
-                            }`}
-                        >
-                            <Bell className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                            {notifications.filter(n => n.status === 'unread').length > 0 && (
-                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[#050511] animate-pulse">
-                                    {notifications.filter(n => n.status === 'unread').length}
-                                </span>
-                            )}
-                        </button>
-
+                        <NotificationCenter 
+                            notifications={notifications} 
+                            onMarkAsRead={handleMarkAsRead} 
+                            onViewAll={() => setActiveTab('notifications')}
+                        />
                         <button 
                             onClick={() => setActiveTab('profile')}
                             className="flex items-center gap-3 pl-6 border-l border-white/5 hover:bg-white/5 transition-all group"
                         >
-                            <div className="text-right hidden sm:block">
+                             <div className="text-right hidden sm:block">
                                 <p className="text-[10px] font-black text-white uppercase tracking-tight leading-none mb-1">{user?.full_name || 'Leslie'}</p>
                                 <p className="text-[8px] font-bold text-cyan-400 uppercase tracking-widest leading-none opacity-60">Lead Estratega</p>
                             </div>
@@ -293,7 +347,7 @@ export default function CMWorkstationLayout() {
                             transition={{ duration: 0.2 }}
                             className="h-full"
                         >
-                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead)}
+                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks)}
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -302,12 +356,13 @@ export default function CMWorkstationLayout() {
     );
 }
 
-function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead) {
+function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks) {
     if (!selectedClient) {
         if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} />;
         if (tab === 'academy') return <CMAcademy />;
         if (tab === 'growth') return <CMGrowth />;
         if (tab === 'tasks') return <GlobalTasksView tasks={globalTasks} loading={loadingTasks} onSelectClient={(c) => { setSelectedClient(c); setActiveTab('dashboard'); }} />;
+
         if (tab === 'notifications') return <NotificationsView notifications={notifications} loading={loadingNotifications} onMarkAsRead={handleMarkAsRead} />;
         if (tab === 'profile') return <CMProfileView user={user} />;
         
@@ -2153,7 +2208,7 @@ function ReportPreviewModal({ report, stats, client, onClose }) {
 
 function CMSettingsClients({ clients, onSelectClient, loading, userMissingProfile }) {
     const { user } = useAuth();
-    if (loading) return (
+    if (loading && clients.length === 0) return (
         <div className="h-full flex flex-col items-center justify-center gap-6">
             <div className="relative">
                  <div className="w-16 h-16 rounded-full border-t-2 border-cyan-500 animate-spin" />

@@ -13,6 +13,7 @@ import {
     Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { agencyService } from '@/services/agencyService';
+import { supabase } from '@/lib/supabase';
 
 export default function HQFinancePage() {
     const [financeData, setFinanceData] = useState({
@@ -21,29 +22,71 @@ export default function HQFinancePage() {
         clients: []
     });
     const [loading, setLoading] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
     const [activeModal, setActiveModal] = useState(null); 
 
+    const loadFinance = async (isBackground = false) => {
+        if (!isBackground) setLoading(true);
+        setIsSyncing(true);
+        try {
+            console.log(`💰 [Finance] ${isBackground ? 'Background' : 'Initial'} Syncing...`);
+            const [finData, scaleData, clientsData] = await Promise.all([
+                agencyService.getFinancialSummary(),
+                agencyService.getScaleData(),
+                agencyService.getClients()
+            ]);
+            setFinanceData({
+                ...finData,
+                scale: scaleData,
+                clients: clientsData
+            });
+        } catch (err) {
+            console.error("❌ [Finance] Sync Error:", err);
+        } finally {
+            setLoading(false);
+            setIsSyncing(false);
+        }
+    };
+
     useEffect(() => {
-        const loadFinance = async () => {
-            setLoading(true);
+        // 1. Instant Load from Cache
+        const loadCache = () => {
             try {
-                const [finData, scaleData, clientsData] = await Promise.all([
-                    agencyService.getFinancialSummary(),
-                    agencyService.getScaleData(),
-                    agencyService.getClients()
-                ]);
-                setFinanceData({
-                    ...finData,
-                    scale: scaleData,
-                    clients: clientsData
-                });
-            } catch (err) {
-                console.error("Error loading finance details:", err);
-            } finally {
-                setLoading(false);
+                const cachedFinance = localStorage.getItem('diic_financial_summary');
+                if (cachedFinance) {
+                    const parsed = JSON.parse(cachedFinance);
+                    setFinanceData(prev => ({ ...prev, ...parsed }));
+                    setLoading(false);
+                    console.log("⚡ [Finance] Loaded from Cache");
+                    return true;
+                }
+            } catch (e) {
+                console.warn("⚠️ [Finance] Cache load failed");
             }
+            return false;
         };
-        loadFinance();
+
+        const hasCache = loadCache();
+
+        // 2. Background Sync
+        loadFinance(hasCache);
+
+        // 3. Realtime Subscription (Since finance metrics depend on clients and team)
+        const financeChannel = supabase
+            .channel('hq-finance-realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
+                console.log("🔄 [Finance/Clients] Realtime Update Detected");
+                loadFinance(true);
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'team' }, () => {
+                console.log("🔄 [Finance/Team] Realtime Update Detected");
+                loadFinance(true);
+            })
+            .subscribe();
+
+        return () => {
+             supabase.removeChannel(financeChannel);
+        };
     }, []);
 
     const { metrics, scale, clients } = financeData;
@@ -81,8 +124,17 @@ export default function HQFinancePage() {
                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                          <span>Realidad: 13 Abr 2026</span>
                      </div>
-                     <button className="bg-white text-black px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-2">
-                         <ArrowUpRight className="w-4 h-4" /> Exportar
+                     {isSyncing && (
+                         <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-xl animate-pulse shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                             <Activity className="w-3.5 h-3.5 text-indigo-400" />
+                             <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest leading-none">Central Sync</span>
+                         </div>
+                     )}
+                     <button 
+                       onClick={() => loadFinance()}
+                       className={`bg-white text-black px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-wait' : ''}`}
+                     >
+                         {isSyncing ? 'Sincronizando...' : <><ArrowUpRight className="w-4 h-4" /> Exportar</>}
                      </button>
                 </div>
             </header>

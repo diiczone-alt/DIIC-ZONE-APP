@@ -134,6 +134,32 @@ export const agencyService = {
         }
     },
 
+    assignClientToCM: async (clientId, cmName) => {
+        try {
+            const { data, error } = await supabase
+                .from('clients')
+                .update({ cm: cmName })
+                .eq('id', clientId)
+                .select();
+
+            if (error) throw error;
+
+            // Update Cache
+            if (typeof window !== 'undefined') {
+                const stored = localStorage.getItem('diic_clients');
+                if (stored) {
+                    const clients = JSON.parse(stored);
+                    const updated = clients.map(c => c.id === clientId ? { ...c, cm: cmName } : c);
+                    localStorage.setItem('diic_clients', JSON.stringify(updated));
+                }
+            }
+            return data[0];
+        } catch (error) {
+            console.error("Error assigning client to CM:", error);
+            throw error;
+        }
+    },
+
     getClientById: async (id) => {
         if (!id) return null;
         try {
@@ -392,20 +418,44 @@ export const agencyService = {
         const timestamp = new Date().toLocaleTimeString();
         console.log(`🚀 [${timestamp}] Service: Updating Team Member ${id}...`);
         try {
+            // Campos Válidos en DB (Excluyendo ID y Metadatos de UI)
+            const validFields = [
+                'name', 'role', 'status', 'city', 'coords', 
+                'availability', 'activetasks', 'salary', 
+                'squad_lead_id', 'cv_url', 'cv_summary', 'skills', 
+                'whatsapp', 'email'
+            ];
+            
+            const sanitizedUpdates = {};
+            validFields.forEach(field => {
+                if (updates[field] !== undefined) {
+                    let value = updates[field];
+                    // Casting especial para tipos de datos DB
+                    if (field === 'salary' && value !== null) value = Number(value);
+                    if (field === 'activetasks' && value !== null) value = parseInt(value);
+                    sanitizedUpdates[field] = value;
+                }
+            });
+
+            console.log(`[${timestamp}] Sanitized Updates:`, Object.keys(sanitizedUpdates));
+
             const { data, error } = await supabase
                 .from('team')
-                .update(updates)
+                .update(sanitizedUpdates)
                 .eq('id', id)
                 .select();
 
-            if (error) throw error;
+            if (error) {
+                console.error("Supabase Update Error:", error);
+                throw error;
+            }
             
             // Sync Local Cache
             if (typeof window !== 'undefined') {
                 const stored = localStorage.getItem('diic_team');
                 if (stored) {
                     const curr = JSON.parse(stored);
-                    const updated = curr.map(m => m.id === id ? { ...m, ...updates } : m);
+                    const updated = curr.map(m => m.id === id ? { ...m, ...sanitizedUpdates } : m);
                     localStorage.setItem('diic_team', JSON.stringify(updated));
                 }
             }
@@ -1251,6 +1301,34 @@ export const agencyService = {
         } catch (error) {
             console.error("Error fetching branch offices:", error);
             return [];
+        }
+    },
+
+    createBranchOffice: async (branchData) => {
+        try {
+            const { data, error } = await supabase
+                .from('branch_offices')
+                .insert([branchData])
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            console.error("Error creating branch office:", error);
+            throw error;
+        }
+    },
+
+    deleteBranchOffice: async (id) => {
+        try {
+            const { error } = await supabase
+                .from('branch_offices')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error("Error deleting branch office:", error);
+            return false;
         }
     },
 

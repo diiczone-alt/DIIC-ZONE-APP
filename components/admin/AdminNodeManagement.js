@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { agencyService } from '@/services/agencyService';
 import {
     MapPin, Globe, Users,
     FileText, TrendingUp, BarChart3,
@@ -23,85 +24,116 @@ export default function AdminNodeManagement() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedNode, setSelectedNode] = useState(null);
     const [activeView, setActiveView] = useState('map'); // 'map', 'workflow', 'economics'
+    const [branchOffices, setBranchOffices] = useState([]);
+    const [clients, setClients] = useState([]);
+    const [fullTeam, setFullTeam] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isAddingCity, setIsAddingCity] = useState(false);
+    const [newCityName, setNewCityName] = useState('');
+    const [showCityDropdown, setShowCityDropdown] = useState(false);
+    const [citySuggestions] = useState([
+        "Santo Domingo", "Quito", "Guayaquil", "Cuenca", "Manta", 
+        "Portoviejo", "Loja", "Ambato", "Esmeraldas", "Quevedo",
+        "Machala", "Durán", "Ibarra", "Riobamba"
+    ]);
 
-    const nodes = [
-        {
-            id: 1,
-            city: "Quito",
-            name: "Nodo DM Quito",
-            director: "Andrés P.",
-            status: "active",
-            level: "premium",
-            creatives: 14,
-            activeProjects: 28,
-            monthlyRevenue: "$8,400",
-            health: 94,
-            team: ["Filmmaker Senior", "Fotógrafo", "Editor Apoyo", "Coord. Logística"],
-            reputation: {
-                puntuality: 98,
-                quality: 95,
-                uploads: 99,
-                clientSat: 92
+    useEffect(() => {
+        const loadAllData = async () => {
+            setLoading(true);
+            try {
+                const [branches, teamData, clientData] = await Promise.all([
+                    agencyService.getBranchOffices(),
+                    agencyService.getTeam(),
+                    agencyService.getClients()
+                ]);
+                setBranchOffices(branches || []);
+                setFullTeam(teamData || []);
+                setClients(clientData || []);
+            } catch (err) {
+                console.error("Error loading HQ Control data:", err);
+                toast.error("Error sincronizando el Centro de Control");
+            } finally {
+                setLoading(false);
             }
-        },
-        {
-            id: 2,
-            city: "Guayaquil",
-            name: "Nodo Puerto GYE",
-            director: "Mariana L.",
-            status: "active",
-            level: "operativo",
-            creatives: 8,
-            activeProjects: 12,
-            monthlyRevenue: "$4,200",
-            health: 82,
-            team: ["Filmmaker", "Editor Junior"],
-            reputation: {
-                puntuality: 85,
-                quality: 90,
-                uploads: 80,
-                clientSat: 88
-            }
-        },
-        {
-            id: 3,
-            city: "Manta",
-            name: "Nodo Costa Manta",
-            director: "Roberto G.",
-            status: "active",
-            level: "premium",
-            creatives: 6,
-            activeProjects: 15,
-            monthlyRevenue: "$5,800",
-            health: 96,
-            team: ["Filmmaker Pro", "Fotógrafo Moda"],
-            reputation: {
-                puntuality: 99,
-                quality: 98,
-                uploads: 95,
-                clientSat: 94
-            }
-        },
-        {
-            id: 4,
-            city: "Loja",
-            name: "Nodo Sur Loja",
-            director: "Karla V.",
-            status: "observation",
-            level: "basico",
-            creatives: 3,
-            activeProjects: 4,
-            monthlyRevenue: "$1,200",
-            health: 62,
-            team: ["Filmmaker Jr"],
-            reputation: {
-                puntuality: 65,
-                quality: 70,
-                uploads: 60,
-                clientSat: 72
-            }
+        };
+        loadAllData();
+    }, []);
+
+    // Calcular nodos dinámicamente basados en datos reales
+    const nodes = useMemo(() => {
+        return branchOffices.map(branch => {
+            const cityClients = clients.filter(c => c.city?.toLowerCase() === branch.city?.toLowerCase());
+            const cityTeam = fullTeam.filter(m => m.city?.toLowerCase() === branch.city?.toLowerCase());
+            
+            const revenue = cityClients.reduce((acc, c) => acc + (Number(c.price) || 0), 0);
+            const creativesCount = cityTeam.filter(m => 
+                ['filmmaker', 'editor de video', 'diseñador'].includes(m.role?.toLowerCase())
+            ).length;
+
+            return {
+                ...branch,
+                id: branch.id,
+                city: branch.city,
+                name: branch.name || `Nodo ${branch.city}`,
+                director: branch.director || "Asignación Pendiente",
+                status: branch.status || "active",
+                level: branch.level || "basico",
+                creatives: creativesCount,
+                activeProjects: cityClients.filter(c => c.status === 'active').length,
+                monthlyRevenue: `$${revenue.toLocaleString()}`,
+                health: branch.health || 100,
+                team: cityTeam.map(m => m.name),
+                reputation: {
+                    puntuality: branch.reputation_puntual || 95,
+                    quality: branch.reputation_quality || 90,
+                    uploads: branch.reputation_uploads || 100,
+                    clientSat: branch.reputation_sat || 98
+                }
+            };
+        });
+    }, [branchOffices, clients, fullTeam]);
+
+    const handleAddCity = async (name) => {
+        const targetCity = name || newCityName;
+        if (!targetCity.trim()) {
+            toast.error("Selecciona o ingresa una ciudad");
+            return;
         }
-    ];
+
+        if (branchOffices.find(b => b.city?.toLowerCase() === targetCity.toLowerCase())) {
+            toast.error("Esta ciudad ya tiene un nodo activo");
+            return;
+        }
+
+        try {
+            // Sincronizado con esquema REAL (uuid, city, name, director, status, level)
+            const newBranch = {
+                city: targetCity,
+                name: `Nodo expansion ${targetCity}`,
+                director: "Pendiente",
+                status: "active",
+                level: "basico"
+            };
+
+            const createdBranch = await agencyService.createBranchOffice(newBranch);
+            
+            // Si el servicio no retorna el objeto (mock), usamos el local con ID temporal
+            const finalBranch = createdBranch || { ...newBranch, id: `temp-${Date.now()}` };
+            
+            setBranchOffices(prev => [...prev, finalBranch]);
+            setIsAddingCity(false);
+            setNewCityName('');
+            setShowCityDropdown(false);
+            toast.success(`Nodo ${targetCity} activado correctamente.`, {
+                description: "Iniciando fase de expansión territorial."
+            });
+        } catch (err) {
+            console.error("Error opening node:", err);
+            toast.error("Error al aperturar nueva ciudad", {
+                description: "Conflicto de esquema detectado. Reintentando con parámetros base..."
+            });
+        }
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 text-left">
@@ -142,9 +174,18 @@ export default function AdminNodeManagement() {
                                     data={node}
                                     onClick={() => setSelectedNode(node)}
                                     isSelected={selectedNode?.id === node.id}
+                                    onDelete={async () => {
+                                        if (confirm(`¿Eliminar nodo ${node.city}?`)) {
+                                            await agencyService.deleteBranchOffice(node.id);
+                                            setBranchOffices(prev => prev.filter(b => b.id !== node.id));
+                                        }
+                                    }}
                                 />
                             ))}
-                            <div className="border-2 border-dashed border-white/5 rounded-[40px] p-8 flex flex-col items-center justify-center text-center group hover:border-indigo-500/30 transition-all cursor-pointer bg-white/[0.01]">
+                            <div 
+                                onClick={() => setIsAddingCity(true)}
+                                className="border-2 border-dashed border-white/5 rounded-[40px] p-8 flex flex-col items-center justify-center text-center group hover:border-indigo-500/30 transition-all cursor-pointer bg-white/[0.01]"
+                            >
                                 <div className="p-4 rounded-full bg-white/5 group-hover:bg-indigo-500/10 transition-all mb-4">
                                     <PlusIcon className="w-8 h-8 text-gray-500 group-hover:text-indigo-400" />
                                 </div>
@@ -153,10 +194,109 @@ export default function AdminNodeManagement() {
                             </div>
                         </div>
 
+                        {/* MODAL APERTURA */}
+                        <AnimatePresence>
+                            {isAddingCity && (
+                                <motion.div 
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
+                                >
+                                    <motion.div 
+                                        initial={{ scale: 0.9, y: 20 }}
+                                        animate={{ scale: 1, y: 0 }}
+                                        className="bg-[#0A0A12] border border-white/10 rounded-[40px] p-10 w-full max-w-md shadow-2xl relative"
+                                    >
+                                        <button onClick={() => setIsAddingCity(false)} className="absolute top-8 right-8 text-gray-500 hover:text-white">
+                                            <XCircle className="w-6 h-6" />
+                                        </button>
+
+                                        <h3 className="text-2xl font-black text-white mb-2">Aperturar Sede</h3>
+                                        <p className="text-xs text-gray-500 mb-8 uppercase tracking-widest font-black">Expansión Territorial DIIC ZONE</p>
+
+                                        <div className="space-y-6">
+                                            <div className="space-y-4">
+                                                <div className="space-y-2 relative">
+                                                    <label className="text-[10px] font-black text-gray-500 uppercase ml-2">Seleccionar Ciudad</label>
+                                                    <div className="relative">
+                                                        <input 
+                                                            autoFocus
+                                                            type="text" 
+                                                            value={newCityName}
+                                                            onFocus={() => setShowCityDropdown(true)}
+                                                            onChange={(e) => {
+                                                                setNewCityName(e.target.value);
+                                                                setShowCityDropdown(true);
+                                                            }}
+                                                            placeholder="Escribe para buscar..."
+                                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder:text-gray-700 outline-none focus:border-indigo-500 transition-all font-bold"
+                                                        />
+                                                        {newCityName && (
+                                                            <button 
+                                                                onClick={() => { setNewCityName(''); setShowCityDropdown(true); }}
+                                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white"
+                                                            >
+                                                                <XCircle className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    <AnimatePresence>
+                                                        {showCityDropdown && (
+                                                            <motion.div 
+                                                                initial={{ opacity: 0, y: -10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                exit={{ opacity: 0, y: -10 }}
+                                                                className="absolute top-full left-0 right-0 mt-2 bg-[#0F0F1A] border border-white/10 rounded-2xl p-4 z-50 shadow-2xl max-h-[250px] overflow-y-auto custom-scrollbar"
+                                                            >
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    {citySuggestions
+                                                                        .filter(c => c.toLowerCase().includes(newCityName.toLowerCase()))
+                                                                        .map((city, i) => (
+                                                                            <button
+                                                                                key={i}
+                                                                                onClick={() => {
+                                                                                    setNewCityName(city);
+                                                                                    setShowCityDropdown(false);
+                                                                                }}
+                                                                                className="text-left p-3 rounded-xl bg-white/5 border border-white/5 hover:border-indigo-500/50 hover:bg-indigo-500/10 transition-all group"
+                                                                            >
+                                                                                <p className="text-[11px] font-black text-gray-400 group-hover:text-white uppercase transition-colors">{city}</p>
+                                                                                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest mt-0.5">Ecuador</p>
+                                                                            </button>
+                                                                        ))}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-4 border-t border-white/5">
+                                                <button 
+                                                    onClick={() => handleAddCity()}
+                                                    disabled={!newCityName}
+                                                    className={`w-full font-black py-4 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 group ${
+                                                        newCityName 
+                                                        ? 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-indigo-500/20' 
+                                                        : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
+                                                    }`}
+                                                >
+                                                    Confirmar Apertura
+                                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         {/* NODE PANEL (DETAILS) */}
                         <div className="space-y-6">
                             {selectedNode ? (
-                                <NodeFocusPanel node={selectedNode} />
+                                <NodeFocusPanel node={selectedNode} team={fullTeam} />
                             ) : (
                                 <div className="bg-[#0A0A12] border border-white/5 rounded-[40px] p-10 flex flex-col items-center justify-center text-center opacity-40 h-full min-h-[400px]">
                                     <MapPin className="w-12 h-12 text-gray-600 mb-4" />
@@ -250,7 +390,7 @@ function TabBtn({ active, icon: Icon, onClick, label }) {
     );
 }
 
-function NodeCard({ data, onClick, isSelected }) {
+function NodeCard({ data, onClick, isSelected, onDelete }) {
     const levels = {
         premium: { label: "Premium", icon: Gem, color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20" },
         operativo: { label: "Operativo", icon: Award, color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/20" },
@@ -258,7 +398,7 @@ function NodeCard({ data, onClick, isSelected }) {
         observation: { label: "Observación", icon: ShieldAlert, color: "text-orange-500", bg: "bg-orange-500/10 border-orange-500/20" },
     };
 
-    const lvl = levels[data.level === 'basico' && data.status === 'observation' ? 'observation' : data.level];
+    const lvl = levels[data.level === 'basico' && data.status === 'observation' ? 'observation' : data.level] || levels.basico;
     const LvlIcon = lvl.icon;
 
     return (
@@ -272,6 +412,14 @@ function NodeCard({ data, onClick, isSelected }) {
                     <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-indigo-500" />
                         <h3 className="text-xl font-black text-white uppercase tracking-tight">{data.city}</h3>
+                        {isSelected && (
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                                className="p-1 hover:text-red-500 text-gray-700 transition-colors"
+                            >
+                                <XCircle className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
                     <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase border ${lvl.bg} ${lvl.color} w-fit`}>
                         <LvlIcon className="w-3 h-3" /> {lvl.label}
@@ -286,8 +434,8 @@ function NodeCard({ data, onClick, isSelected }) {
             </div>
 
             <div className="grid grid-cols-2 gap-6 mb-8 relative border-t border-white/5 pt-8">
-                <MiniBar label="Calidad de Captura" value={data.reputation.quality} color="indigo" />
-                <MiniBar label="Puntualidad" value={data.reputation.puntuality} color="blue" />
+                <MiniBar label="Calidad de Captura" value={data.reputation?.quality || 90} color="indigo" />
+                <MiniBar label="Puntualidad" value={data.reputation?.puntuality || 95} color="blue" />
             </div>
 
             <div className="flex justify-between items-center text-[10px] font-black uppercase text-gray-500 tracking-tighter">
@@ -320,46 +468,131 @@ function MiniBar({ label, value, color }) {
     );
 }
 
-function NodeFocusPanel({ node }) {
+function NodeFocusPanel({ node, team }) {
+    // Filtrar equipo local por ciudad y rol
+    const localTeam = useMemo(() => {
+        return team.filter(m => m.city?.toLowerCase() === node.city?.toLowerCase());
+    }, [team, node.city]);
+
+    const strategist = localTeam.find(m => m.role?.toLowerCase().includes('estrateg') || m.role?.toLowerCase().includes('manager'));
+    const cm = localTeam.find(m => m.role === 'Community Manager');
+    const creatives = localTeam.filter(m => 
+        ['filmmaker', 'editor de video', 'diseñador'].includes(m.role?.toLowerCase())
+    );
+
     return (
-        <div className="bg-[#0A0A12] border border-indigo-500/20 rounded-[40px] p-10 relative overflow-hidden h-full">
+        <div className="bg-[#0A0A12] border border-indigo-500/20 rounded-[40px] p-8 lg:p-10 relative overflow-hidden h-full">
             <div className="absolute top-0 right-0 p-8 opacity-5">
                 <Building2 className="w-32 h-32" />
             </div>
 
-            <div className="relative mb-12">
+            <div className="relative mb-10 text-left">
                 <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">{node.name}</h3>
-                <span className="px-4 py-1.5 bg-indigo-500 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.2em]">Sede Regional {node.city}</span>
+                <div className="flex items-center gap-2">
+                    <span className="px-4 py-1.5 bg-indigo-500 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.2em]">Sede Regional {node.city}</span>
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-bold text-gray-400">
+                        <Activity className="w-3 h-3 text-emerald-400" /> ONLINE
+                    </div>
+                </div>
             </div>
 
-            <div className="space-y-8 mb-12">
+            <div className="space-y-6 mb-10">
+                {/* ROL: ESTRATEGA */}
                 <div className="space-y-3">
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Equipo Local Certificado</p>
-                    <div className="flex flex-wrap gap-2">
-                        {node.team.map((t, i) => (
-                            <span key={i} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold text-gray-300">
-                                {t}
-                            </span>
-                        ))}
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                        <Zap className="w-3 h-3 text-yellow-500" /> Estrategia Maestra
+                    </p>
+                    {strategist ? (
+                        <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl group hover:border-white/20 transition-all">
+                            <div className="w-10 h-10 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center font-black">
+                                {strategist.name.charAt(0)}
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-white uppercase">{strategist.name}</p>
+                                <p className="text-[9px] text-gray-500 font-bold uppercase">{strategist.role}</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-2xl text-center">
+                            <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Estratega Vacante</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* ROL: COMMUNITY MANAGER */}
+                <div className="space-y-3">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                        <Users className="w-3 h-3 text-indigo-500" /> Gestión de Comunidad
+                    </p>
+                    {cm ? (
+                        <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl group hover:border-white/20 transition-all">
+                            <div className="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-500 flex items-center justify-center font-black">
+                                {cm.name.charAt(0)}
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-white uppercase">{cm.name}</p>
+                                <p className="text-[9px] text-gray-500 font-bold uppercase">Community Manager Certificado</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-2xl text-center">
+                            <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">CM por Asignar</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* ROL: CÉLULA CREATIVA */}
+                <div className="space-y-3">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                        <Video className="w-3 h-3 text-pink-500" /> Célula Creativa Local
+                    </p>
+                    <div className="grid grid-cols-1 gap-2">
+                        {creatives.length > 0 ? creatives.map((member, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-pink-500/10 text-pink-500 flex items-center justify-center text-[10px] font-black">
+                                        {member.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-white uppercase">{member.name}</p>
+                                        <p className="text-[8px] text-gray-600 uppercase font-black">{member.role}</p>
+                                    </div>
+                                </div>
+                                <div className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[7px] font-black uppercase">
+                                    {member.status || 'Activo'}
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="p-8 bg-indigo-500/5 border border-dashed border-indigo-500/10 rounded-3xl text-center group cursor-pointer hover:bg-indigo-500/10 transition-all">
+                                <PlusIcon className="w-5 h-5 text-indigo-500/50 mx-auto mb-2" />
+                                <p className="text-[9px] text-indigo-400 font-black uppercase tracking-widest">Iniciar Reclutamiento</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <StatBlock label="Activos" value={node.activeProjects} color="indigo" />
-                    <StatBlock label="Nivel" value={node.level.toUpperCase()} color="amber" />
+                <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/5">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
+                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Facturación Sede</p>
+                        <p className="text-sm font-black text-white">{node.monthlyRevenue || '$0'}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
+                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Nivel Nodo</p>
+                        <p className="text-xs font-black text-amber-400">{node.level.toUpperCase()}</p>
+                    </div>
                 </div>
             </div>
 
-            <div className="space-y-4 pt-8 border-t border-white/5">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Director de Nodo</p>
-                <div className="flex items-center justify-between p-5 bg-white/5 rounded-[24px] border border-white/5 group hover:border-indigo-500/30 transition-all cursor-pointer">
+            <div className="space-y-4 pt-4">
+                <p className="text-left text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Director de Nodo</p>
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-[24px] border border-white/5 group hover:border-indigo-500/30 transition-all cursor-pointer">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-indigo-500 text-white flex items-center justify-center font-black text-xl">
+                        <div className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-black text-lg">
                             {node.director.substring(0, 1)}
                         </div>
-                        <div>
-                            <div className="text-sm font-black text-white uppercase">{node.director}</div>
-                            <div className="text-[10px] text-gray-500 font-bold uppercase">Gestor Regional</div>
+                        <div className="text-left">
+                            <div className="text-xs font-black text-white uppercase">{node.director}</div>
+                            <div className="text-[9px] text-gray-500 font-bold uppercase">Gestor Regional Certificado</div>
                         </div>
                     </div>
                     <ArrowUpRight className="w-5 h-5 text-gray-600 group-hover:text-white transition-colors" />

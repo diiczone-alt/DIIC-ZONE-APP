@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
     DollarSign, TrendingUp, TrendingDown,
     PieChart, ArrowUpRight, ArrowDownRight, Wallet, Activity,
@@ -91,8 +91,16 @@ export default function AdminDualAudit() {
     const [budgets, setBudgets] = useState([]);
     const [clientCount, setClientCount] = useState(0);
     const [currentMonth] = useState(new Date().toISOString().substring(0, 7));
+    const isMounted = useRef(true);
+    
+    useEffect(() => {
+        isMounted.current = true;
+        return () => { isMounted.current = false; };
+    }, []);
     
     const [isProjecting, setIsProjecting] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [isManagingBudgets, setIsManagingBudgets] = useState(false);
     
     const [newTx, setNewTx] = useState({
         type: 'income',
@@ -113,21 +121,41 @@ export default function AdminDualAudit() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [txs, goalsData, budgetsData, count] = await Promise.all([
-                agencyService.getTransactions(),
-                agencyService.getFinancialGoals(),
-                agencyService.getFinancialBudgets(currentMonth),
-                agencyService.getClientCount()
+            // Manejamos cada promesa individualmente para mayor robustez
+            const [txs, goalsData, expensesData, count] = await Promise.all([
+                agencyService.getTransactions().catch(err => {
+                    console.error("Error fetching txs:", err);
+                    return [];
+                }),
+                agencyService.getFinancialGoals().catch(err => {
+                    console.error("Error fetching goals:", err);
+                    return [];
+                }),
+                agencyService.getOperatingExpenses(currentMonth).catch(err => {
+                    console.error("Error fetching operating expenses:", err);
+                    return [];
+                }),
+                agencyService.getClientCount().catch(err => {
+                    console.error("Error fetching client count:", err);
+                    return 0;
+                })
             ]);
-            setTransactions(txs || []);
-            setGoals(goalsData || []);
-            setBudgets(budgetsData || []);
-            setClientCount(count);
+
+            if (isMounted.current) {
+                setTransactions(txs || []);
+                setGoals(goalsData || []);
+                setBudgets(expensesData || []);
+                setClientCount(count || 0);
+            }
         } catch (err) {
-            console.error("Error loading financial data:", err);
-            toast.error("Error de sincronización financiera");
+            console.error("Critical error in loadData:", err);
+            if (isMounted.current) {
+                toast.error("Error de sincronización con el Nodo Central");
+            }
         } finally {
-            setLoading(false);
+            if (isMounted.current) {
+                setLoading(false);
+            }
         }
     };
 

@@ -15,7 +15,9 @@ import {
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
-import { isCloudConnected } from '@/lib/supabase';
+import { isCloudConnected, supabase } from '@/lib/supabase';
+import PremiumDropdown from '@/components/shared/PremiumDropdown';
+import { ECUADOR_CITIES } from '@/lib/constants';
 
 export default function HQTeamPage() {
     const [team, setTeam] = useState([]);
@@ -26,6 +28,8 @@ export default function HQTeamPage() {
     const [isAuditOpen, setIsAuditOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [isHQLive, setIsHQLive] = useState(false);
     const [newMember, setNewMember] = useState({
         name: '',
         role: 'Editor de Video',
@@ -65,30 +69,87 @@ export default function HQTeamPage() {
         }
     };
 
+    const fetchData = async (isBackground = false) => {
+        if (!isBackground) setLoading(true);
+        setIsSyncing(true);
+        try {
+            console.log(`🚀 [HQ-Team] ${isBackground ? 'Background' : 'Initial'} DB Syncing...`);
+            const [teamData, clientData] = await Promise.all([
+                agencyService.getTeam(),
+                agencyService.getClients()
+            ]);
+            
+            setTeam(teamData || []);
+            setClients(clientData || []);
+        } catch (error) {
+            console.error("❌ [HQ-Team] Critical Sync Failed:", error);
+            if (!isBackground) toast.error("Fallo de conexión con la Central HQ");
+        } finally {
+            setLoading(false);
+            setIsSyncing(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
+        // 1. Instant Load from Cache
+        const loadCache = () => {
             try {
-                console.log("🚀 [HQ-Team] Initializing DB Sync...");
-                const [teamData, clientData] = await Promise.all([
-                    agencyService.getTeam(),
-                    agencyService.getClients()
-                ]);
+                const cachedTeam = localStorage.getItem('diic_team');
+                const cachedClients = localStorage.getItem('diic_clients');
                 
-                if (!teamData) {
-                    console.warn("⚠️ [HQ-Team] Team data returned null");
+                if (cachedTeam && cachedClients) {
+                    setTeam(JSON.parse(cachedTeam));
+                    setClients(JSON.parse(cachedClients));
+                    setLoading(false); // Immediate unlock
+                    console.log("⚡ [HQ-Team] Loaded from Cache");
+                    return true;
                 }
-                
-                console.log(`[HQ-Team] Data Fetched: ${teamData?.length || 0} members, ${clientData?.length || 0} clients`);
-                setTeam(teamData || []);
-                setClients(clientData || []);
-            } catch (error) {
-                console.error("❌ [HQ-Team] Critical Sync Failed:", error);
-                toast.error("Fallo de conexión con la Central HQ");
-            } finally {
-                setLoading(false);
+            } catch (e) {
+                console.warn("⚠️ [HQ-Team] Cache load failed");
             }
+            return false;
         };
-        fetchData();
+
+        const hasCache = loadCache();
+        
+        // 2. Background Re-fetch
+        fetchData(hasCache);
+
+        // 3. Realtime Subscription with Channel Management
+        setIsHQLive(true);
+        const teamChannel = supabase
+            .channel('hq-team-realtime')
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'team' 
+            }, (payload) => {
+                console.log("🔄 [HQ-Team] Realtime Update:", payload.eventType);
+                // Smart Refresh: Only re-fetch if we're not the ones who made the change
+                // or if it's a delete/update from elsewhere
+                fetchData(true);
+            })
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'clients' 
+            }, () => fetchData(true))
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') setIsHQLive(true);
+                if (status === 'CLOSED' || status === 'CHANNEL_ERROR') setIsHQLive(false);
+            });
+
+        // 4. Auto-Revalidate on Window Focus
+        const handleFocus = () => {
+            console.log("📡 [HQ-Team] Re-fetching on Focus...");
+            fetchData(true);
+        };
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            supabase.removeChannel(teamChannel);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, []);
 
     const getDepartments = () => {
@@ -106,21 +167,109 @@ export default function HQTeamPage() {
         ];
     };
 
-    const getSquads = () => {
-        // More flexible filter to avoid exact match issues
-        const cms = team.filter(m => 
-            m.role?.toLowerCase().includes('community manager') || 
-            m.role?.toLowerCase().includes('estratega')
-        );
+    const getHierarchicalPods = () => {
+        // Tier 1: Estrategas (Maestría Operativa)
+        const strategists = team.filter(m => m.role?.toLowerCase().includes('estratega'));
         
-        return cms.map(cm => ({
-            id: cm.id, 
-            label: `Escuadrón ${cm.name ? cm.name.split(' ')[0] : 'Talento'}`, 
-            icon: Flame, 
-            lead: cm, 
-            color: 'from-indigo-600 to-purple-800', 
-            members: team.filter(m => m.squad_lead_id === cm.id)
+        // Tier 2: CMs Independientes (Sin estratega aún)
+        const independentCMs = team.filter(m => 
+            (m.role?.toLowerCase().includes('community manager')) && 
+            !strategists.some(s => m.squad_lead_id === s.id)
+        );
+
+        const pods = strategists.map(estratega => {
+            const assignedCMs = team.filter(m => 
+                m.squad_lead_id === estratega.id && 
+                m.role?.toLowerCase().includes('community manager')
+            );
+            
+            return {
+                id: estratega.id,
+                level: 1,
+                label: `Frente Estratégico: ${estratega.name.split(' ')[0]}`,
+                lead: estratega,
+                color: 'from-amber-500 to-orange-600',
+                cms: assignedCMs.map(cm => ({
+                    ...cm,
+                    creativeTeam: team.filter(m => m.squad_lead_id === cm.id)
+                }))
+            };
+        });
+
+        const rootPods = independentCMs.map(cm => ({
+            id: cm.id,
+            level: 2,
+            label: `Unidad Autónoma: ${cm.name.split(' ')[0]}`,
+            lead: cm,
+            color: 'from-indigo-600 to-purple-800',
+            creativeTeam: team.filter(m => m.squad_lead_id === cm.id)
         }));
+
+        return [...pods, ...rootPods];
+    };
+
+    const HierarchicalPod = ({ pod }) => {
+        const isStrategist = pod.level === 1;
+        const saturation = isStrategist 
+            ? (pod.cms.length / 7) * 100 
+            : 0; // Saturación de CMs liderados
+
+        return (
+            <div className="space-y-12">
+                <div className="flex items-center gap-6">
+                    <div className={`p-5 bg-gradient-to-br ${pod.color} rounded-[2rem] text-white shadow-2xl ring-4 ring-white/5`}>
+                        {isStrategist ? <Shield className="w-10 h-10" /> : <Flame className="w-8 h-8" />}
+                    </div>
+                    <div className="flex flex-col">
+                        <h2 className="text-5xl font-black text-white uppercase italic tracking-tighter leading-tight drop-shadow-2xl">
+                            {pod.label}
+                        </h2>
+                        <div className="flex items-center gap-6 mt-3">
+                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_15px_rgba(99,102,241,0.8)]" />
+                                Comando Central: {pod.lead.name}
+                            </div>
+                            {isStrategist && (
+                                <div className="flex items-center gap-4 bg-white/5 px-4 py-2 rounded-xl border border-white/10">
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Capacidad CMs:</span>
+                                    <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                        <div className={`h-full ${saturation > 80 ? 'bg-rose-500' : 'bg-emerald-500'} transition-all`} style={{ width: `${saturation}%` }} />
+                                    </div>
+                                    <span className="text-[10px] font-black text-white">{pod.cms.length}/7</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
+                </div>
+
+                {isStrategist ? (
+                    <div className="space-y-20 pl-12 border-l-2 border-dashed border-white/5">
+                        {pod.cms.map(cm => (
+                            <div key={cm.id} className="space-y-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-8 h-px bg-white/10" />
+                                    <h3 className="text-xl font-black text-indigo-400 uppercase italic tracking-tighter">Unidad CM: {cm.name}</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+                                    <TeamMemberCard member={cm} team={team} allClients={clients} variant="lead" onAudit={() => openAudit(cm)} />
+                                    {cm.creativeTeam.map(creative => (
+                                        <TeamMemberCard key={creative.id} member={creative} team={team} allClients={clients} onAudit={() => openAudit(creative)} />
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+                        <TeamMemberCard member={pod.lead} team={team} allClients={clients} variant="lead" onAudit={() => openAudit(pod.lead)} />
+                        {pod.creativeTeam.map(creative => (
+                            <TeamMemberCard key={creative.id} member={creative} team={team} allClients={clients} onAudit={() => openAudit(creative)} />
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -128,11 +277,23 @@ export default function HQTeamPage() {
             {/* Header */}
             <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8">
                 <div>
-                    <h1 className="text-6xl font-black text-white mb-2 uppercase tracking-tighter italic">ZONA <span className="text-indigo-500">CREATIVA</span></h1>
+                    <div className="flex items-center gap-6 mb-2">
+                        <h1 className="text-6xl font-black text-white uppercase tracking-tighter italic">ZONA <span className="text-indigo-500">CREATIVA</span></h1>
+                        <div className={`mt-2 flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition-all duration-500 ${isHQLive ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'bg-red-500/10 border-red-500/20 animate-pulse'}`}>
+                            <div className={`w-2 h-2 rounded-full ${isHQLive ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]' : 'bg-red-500'}`} />
+                            <span className={`text-[10px] font-black tracking-widest uppercase ${isHQLive ? 'text-emerald-500' : 'text-red-500'}`}>HQ {isHQLive ? 'LIVE' : 'OFFLINE'}</span>
+                        </div>
+                    </div>
                     <div className="flex flex-col md:flex-row md:items-center gap-4">
                         <p className="text-gray-400 font-bold uppercase text-[12px] tracking-[0.5em] flex items-center gap-2">
                             <Target className="w-4 h-4 text-pink-500" /> Operational Mastery — HQ Dashboard 2026
                         </p>
+                        {isSyncing && (
+                            <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full animate-pulse shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                                <Activity className="w-3 h-3 text-indigo-400" />
+                                <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest leading-none">Central Sync</span>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="flex gap-4">
@@ -144,40 +305,26 @@ export default function HQTeamPage() {
                 </div>
             </div>
 
-            {loading ? (
-                <div className="text-white text-center py-20 animate-pulse">Cargando Sistema HQ...</div>
+            {loading && team.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-40 animate-pulse">
+                    <Database className="w-12 h-12 text-indigo-500 mb-6 opacity-50" />
+                    <div className="text-white text-center uppercase tracking-[0.5em] font-black text-sm">Sincronizando Mando Central...</div>
+                    <p className="text-[10px] text-gray-500 mt-4 uppercase tracking-[0.2em]">Conectando con la base de datos de producción</p>
+                </div>
             ) : (
                 <AnimatePresence mode="wait">
-                    <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-20">
+                    <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-32 pb-40">
                         {viewMode === 'squads' ? (
-                            getSquads().length > 0 ? (
-                                getSquads().map((squad) => (
-                                    <div key={squad.id} className="space-y-8">
-                                        <div className="flex items-center gap-6">
-                                            <div className={`p-4 bg-gradient-to-br ${squad.color} rounded-3xl text-white shadow-[0_0_30px_rgba(79,70,229,0.2)]`}><squad.icon className="w-8 h-8" /></div>
-                                            <div className="flex flex-col">
-                                                <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none">{squad.label}</h2>
-                                                <div className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] flex items-center gap-2 mt-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
-                                                    Lid Operativo: {squad.lead.name}
-                                                </div>
-                                            </div>
-                                            <div className="h-px flex-1 bg-white/5" />
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-                                            <TeamMemberCard member={squad.lead} team={team} allClients={clients} variant="lead" onAudit={() => openAudit(squad.lead)} />
-                                            {squad.members.map((member) => (
-                                                <TeamMemberCard key={member.id} member={member} team={team} allClients={clients} onAudit={() => openAudit(member)} />
-                                            ))}
-                                        </div>
-                                    </div>
+                            getHierarchicalPods().length > 0 ? (
+                                getHierarchicalPods().map((pod) => (
+                                    <HierarchicalPod key={pod.id} pod={pod} />
                                 ))
                             ) : (
                                 <div className="py-40 text-center space-y-4">
                                     <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-10 border border-white/10">
                                         <Users className="w-10 h-10 text-gray-600" />
                                     </div>
-                                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">No se detectan escuadrones activos</h3>
+                                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">No se detectan unidades operativas</h3>
                                     
                                     {/* Diagnostic Info */}
                                     <div className="flex items-center justify-center gap-6 my-8">
@@ -185,18 +332,12 @@ export default function HQTeamPage() {
                                             <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mr-2">Total Team:</span>
                                             <span className="text-sm font-black text-white tracking-widest">{team.length}</span>
                                         </div>
-                                        <div className="px-4 py-2 bg-pink-500/10 rounded-full border border-pink-500/20">
-                                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mr-2">Roles CM/STR:</span>
-                                            <span className="text-sm font-black text-white tracking-widest">
-                                                {team.filter(m => m.role?.toLowerCase().includes('community') || m.role?.toLowerCase().includes('estratega')).length}
-                                            </span>
-                                        </div>
                                     </div>
 
                                     <p className="text-sm text-gray-500 font-bold uppercase tracking-widest max-w-md mx-auto leading-relaxed">
-                                        Asegúrate de que los líderes tengan asignado el rol de <span className="text-indigo-400">Community Manager</span> o <span className="text-indigo-400">Estratega</span> para generar la jerarquía operativa.
+                                        Asegúrate de que los líderes tengan asignado el rol de <span className="text-indigo-400">Community Manager</span> o <span className="text-indigo-400">Estratega</span>.
                                     </p>
-                                    <button onClick={() => window.location.reload()} className="mt-8 px-10 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all">Sincronizar Manualmente</button>
+                                    <button onClick={() => fetchData()} className="mt-8 px-10 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all">Sincronizar Manualmente</button>
                                 </div>
                             )
                         ) : (
@@ -250,6 +391,7 @@ export default function HQTeamPage() {
 function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal', onAudit }) {
     if (!member) return null;
     const isCM = (member.role || '').toLowerCase().includes('community manager');
+    const isEstratega = (member.role || '').toLowerCase().includes('estratega');
     
     // Filter brands assigned to this member
     const assignedBrands = allClients.filter(c => 
@@ -257,6 +399,10 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
         c.editor === member.name || 
         c.filmmaker === member.name
     );
+
+    // Saturation logic for CMs (max 6 brands)
+    const brandSaturation = isCM ? (assignedBrands.length / 6) * 100 : 0;
+    const isOverloaded = isCM && assignedBrands.length > 5;
 
     // If lead, find squad members
     const squadMembers = variant === 'lead' ? team.filter(m => m.squad_lead_id === member.id) : [];
@@ -267,17 +413,17 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
     return (
         <motion.div 
             whileHover={{ y: -8, scale: 1.01 }} 
-            className="relative w-full h-auto min-h-[520px] max-w-[310px] mx-auto bg-white/[0.02] backdrop-blur-3xl border border-white/10 rounded-[3rem] p-6 flex flex-col shadow-2xl group overflow-hidden"
+            className={`relative w-full h-auto min-h-[540px] max-w-[310px] mx-auto bg-white/[0.02] backdrop-blur-3xl border ${isEstratega ? 'border-amber-500/30' : 'border-white/10'} rounded-[3rem] p-6 flex flex-col shadow-2xl group overflow-hidden`}
         >
             {/* Premium Glass Accents */}
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 blur-[90px] rounded-full group-hover:bg-indigo-500/20 transition-all duration-1000" />
+            <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-${isEstratega ? 'amber' : 'white'}/20 to-transparent`} />
+            <div className={`absolute -top-24 -right-24 w-48 h-48 ${isEstratega ? 'bg-amber-500/10' : 'bg-indigo-500/10'} blur-[90px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
             
             {/* Identity Header */}
             <div className="flex flex-col items-center mb-8 pt-4">
                 <div className="relative mb-5">
-                    <div className="absolute inset-0 bg-indigo-500/30 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700 scale-150" />
-                    <div className="w-20 h-20 rounded-[1.8rem] bg-gradient-to-tr from-indigo-600 to-purple-600 p-0.5 shadow-2xl relative z-10 transition-transform duration-500 group-hover:rotate-6">
+                    <div className={`absolute inset-0 ${isEstratega ? 'bg-amber-500/30' : 'bg-indigo-500/30'} blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700 scale-150`} />
+                    <div className={`w-20 h-20 rounded-[1.8rem] bg-gradient-to-tr ${isEstratega ? 'from-amber-600 to-orange-600' : 'from-indigo-600 to-purple-600'} p-0.5 shadow-2xl relative z-10 transition-transform duration-500 group-hover:rotate-6`}>
                         <div className="w-full h-full rounded-[1.7rem] bg-[#050510] flex items-center justify-center text-3xl font-black text-white italic tracking-tighter shadow-inner">
                             {member.name ? member.name.charAt(0).toUpperCase() : '?'}
                         </div>
@@ -287,9 +433,25 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
                     <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-tight group-hover:text-indigo-400 transition-colors duration-500">
                         {member.name ? member.name.split(' ')[0] : 'Talento'}
                     </h3>
-                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.4em] mt-2 bg-white/5 py-1 px-3 rounded-full border border-white/5 inline-block">{member.role}</p>
+                    <p className={`text-[8px] font-black ${isEstratega ? 'text-amber-500' : 'text-gray-500'} uppercase tracking-[0.4em] mt-2 bg-white/5 py-1 px-3 rounded-full border border-white/5 inline-block`}>{member.role}</p>
                 </div>
             </div>
+
+            {/* Saturation Bar for CMs */}
+            {isCM && (
+                <div className="mb-6 px-4 py-3 bg-white/5 rounded-2xl border border-white/5">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest italic">Carga de Marcas</span>
+                        <span className={`text-[10px] font-black ${isOverloaded ? 'text-rose-500' : 'text-emerald-500'}`}>{assignedBrands.length}/6</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                        <div 
+                            className={`h-full transition-all duration-1000 ${isOverloaded ? 'bg-rose-500' : 'bg-emerald-500'}`} 
+                            style={{ width: `${Math.min(brandSaturation, 100)}%` }} 
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Statistics Row (Image 2 style) */}
             <div className="grid grid-cols-3 gap-2 mb-8 relative z-10">
@@ -323,7 +485,6 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
                     <Database className="w-2 h-2 text-gray-600" />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                    {/* Core Stats Grid */}
                     <div className="bg-white/[0.03] border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1 group/box hover:bg-white/5 transition-all">
                         <MapPin className="w-2.5 h-2.5 text-indigo-400" />
                         <span className="text-[6px] font-black text-gray-600 uppercase tracking-widest leading-none">Sede</span>
@@ -377,6 +538,13 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
     const [activeTasks, setActiveTasks] = useState([]);
     const [skillsInput, setSkillsInput] = useState(Array.isArray(member.skills) ? member.skills.join(', ') : '');
     
+    // Tier 1 Talent & Strategic Leadership (Eligible leaders)
+    const eligibleLeaders = team.filter(m => (
+        (m.role || '').toLowerCase().includes('estratega') || 
+        (m.role || '').toLowerCase().includes('community manager')
+    ) && m.id !== member.id);
+    
+    const isEstratega = (member.role || '').toLowerCase().includes('estratega');
     // Fetch member tasks
     useEffect(() => {
         const loadData = async () => {
@@ -398,7 +566,10 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
             onSave();
             onClose();
         } catch (error) {
-            toast.error("Error de sincronización");
+            console.error("❌ [HQ-Team] Sync Failed:", error);
+            toast.error("Error de sincronización", {
+                description: error.message || "Verifica los datos ingresados."
+            });
         } finally {
             setSaving(false);
         }
@@ -420,21 +591,27 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
 
     const toggleBrand = async (clientId, remove = false) => {
         try {
+            console.log(`🔗 [HQ-Team] Toggling Brand ${clientId} (Remove: ${remove})`);
             if (remove) {
                 await agencyService.updateClient(clientId, { cm: null });
             } else {
                 await agencyService.assignClientToCM(clientId, member.name);
             }
+            // Trigger HQ Refresh
             onSave();
-            toast.success(remove ? "Marca desvinculada" : "Marca asignada con éxito");
+            toast.success(remove ? "Marca desvinculada" : "Marca asignada con éxito", {
+                description: `Perfil de ${member.name} actualizado.`
+            });
         } catch (error) {
+            console.error("❌ Brand Sync Error:", error);
             toast.error("Error al gestionar marca");
         }
     };
 
     const squadMembers = team.filter(m => m.squad_lead_id === member.id);
     const assignedBrands = allClients.filter(c => c.cm === member.name);
-    const availableBrands = allClients.filter(c => c.cm !== member.name);
+    // Brands available: SHOW ONLY brands that have NO CM assigned yet
+    const availableBrands = allClients.filter(c => !c.cm);
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12 overflow-hidden">
@@ -542,6 +719,21 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                                                 <option value="Director General">Director General</option>
                                             </select>
                                         </div>
+                                        {!isEstratega && (
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-black text-amber-500 uppercase tracking-widest pl-2">Líder de Mando (Estratega / CM)</label>
+                                                <select 
+                                                    className="w-full bg-[#0F0F1A] border border-amber-500/20 rounded-2xl py-4 px-6 text-white outline-none focus:border-amber-500/40 transition-all font-bold text-sm appearance-none cursor-pointer" 
+                                                    value={formData.squad_lead_id || ''} 
+                                                    onChange={(e) => setFormData({...formData, squad_lead_id: e.target.value})}
+                                                >
+                                                    <option value="">Independiente (Sin Mando)</option>
+                                                    {eligibleLeaders.map(l => (
+                                                        <option key={l.id} value={l.id}>{l.name} ({l.role})</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="md:col-span-2 pt-4">
                                         <button onClick={handleSave} disabled={saving} className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-white font-black uppercase tracking-[0.2em] text-[10px] transition-all disabled:opacity-50">
@@ -822,14 +1014,14 @@ function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitti
                             <option value="Imprenta / Merch">Imprenta / Merch</option>
                             <option value="Eventos / Prod">Eventos / Prod</option>
                         </select>
-                        <select className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none appearance-none text-sm cursor-pointer" value={newMember.city} onChange={(e) => setNewMember({ ...newMember, city: e.target.value })}>
-                            <option value="Quito">Quito</option>
-                            <option value="Santo Domingo">Santo Domingo</option>
-                            <option value="Guayaquil">Guayaquil</option>
-                            <option value="Cuenca">Cuenca</option>
-                            <option value="Manta">Manta</option>
-                            <option value="Remoto">Remoto</option>
-                        </select>
+                        <PremiumDropdown 
+                            label="Ciudad / Ubicación"
+                            value={newMember.city} 
+                            onChange={(val) => setNewMember({ ...newMember, city: val })}
+                            options={ECUADOR_CITIES}
+                            searchable={true}
+                            icon={Globe}
+                        />
                     </div>
                     <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest text-[11px] hover:bg-indigo-500 transition-all opacity-100 disabled:opacity-50">
                         {isSubmitting ? 'Registrando...' : 'Confirmar Ingreso'}

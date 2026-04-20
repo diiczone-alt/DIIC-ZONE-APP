@@ -6,14 +6,20 @@ import {
     AlertTriangle, DollarSign, FileText
 } from 'lucide-react';
 
-export default function NotificationCenter() {
+export default function NotificationCenter({ notifications = [], onMarkAsRead, onMarkAllAsRead, onViewAll }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [notifications, setNotifications] = useState([]);
-
-    const unreadCount = notifications.filter(n => !n.read).length;
+    // local notifications state can be removed if using props, but I'll keep it as fallback
+    const [localNotifications, setLocalNotifications] = useState([]);
+    
+    const displayNotifications = notifications.length > 0 ? notifications : localNotifications;
+    const unreadCount = displayNotifications.filter(n => (n.status === 'unread' || !n.read)).length;
 
     const markAsRead = (id) => {
-        setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+        if (onMarkAsRead) {
+            onMarkAsRead(id);
+        } else {
+            setLocalNotifications(localNotifications.map(n => n.id === id ? { ...n, read: true } : n));
+        }
     };
 
     const getIcon = (type) => {
@@ -30,11 +36,17 @@ export default function NotificationCenter() {
             {/* Trigger */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 rounded-full hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
+                className={`p-2.5 rounded-xl border transition-all relative group h-10 w-10 flex items-center justify-center ${
+                    isOpen || unreadCount > 0
+                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)]' 
+                    : 'bg-white/[0.03] border-white/5 text-gray-500 hover:text-white hover:bg-white/10 hover:border-white/10'
+                }`}
             >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-4 h-4 group-hover:scale-110 transition-transform" />
                 {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#050511]" />
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-[#050511] animate-pulse">
+                        {unreadCount}
+                    </span>
                 )}
             </button>
 
@@ -45,18 +57,21 @@ export default function NotificationCenter() {
                     <div className="absolute right-0 mt-2 w-80 bg-[#0E0E18] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-4 border-b border-white/5 flex justify-between items-center bg-[#1A1A24]">
                             <h3 className="font-bold text-white text-sm">Notificaciones</h3>
-                            <button className="text-[10px] text-gray-400 hover:text-white uppercase font-bold">
+                            <button 
+                                onClick={onMarkAllAsRead}
+                                className="text-[10px] text-gray-400 hover:text-white uppercase font-bold"
+                            >
                                 Marcar leídas
                             </button>
                         </div>
 
                         <div className="max-h-96 overflow-y-auto">
-                            {notifications.length === 0 ? (
+                            {displayNotifications.length === 0 ? (
                                 <div className="p-8 text-center text-gray-500 text-xs">
                                     No hay notificaciones nuevas.
                                 </div>
                             ) : (
-                                notifications.map(n => (
+                                displayNotifications.map(n => (
                                     <div
                                         key={n.id}
                                         className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors flex gap-3 ${n.read ? 'opacity-50' : ''}`}
@@ -83,7 +98,10 @@ export default function NotificationCenter() {
                         </div>
 
                         <div className="p-2 bg-[#1A1A24] border-t border-white/5 text-center">
-                            <button className="text-xs text-gray-400 hover:text-white font-medium py-1 w-full">
+                            <button 
+                                onClick={onViewAll}
+                                className="text-xs text-gray-400 hover:text-white font-medium py-1 w-full"
+                            >
                                 Ver historial completo
                             </button>
                         </div>

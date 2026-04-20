@@ -2,73 +2,18 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe } from 'lucide-react';
+import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { agencyService } from '@/services/agencyService';
 import VisionEcosystem from '@/components/VisionEcosystem';
 import { toast } from 'sonner';
-import { isCloudConnected } from '@/lib/supabase';
+import { isCloudConnected, supabase } from '@/lib/supabase';
 import StrategicOutliner from '@/components/shared/Strategy/StrategicOutliner';
 import StrategyCreationWizard from '@/components/shared/Strategy/StrategyCreationWizard';
+import { ECUADOR_CITIES } from '@/lib/constants';
+import PremiumDropdown from '@/components/shared/PremiumDropdown';
 
-// --- PREMIUM DROPDOWN COMPONENT ---
-const PremiumDropdown = ({ value, onChange, options, label, icon: Icon }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const containerRef = useRef(null);
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (containerRef.current && !containerRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const selectedOption = options.find(opt => opt.value === value) || options[0];
-
-    return (
-        <div className="space-y-3 relative" ref={containerRef}>
-            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
-                {Icon && <Icon className="w-3 h-3" />} {label}
-            </label>
-            <div 
-                onClick={() => setIsOpen(!isOpen)}
-                className={`w-full bg-white/[0.03] border ${isOpen ? 'border-indigo-500/50 shadow-[0_0_20px_rgba(79,70,229,0.1)]' : 'border-white/5'} rounded-2xl py-4 px-6 text-white cursor-pointer transition-all flex items-center justify-between group`}
-            >
-                <span className="font-bold">{selectedOption?.label || value}</span>
-                <ChevronDown className={`w-4 h-4 text-gray-500 group-hover:text-indigo-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </div>
-
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute z-[200] top-full left-0 right-0 mt-2 bg-[#0A0A1F]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-4xl overflow-hidden p-2"
-                    >
-                        {options.map((option) => (
-                            <div
-                                key={option.value}
-                                onClick={() => {
-                                    onChange(option.value);
-                                    setIsOpen(false);
-                                }}
-                                className={`px-5 py-3 rounded-xl cursor-pointer transition-all flex items-center justify-between group
-                                    ${value === option.value ? 'bg-indigo-600/20 text-indigo-400' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
-                            >
-                                <span className="font-bold text-sm">{option.label}</span>
-                                {value === option.value && <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(79,70,229,0.8)]" />}
-                            </div>
-                        ))}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-};
 
 export default function HQClientsPage() {
     const [activeMenu, setActiveMenu] = useState(null);
@@ -89,6 +34,8 @@ export default function HQClientsPage() {
     const [editingClient, setEditingClient] = useState(null);
     const [activeEditTab, setActiveEditTab] = useState('operative');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [isHQLive, setIsHQLive] = useState(false);
     const [isStrategicWizardOpen, setIsStrategicWizardOpen] = useState(false);
     const [activeStrategyNodes, setActiveStrategyNodes] = useState([]);
     const [newClient, setNewClient] = useState({
@@ -105,13 +52,13 @@ export default function HQClientsPage() {
         onboarding_data: {}
     });
 
-    const fetchClients = async () => {
-        if (loading) return;
-        setLoading(true);
+    const fetchClients = async (isBackground = false) => {
+        if (!isBackground) setLoading(true);
+        setIsSyncing(true);
         setSyncStep('connecting');
         
         try {
-            console.log("📡 [Tracker] Milestone: Connecting...");
+            console.log(`🚀 [Clients] ${isBackground ? 'Background' : 'Initial'} DB Syncing...`);
             const [clientData, teamData] = await Promise.all([
                 agencyService.getClients(),
                 agencyService.getTeam()
@@ -123,20 +70,74 @@ export default function HQClientsPage() {
             
             setSyncStep('done');
         } catch (error) {
-            console.error("❌ [Tracker] Milestone: Failure.", error);
+            console.error("❌ [Clients] Sync Failure:", error);
             setSyncStep('error');
-            toast.error("Error de Sincronización", {
-                description: "Revisa tu conexión a Supabase."
-            });
+            if (!isBackground) toast.error("Error de Sincronización");
         } finally {
             setLoading(false);
+            setIsSyncing(false);
             setTimeout(() => setSyncStep(''), 2000);
         }
     };
 
     useEffect(() => {
-        fetchClients();
-        console.log("🚦 [Dashboard] Active and Synchronized.");
+        // 1. Instant Load from Cache
+        const loadCache = () => {
+            try {
+                const cachedClients = localStorage.getItem('diic_clients');
+                const cachedTeam = localStorage.getItem('diic_team');
+                
+                if (cachedClients && cachedTeam) {
+                    setClients(JSON.parse(cachedClients));
+                    setTeam(JSON.parse(cachedTeam));
+                    setLoading(false); // Immediate unlock
+                    console.log("⚡ [Clients] Loaded from Cache");
+                    return true;
+                }
+            } catch (e) {
+                console.warn("⚠️ [Clients] Cache load failed");
+            }
+            return false;
+        };
+
+        const hasCache = loadCache();
+        
+        // 2. Background Sync
+        fetchClients(hasCache);
+
+        // 3. Realtime Subscription with Channel Management
+        setIsHQLive(true);
+        const clientChannel = supabase
+            .channel('hq-clients-realtime')
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'clients' 
+            }, () => {
+                console.log("🔄 [Clients] Realtime Update Detected");
+                fetchClients(true);
+            })
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'team' 
+            }, () => fetchClients(true))
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') setIsHQLive(true);
+                if (status === 'CLOSED' || status === 'CHANNEL_ERROR') setIsHQLive(false);
+            });
+
+        // 4. Auto-Revalidate on Window Focus
+        const handleFocus = () => {
+            console.log("📡 [Clients] Re-fetching on Focus...");
+            fetchClients(true);
+        };
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            supabase.removeChannel(clientChannel);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, []);
 
     const handleCreateClient = async (e) => {
@@ -327,17 +328,23 @@ export default function HQClientsPage() {
                     <p className="text-gray-400 font-medium">Gestión centralizada de socios y cuentas activas.</p>
                 </div>
                 <div className="flex gap-4 items-center">
-                    <div className={`px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-widest flex items-center gap-2 ${
-                        isCloudConnected ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                    <div className={`px-4 py-1.5 rounded-2xl border flex items-center gap-2 transition-all duration-500 ${
+                        isHQLive ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-red-500/10 border-red-500/20 text-red-500 animate-pulse'
                     }`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${isCloudConnected ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-amber-500 animate-pulse'}`} />
-                        {isCloudConnected ? 'Real Cloud Connected' : 'Local Mock Active'}
+                        <div className={`w-1.5 h-1.5 rounded-full ${isHQLive ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]' : 'bg-red-500'}`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest leading-none">HQ {isHQLive ? 'LIVE' : 'OFFLINE'}</span>
                     </div>
+                    {isSyncing && (
+                        <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-2xl animate-pulse shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                            <Activity className="w-3.5 h-3.5 text-indigo-400" />
+                            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest leading-none">Central Sync</span>
+                        </div>
+                    )}
                     <button
-                        onClick={fetchClients}
-                        className={`px-6 py-3 bg-white/5 text-gray-400 font-bold rounded-2xl flex items-center gap-2 hover:bg-white/10 transition-all border border-white/10 ${loading ? 'opacity-50 cursor-wait' : ''}`}
+                        onClick={() => fetchClients()}
+                        className={`px-6 py-3 bg-white/5 text-gray-400 font-bold rounded-2xl flex items-center gap-2 hover:bg-white/10 transition-all border border-white/10 ${isSyncing ? 'opacity-50 cursor-wait' : ''}`}
                     >
-                        {loading ? 'Sincronizando...' : '🔄 Sincronizar'}
+                        {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar'}
                     </button>
                     <button
                         onClick={() => setIsModalOpen(true)}
@@ -407,7 +414,7 @@ export default function HQClientsPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                        {loading ? (
+                        {loading && clients.length === 0 ? (
                             [1, 2, 3].map(i => <SkeletonRow key={i} />)
                         ) : (
                             filteredClients.map((client) => (
@@ -477,10 +484,18 @@ export default function HQClientsPage() {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Nombre / Marca</label>
                                     <input type="text" required value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={[{ value: 'Basic', label: 'Basic' }, { value: 'Premium', label: 'Premium' }, { value: 'Enterprise', label: 'Enterprise' }]} />
-                                    <PremiumDropdown label="CM" value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={[{ value: 'Basic', label: 'Basic' }, { value: 'Premium', label: 'Premium' }, { value: 'Enterprise', label: 'Enterprise' }]} />
+                                        <PremiumDropdown label="CM" value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
+                                    </div>
+                                    <PremiumDropdown 
+                                        label="Ciudad Base" 
+                                        value={newClient.city} 
+                                        onChange={(val) => setNewClient({ ...newClient, city: val })} 
+                                        options={ECUADOR_CITIES} 
+                                        searchable={true}
+                                        icon={Globe}
+                                    />
                                 </div>
                                 <div className="flex gap-4 pt-4">
                                     <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-gray-500 font-black uppercase tracking-widest text-xs">Cancelar</button>
@@ -558,10 +573,14 @@ export default function HQClientsPage() {
                                                         <Building2 className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-700 pointer-events-none" />
                                                     </div>
                                                 </div>
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Ciudad Base</label>
-                                                    <input type="text" value={newClient.city} onChange={(e) => setNewClient({ ...newClient, city: e.target.value })} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none transition-all font-bold" placeholder="Ej: Santo Domingo" />
-                                                </div>
+                                                <PremiumDropdown 
+                                                    label="Ciudad Base" 
+                                                    value={newClient.city} 
+                                                    onChange={(val) => setNewClient({ ...newClient, city: val })} 
+                                                    options={ECUADOR_CITIES} 
+                                                    searchable={true}
+                                                    icon={Globe}
+                                                />
                                                 <div className="space-y-3">
                                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Industria / Sector</label>
                                                     <input type="text" value={newClient.industry} onChange={(e) => setNewClient({ ...newClient, industry: e.target.value })} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none transition-all font-bold" placeholder="Ej: Médico, Real Estate" />

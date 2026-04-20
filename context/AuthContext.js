@@ -87,39 +87,43 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        let authSubscription;
+        let authSubscription = null;
+        let active = true;
 
         const initializeAuth = async () => {
             try {
-                // Check active session
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                setLoading(true);
+                const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (!active) return;
                 if (sessionError) throw sessionError;
-                
-                setSession(session);
-                
-                if (session?.user) {
-                    const profile = await fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
-                    setUser({ ...session.user, ...profile });
-                    localStorage.setItem('user_role', profile.role);
-                    if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
+
+                if (initialSession) {
+                    setSession(initialSession);
+                    setUser(initialSession.user);
                     
-                    // SAVE GOOGLE TOKENS IF PRESENT
-                    if (session.provider_token && profile.client_id && profile.role === 'CLIENT') {
-                        syncGoogleTokens(profile.client_id, session.provider_token, session.provider_refresh_token, session.user.email);
+                    const profileData = await fetchProfile(initialSession.user.id, initialSession.user.email, initialSession.user.user_metadata);
+                    if (active) {
+                        setUser(prev => ({ ...prev, ...profileData }));
+                        console.log('✅ [AuthContext] Extended Profile Loaded');
                     }
-                } else {
+                } else if (active) {
                     setUser(null);
                 }
             } catch (err) {
-                console.error('[AuthContext] Auth initialization failed:', err);
-                setUser(null);
-                setSession(null);
+                if (err.name !== 'AbortError') {
+                    console.error('[AuthContext] Auth initialization failed:', err);
+                }
+                if (active) {
+                    setUser(null);
+                    setSession(null);
+                }
             } finally {
-                setLoading(false);
+                if (active) setLoading(false);
             }
 
             // Detect Hash Errors (like #error=otp_expired)
-            if (typeof window !== 'undefined' && window.location.hash) {
+            if (active && typeof window !== 'undefined' && window.location.hash) {
                 const hash = window.location.hash.substring(1);
                 const params = new URLSearchParams(hash);
                 
@@ -143,27 +147,33 @@ export const AuthProvider = ({ children }) => {
                 }
             }
 
-            // Listen for changes
-            const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-                setSession(session);
-                if (session?.user) {
-                    const profile = await fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
-                    setUser({ ...session.user, ...profile });
-                    localStorage.setItem('user_role', profile.role || 'CLIENT');
-                    if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
-                } else {
-                    setUser(null);
-                    localStorage.removeItem('user_role');
-                    localStorage.removeItem('client_id');
-                }
-            });
-            
-            authSubscription = subscription;
+            // Listen for changes - Wrapped in active check to prevent concurrent lock attempts
+            if (active) {
+                const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+                    if (!active) return;
+                    setSession(session);
+                    if (session?.user) {
+                        const profile = await fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
+                        if (active) {
+                            setUser({ ...session.user, ...profile });
+                            localStorage.setItem('user_role', profile.role || 'CLIENT');
+                            if (profile.client_id) localStorage.setItem('client_id', profile.client_id);
+                        }
+                    } else if (active) {
+                        setUser(null);
+                        localStorage.removeItem('user_role');
+                        localStorage.removeItem('client_id');
+                    }
+                });
+                
+                authSubscription = subscription;
+            }
         };
 
         initializeAuth();
 
         return () => {
+            active = false;
             if (authSubscription) authSubscription.unsubscribe();
         };
     }, []);

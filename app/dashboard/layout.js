@@ -145,40 +145,39 @@ export default function DashboardLayout({ children }) {
     const { user, loading, getHomeRoute } = useAuth(); // Official Auth
 
     useEffect(() => {
-        if (loading) return; // Wait for auth to initialize
+        if (loading) return; 
 
+        // 1. No Session -> Redirect to Home
         if (!user) {
             router.push('/');
             return;
         }
 
-        const role = user.role || 'CLIENT';
-        const home = getHomeRoute(role);
-        
-        // Guard Logic based on Real Role
-        // Guard Logic based on Unified Routing
-        // Guard Logic based on Unified Routing
-        const isDashboardBase = pathname === '/dashboard' || pathname === '/dashboard/';
-        const isAdminArea = pathname.startsWith('/dashboard/hq');
-        const isWorkstationUnderDashboard = pathname.startsWith('/dashboard/editing') || pathname.startsWith('/dashboard/design');
+        const role = user.role;
+        // 2. Wait for profile role if user exists but role is still missing (transient load from session)
+        if (!role) {
+            console.log('[DashboardLayout] Session detected but waiting for profile data...');
+            return;
+        }
 
-        // FAIL-SAFE: Si eres cliente o tienes un ID de cliente asociado, NUNCA puedes estar en /hq
+        const home = getHomeRoute(role);
+        const indexPath = pathname === '/dashboard' || pathname === '/dashboard/';
+        const isAdminArea = pathname.startsWith('/dashboard/hq');
         const hasClientId = user.client_id || user.metadata?.client_id;
+
+        // Security Guard: Prevent Clients from accessing HQ
         if ((role === 'CLIENT' || hasClientId) && isAdminArea) {
             console.error(`[Security Guard] Unauthorized HQ Access Blocked for ${role}. Ejecting...`);
             router.push(home);
             return;
         }
 
-        if (role === 'ADMIN') {
-            // El administrador tiene llave maestra para todo el dashboard
-            return;
-        } else {
-            // Non-admins should usually be in their home workstation
-            if ((isDashboardBase || isAdminArea) && home !== pathname) {
-                console.log(`[DashboardLayout] Restricting access for ${role}. Redirecting to ${home}`);
-                router.push(home);
-            }
+        // Handle Redirects for incorrect role landing
+        if (role === 'ADMIN') return;
+        
+        if ((indexPath || isAdminArea) && home !== pathname) {
+            console.log(`[DashboardLayout] Restricting access for ${role}. Redirecting to ${home}`);
+            router.push(home);
         }
     }, [user, loading, pathname, router]);
 
