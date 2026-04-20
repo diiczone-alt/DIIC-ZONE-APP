@@ -31,7 +31,20 @@ export const onboardingService = {
             // 2. Sincronización de Base de Datos (Clients or Team)
             try {
                 if (profileType === 'client') {
-                    // Si no tenemos ID, generamos uno nuevo, pero mejor usamos upsert con el ID existente si existe
+                    // --- LÓGICA ANTI-DUPLICADOS (Búsqueda Proactiva) ---
+                    if (!clientId) {
+                        const { data: existingClient } = await supabase
+                            .from('clients')
+                            .select('id')
+                            .eq('email', user.email)
+                            .maybeSingle();
+                        
+                        if (existingClient) {
+                            console.log('[OnboardingService] Cliente existente detectado mediante email:', existingClient.id);
+                            clientId = existingClient.id;
+                        }
+                    }
+
                     const targetId = clientId || `${brandName.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
                     
                     const { data: clientData, error: clientError } = await supabase
@@ -39,6 +52,7 @@ export const onboardingService = {
                         .upsert({
                             id: targetId,
                             name: brandName,
+                            email: user.email,
                             city: city,
                             type: formData.profileType || 'Business',
                             status: 'ONBOARDING_COMPLETED',

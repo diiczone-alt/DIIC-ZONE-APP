@@ -47,7 +47,10 @@ export const AuthProvider = ({ children }) => {
             let teamId = null;
             
             // Normalize role
-            if (email === 'diiczone@gmail.com') role = 'ADMIN';
+            const adminEmails = ['diiczone@gmail.com', 'admin@diiczone.com'];
+            if (email && adminEmails.includes(email.toLowerCase())) {
+                role = 'ADMIN';
+            }
 
             // Lookup team_id for CMs - WRAPPED IN SUB-TRY-CATCH to prevent hang
             if ((role === 'COMMUNITY' || role === 'CM') && fullName) {

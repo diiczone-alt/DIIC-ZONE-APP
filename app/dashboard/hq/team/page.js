@@ -67,13 +67,26 @@ export default function HQTeamPage() {
 
     useEffect(() => {
         const fetchData = async () => {
-            const [teamData, clientData] = await Promise.all([
-                agencyService.getTeam(),
-                agencyService.getClients()
-            ]);
-            setTeam(teamData);
-            setClients(clientData || []);
-            setLoading(false);
+            try {
+                console.log("🚀 [HQ-Team] Initializing DB Sync...");
+                const [teamData, clientData] = await Promise.all([
+                    agencyService.getTeam(),
+                    agencyService.getClients()
+                ]);
+                
+                if (!teamData) {
+                    console.warn("⚠️ [HQ-Team] Team data returned null");
+                }
+                
+                console.log(`[HQ-Team] Data Fetched: ${teamData?.length || 0} members, ${clientData?.length || 0} clients`);
+                setTeam(teamData || []);
+                setClients(clientData || []);
+            } catch (error) {
+                console.error("❌ [HQ-Team] Critical Sync Failed:", error);
+                toast.error("Fallo de conexión con la Central HQ");
+            } finally {
+                setLoading(false);
+            }
         };
         fetchData();
     }, []);
@@ -94,9 +107,19 @@ export default function HQTeamPage() {
     };
 
     const getSquads = () => {
-        const cms = team.filter(m => m.role === 'Community Manager');
+        // More flexible filter to avoid exact match issues
+        const cms = team.filter(m => 
+            m.role?.toLowerCase().includes('community manager') || 
+            m.role?.toLowerCase().includes('estratega')
+        );
+        
         return cms.map(cm => ({
-            id: cm.id, label: `Escuadrón ${cm.name.split(' ')[0]}`, icon: Flame, lead: cm, color: 'from-indigo-600 to-purple-800', members: team.filter(m => m.squad_lead_id === cm.id)
+            id: cm.id, 
+            label: `Escuadrón ${cm.name ? cm.name.split(' ')[0] : 'Talento'}`, 
+            icon: Flame, 
+            lead: cm, 
+            color: 'from-indigo-600 to-purple-800', 
+            members: team.filter(m => m.squad_lead_id === cm.id)
         }));
     };
 
@@ -127,27 +150,55 @@ export default function HQTeamPage() {
                 <AnimatePresence mode="wait">
                     <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-20">
                         {viewMode === 'squads' ? (
-                            getSquads().map((squad) => (
-                                <div key={squad.id} className="space-y-8">
-                                    <div className="flex items-center gap-6">
-                                        <div className={`p-4 bg-gradient-to-br ${squad.color} rounded-3xl text-white shadow-[0_0_30px_rgba(79,70,229,0.2)]`}><squad.icon className="w-8 h-8" /></div>
-                                        <div className="flex flex-col">
-                                            <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none">{squad.label}</h2>
-                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] flex items-center gap-2 mt-2">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
-                                                Lid Operativo: {squad.lead.name}
-                                            </p>
+                            getSquads().length > 0 ? (
+                                getSquads().map((squad) => (
+                                    <div key={squad.id} className="space-y-8">
+                                        <div className="flex items-center gap-6">
+                                            <div className={`p-4 bg-gradient-to-br ${squad.color} rounded-3xl text-white shadow-[0_0_30px_rgba(79,70,229,0.2)]`}><squad.icon className="w-8 h-8" /></div>
+                                            <div className="flex flex-col">
+                                                <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none">{squad.label}</h2>
+                                                <div className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] flex items-center gap-2 mt-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
+                                                    Lid Operativo: {squad.lead.name}
+                                                </div>
+                                            </div>
+                                            <div className="h-px flex-1 bg-white/5" />
                                         </div>
-                                        <div className="h-px flex-1 bg-white/5" />
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+                                            <TeamMemberCard member={squad.lead} team={team} allClients={clients} variant="lead" onAudit={() => openAudit(squad.lead)} />
+                                            {squad.members.map((member) => (
+                                                <TeamMemberCard key={member.id} member={member} team={team} allClients={clients} onAudit={() => openAudit(member)} />
+                                            ))}
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-                                        <TeamMemberCard member={squad.lead} team={team} allClients={clients} variant="lead" onAudit={() => openAudit(squad.lead)} />
-                                        {squad.members.map((member) => (
-                                            <TeamMemberCard key={member.id} member={member} team={team} allClients={clients} onAudit={() => openAudit(member)} />
-                                        ))}
+                                ))
+                            ) : (
+                                <div className="py-40 text-center space-y-4">
+                                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-10 border border-white/10">
+                                        <Users className="w-10 h-10 text-gray-600" />
                                     </div>
+                                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">No se detectan escuadrones activos</h3>
+                                    
+                                    {/* Diagnostic Info */}
+                                    <div className="flex items-center justify-center gap-6 my-8">
+                                        <div className="px-4 py-2 bg-indigo-500/10 rounded-full border border-indigo-500/20">
+                                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mr-2">Total Team:</span>
+                                            <span className="text-sm font-black text-white tracking-widest">{team.length}</span>
+                                        </div>
+                                        <div className="px-4 py-2 bg-pink-500/10 rounded-full border border-pink-500/20">
+                                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mr-2">Roles CM/STR:</span>
+                                            <span className="text-sm font-black text-white tracking-widest">
+                                                {team.filter(m => m.role?.toLowerCase().includes('community') || m.role?.toLowerCase().includes('estratega')).length}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest max-w-md mx-auto leading-relaxed">
+                                        Asegúrate de que los líderes tengan asignado el rol de <span className="text-indigo-400">Community Manager</span> o <span className="text-indigo-400">Estratega</span> para generar la jerarquía operativa.
+                                    </p>
+                                    <button onClick={() => window.location.reload()} className="mt-8 px-10 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all">Sincronizar Manualmente</button>
                                 </div>
-                            ))
+                            )
                         ) : (
                             getDepartments().map((dept) => dept.members.length > 0 && (
                                 <div key={dept.id} className="space-y-10">
@@ -197,7 +248,8 @@ export default function HQTeamPage() {
 }
 
 function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal', onAudit }) {
-    const isCM = member.role.toLowerCase().includes('community manager');
+    if (!member) return null;
+    const isCM = (member.role || '').toLowerCase().includes('community manager');
     
     // Filter brands assigned to this member
     const assignedBrands = allClients.filter(c => 
@@ -233,7 +285,7 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
                 </div>
                 <div className="text-center">
                     <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-tight group-hover:text-indigo-400 transition-colors duration-500">
-                        {member.name.split(' ')[0]}
+                        {member.name ? member.name.split(' ')[0] : 'Talento'}
                     </h3>
                     <p className="text-[8px] font-black text-gray-500 uppercase tracking-[0.4em] mt-2 bg-white/5 py-1 px-3 rounded-full border border-white/5 inline-block">{member.role}</p>
                 </div>

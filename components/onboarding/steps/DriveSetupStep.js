@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { driveService } from '@/services/driveService';
 import { useAuth } from '@/context/AuthContext';
-import { Loader2, Folder, CheckCircle, HardDrive, AlertCircle, Cloud } from 'lucide-react';
+import { Loader2, Folder, CheckCircle, HardDrive, AlertCircle, Cloud, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function DriveSetupStep({ onNext, updateData, data }) {
@@ -75,13 +75,32 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
             return false;
         };
 
-        if (scanForToken()) return;
+        // --- SENSOR DE CAPTURA AGRESIVA (POLLING) ---
+        let pollingInterval;
+        if (status === 'connecting' && !providerToken) {
+            console.log('[DriveSetupStep] Iniciando búsqueda activa de llave...');
+            pollingInterval = setInterval(async () => {
+                try {
+                    const { data: { session: activeSession } } = await supabase.auth.getSession();
+                    const liveToken = activeSession?.provider_token;
+                    
+                    if (liveToken) {
+                        console.log('[DriveSetupStep] ¡Llave encontrada mediante búsqueda activa!');
+                        localStorage.setItem('diic_google_token', liveToken);
+                        clearInterval(pollingInterval);
+                        onNext();
+                    }
+                } catch (e) {
+                    console.warn('Error en búsqueda activa:', e);
+                }
+            }, 1000); // Preguntar cada segundo
+        }
 
         if (loading) return; // Esperar a que la sesión se hidrate
 
         // Si ya tenemos datos de drive o el token, avanzamos al FINAL (Paso 15)
         if (data.driveData || providerToken) {
-            console.log('[DriveSetupStep] Conexión verificada. Procediendo al cierre del ecosistema...');
+            console.log('[DriveSetupStep] Conexión verificada por canal estándar.');
             onNext();
             return;
         }
@@ -90,7 +109,7 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
         const waitingForGoogle = localStorage.getItem('diic_waiting_oauth') === 'true';
         if (waitingForGoogle && !providerToken && status === 'initializing') {
             setStatus('connecting');
-            setCurrentAction('Validando acceso con Google Drive...');
+            setCurrentAction('Buscando llave de acceso en los registros de Google...');
             return;
         }
 
@@ -102,14 +121,9 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
             return () => clearTimeout(timer);
         }
 
-        // Aumentar la paciencia del bypass
-        const bypassTimer = setTimeout(() => {
-            if (status !== 'creating' && status !== 'complete') {
-                setShowBypass(true);
-            }
-        }, 30000);
-        return () => clearTimeout(bypassTimer);
-
+        return () => {
+            if (pollingInterval) clearInterval(pollingInterval);
+        };
     }, [providerToken, data.driveData, status, loading]);
 
     // Timer de Rescate Independiente (Para evitar reseteos por render)
@@ -281,6 +295,24 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
                     )}
                 </div>
             )}
+
+            {/* BOTÓN DE RESCATE CRÍTICO (Visible en todo momento si hay problemas) */}
+            <div className="mt-20 pt-10 border-t border-white/5 flex flex-col items-center gap-4 w-full max-w-sm">
+                <p className="text-white/30 text-[10px] text-center uppercase tracking-widest leading-relaxed">
+                    Si el sistema de Google no responde, puedes saltar este paso y configurar Drive después.
+                </p>
+                <button
+                    onClick={() => {
+                        console.log('[DriveSetupStep] Bypass manual activado.');
+                        toast.info('Saltando sincronización de Drive...');
+                        onNext();
+                    }}
+                    className="group px-8 py-3 rounded-2xl border border-white/10 hover:bg-white/5 text-white/60 text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3"
+                >
+                    <span>Continuar sin sincronizar Drive</span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+            </div>
 
             <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-indigo-600/5 rounded-full blur-[100px] pointer-events-none" />
             <div className="absolute -top-20 -right-20 w-80 h-80 bg-purple-600/5 rounded-full blur-[100px] pointer-events-none" />

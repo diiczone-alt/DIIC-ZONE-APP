@@ -19,31 +19,54 @@ export default function CommunityDashboard() {
 
     useEffect(() => {
         const fetchCMData = async () => {
-            if (!user?.full_name) return;
+            if (!user) return;
             
             setLoading(true);
             try {
-                // Fetch only clients assigned to this CM
-                const { data: assignedClients, error: clientsError } = await supabase
-                    .from('clients')
-                    .select('*')
-                    .eq('cm', user.full_name);
-
-                if (clientsError) throw clientsError;
-                setClients(assignedClients || []);
-
-                // Fetch tasks for these specific clients
-                if (assignedClients && assignedClients.length > 0) {
-                    const clientIds = assignedClients.map(c => c.id);
-                    const { data: tasksData, error: tasksError } = await supabase
-                        .from('tasks')
+                if (user.role === 'CLIENT') {
+                    // MODO CLIENTE: Buscar solo su propio perfil de cliente vinculado
+                    const { data: myClient, error: clientError } = await supabase
+                        .from('clients')
                         .select('*')
-                        .in('client', clientIds)
-                        .order('created_at', { ascending: false })
-                        .limit(5);
+                        .or(`id.eq.${user.client_id},email.eq.${user.email}`)
+                        .maybeSingle();
 
-                    if (tasksError) throw tasksError;
-                    setRecentTasks(tasksData || []);
+                    if (clientError) throw clientError;
+                    setClients(myClient ? [myClient] : []);
+
+                    if (myClient) {
+                        const { data: tasksData, error: tasksError } = await supabase
+                            .from('tasks')
+                            .select('*')
+                            .eq('client', myClient.id)
+                            .order('created_at', { ascending: false })
+                            .limit(5);
+
+                        if (tasksError) throw tasksError;
+                        setRecentTasks(tasksData || []);
+                    }
+                } else if (user.full_name) {
+                    // MODO GESTOR: Buscar todos los clientes asignados
+                    const { data: assignedClients, error: clientsError } = await supabase
+                        .from('clients')
+                        .select('*')
+                        .eq('cm', user.full_name);
+
+                    if (clientsError) throw clientsError;
+                    setClients(assignedClients || []);
+
+                    if (assignedClients && assignedClients.length > 0) {
+                        const clientIds = assignedClients.map(c => c.id);
+                        const { data: tasksData, error: tasksError } = await supabase
+                            .from('tasks')
+                            .select('*')
+                            .in('client', clientIds)
+                            .order('created_at', { ascending: false })
+                            .limit(5);
+
+                        if (tasksError) throw tasksError;
+                        setRecentTasks(tasksData || []);
+                    }
                 }
             } catch (err) {
                 console.error('Error fetching CM data:', err);
@@ -89,7 +112,10 @@ export default function CommunityDashboard() {
                         Panel <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">Estratégico.</span>
                     </h1>
                     <p className="text-gray-500 text-sm mt-4 font-bold max-w-lg uppercase tracking-widest">
-                        Bienvenido, {user?.full_name || 'Community Manager'}. Gestionando {clients.length} ecosistemas activos.
+                        {user.role === 'CLIENT' 
+                            ? `Bienvenida, ${user.full_name || 'Dra. Reyes'}. Visualizando tu ecosistema activo.`
+                            : `Bienvenido, ${user.full_name || 'Community Manager'}. Gestionando ${clients.length} ecosistemas activos.`
+                        }
                     </p>
                 </div>
 

@@ -162,14 +162,19 @@ export default function DashboardLayout({ children }) {
         const isAdminArea = pathname.startsWith('/dashboard/hq');
         const isWorkstationUnderDashboard = pathname.startsWith('/dashboard/editing') || pathname.startsWith('/dashboard/design');
 
+        // FAIL-SAFE: Si eres cliente o tienes un ID de cliente asociado, NUNCA puedes estar en /hq
+        const hasClientId = user.client_id || user.metadata?.client_id;
+        if ((role === 'CLIENT' || hasClientId) && isAdminArea) {
+            console.error(`[Security Guard] Unauthorized HQ Access Blocked for ${role}. Ejecting...`);
+            router.push(home);
+            return;
+        }
+
         if (role === 'ADMIN') {
-            const allowedAdminPaths = ['/dashboard/hq', '/dashboard/strategy', '/dashboard/systemcore'];
-            if (!allowedAdminPaths.some(p => pathname.startsWith(p)) && pathname !== '/dashboard') {
-                router.push(home);
-            }
+            // El administrador tiene llave maestra para todo el dashboard
+            return;
         } else {
             // Non-admins should usually be in their home workstation
-            // If they are in the generic dashboard area, force them to their homeRoute
             if ((isDashboardBase || isAdminArea) && home !== pathname) {
                 console.log(`[DashboardLayout] Restricting access for ${role}. Redirecting to ${home}`);
                 router.push(home);

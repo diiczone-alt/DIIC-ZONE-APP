@@ -13,19 +13,19 @@ export default function CommunityPage() {
     useEffect(() => {
         if (user) {
             const home = getHomeRoute(user.role);
-            if (home && home !== '/dashboard/community') {
+            // Solo redirigir si el rol NO es CLIENT ni COMMUNITY/CM
+            const isAllowed = user.role === 'CLIENT' || user.role === 'COMMUNITY' || user.role === 'CM' || user.role === 'ADMIN';
+            
+            if (!isAllowed && home && home !== '/dashboard/community') {
                 router.push(home);
             }
         }
     }, [user, getHomeRoute, router]);
 
     return (
-        <div className="bg-[#050511] min-h-screen text-white flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 animate-pulse">
-                    Redireccionando a la Estación CM...
-                </span>
+        <div className="bg-[#050511] min-h-screen">
+            <div className="max-w-[1600px] mx-auto p-4 md:p-8">
+                <CommunityDashboard />
             </div>
         </div>
     );

@@ -352,7 +352,7 @@ export default function HQFinancePage() {
                                                     {(scale?.itemized_software || []).map((sw, i) => (
                                                         <div key={i} className="flex justify-between items-center group">
                                                             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.15em] group-hover:text-white transition-colors">{sw.name}</span>
-                                                            <span className="font-black text-sm italic text-white">${sw.cost}</span>
+                                                            <span className="font-black text-sm italic text-white">${Number(sw.amount || 0).toLocaleString()}</span>
                                                         </div>
                                                     ))}
                                                     <div className="h-px bg-white/5 my-2" />

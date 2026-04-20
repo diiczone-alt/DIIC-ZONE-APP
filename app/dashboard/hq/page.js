@@ -8,7 +8,7 @@ import {
     Activity, Users, Briefcase, Zap,
     CreditCard, Layout, Star, DollarSign, Map as MapIcon
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { agencyService } from '@/services/agencyService';
 import AdminOperationalMap from '@/components/admin/AdminOperationalMap';
 
 export default function HQDashboardPage() {
@@ -17,36 +17,61 @@ export default function HQDashboardPage() {
     const [portfolio, setPortfolio] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [metrics, setMetrics] = useState({
+        income: 0,
+        pending: 0,
+        risk: 0
+    });
 
     useEffect(() => {
-        if (!authLoading && (!user || user.role !== 'ADMIN')) {
+        if (authLoading) return;
+        
+        if (!user || user.role !== 'ADMIN') {
+            console.warn('[HQ] Unauthorized access attempt or missing role. Redirecting...');
             router.push(getHomeRoute(user?.role));
             return;
         }
-
+        
         const loadGlobalData = async () => {
             setLoading(true);
+            console.log('[HQ] Sincronizando datos globales para ADMIN...');
             try {
-                const [clientsRes, tasksRes] = await Promise.all([
-                    supabase.from('clients').select('*'),
-                    supabase.from('tasks').select('*')
+                // Fetching parallel sequences from Centralized Service
+                const [clientData, taskData, financialSum] = await Promise.all([
+                    agencyService.getClients(),
+                    agencyService.getTasks(),
+                    agencyService.getFinancialSummary()
                 ]);
+                
+                if (Array.isArray(clientData)) {
+                    console.log(`[HQ] Sincronización Exitosa: ${clientData.length} Clientes.`);
+                    setPortfolio(clientData);
+                }
+                
+                if (Array.isArray(taskData)) {
+                    setTasks(taskData);
+                }
 
-                if (clientsRes.data) setPortfolio(clientsRes.data);
-                if (clientsRes.error) console.warn('[HQ] Clients fetch error:', clientsRes.error.message);
+                if (financialSum?.metrics) {
+                    setMetrics({
+                        income: financialSum.metrics.income || 0,
+                        netProfit: financialSum.metrics.net_profit || 0,
+                        pending: clientData.filter(c => c.status === 'paused').length,
+                        risk: clientData.filter(c => (c.priority || '').toUpperCase() === 'ALTA').length
+                    });
+                }
 
-                if (tasksRes.data) setTasks(tasksRes.data);
-                if (tasksRes.error) console.warn('[HQ] Tasks fetch error:', tasksRes.error.message);
             } catch (err) {
-                console.error('[HQ] Unexpected exception in loadGlobalData:', err);
+                console.error('[HQ] Error Crítico de Sincronización:', err);
             } finally {
                 setLoading(false);
             }
         };
         loadGlobalData();
-    }, [user, authLoading]);
+    }, [user, authLoading, router, getHomeRoute]);
 
-    const realFacturacion = portfolio.reduce((acc, c) => acc + (Number(c.price) || 0), 0);
+    // Consistent KPI Calculations
+    const realFacturacion = metrics.income;
     const activeProjects = tasks.filter(t => t.status !== 'completed').length;
     const clientGoal = 10;
     const currentClients = portfolio.length;
@@ -98,9 +123,9 @@ export default function HQDashboardPage() {
                 {/* Top Stats - 4 Units */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <MetricCard
-                        title="Facturación Proyectada"
-                        value={`$${realFacturacion.toLocaleString()}`}
-                        change="+12% mes actual"
+                        title="Utilidad Neta (God Mode)"
+                        value={`$${(metrics.netProfit || 0).toLocaleString()}`}
+                        change={`Facturación: $${metrics.income.toLocaleString()}`}
                         icon={DollarSign}
                         color="text-yellow-500"
                     />

@@ -18,8 +18,9 @@ export const agencyService = {
                 throw error;
             }
  
-            // SYNC CACHE (Read-only fallback)
+            // SYNC CACHE (Clean & Overwrite)
             if (typeof window !== 'undefined' && Array.isArray(data)) {
+                localStorage.removeItem('diic_clients');
                 localStorage.setItem('diic_clients', JSON.stringify(data));
             }
  
@@ -478,11 +479,24 @@ export const agencyService = {
                 date: 'Activo'
             }));
 
+            // 5. Integrate Fixed Costs (Overhead) from getScaleData logic
+            const [team, expenses] = await Promise.all([
+                agencyService.getTeam(),
+                agencyService.getAgencyExpenses()
+            ]);
+            
+            const totalPayroll = team.reduce((acc, m) => acc + (Number(m.salary) || 0), 0);
+            const softwareCosts = expenses.reduce((acc, ex) => acc + (Number(ex.amount) || 0), 0);
+            const totalOverhead = totalPayroll + softwareCosts;
+            const netProfit = profit - totalOverhead;
+
             return {
                 metrics: {
                     income: totalMRR,
                     variable_costs: totalProductionCosts,
+                    fixed_costs: totalOverhead,
                     gross_profit: profit,
+                    net_profit: netProfit,
                     gross_margin: Math.round(margin * 10) / 10
                 },
                 transactions: recentTransactions
@@ -498,11 +512,12 @@ export const agencyService = {
 
     getScaleData: async () => {
         try {
-            const [team, financial, { data: tasks }, { data: rates }] = await Promise.all([
+            const [team, financial, { data: tasks }, { data: rates }, { data: expenses }] = await Promise.all([
                 agencyService.getTeam(),
                 agencyService.getFinancialSummary(),
                 supabase.from('tasks').select('*'),
-                supabase.from('production_rates').select('*')
+                supabase.from('production_rates').select('*'),
+                supabase.from('agency_expenses').select('*')
             ]);
 
             // 1. Calculate REAL Production Cost from tasks
@@ -522,20 +537,13 @@ export const agencyService = {
 
             const productionTotal = ledger.reduce((acc, item) => acc + item.cost, 0);
             const totalPayroll = team.reduce((acc, m) => acc + (Number(m.salary) || 0), 0);
-            const softwareCosts = 500; 
+            
+            // REAL SaaS Costs from DB
+            const softwareCosts = expenses?.reduce((acc, ex) => acc + (Number(ex.amount) || 0), 0) || 0;
             const totalFixedCosts = totalPayroll + softwareCosts;
 
-            const grossProfit = financial?.metrics.income - productionTotal;
+            const grossProfit = (financial?.metrics?.income || 0) - productionTotal;
             const netProfit = grossProfit - totalFixedCosts;
-
-            // Software breakdown
-            const softwareList = [
-                { name: 'Adobe Creative Cloud', cost: 150 },
-                { name: 'GPT-4 / OpenAI API', cost: 100 },
-                { name: 'Supabase / Vercel Pro', cost: 80 },
-                { name: 'Figma Professional', cost: 60 },
-                { name: 'Slack / CRM Tools', cost: 110 }
-            ];
 
             return {
                 payroll: totalPayroll,
@@ -549,12 +557,70 @@ export const agencyService = {
                     role: m.role, 
                     salary: Number(m.salary) || 0 
                 })),
-                itemized_software: softwareList,
-                production_ledger: ledger // REAL DATA FOR AUDIT
+                itemized_software: expenses || [],
+                production_ledger: ledger 
             };
         } catch (error) {
             console.error("Error in getScaleData:", error);
             return null;
+        }
+    },
+
+    // --- AGENCY EXPENSES (SaaS / Infrastructure) ---
+    getAgencyExpenses: async () => {
+        try {
+            const { data, error } = await supabase
+                .from('agency_expenses')
+                .select('*')
+                .order('name');
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error("Error fetching agency expenses:", error);
+            return [];
+        }
+    },
+
+    addAgencyExpense: async (expenseData) => {
+        try {
+            const { data, error } = await supabase
+                .from('agency_expenses')
+                .insert([expenseData])
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            console.error("Error adding agency expense:", error);
+            return null;
+        }
+    },
+
+    updateAgencyExpense: async (id, updates) => {
+        try {
+            const { data, error } = await supabase
+                .from('agency_expenses')
+                .update(updates)
+                .eq('id', id)
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            console.error("Error updating agency expense:", error);
+            return null;
+        }
+    },
+
+    deleteAgencyExpense: async (id) => {
+        try {
+            const { error } = await supabase
+                .from('agency_expenses')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error("Error deleting agency expense:", error);
+            return false;
         }
     },
 
@@ -1074,6 +1140,87 @@ export const agencyService = {
         } catch (error) {
             console.error("Error getting client count:", error);
             return 0;
+        }
+    },
+
+    // --- OPERATING GOVERNANCE (Sedes & Gastos Operativos) ---
+    getBranchOffices: async () => {
+        try {
+            const { data, error } = await supabase
+                .from('branch_offices')
+                .select('*')
+                .order('city');
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error("Error fetching branch offices:", error);
+            return [];
+        }
+    },
+
+    getOperatingExpenses: async (month = null, branchId = null) => {
+        try {
+            let query = supabase.from('operating_expenses').select('*, branch_offices(city, name)').order('date', { ascending: false });
+            
+            if (branchId) {
+                query = query.eq('branch_id', branchId);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+
+            // Filtrar por mes si se provee (formato 'YYYY-MM')
+            if (month) {
+                return data.filter(ex => ex.date.startsWith(month));
+            }
+
+            return data || [];
+        } catch (error) {
+            console.error("Error fetching operating expenses:", error);
+            return [];
+        }
+    },
+
+    addOperatingExpense: async (expenseData) => {
+        try {
+            const { data, error } = await supabase
+                .from('operating_expenses')
+                .insert([expenseData])
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            console.error("Error adding operating expense:", error);
+            return null;
+        }
+    },
+
+    updateOperatingExpenseStatus: async (id, status) => {
+        try {
+            const { data, error } = await supabase
+                .from('operating_expenses')
+                .update({ status })
+                .eq('id', id)
+                .select();
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            console.error("Error updating operating expense status:", error);
+            return null;
+        }
+    },
+
+    deleteOperatingExpense: async (id) => {
+        try {
+            const { error } = await supabase
+                .from('operating_expenses')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error("Error deleting operating expense:", error);
+            return false;
         }
     }
 };

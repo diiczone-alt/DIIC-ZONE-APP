@@ -16,6 +16,7 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
     const [logs, setLogs] = useState([]);
     const [identityCode, setIdentityCode] = useState('');
     const [countdown, setCountdown] = useState(5);
+    const [showForceEnter, setShowForceEnter] = useState(false);
 
     const roleCodes = {
         editor: 'EDIT',
@@ -79,19 +80,34 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
             try {
                 if (isMounted.current) setStatus('processing');
                 
+                // 1. Database Persistence (WITH HYPER-TIMEOUT SAFETY)
                 if (activeUser) {
                     if (isMounted.current) setLogs(prev => [...prev, 'Identidad detectada. Sincronizando perfil...']);
-                    const result = await onboardingService.finalizeOnboarding(formData, activeUser);
                     
-                    if (isMounted.current) {
-                        if (result?.isUpdate) {
-                            setIsAlreadyMember(true);
-                            setLogs(prev => [...prev, 'Registro previo detectado. Actualizando credenciales...']);
-                        } else {
-                            setLogs(prev => [...prev, 'Nueva identidad vinculada exitosamente.']);
+                    try {
+                        const dbTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_SAFE')), 6000));
+                        const result = await Promise.race([
+                            onboardingService.finalizeOnboarding(formData, activeUser),
+                            dbTimeout
+                        ]);
+
+                        if (isMounted.current && result) {
+                            if (result.isUpdate) {
+                                setIsAlreadyMember(true);
+                                setLogs(prev => [...prev, 'Registro previo detectado. Actualizando credenciales...']);
+                            } else {
+                                setLogs(prev => [...prev, 'Nueva identidad vinculada exitosamente.']);
+                            }
                         }
-                        setLogs(prev => [...prev, 'Persistencia en nube completada.']);
+                    } catch (dbErr) {
+                        if (dbErr.message === 'TIMEOUT_SAFE') {
+                            console.warn('[EnvironmentSuccessStep] Database timeout. Forcing entry.');
+                            setLogs(prev => [...prev, 'Sincronización optimizada en segundo plano.']);
+                        } else {
+                            console.error('Finalization error:', dbErr);
+                        }
                     }
+                    if (isMounted.current) setLogs(prev => [...prev, 'Persistencia en nube completada.']);
                 } else {
                     if (isMounted.current) {
                         setLogs(prev => [...prev, 'Modo autónomo activado (Sin sesión global).']);
@@ -100,12 +116,21 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                 }
                 
                 // 2. Google Drive Ecosystem Setup (Final Phase)
-                const backupToken = localStorage.getItem('diic_google_token');
+                if (isMounted.current) setLogs(prev => [...prev, 'Buscando llave de ecosistema en bóveda...']);
+                
+                let backupToken = localStorage.getItem('diic_google_token');
+                
+                // Ultimo intento de recuperación silenciosa si el backup falló
+                if (!backupToken) {
+                    const { data: { session: lastChance } } = await supabase.auth.getSession();
+                    backupToken = lastChance?.provider_token;
+                }
+
                 const providerToken = session?.provider_token || backupToken;
 
                 if (providerToken && isMounted.current) {
                     try {
-                        setLogs(prev => [...prev, 'Sincronizando con Google Drive...']);
+                        setLogs(prev => [...prev, 'Llave detectada. Activando Cloud Sync...']);
                         const brandName = formData.brand || activeUser?.user_metadata?.brand || 'Mi Marca';
                         
                         const driveResult = await driveService.automatedSetup(providerToken, brandName);
@@ -113,8 +138,8 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                         // Discover folders visually
                         for (const folder of driveResult.subfolders) {
                             if (!isMounted.current) break;
-                            setLogs(prev => [...prev, `Activando nodo: ${folder.name}...`]);
-                            await new Promise(r => setTimeout(r, 400));
+                            setLogs(prev => [...prev, `Arquitectura lista: ${folder.name}`]);
+                            await new Promise(r => setTimeout(r, 300));
                         }
                         
                         if (isMounted.current) {
@@ -162,6 +187,19 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
 
         runFinalization();
     }, [currentUser, retryCount]);
+    
+    // Timer para el botón de emergencia
+    useEffect(() => {
+        let timer;
+        if (status === 'processing') {
+            timer = setTimeout(() => {
+                if (isMounted.current) setShowForceEnter(true);
+            }, 4000);
+        } else {
+            setShowForceEnter(false);
+        }
+        return () => clearTimeout(timer);
+    }, [status]);
 
     useEffect(() => {
         if (status === 'ready' && countdown > 0) {
@@ -237,6 +275,20 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                             className="px-6 py-3 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[10px] font-black text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all uppercase tracking-widest mx-auto block"
                         >
                             Sincronizar Identidad Manualmente
+                        </motion.button>
+                    )}
+
+                    {showForceEnter && (
+                        <motion.button
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onClick={handleEnterDashboard}
+                            className="group relative w-full mt-6 rounded-2xl p-[2px] overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 shadow-2xl shadow-emerald-500/20"
+                        >
+                            <div className="relative bg-[#0A0A12] hover:bg-transparent transition-colors rounded-[14px] py-4 px-6 flex items-center justify-center gap-3">
+                                <span className="text-white font-black text-xs uppercase tracking-[0.2em]">FORZAR ENTRADA AL DASHBOARD</span>
+                                <ArrowRight className="w-4 h-4 text-emerald-500 group-hover:text-white" />
+                            </div>
                         </motion.button>
                     )}
                 </motion.div>

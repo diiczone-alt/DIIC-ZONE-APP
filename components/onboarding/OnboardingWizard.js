@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 // --- IMPORTS DE ETAPAS (13 PASOS) ---
 import WelcomeStep from './steps/WelcomeStep';         // Etapa 2
@@ -31,6 +32,7 @@ import TalentDescriptionStep from './steps/TalentDescriptionStep';
 import TalentCVStep from './steps/TalentCVStep';
 
 export default function OnboardingWizard({ initialType = 'client' }) {
+    const router = useRouter();
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState({
         type: initialType,
@@ -83,13 +85,22 @@ export default function OnboardingWizard({ initialType = 'client' }) {
         }
     }, [formData, currentStep, isHydrated]);
 
-    // 3. Auto-Advance: If already authenticated, skip Welcome/Legal/Auth and go to ProfileSelector (Step 4)
+    // 3. Auto-Advance & GLOBAL BYPASS: If already authenticated and completed
     useEffect(() => {
-        if (isHydrated && currentStep < 4 && user) {
+        if (!isHydrated || loading) return;
+
+        // --- BYPASS CRÍTICO PARA USUARIOS REGISTRADOS ---
+        if (user?.user_metadata?.onboarding_completed) {
+            console.log('[OnboardingWizard] Usuario ya registrado detectado. Redirigiendo al Dashboard...');
+            router.push('/dashboard');
+            return;
+        }
+
+        if (currentStep < 4 && user) {
             console.log('[OnboardingWizard] Session detected, skipping to profile technical setup...');
             setCurrentStep(4);
         }
-    }, [user, isHydrated]);
+    }, [user, isHydrated, loading, router]);
 
     // 4. Persistence: Clear on success (last step)
     useEffect(() => {
