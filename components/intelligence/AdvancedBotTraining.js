@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Brain, Zap, User, Bot, AlertCircle, TrendingUp, 
     MessageSquare, History, Sparkles, ChevronRight,
-    Search, Headphones, Database, Network
+    Search, Headphones, Database, Network, CheckCircle2
 } from 'lucide-react';
 
 export default function AdvancedBotTraining({ selectedAgent }) {

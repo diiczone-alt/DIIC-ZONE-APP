@@ -42,7 +42,7 @@ export default function IntelligencePage() {
                     setActiveClient(cData || { name: 'Estratega Digital' });
                 }
 
-                // 1. Load Agents (Filter by client if applicable, here it seems user.id is the key for agents)
+                // 1. Load Agents
                 const { data: aData, error: aError } = await supabase
                     .from('ai_agents')
                     .select('*')
@@ -88,21 +88,19 @@ export default function IntelligencePage() {
         loadAgentKnowledge();
     }, [selectedAgent, user]);
 
-    const handleCreateAgent = async () => {
-        const name = prompt('Nombre del nuevo asistente (ej: Asistente CRM):');
-        if (!name) return;
-
+    const handleCreateAgent = async (customName) => {
+        const name = (typeof customName === 'string') ? customName : `Nuevo Asistente v${agents.length + 1}`;
         try {
             const { data, error } = await supabase
                 .from('ai_agents')
                 .insert({
                     user_id: user.id,
                     name,
-                    role_type: 'GENERAL',
+                    role_type: 'VENTAS',
                     status: 'ACTIVE',
-                    tone_instructions: 'Trato profesional y empático.',
+                    tone_instructions: 'Trato profesional y empático enfocado en conversión.',
                     personality_tone: 'PROFESIONAL',
-                    golden_rules: ''
+                    golden_rules: 'REGLA 1: Responder en menos de 2 segundos. REGLA 2: No inventar datos clínicos.'
                 })
                 .select()
                 .single();
@@ -110,8 +108,20 @@ export default function IntelligencePage() {
             if (error) throw error;
             setAgents([data, ...agents]);
             setSelectedAgent(data);
+            setViewMode('editor');
         } catch (err) {
-            alert('Error al crear: ' + err.message);
+            console.error('Error al crear:', err);
+        }
+    };
+
+    const seedSentinel = async () => {
+        setLoading(true);
+        try {
+            await handleCreateAgent('Sentinel 24/7');
+        } catch (err) {
+            console.error("Sentinel Seed failed");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -135,10 +145,8 @@ export default function IntelligencePage() {
             
             if (error) throw error;
             
-            // Sync agents list
             setAgents(agents.map(a => a.id === selectedAgent.id ? selectedAgent : a));
             
-            // Visual feedback
             const toast = document.createElement('div');
             toast.innerText = `Asistente "${selectedAgent.name}" actualizado`;
             toast.className = "fixed bottom-8 right-8 bg-emerald-600 text-white px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest z-[100] animate-bounce";
@@ -172,7 +180,6 @@ export default function IntelligencePage() {
                 });
             }
 
-            // Update bot instructions
             const newInstructions = `Eres Sentinel 24/7, el asistente experto en urología de la Dra. Jessica Rey. Tu objetivo es: 1. Responder dudas básicas sobre patologías (Próstata, Cálculos, Infecciones). 2. Agendar citas incluso fuera de horario. 3. Dar instrucciones de preparación clínica de forma empática y profesional. Nunca des diagnósticos definitivos, siempre remite a la doctora.`;
             
             await supabase.from('ai_agents').update({ 
@@ -182,7 +189,6 @@ export default function IntelligencePage() {
 
             setSelectedAgent({...selectedAgent, tone_instructions: newInstructions, role_type: 'MEDICO'});
             
-            // Reload knowledge
             const { data } = await supabase
                 .from('ai_knowledge_base')
                 .select('*')
@@ -191,9 +197,6 @@ export default function IntelligencePage() {
                 .order('created_at', { ascending: false });
             setKnowledge(data || []);
 
-            toast.success("Entrenamiento Médico Cargado", {
-                description: "Sentinel 24/7 ha sido capacitado en protocolos de urología."
-            });
         } catch (err) {
             console.error("Error loading training:", err);
         } finally {
@@ -251,18 +254,19 @@ export default function IntelligencePage() {
 
                 <div className="flex gap-4">
                     {selectedAgent && (
-                        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                        <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 shadow-2xl">
                             <button 
                                 onClick={() => setViewMode('editor')}
-                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'editor' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${viewMode === 'editor' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-500 hover:text-white'}`}
                             >
-                                Perfil
+                                <Bot className="w-3.5 h-3.5" /> Perfil
                             </button>
                             <button 
                                 onClick={() => setViewMode('lab')}
-                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'lab' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${viewMode === 'lab' ? 'bg-indigo-600 text-white shadow-xl scale-105 shadow-indigo-600/30' : 'text-indigo-400/60 hover:text-indigo-400'}`}
                             >
-                                Laboratorio
+                                <Brain className="w-3.5 h-3.5" /> Laboratorio
+                                {viewMode !== 'lab' && <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />}
                             </button>
                         </div>
                     )}
@@ -308,46 +312,21 @@ export default function IntelligencePage() {
                                 </div>
                             </div>
                         </div>
-                        {selectedAgent?.id === agent.id && (
-                            <motion.div layoutId="hoverBot" className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
-                        )}
                     </motion.button>
                 ))}
                 
                 <button 
-                    onClick={handleCreateAgent}
-                    className="p-4 rounded-2xl border-2 border-dashed border-white/5 hover:border-white/10 hover:bg-white/[0.01] transition-all flex flex-col items-center justify-center gap-2 text-gray-600"
+                    onClick={() => handleCreateAgent()}
+                    className="p-8 rounded-[2.5rem] border-2 border-dashed border-white/5 hover:border-indigo-500/30 hover:bg-indigo-500/[0.02] transition-all flex flex-col items-center justify-center gap-4 text-gray-600 group"
                 >
-                    <Plus className="w-5 h-5" />
-                    <span className="text-[8px] font-black uppercase tracking-widest">Añadir Especialista</span>
+                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-all">
+                        <Plus className="w-6 h-6" />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] group-hover:text-white transition-colors">Añadir Especialista</span>
                 </button>
             </div>
 
-            {/* Performance & DNA Monitor */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="h-full">
-                    <AITrainingMonitor />
-                </div>
-                <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-[0_0_50px_rgba(79,70,229,0.2)] flex flex-col justify-center relative overflow-hidden group">
-                    <div className="relative z-10">
-                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">Modo Executive Mobile</h3>
-                        <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mt-2">Acceso instantáneo para la Dra. Jessica Rey</p>
-                        <ul className="mt-6 space-y-3">
-                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Visualización de ROI Diario</li>
-                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Alertas de Fuga de Leads</li>
-                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Control de Pauta Masiva</li>
-                        </ul>
-                        <button 
-                            onClick={() => router.push('/dashboard/crm?view=productivity')}
-                            className="mt-8 px-8 py-3 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-xl shadow-white/10"
-                        >
-                             Ir al Hub Móvil
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Selected Bot Views */}
+            {/* Main View Area */}
             {selectedAgent ? (
                 <AnimatePresence mode="wait">
                     {viewMode === 'editor' ? (
@@ -356,148 +335,114 @@ export default function IntelligencePage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+                            className="space-y-8"
                         >
-                            {/* Bot Persona */}
-                            <div className="lg:col-span-4 space-y-6">
-                        <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-indigo-400">
-                                    <Activity className="w-4 h-4" />
-                                    <span className="text-[9px] font-black uppercase tracking-widest">Configuración del Bot</span>
-                                </div>
-                                <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[8px] font-black uppercase tracking-widest">ID: {selectedAgent.id.substring(0, 8)}</span>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest ml-1">Especialidad (Rol)</label>
-                                    <select 
-                                        value={selectedAgent.role_type}
-                                        onChange={(e) => setSelectedAgent({...selectedAgent, role_type: e.target.value})}
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
-                                    >
-                                        <option value="GENERAL">Asistente General</option>
-                                        <option value="CRM">Gestión de Leads (CRM)</option>
-                                        <option value="VENTAS">Ventas & Conversión</option>
-                                        <option value="MEDICO">Protocolo Clínico</option>
-                                        <option value="ADMIN">Administración Interna</option>
-                                    </select>
-                                                            <div className="space-y-4">
-                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest ml-1">Dimensión de Personalidad (Tono)</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {[
-                                            { id: 'PROFESIONAL', label: 'Pro', icon: '🛡️' },
-                                            { id: 'EMPATICO', label: 'Empático', icon: '❤️' },
-                                            { id: 'AUTORITARIO', label: 'Experto', icon: '🎓' },
-                                            { id: 'AMIGABLE', label: 'Friendly', icon: '🤝' },
-                                            { id: 'PERSUASIVO', label: 'Sales', icon: '🔥' },
-                                            { id: 'QUIRURGICO', label: 'Quirúrgico', icon: '🔪' },
-                                        ].map((tone) => (
-                                            <button
-                                                key={tone.id}
-                                                onClick={() => setSelectedAgent({...selectedAgent, personality_tone: tone.id})}
-                                                className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-tight border transition-all flex items-center gap-2 ${
-                                                    selectedAgent.personality_tone === tone.id
-                                                    ? 'bg-indigo-600 border-indigo-400 text-white'
-                                                    : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'
-                                                }`}
-                                            >
-                                                <span>{tone.icon}</span> {tone.label}
-                                            </button>
-                                        ))}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <AITrainingMonitor />
+                                <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-[0_0_50px_rgba(79,70,229,0.2)] flex flex-col justify-center relative overflow-hidden group">
+                                    <div className="relative z-10">
+                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">Modo Executive Mobile</h3>
+                                        <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mt-2">Acceso instantáneo para la Dra. Jessica Rey</p>
+                                        <ul className="mt-6 space-y-3">
+                                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Visualización de ROI Diario</li>
+                                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Alertas de Fuga de Leads</li>
+                                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Control de Pauta Masiva</li>
+                                        </ul>
+                                        <button 
+                                            onClick={() => router.push('/dashboard/crm?view=productivity')}
+                                            className="mt-8 px-8 py-3 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-xl shadow-white/10"
+                                        >
+                                            Ir al Hub Móvil
+                                        </button>
                                     </div>
                                 </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest ml-1">Instrucciones de Voz</label>
-                                    <textarea 
-                                        rows="4"
-                                        value={selectedAgent.tone_instructions}
-                                        onChange={(e) => setSelectedAgent({...selectedAgent, tone_instructions: e.target.value})}
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-indigo-500 outline-none transition-all resize-none leading-relaxed"
-                                        placeholder="Define cómo debe interactuar este bot..."
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[8px] font-black text-rose-500 uppercase tracking-widest ml-1 flex items-center gap-2">
-                                        <ShieldCheck className="w-3 h-3" /> Reglas de Oro (ADN Inamovible)
-                                    </label>
-                                    <textarea 
-                                        rows="4"
-                                        value={selectedAgent.golden_rules}
-                                        onChange={(e) => setSelectedAgent({...selectedAgent, golden_rules: e.target.value})}
-                                        className="w-full bg-rose-500/5 border border-rose-500/20 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-rose-500 outline-none transition-all resize-none leading-relaxed"
-                                        placeholder="REGLA 1: Nunca dar precios sin cita. REGLA 2: Siempre saludar con el nombre..."
-                                    />
-                                    <p className="text-[7px] text-gray-600 italic px-1">Estas instrucciones tienen máxima prioridad sobre el conocimiento general.</p>
-                                </div>
-
-                                <button 
-                                    onClick={loadMedicalTraining}
-                                    className="w-full py-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-[8px] font-black uppercase tracking-widest hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2"
-                                >
-                                    <Sparkles className="w-3 h-3" /> Cargar Entrenamiento Médico
-                                </button>
                             </div>
 
-                            <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-3">
-                                <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-                                <p className="text-[9px] font-medium text-gray-400 leading-normal italic">
-                                    Sentinel 24/7 automatiza las respuestas nocturnas y el agendamiento. Este agente está especializado en protocolos de urología.
-                                </p>
-                            </div>
-            </div>
-                        </div>
-                    </div>
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                <div className="lg:col-span-4 space-y-6">
+                                    <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 space-y-6">
+                                        <div className="flex items-center justify-between font-black text-[9px] uppercase tracking-widest text-indigo-400">
+                                            <div className="flex items-center gap-2 italic"><Activity className="w-4 h-4" /> Configuración</div>
+                                            <span className="opacity-50">ID: {selectedAgent.id.substring(0, 8)}</span>
+                                        </div>
 
-                    {/* Bot Knowledge */}
-                    <div className="lg:col-span-8 space-y-6">
-                        <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 space-y-6 h-full">
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2 text-emerald-400">
-                                    <Target className="w-4 h-4" />
-                                    <span className="text-[9px] font-black uppercase tracking-widest">Bóveda de Conocimiento de "{selectedAgent.name}"</span>
-                                </div>
-                                <button 
-                                    onClick={addKnowledge}
-                                    className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all flex items-center gap-2 text-[8px] font-black uppercase tracking-widest"
-                                >
-                                    <Plus className="w-3 h-3" /> Añadir Conocimiento
-                                </button>
-                            </div>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Especialidad</label>
+                                                <select 
+                                                    value={selectedAgent.role_type}
+                                                    onChange={(e) => setSelectedAgent({...selectedAgent, role_type: e.target.value})}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-indigo-500 outline-none"
+                                                >
+                                                    <option value="GENERAL">Asistente General</option>
+                                                    <option value="CRM">Lead Management</option>
+                                                    <option value="VENTAS">Ventas</option>
+                                                    <option value="MEDICO">Protocolo Clínico</option>
+                                                </select>
+                                            </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {knowledge.length === 0 ? (
-                                    <div className="col-span-2 py-16 text-center border-2 border-dashed border-white/5 rounded-3xl">
-                                        <p className="text-gray-600 font-black uppercase tracking-widest text-[9px]">Este asistente aún no tiene memoria propia.</p>
-                                    </div>
-                                ) : (
-                                    knowledge.map((item) => (
-                                        <div key={item.id} className="p-5 rounded-2xl bg-black/40 border border-white/5 space-y-3 group hover:border-indigo-500/30 transition-all">
-                                            <div className="flex justify-between items-start">
-                                                <h4 className="text-[10px] font-black text-white italic uppercase">{item.title}</h4>
-                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button className="text-gray-600 hover:text-white"><Settings2 className="w-3.5 h-3.5" /></button>
-                                                    <button className="text-gray-600 hover:text-rose-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                                            <div className="space-y-2">
+                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Personalidad</label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {['PROFESIONAL', 'EMPATICO', 'AUTORITARIO'].map((t) => (
+                                                        <button 
+                                                            key={t}
+                                                            onClick={() => setSelectedAgent({...selectedAgent, personality_tone: t})}
+                                                            className={`py-2 rounded-lg text-[7px] font-black border transition-all ${selectedAgent.personality_tone === t ? 'bg-indigo-600 border-indigo-400' : 'bg-white/5 border-white/10 text-gray-500'}`}
+                                                        >
+                                                            {t}
+                                                        </button>
+                                                    ))}
                                                 </div>
                                             </div>
-                                            <p className="text-[10px] text-gray-500 font-bold leading-relaxed line-clamp-3 italic">
-                                                {item.content}
-                                            </p>
-                                            <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                                                <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest ${item.agent_id ? 'bg-indigo-500/10 text-indigo-400' : 'bg-gray-500/10 text-gray-400'}`}>
-                                                    {item.agent_id ? 'EXCLUSIVO' : 'GLOBAL'}
-                                                </span>
+
+                                            <div className="space-y-2">
+                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Instrucciones</label>
+                                                <textarea 
+                                                    rows="4"
+                                                    value={selectedAgent.tone_instructions}
+                                                    onChange={(e) => setSelectedAgent({...selectedAgent, tone_instructions: e.target.value})}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-indigo-500 outline-none resize-none"
+                                                />
                                             </div>
+
+                                            <button 
+                                                onClick={loadMedicalTraining}
+                                                className="w-full py-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-[8px] font-black uppercase tracking-widest hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <Sparkles className="w-3 h-3" /> Cargar Entrenamiento Médico
+                                            </button>
                                         </div>
-                                    ))
-                                )}
+                                    </div>
+                                </div>
+
+                                <div className="lg:col-span-8">
+                                    <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 space-y-6 h-full">
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-2 text-emerald-400 text-[9px] font-black uppercase tracking-widest italic">
+                                                <Target className="w-4 h-4" /> Bóveda de Conocimiento
+                                            </div>
+                                            <button onClick={addKnowledge} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-[8px] font-black uppercase tracking-widest">
+                                                <Plus className="w-3 h-3" /> Añadir
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {knowledge.length === 0 ? (
+                                                <div className="col-span-2 py-16 text-center border-2 border-dashed border-white/5 rounded-3xl text-gray-600 text-[9px] font-black uppercase">Vacío</div>
+                                            ) : (
+                                                knowledge.map((item) => (
+                                                    <div key={item.id} className="p-5 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+                                                        <h4 className="text-[10px] font-black text-white uppercase italic">{item.title}</h4>
+                                                        <p className="text-[9px] text-gray-500 leading-relaxed italic line-clamp-3">{item.content}</p>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </motion.div>
+                        </motion.div>
                     ) : (
                         <motion.div 
                             key="lab"
@@ -510,14 +455,20 @@ export default function IntelligencePage() {
                     )}
                 </AnimatePresence>
             ) : (
-                <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[3rem] gap-6">
-                    <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-gray-700">
-                        <UserCheck className="w-10 h-10" />
+                <div className="py-24 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[4rem] gap-8 bg-white/[0.01]">
+                    <div className="w-24 h-24 rounded-[2.5rem] bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                        <UserCheck className="w-12 h-12" />
                     </div>
-                    <div className="text-center space-y-2">
-                        <h3 className="text-xl font-black italic uppercase tracking-tighter text-gray-400">Selecciona un Asistente</h3>
-                        <p className="text-gray-600 text-[10px] font-black uppercase tracking-widest">Elige a un bot de tu equipo para configurar su entrenamiento.</p>
+                    <div className="text-center space-y-4">
+                        <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white">Desconectado</h3>
+                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Activa tu primer asistente para comenzar.</p>
                     </div>
+                    <button 
+                        onClick={seedSentinel}
+                        className="bg-indigo-600 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest"
+                    >
+                        Activar Sentinel 24/7
+                    </button>
                 </div>
             )}
         </main>
