@@ -9,24 +9,35 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { useSearchParams } from 'next/navigation';
 
 export default function IntelligencePage() {
     const { user, loading: authLoading } = useAuth();
+    const [activeClient, setActiveClient] = useState(null);
     const [agents, setAgents] = useState([]);
     const [selectedAgent, setSelectedAgent] = useState(null);
     const [knowledge, setKnowledge] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
+    const searchParams = useSearchParams();
+    const clientId = searchParams.get('client');
 
     // Initial Load
     useEffect(() => {
         if (authLoading || !user) return;
         
-        async function loadAgents() {
+        async function loadInitialData() {
             setLoading(true);
             try {
-                // 1. Load Agents
+                // Determine target client
+                const targetId = clientId || user.user_metadata?.client_id || user.client_id;
+                if (targetId) {
+                    const { data: cData } = await supabase.from('clients').select('name').eq('id', targetId).single();
+                    setActiveClient(cData || { name: 'Estratega Digital' });
+                }
+
+                // 1. Load Agents (Filter by client if applicable, here it seems user.id is the key for agents)
                 const { data: aData, error: aError } = await supabase
                     .from('ai_agents')
                     .select('*')
@@ -36,12 +47,11 @@ export default function IntelligencePage() {
                 if (aError) throw aError;
                 setAgents(aData || []);
                 
-                // Select first agent by default if exists
                 if (aData && aData.length > 0) {
                     setSelectedAgent(aData[0]);
                 }
 
-                // 2. Load Knowledge (Global/Initial)
+                // 2. Load Knowledge
                 const { data: kData } = await supabase
                     .from('ai_knowledge_base')
                     .select('*')
@@ -54,8 +64,8 @@ export default function IntelligencePage() {
                 setLoading(false);
             }
         }
-        loadAgents();
-    }, [user, authLoading]);
+        loadInitialData();
+    }, [user, authLoading, clientId]);
 
     // Fetch knowledge for selected agent
     useEffect(() => {
@@ -175,7 +185,9 @@ export default function IntelligencePage() {
                     <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter flex items-center gap-4">
                         <Brain className="w-10 h-10 text-indigo-500" /> AI BOT FACTORY
                     </h1>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-2">Dra. Jessica Reyes • Centro de Control Multi-Agente</p>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-2">
+                        {activeClient?.name || 'DIIC Strategist'} • Centro de Control Multi-Agente
+                    </p>
                 </div>
 
                 <div className="flex gap-4">

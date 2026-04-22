@@ -386,7 +386,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'chat': return <CommunicationCenter client={selectedClient} squad={squad} tasks={clientTasks} />;
         case 'meta': return <MetaAdsModule client={selectedClient} />;
         case 'calendar': return <UnifiedCalendar role="cm" />;
-        case 'strategy': return <StrategyBoard role="cm" isSubcomponent={true} onClose={() => setActiveTab('dashboard')} />;
+        case 'strategy': return <StrategyBoard role="cm" isSubcomponent={true} clientId={selectedClient?.id} onClose={() => setActiveTab('dashboard')} />;
         case 'creative': return <CreativeStudio isSubcomponent={true} />;
         case 'team': return <TeamView client={selectedClient} tasks={clientTasks} squad={squad} />;
         case 'reports': return <CMReports client={selectedClient} />;

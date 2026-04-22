@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { 
     Home, Clapperboard, MonitorPlay, BarChart2, User, Share2, 
     CreditCard, MessageSquare, Video, Palette, Mic2, 
@@ -12,6 +12,8 @@ import { useAuth } from '@/context/AuthContext';
 export default function Sidebar() {
     const router = useRouter();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const clientId = searchParams.get('client');
     const { user } = useAuth();
     const [clickCount, setClickCount] = useState(0);
 
@@ -37,6 +39,14 @@ export default function Sidebar() {
         const timer = setTimeout(() => setClickCount(0), 3000);
         return () => clearTimeout(timer);
     }, [clickCount, router]);
+
+    // Helper to preserve client context
+    const getScopedHref = (baseHref) => {
+        if (!clientId) return baseHref;
+        const url = new URL(baseHref, 'http://localhost');
+        url.searchParams.set('client', clientId);
+        return url.pathname + url.search;
+    };
 
     const navItems = [
         { label: 'Dashboard', href: '/dashboard', icon: Home, color: 'text-primary' },
@@ -68,7 +78,7 @@ export default function Sidebar() {
                         return (
                             <Link 
                                 key={item.href}
-                                href={item.href} 
+                                href={getScopedHref(item.href)} 
                                 className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all border ${
                                     isActive 
                                     ? 'bg-primary/10 text-primary border-primary/20' 
@@ -90,7 +100,7 @@ export default function Sidebar() {
                                 return (
                                     <Link 
                                         key={ws.href}
-                                        href={ws.href} 
+                                        href={getScopedHref(ws.href)} 
                                         className={`flex items-center gap-4 px-4 py-2 rounded-xl transition-all text-sm border ${
                                             isActive 
                                             ? 'bg-white/10 text-white border-white/10' 
@@ -108,7 +118,7 @@ export default function Sidebar() {
                     {/* --- ADMIN CORE --- */}
                     <div className="px-4 pt-4">
                         <p className="text-[10px] font-bold text-red-500/50 uppercase tracking-widest hidden lg:block mb-2">Admin Core</p>
-                        <Link href="/dashboard/hq/control" className={`flex items-center gap-4 px-4 py-2 rounded-xl transition-all text-sm border ${
+                        <Link href={getScopedHref("/dashboard/hq/control")} className={`flex items-center gap-4 px-4 py-2 rounded-xl transition-all text-sm border ${
                             pathname.startsWith('/dashboard/hq')
                             ? 'bg-red-500/10 text-red-400 border-red-500/20'
                             : 'hover:bg-red-500/10 text-red-500/60 hover:text-red-400 border-transparent hover:border-red-500/20'
@@ -120,7 +130,7 @@ export default function Sidebar() {
 
                     {/* --- METRICS --- */}
                     <div className="px-4 pt-4 border-t border-white/5 mt-4">
-                        <Link href="/dashboard/analytics" className={`flex items-center gap-4 px-4 py-2 rounded-xl transition-all text-sm ${
+                        <Link href={getScopedHref("/dashboard/analytics")} className={`flex items-center gap-4 px-4 py-2 rounded-xl transition-all text-sm ${
                             pathname === '/dashboard/analytics'
                             ? 'bg-white/5 text-white'
                             : 'text-gray-400 hover:text-white hover:bg-white/5 opacity-60 hover:opacity-100'

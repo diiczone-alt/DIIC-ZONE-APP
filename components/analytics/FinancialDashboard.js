@@ -14,29 +14,62 @@ import {
 } from 'recharts';
 import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function FinancialDashboard() {
+    const searchParams = useSearchParams();
+    const clientId = searchParams.get('client');
+
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState([]);
     const [budgets, setBudgets] = useState([]);
+    const [activeClient, setActiveClient] = useState(null);
     const [currentMonth] = useState(new Date().toISOString().substring(0, 7));
 
-    useEffect(() => {
-        loadHQData();
-    }, []);
+    const [clientStats, setClientStats] = useState({
+        revenue: 0,
+        leadsCount: 0
+    });
 
-    const loadHQData = async () => {
+    useEffect(() => {
+        loadData();
+    }, [clientId]);
+
+    const loadData = async () => {
         setLoading(true);
         try {
-            const [txs, budgetsData] = await Promise.all([
-                agencyService.getFinancialTransactions(),
-                agencyService.getFinancialBudgets(currentMonth)
-            ]);
-            setTransactions(txs);
-            setBudgets(budgetsData);
+            if (clientId) {
+                // Client-specific mode
+                const [txs, clientData, leadsData] = await Promise.all([
+                    agencyService.getFinancialTransactions(), // We might still want global txs for expenses if they are not client-bound yet
+                    supabase.from('clients').select('name').eq('id', clientId).single(),
+                    supabase.from('crm_leads').select('price_estimated').eq('client_id', clientId)
+                ]);
+                
+                setTransactions(txs);
+                setActiveClient(clientData.data);
+                
+                const revenue = leadsData.data?.reduce((sum, lead) => sum + Number(lead.price_estimated || 0), 0) || 0;
+                setClientStats({
+                    revenue,
+                    leadsCount: leadsData.data?.length || 0
+                });
+
+            } else {
+                // HQ Mode
+                const [txs, budgetsData] = await Promise.all([
+                    agencyService.getFinancialTransactions(),
+                    agencyService.getFinancialBudgets(currentMonth)
+                ]);
+                setTransactions(txs);
+                setBudgets(budgetsData);
+                setActiveClient(null);
+            }
         } catch (err) {
-            console.error("HQ Sync Error:", err);
-            toast.error("Error al sincronizar Auditoría HQ");
+            console.error("Financial Sync Error:", err);
+            toast.error("Error al sincronizar datos financieros");
         } finally {
             setLoading(false);
         }
@@ -98,68 +131,78 @@ export default function FinancialDashboard() {
             {/* NEW CARTERA-STYLE HEADER */}
             <div className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter italic">Control de Costos</h1>
-                    <p className="text-gray-400">Auditoría en tiempo real de lo que se está pagando y lo que se está haciendo.</p>
+                    <h1 className="text-4xl md:text-6xl font-black text-white mb-2 uppercase tracking-tighter italic">
+                        {activeClient ? `${activeClient.name} - Finanzas` : 'Control de Costos'}
+                    </h1>
+                    <p className="text-gray-400 font-medium italic">
+                        {activeClient 
+                            ? `Auditoría operativa y financiera exclusiva para la marca ${activeClient.name}.`
+                            : 'Auditoría en tiempo real de lo que se está pagando y lo que se está haciendo.'}
+                    </p>
                 </div>
                 <div className="flex gap-4">
                     <button 
-                        onClick={loadHQData}
+                        onClick={loadData}
                         className={`px-6 py-3 bg-white/5 text-gray-400 font-bold rounded-2xl flex items-center gap-2 hover:bg-white/10 transition-all border border-white/10 ${loading ? 'opacity-50 cursor-wait' : ''}`}
                     >
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> 
-                        Sincronizar Datos Reales
+                        Sincronizar Datos {activeClient ? 'Privados' : 'Reales'}
                     </button>
-                    <button className="px-6 py-3 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-2xl flex items-center gap-2 hover:scale-105 transition-all shadow-xl shadow-white/5 active:scale-95">
-                        <FileText className="w-4 h-4" /> Informe
-                    </button>
+                    {!activeClient && (
+                        <button className="px-6 py-3 bg-white text-black font-black uppercase tracking-widest text-[10px] rounded-2xl flex items-center gap-2 hover:scale-105 transition-all shadow-xl shadow-white/5 active:scale-95">
+                            <FileText className="w-4 h-4" /> Informe
+                        </button>
+                    )}
                 </div>
             </div>
 
             {/* AUDIT PROTOCOL BANNER (Image 1 Style) */}
-            <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-indigo-600/10 border border-indigo-500/20 rounded-[2.5rem] p-6 flex flex-col md:flex-row items-center justify-between gap-6"
-            >
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center border border-indigo-500/30">
-                        <ShieldCheck className="w-6 h-6 text-indigo-400" />
+            {!activeClient && (
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-indigo-600/10 border border-indigo-500/20 rounded-[2.5rem] p-6 flex flex-col md:flex-row items-center justify-between gap-6"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center border border-indigo-500/30">
+                            <ShieldCheck className="w-6 h-6 text-indigo-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-white font-black uppercase tracking-widest text-xs italic">Protocolo de Auditoría Real</h3>
+                            <p className="text-gray-400 text-[10px] font-medium tracking-tight">Cálculos basados en Production Rates internos y flujos de facturación de Supabase.</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="text-white font-black uppercase tracking-widest text-xs italic">Protocolo de Auditoría Real</h3>
-                        <p className="text-gray-400 text-[10px] font-medium tracking-tight">Cálculos basados en Production Rates internos y flujos de facturación de Supabase.</p>
-                    </div>
-                </div>
 
-                <div className="flex flex-wrap gap-3">
-                    <button className="flex items-center gap-3 px-6 py-4 rounded-2xl border bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500 hover:text-white font-black uppercase tracking-[0.2em] text-[10px] transition-all active:scale-95 group relative overflow-hidden">
-                        <DollarSign className="w-4 h-4" /> REVISAR INGRESOS
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                    </button>
-                    <button className="flex items-center gap-3 px-6 py-4 rounded-2xl border bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500 hover:text-white font-black uppercase tracking-[0.2em] text-[10px] transition-all active:scale-95 group relative overflow-hidden">
-                        <PieChart className="w-4 h-4" /> AUDITAR GASTOS
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                    </button>
-                </div>
-            </motion.div>
+                    <div className="flex flex-wrap gap-3">
+                        <button className="flex items-center gap-3 px-6 py-4 rounded-2xl border bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500 hover:text-white font-black uppercase tracking-[0.2em] text-[10px] transition-all active:scale-95 group relative overflow-hidden">
+                            <DollarSign className="w-4 h-4" /> REVISAR INGRESOS
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                        </button>
+                        <button className="flex items-center gap-3 px-6 py-4 rounded-2xl border bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500 hover:text-white font-black uppercase tracking-[0.2em] text-[10px] transition-all active:scale-95 group relative overflow-hidden">
+                            <PieChart className="w-4 h-4" /> AUDITAR GASTOS
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                        </button>
+                    </div>
+                </motion.div>
+            )}
 
             {/* GLOBAL METRICS (Image 1 Style) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard 
-                    title="Ingresos Totales" 
-                    value={`$${hqMetrics.income.toLocaleString()}`} 
+                    title={activeClient ? "Ingresos Clave" : "Ingresos Totales"}
+                    value={`$${(activeClient ? clientStats.revenue : hqMetrics.income).toLocaleString()}`} 
                     icon={TrendingUp} 
                     color="green" 
                 />
                 <StatCard 
-                    title="Gastos Operativos" 
-                    value={`$${hqMetrics.expense.toLocaleString()}`} 
-                    icon={TrendingDown} 
-                    color="red" 
+                    title={activeClient ? "Leads Registrados" : "Gastos Operativos"}
+                    value={activeClient ? clientStats.leadsCount : `$${hqMetrics.expense.toLocaleString()}`} 
+                    icon={activeClient ? Users : TrendingDown} 
+                    color={activeClient ? "indigo" : "red"} 
                 />
                 <StatCard 
-                    title="Utilidad Neta" 
-                    value={`$${hqMetrics.balance.toLocaleString()}`} 
+                    title={activeClient ? "Estado de Cuenta" : "Utilidad Neta"}
+                    value={activeClient ? "ACTIVO" : `$${hqMetrics.balance.toLocaleString()}`} 
                     icon={ShieldCheck} 
                     color="indigo" 
                 />

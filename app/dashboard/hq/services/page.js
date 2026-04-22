@@ -6,9 +6,11 @@ import {
     Tag, Plus, Edit2, Trash2,
     Check, Zap, Globe, Video,
     Palette, Layers, X, User,
-    Building2, MapPin, Briefcase, FileText
+    Building2, MapPin, Briefcase, FileText,
+    Shield, Crown, Star
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import useRealtimeSync from '@/hooks/useRealtimeSync';
 
 export default function HQServicesPage() {
     const [services, setServices] = useState([]);
@@ -26,26 +28,29 @@ export default function HQServicesPage() {
     });
     const [activeCategory, setActiveCategory] = useState('plan'); // 'plan' or 'pack'
 
+    const loadData = async (silent = false) => {
+        if (!silent) setLoading(true);
+        try {
+            const [servRes, autoRes, ratesRes] = await Promise.all([
+                supabase.from('services').select('*').order('price', { ascending: true }),
+                supabase.from('automations').select('*'),
+                supabase.from('production_rates').select('*').order('name', { ascending: true })
+            ]);
+            setServices(servRes.data || []);
+            setAutomations(autoRes.data || []);
+            setRates(ratesRes.data || []);
+        } catch (err) {
+            console.error("Error loading services:", err);
+        } finally {
+            if (!silent) setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const loadData = async () => {
-            setLoading(true);
-            try {
-                const [servRes, autoRes, ratesRes] = await Promise.all([
-                    supabase.from('services').select('*').order('price', { ascending: true }),
-                    supabase.from('automations').select('*'),
-                    supabase.from('production_rates').select('*').order('name', { ascending: true })
-                ]);
-                setServices(servRes.data || []);
-                setAutomations(autoRes.data || []);
-                setRates(ratesRes.data || []);
-            } catch (err) {
-                console.error("Error loading services:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
         loadData();
     }, []);
+
+    useRealtimeSync(['services', 'automations', 'production_rates'], () => loadData(true));
 
     const toggleExtra = (extraId) => {
         setSelectedExtras(prev => 
@@ -100,7 +105,7 @@ export default function HQServicesPage() {
                     Sincronizando Catálogo...
                 </div>
             ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 relative z-10">
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 relative z-10">
                     {services
                         .filter(s => s.category === activeCategory)
                         .map((service, index) => (
@@ -440,8 +445,8 @@ export default function HQServicesPage() {
 }
 
 function PricingCard({ service, index, onSelect }) {
-    const isPopular = index === 1;
-    const icons = [Shield, Zap, Crown];
+    const isPopular = service.level === 'PLAN CLAVE';
+    const icons = [Shield, Zap, Crown, Star];
     const Icon = icons[index] || Zap;
 
     return (
@@ -509,7 +514,7 @@ function PricingCard({ service, index, onSelect }) {
 
             {/* Deliverables Grid */}
             <div className="grid grid-cols-3 gap-1 mb-12 border-t border-white/5 pt-8">
-                <DeliverableItem label="VIDEOS" value={service.deliverables?.videos} isPopular={isPopular} />
+                <DeliverableItem label="FILMMAKER" value={service.deliverables?.videos} isPopular={isPopular} />
                 <DeliverableItem label="REELS" value={service.deliverables?.reels} isPopular={isPopular} />
                 <DeliverableItem label="POSTS" value={service.deliverables?.posts} isPopular={isPopular} />
             </div>
@@ -579,9 +584,11 @@ function PackCard({ service, index, onSelect }) {
 }
 
 function DeliverableItem({ label, value, isPopular }) {
+    const isString = typeof value === 'string' && value.length > 2;
+
     return (
         <div className="text-center">
-            <p className="text-3xl font-black text-white mb-1">{value}</p>
+            <p className={`${isString ? 'text-xl' : 'text-3xl'} font-black text-white mb-1 uppercase tracking-tighter`}>{value}</p>
             <p className={`text-[8px] font-black uppercase tracking-widest ${isPopular ? 'text-white/40' : 'text-gray-700'}`}>{label}</p>
         </div>
     );
@@ -605,9 +612,9 @@ function CategoryCard({ title, items, color }) {
                         <span className="text-gray-400 group-hover:text-white transition-colors text-xs font-bold uppercase tracking-wider">{item.name}</span>
                         <div className="flex items-center gap-2">
                              <span className="text-[10px] text-gray-600 font-black line-through opacity-0 group-hover:opacity-100 transition-opacity">
-                                ${(item.price_suggested * 1.2).toFixed(0)}
+                                ${(item.price_sale * 1.2).toFixed(0)}
                              </span>
-                             <span className="text-white font-black text-sm tracking-tighter">${item.price_suggested}</span>
+                             <span className="text-white font-black text-sm tracking-tighter">${item.price_sale}</span>
                         </div>
                     </div>
                 )) : (
@@ -618,40 +625,3 @@ function CategoryCard({ title, items, color }) {
     );
 }
 
-function Shield(props) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-        </svg>
-    )
-}
-
-function Crown(props) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
-        </svg>
-    )
-}

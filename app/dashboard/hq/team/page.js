@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 import { isCloudConnected, supabase } from '@/lib/supabase';
 import PremiumDropdown from '@/components/shared/PremiumDropdown';
 import { ECUADOR_CITIES } from '@/lib/constants';
+import SquadCanvasBoard from '@/components/team/SquadCanvasBoard';
+import useRealtimeSync from '@/hooks/useRealtimeSync';
 
 export default function HQTeamPage() {
     const [team, setTeam] = useState([]);
@@ -29,7 +31,6 @@ export default function HQTeamPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
-    const [isHQLive, setIsHQLive] = useState(false);
     const [newMember, setNewMember] = useState({
         name: '',
         role: 'Editor de Video',
@@ -38,6 +39,8 @@ export default function HQTeamPage() {
         city: 'Quito',
         salary: 0
     });
+
+    const isHQLive = useRealtimeSync(['team', 'clients'], () => fetchData(true));
 
     const openAudit = (member) => {
         setSelectedMember(member);
@@ -115,31 +118,7 @@ export default function HQTeamPage() {
         // 2. Background Re-fetch
         fetchData(hasCache);
 
-        // 3. Realtime Subscription with Channel Management
-        setIsHQLive(true);
-        const teamChannel = supabase
-            .channel('hq-team-realtime')
-            .on('postgres_changes', { 
-                event: '*', 
-                schema: 'public', 
-                table: 'team' 
-            }, (payload) => {
-                console.log("🔄 [HQ-Team] Realtime Update:", payload.eventType);
-                // Smart Refresh: Only re-fetch if we're not the ones who made the change
-                // or if it's a delete/update from elsewhere
-                fetchData(true);
-            })
-            .on('postgres_changes', { 
-                event: '*', 
-                schema: 'public', 
-                table: 'clients' 
-            }, () => fetchData(true))
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') setIsHQLive(true);
-                if (status === 'CLOSED' || status === 'CHANNEL_ERROR') setIsHQLive(false);
-            });
-
-        // 4. Auto-Revalidate on Window Focus
+        // 3. Auto-Revalidate on Window Focus
         const handleFocus = () => {
             console.log("📡 [HQ-Team] Re-fetching on Focus...");
             fetchData(true);
@@ -147,14 +126,14 @@ export default function HQTeamPage() {
         window.addEventListener('focus', handleFocus);
 
         return () => {
-            supabase.removeChannel(teamChannel);
             window.removeEventListener('focus', handleFocus);
         };
     }, []);
 
     const getDepartments = () => {
         return [
-            { id: 'gestion', label: 'Estrategia & CMs', icon: Shield, color: 'from-indigo-500 to-blue-600', members: team.filter(m => m.role?.toLowerCase().includes('estratega') || m.role?.toLowerCase().includes('community manager')) },
+            { id: 'estrategia', label: 'Estrategas', icon: Shield, color: 'from-amber-500 to-orange-600', members: team.filter(m => m.role?.toLowerCase().includes('estratega')) },
+            { id: 'cms', label: 'Community Managers', icon: Users, color: 'from-indigo-500 to-blue-600', members: team.filter(m => m.role?.toLowerCase().includes('community manager')) },
             { id: 'diseno', label: 'Diseño Gráfico', icon: Palette, color: 'from-pink-500 to-rose-600', members: team.filter(m => m.role?.toLowerCase().includes('diseña')) },
             { id: 'edicion', label: 'Edición de Video', icon: Video, color: 'from-purple-500 to-indigo-600', members: team.filter(m => m.role?.toLowerCase().includes('editor')) },
             { id: 'film', label: 'Filmmakers', icon: Clapperboard, color: 'from-orange-500 to-red-600', members: team.filter(m => m.role?.toLowerCase().includes('film')) },
@@ -315,31 +294,7 @@ export default function HQTeamPage() {
                 <AnimatePresence mode="wait">
                     <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-32 pb-40">
                         {viewMode === 'squads' ? (
-                            getHierarchicalPods().length > 0 ? (
-                                getHierarchicalPods().map((pod) => (
-                                    <HierarchicalPod key={pod.id} pod={pod} />
-                                ))
-                            ) : (
-                                <div className="py-40 text-center space-y-4">
-                                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-10 border border-white/10">
-                                        <Users className="w-10 h-10 text-gray-600" />
-                                    </div>
-                                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">No se detectan unidades operativas</h3>
-                                    
-                                    {/* Diagnostic Info */}
-                                    <div className="flex items-center justify-center gap-6 my-8">
-                                        <div className="px-4 py-2 bg-indigo-500/10 rounded-full border border-indigo-500/20">
-                                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mr-2">Total Team:</span>
-                                            <span className="text-sm font-black text-white tracking-widest">{team.length}</span>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest max-w-md mx-auto leading-relaxed">
-                                        Asegúrate de que los líderes tengan asignado el rol de <span className="text-indigo-400">Community Manager</span> o <span className="text-indigo-400">Estratega</span>.
-                                    </p>
-                                    <button onClick={() => fetchData()} className="mt-8 px-10 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all">Sincronizar Manualmente</button>
-                                </div>
-                            )
+                            <SquadCanvasBoard team={team} allClients={clients} onAudit={openAudit} refreshTeam={() => fetchData(true)} />
                         ) : (
                             getDepartments().map((dept) => dept.members.length > 0 && (
                                 <div key={dept.id} className="space-y-10">
@@ -529,23 +484,23 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
     );
 }
 
-
-
 function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave }) {
+    const router = require('next/navigation').useRouter();
     const [formData, setFormData] = useState({ ...member });
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('perfil');
     const [activeTasks, setActiveTasks] = useState([]);
     const [skillsInput, setSkillsInput] = useState(Array.isArray(member.skills) ? member.skills.join(', ') : '');
     
-    // Tier 1 Talent & Strategic Leadership (Eligible leaders)
     const eligibleLeaders = team.filter(m => (
         (m.role || '').toLowerCase().includes('estratega') || 
         (m.role || '').toLowerCase().includes('community manager')
     ) && m.id !== member.id);
     
     const isEstratega = (member.role || '').toLowerCase().includes('estratega');
-    // Fetch member tasks
+    const assignedBrands = allClients.filter(c => c.cm === member.name || c.editor === member.name || c.filmmaker === member.name);
+    const squadMembers = team.filter(m => m.squad_lead_id === member.id);
+
     useEffect(() => {
         const loadData = async () => {
             const tasks = await agencyService.getTasksByMember(member.name);
@@ -557,19 +512,15 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
     const handleSave = async () => {
         setSaving(true);
         try {
-            // Process skills from input string
             const updatedSkills = skillsInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
             const finalData = { ...formData, skills: updatedSkills };
-            
             await agencyService.updateTeamMember(member.id, finalData);
             toast.success("HQ Sincronizado");
             onSave();
             onClose();
         } catch (error) {
             console.error("❌ [HQ-Team] Sync Failed:", error);
-            toast.error("Error de sincronización", {
-                description: error.message || "Verifica los datos ingresados."
-            });
+            toast.error("Error de sincronización");
         } finally {
             setSaving(false);
         }
@@ -583,394 +534,308 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                 await agencyService.updateTeamMember(memberId, { squad_lead_id: member.id });
             }
             onSave();
-            toast.success(remove ? "Retirado del escuadrón" : "Vínculo de escuadrón activo");
-        } catch (error) {
-            toast.error("Error en vinculación");
-        }
+            toast.success(remove ? "Retirado" : "Vinculado");
+        } catch (error) { toast.error("Error"); }
     };
 
     const toggleBrand = async (clientId, remove = false) => {
         try {
-            console.log(`🔗 [HQ-Team] Toggling Brand ${clientId} (Remove: ${remove})`);
             if (remove) {
                 await agencyService.updateClient(clientId, { cm: null });
             } else {
                 await agencyService.assignClientToCM(clientId, member.name);
             }
-            // Trigger HQ Refresh
             onSave();
-            toast.success(remove ? "Marca desvinculada" : "Marca asignada con éxito", {
-                description: `Perfil de ${member.name} actualizado.`
-            });
-        } catch (error) {
-            console.error("❌ Brand Sync Error:", error);
-            toast.error("Error al gestionar marca");
-        }
+            toast.success("Sincronizado");
+        } catch (error) { toast.error("Error"); }
     };
 
-    const squadMembers = team.filter(m => m.squad_lead_id === member.id);
-    const assignedBrands = allClients.filter(c => c.cm === member.name);
-    // Brands available: SHOW ONLY brands that have NO CM assigned yet
-    const availableBrands = allClients.filter(c => !c.cm);
+    const tabs = [
+        { id: 'perfil', label: 'Logística', icon: Layout },
+        { id: 'profesional', label: 'Expediente', icon: Award },
+        { id: 'marcas', label: 'Hojas de Ruta', icon: Globe },
+        { id: 'squad', label: 'Escuadra', icon: Shield },
+        { id: 'tasks', label: 'Performance', icon: ListTodo }
+    ];
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12 overflow-hidden">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-indigo-950/20 backdrop-blur-xl" />
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-lg" />
             <motion.div 
-                initial={{ scale: 0.95, opacity: 0, y: 50 }} 
+                initial={{ scale: 0.9, opacity: 0, y: 40 }} 
                 animate={{ scale: 1, opacity: 1, y: 0 }} 
-                exit={{ scale: 0.95, opacity: 0, y: 50 }} 
-                className="relative w-full max-w-5xl bg-[#0F0F1A]/90 backdrop-blur-3xl border border-white/10 rounded-[3.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)] flex flex-row max-h-[85vh] overflow-hidden"
+                exit={{ scale: 0.9, opacity: 0, y: 40 }} 
+                className="relative w-full max-w-6xl bg-[#080814] border border-white/10 rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row h-[85vh]"
             >
-                {/* Sidebar Section */}
-                <div className="w-80 border-r border-white/5 bg-white/[0.02] flex flex-col p-10">
-                    <div className="flex flex-col items-center mb-12 text-center">
-                        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-black text-white italic shadow-2xl mb-6 ring-4 ring-indigo-500/20">
-                            {member.name[0]}
+                {/* LEFT SIDEBAR: Visual Branding */}
+                <div className="w-full md:w-[35%] h-full relative border-r border-white/5 bg-[#05050A] flex flex-col justify-between p-10 overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
+                        <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-indigo-600/20 rounded-full blur-[120px]" />
+                    </div>
+
+                    <div className="relative z-10 space-y-12">
+                        <div className="flex justify-between items-start">
+                            <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.5em] leading-none">0.6 — Final Identity</div>
+                            <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center">
+                                <Shield className="w-3.5 h-3.5 text-white/20" />
+                            </div>
                         </div>
-                        <h3 className="text-xl font-black text-white italic tracking-tighter uppercase w-full truncate">{member.name}</h3>
-                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mt-2 bg-indigo-500/10 px-4 py-1.5 rounded-full border border-indigo-500/20">{member.role}</p>
+
+                        <div className="flex flex-col items-center">
+                            <div className="relative group mb-8">
+                                <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-[40px] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+                                <div className="relative w-32 h-32 rounded-[32px] bg-[#0A0A1F] border border-white/10 flex items-center justify-center text-5xl font-black text-white shadow-2xl overflow-hidden uppercase italic">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
+                                    <span className="relative z-10">{formData.name?.[0] || 'T'}</span>
+                                </div>
+                            </div>
+                            <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter text-center leading-tight">{formData.name}</h2>
+                            <div className="h-[1px] w-12 bg-indigo-500/30 my-6" />
+                            <p className="text-[10px] font-black text-indigo-400/60 uppercase tracking-[0.3em] text-center">OPERATIONAL MASTER</p>
+                        </div>
                     </div>
 
-                    <div className="flex-1 space-y-3">
-                        <TabButton active={activeTab === 'perfil'} onClick={() => setActiveTab('perfil')} icon={LayoutGrid} label="Perfil" />
-                        <TabButton active={activeTab === 'profesional'} onClick={() => setActiveTab('profesional')} icon={Award} label="Expediente" />
-                        <TabButton active={activeTab === 'marcas'} onClick={() => setActiveTab('marcas')} icon={Globe} label="Marcas" />
-                        <TabButton active={activeTab === 'squad'} onClick={() => setActiveTab('squad')} icon={Shield} label="Squad" />
-                        <TabButton active={activeTab === 'tasks'} onClick={() => setActiveTab('tasks')} icon={ListTodo} label="Tasks" />
+                    <div className="relative z-10 space-y-8">
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500 border-b border-white/5 pb-2">
+                                <span>Security Protocol</span>
+                                <span className="text-indigo-400">ENCRYPTED</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="flex-1 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
+                                    <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Talento ID</span>
+                                    <span className="text-xs font-mono font-bold text-white tracking-widest">T-{formData.id?.slice(0, 4) || 'CORE'}</span>
+                                </div>
+                                <div className="flex-1 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
+                                    <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Status</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Active</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-end justify-between opacity-20">
+                            <div className="space-y-1">
+                                <div className="w-16 h-[1px] bg-white" /><div className="w-10 h-[1px] bg-white" />
+                            </div>
+                            <div className="text-[8px] font-mono text-white leading-none text-right">ADMIN_HUB_V4.8<br />SYSTEMS_CORE_INIT</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* RIGHT CONTENT */}
+                <div className="flex-1 h-full flex flex-col bg-[#080814]">
+                    <div className="px-10 py-8 border-b border-white/5 flex items-center justify-between">
+                        <div className="flex p-1 bg-white/[0.03] border border-white/5 rounded-[18px]">
+                            {tabs.map((t) => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => setActiveTab(t.id)}
+                                    className={`flex items-center gap-2 px-6 py-2.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all ${
+                                        activeTab === t.id ? 'bg-white text-black shadow-xl shadow-white/10' : 'text-gray-500 hover:text-white'
+                                    }`}
+                                >
+                                    <t.icon className="w-3.5 h-3.5" /> {t.label}
+                                </button>
+                            ))}
+                        </div>
+                        <button onClick={onClose} className="p-3 rounded-full hover:bg-white/5 text-gray-500 transition-colors">
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
                     </div>
 
-                    <div className="pt-8 mt-auto border-t border-white/5">
-                        <button onClick={onClose} className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-rose-500/10 hover:text-rose-400 text-gray-500 transition-all font-black uppercase text-[10px] tracking-widest border border-transparent hover:border-rose-500/20">
-                            <X className="w-4 h-4" />
-                            Cerrar Panel
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-12">
+                        {/* Summary Row */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <SummaryCard label="Cargo Operativo" value={formData.role} icon={Briefcase} />
+                            <SummaryCard label="Salario Base" value={`$${formData.salary || 0}`} icon={DollarSign} />
+                            <SummaryCard label="Sede Central" value={formData.city || 'Remoto'} icon={MapPin} />
+                            <SummaryCard label="Marcas" value={assignedBrands.length} icon={Database} />
+                        </div>
+
+                        <AnimatePresence mode="wait">
+                            <motion.div key={activeTab} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
+                                {activeTab === 'perfil' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <CardInput label="Nombre de Talento" value={formData.name} onChange={(v) => setFormData({...formData, name: v})} icon={Database} />
+                                        <CardInput label="Cargo Oficial" value={formData.role} onChange={(v) => setFormData({...formData, role: v})} icon={Briefcase} isSelect options={['Editor de Video', 'Community Manager', 'Filmmaker', 'Diseñador', 'Estratega', 'Director General']} />
+                                        <CardInput label="Salario Base (USD)" value={formData.salary || ''} onChange={(v) => setFormData({...formData, salary: v})} icon={DollarSign} type="number" />
+                                        <CardInput label="WhatsApp" value={formData.whatsapp || ''} onChange={(v) => setFormData({...formData, whatsapp: v})} icon={MessageSquare} />
+                                        <CardInput label="Ubicación" value={formData.city || ''} onChange={(v) => setFormData({...formData, city: v})} icon={MapPin} isSelect options={ECUADOR_CITIES.map(c => c.value)} />
+                                        {!isEstratega && <CardInput label="Líder de Mando" value={formData.squad_lead_id || ''} onChange={(v) => setFormData({...formData, squad_lead_id: v})} icon={Shield} isSelect options={eligibleLeaders.map(l => ({ value: l.id, label: l.name }))} />}
+                                    </div>
+                                )}
+
+                                {activeTab === 'profesional' && (
+                                    <div className="space-y-8">
+                                        <CardInput label="Vínculo de Expediente (URL)" value={formData.cv_url || ''} onChange={(v) => setFormData({...formData, cv_url: v})} icon={ExternalLink} />
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Resumen de Trayectoria</label>
+                                            <div className="p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] min-h-[200px]">
+                                                <textarea className="w-full h-full min-h-[150px] bg-transparent text-gray-300 text-sm leading-relaxed outline-none resize-none font-medium" value={formData.cv_summary || ''} onChange={(e) => setFormData({...formData, cv_summary: e.target.value})} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'marcas' && (
+                                    <div className="space-y-8">
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-4">Marcas Designadas</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div key={b.id} className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem] flex items-center justify-between group hover:border-emerald-500/20 transition-all">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center font-black text-emerald-400 border border-emerald-500/20">{b.name[0]}</div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[11px] font-black text-white uppercase italic">{b.name}</span>
+                                                                <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest">{b.type || 'ACTIVE_SLOT'}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <button 
+                                                                onClick={() => router.push(`/dashboard/hq/strategy?client=${b.id}`)}
+                                                                className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-lg text-[8px] font-black uppercase transition-all"
+                                                            >
+                                                                Estrategia
+                                                            </button>
+                                                            <button onClick={() => toggleBrand(b.id, true)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"><X className="w-4 h-4" /></button>
+                                                        </div>
+                                                    </div>
+                                            </div>
+                                            {assignedBrands.length === 0 && <p className="text-center py-10 text-gray-600 font-bold uppercase text-[9px] tracking-widest italic border border-dashed border-white/5 rounded-3xl">Sin marcas asignadas</p>}
+                                        </div>
+
+                                        <div className="pt-8 border-t border-white/5 space-y-4">
+                                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] px-4">Vincular Nueva Hoja de Ruta</h4>
+                                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                                                {allClients.filter(c => !assignedBrands.find(ab => ab.id === c.id)).slice(0, 6).map(b => (
+                                                    <button key={b.id} onClick={() => toggleBrand(b.id)} className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/5 hover:border-indigo-500/30 transition-all text-left flex flex-col gap-1">
+                                                        <span className="text-[10px] font-black text-white uppercase truncate">{b.name}</span>
+                                                        <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Connect {'->'}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'squad' && (
+                                    <div className="space-y-8">
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-4">Escuadrón Táctico</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {squadMembers.map(m => (
+                                                    <div key={m.id} className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem] flex items-center justify-between group hover:border-purple-500/20 transition-all">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center font-black text-purple-400 border border-purple-500/20">{m.name[0]}</div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[11px] font-black text-white uppercase italic">{m.name}</span>
+                                                                <span className="text-[8px] font-black text-purple-500/60 uppercase tracking-widest">{m.role}</span>
+                                                            </div>
+                                                        </div>
+                                                        <button onClick={() => toggleMember(m.id, true)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"><X className="w-4 h-4" /></button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {squadMembers.length === 0 && <p className="text-center py-10 text-gray-600 font-bold uppercase text-[9px] tracking-widest italic border border-dashed border-white/5 rounded-3xl">Sin miembros vinculados</p>}
+                                        </div>
+
+                                        <div className="pt-8 border-t border-white/5 space-y-4">
+                                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] px-4">Desplegar Unidades</h4>
+                                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                                                {team.filter(m => !m.squad_lead_id && m.id !== member.id).slice(0, 6).map(m => (
+                                                    <button key={m.id} onClick={() => toggleMember(m.id)} className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/5 hover:border-indigo-500/30 transition-all text-left flex flex-col gap-1">
+                                                        <span className="text-[10px] font-black text-white uppercase truncate">{m.name}</span>
+                                                        <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">{m.role}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'tasks' && (
+                                    <div className="space-y-4">
+                                        {activeTasks.map(t => (
+                                            <div key={t.id} className="p-8 bg-white/[0.03] border border-white/5 rounded-[2.5rem] flex items-center justify-between">
+                                                <div className="flex items-center gap-6">
+                                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                                    <span className="text-lg font-black text-white uppercase italic">{t.title}</span>
+                                                </div>
+                                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest italic">{t.client}</span>
+                                            </div>
+                                        ))}
+                                        {activeTasks.length === 0 && <p className="text-center py-20 text-gray-600 font-bold uppercase text-[10px] tracking-widest italic">Pipeline despejado</p>}
+                                    </div>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="p-10 border-t border-white/5 flex items-center justify-between bg-[#05050A]/50">
+                        <div className="flex items-center gap-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                            <button onClick={onClose} className="hover:text-white transition-colors">Discard Changes</button>
+                        </div>
+                        <button 
+                            onClick={handleSave} 
+                            disabled={saving}
+                            className="px-10 py-5 bg-white text-black font-black uppercase text-[11px] tracking-widest rounded-2xl flex items-center gap-3 hover:bg-gray-200 transition-all active:scale-95 disabled:opacity-50"
+                        >
+                            {saving ? 'Syncing...' : 'Deploy Synchronization'} <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
-
-                {/* Main Content Area */}
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    <div className="px-10 py-8 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-indigo-600/5 to-transparent">
-                        <div>
-                            <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Control <span className="text-indigo-400">Operativo</span></h2>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Sincronización en tiempo real</p>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-[#050510]/30">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={activeTab}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.2 }}
-                            className="w-full"
-                        >
-                            {activeTab === 'perfil' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-5">
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">Identidad</label>
-                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">Salario Base (USD)</label>
-                                            <input type="number" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm placeholder:text-gray-700" placeholder="Ej: 800" value={formData.salary || ''} onChange={(e) => setFormData({...formData, salary: e.target.value})} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">Ubicación Estratégica</label>
-                                            <select 
-                                                className="w-full bg-[#0F0F1A] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm appearance-none cursor-pointer" 
-                                                value={formData.city || ''} 
-                                                onChange={(e) => setFormData({...formData, city: e.target.value})}
-                                            >
-                                                <option value="" disabled>Seleccionar Ciudad</option>
-                                                <option value="Quito">Quito</option>
-                                                <option value="Santo Domingo">Santo Domingo</option>
-                                                <option value="Guayaquil">Guayaquil</option>
-                                                <option value="Cuenca">Cuenca</option>
-                                                <option value="Manta">Manta</option>
-                                                <option value="Portoviejo">Portoviejo</option>
-                                                <option value="Ambato">Ambato</option>
-                                                <option value="Loja">Loja</option>
-                                                <option value="Machala">Machala</option>
-                                                <option value="Remoto">Remoto (Global)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-5">
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">Email</label>
-                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm" value={formData.email || ''} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="email@diiczone.com" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">WhatsApp</label>
-                                            <input className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm" value={formData.whatsapp || ''} onChange={(e) => setFormData({...formData, whatsapp: e.target.value})} placeholder="+593 ..." />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-indigo-400/60 uppercase tracking-widest pl-2">Rol Operativo</label>
-                                            <select className="w-full bg-[#0F0F1A] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm appearance-none cursor-pointer" value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})}>
-                                                <option value="Editor de Video">Editor de Video</option>
-                                                <option value="Community Manager">Community Manager</option>
-                                                <option value="Filmmaker">Filmmaker</option>
-                                                <option value="Diseñador">Diseñador</option>
-                                                <option value="Estratega">Estratega</option>
-                                                <option value="Director General">Director General</option>
-                                            </select>
-                                        </div>
-                                        {!isEstratega && (
-                                            <div className="space-y-2">
-                                                <label className="text-[9px] font-black text-amber-500 uppercase tracking-widest pl-2">Líder de Mando (Estratega / CM)</label>
-                                                <select 
-                                                    className="w-full bg-[#0F0F1A] border border-amber-500/20 rounded-2xl py-4 px-6 text-white outline-none focus:border-amber-500/40 transition-all font-bold text-sm appearance-none cursor-pointer" 
-                                                    value={formData.squad_lead_id || ''} 
-                                                    onChange={(e) => setFormData({...formData, squad_lead_id: e.target.value})}
-                                                >
-                                                    <option value="">Independiente (Sin Mando)</option>
-                                                    {eligibleLeaders.map(l => (
-                                                        <option key={l.id} value={l.id}>{l.name} ({l.role})</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="md:col-span-2 pt-4">
-                                        <button onClick={handleSave} disabled={saving} className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-white font-black uppercase tracking-[0.2em] text-[10px] transition-all disabled:opacity-50">
-                                            {saving ? 'Guardando...' : 'Sincronizar Perfil'}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'profesional' && (
-                                <div className="space-y-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-4">
-                                            <h4 className="text-[12px] font-black text-indigo-400 uppercase tracking-[0.2em] px-4">Recursos de Talento</h4>
-                                            <div className="p-8 bg-white/[0.03] border border-white/5 rounded-[3rem] space-y-6">
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Vínculo de CV / Portfolio</label>
-                                                    {formData.cv_url ? (
-                                                        <a 
-                                                            href={formData.cv_url} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center justify-between p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl group hover:bg-indigo-500 transition-all"
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <Database className="w-5 h-5 text-indigo-400 group-hover:text-white" />
-                                                                <span className="text-xs font-bold text-white uppercase tracking-tighter">Ver Documento Oficial</span>
-                                                            </div>
-                                                            <ChevronRight className="w-4 h-4 text-indigo-400 group-hover:text-white" />
-                                                        </a>
-                                                    ) : (
-                                                        <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-2xl text-center">
-                                                            <span className="text-[10px] font-bold text-gray-600 uppercase">Sin CV adjunto</span>
-                                                        </div>
-                                                    )}
-                                                    <input 
-                                                        className="w-full bg-black/40 border border-white/5 rounded-xl py-3 px-4 text-[10px] text-gray-400 outline-none focus:border-indigo-500 transition-all font-mono"
-                                                        value={formData.cv_url || ''}
-                                                        onChange={(e) => setFormData({...formData, cv_url: e.target.value})}
-                                                        placeholder="URL del CV (Google Drive / PDF)"
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-3 pt-4">
-                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Gestión de Habilidades</label>
-                                                    <input 
-                                                        className="w-full bg-black/40 border border-white/5 rounded-xl py-3 px-4 text-[11px] text-indigo-300 outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
-                                                        value={skillsInput}
-                                                        onChange={(e) => setSkillsInput(e.target.value)}
-                                                        placeholder="Ej: Photoshop, After Effects, Estrategia..."
-                                                    />
-                                                    <div className="flex flex-wrap gap-2 p-4 bg-black/20 rounded-2xl border border-white/5 mt-2">
-                                                        {skillsInput.split(',').map(s => s.trim()).filter(s => s.length > 0).map((skill, i) => (
-                                                            <span key={i} className="px-3 py-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-500/30">
-                                                                {skill}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <h4 className="text-[12px] font-black text-purple-400 uppercase tracking-[0.2em] px-4">Resumen de Trayectoria</h4>
-                                            <div className="p-8 bg-white/[0.03] border border-white/5 rounded-[3rem] h-full min-h-[300px]">
-                                                <textarea 
-                                                    className="w-full h-full min-h-[220px] bg-transparent text-gray-300 text-sm leading-relaxed outline-none resize-none font-medium placeholder:text-gray-700"
-                                                    placeholder="El resumen profesional del talento aparecerá aquí..."
-                                                    value={formData.cv_summary || ''}
-                                                    onChange={(e) => setFormData({...formData, cv_summary: e.target.value})}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-6">
-                                        <button onClick={handleSave} disabled={saving} className="w-full py-6 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl text-white font-black uppercase tracking-[0.3em] text-[11px] shadow-3xl hover:shadow-indigo-500/30 transition-all disabled:opacity-50">
-                                            {saving ? 'Guardando Historial...' : 'Actualizar Expediente Profesional'}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'marcas' && (
-                                <div className="space-y-6">
-                                    <div>
-                                        <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] italic mb-4 px-4">Vincular Nueva Marca</h4>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {availableBrands.map(brand => (
-                                                <button 
-                                                    key={brand.id} 
-                                                    onClick={() => toggleBrand(brand.id)}
-                                                    className="flex items-center justify-between p-3.5 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.08] hover:border-indigo-500/30 transition-all group"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-sm font-black italic text-indigo-400 border border-indigo-500/20">{brand.name[0]}</div>
-                                                        <div className="text-left">
-                                                            <p className="text-[11px] font-black text-white uppercase italic leading-tight truncate max-w-[120px]">{brand.name}</p>
-                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{brand.type || 'Cliente Regular'}</p>
-                                                        </div>
-                                                    </div>
-                                                    <Plus className="w-4 h-4 text-gray-600 group-hover:text-indigo-400 transition-colors" />
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-6 border-t border-white/5">
-                                        <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] italic mb-4 px-4">Marcas Designadas</h4>
-                                        <div className="space-y-3">
-                                            {assignedBrands.map(brand => (
-                                                <div key={brand.id} className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/10 rounded-2xl hover:bg-white/[0.08] transition-all group">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-lg font-black italic text-emerald-400 border border-emerald-500/20">
-                                                            {brand.name[0]}
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-0.5">ZONA CREATIVA ACTIVA</p>
-                                                            <p className="text-lg font-black text-white italic tracking-tighter uppercase leading-none">{brand.name} <span className="text-emerald-400 text-xs ml-2">// {brand.type}</span></p>
-                                                        </div>
-                                                    </div>
-                                                    <button 
-                                                        onClick={() => toggleBrand(brand.id, true)}
-                                                        className="p-2.5 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            {assignedBrands.length === 0 && (
-                                                <div className="text-center py-12 border-2 border-dashed border-white/5 rounded-3xl">
-                                                    <Globe className="w-8 h-8 text-gray-800 mx-auto mb-3 opacity-20" />
-                                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Sin marcas asignadas</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'squad' && (
-                                <div className="space-y-8">
-                                    <div className="flex justify-between items-center px-4">
-                                        <h4 className="text-[12px] font-black text-indigo-400 uppercase tracking-[0.2em] italic">Vincular Talento al Escuadrón</h4>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {team.filter(m => !m.squad_lead_id && m.id !== member.id && !m.role.toLowerCase().includes('community manager')).map(m => (
-                                            <button 
-                                                key={m.id}
-                                                onClick={() => toggleMember(m.id)}
-                                                className="flex items-center justify-between p-6 bg-white/[0.03] border border-white/5 rounded-[2.5rem] hover:bg-white/[0.08] hover:border-indigo-500/30 transition-all group"
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-xl font-black italic text-indigo-400 border border-indigo-500/20">{m.name[0]}</div>
-                                                    <div className="text-left">
-                                                        <p className="text-[13px] font-black text-white uppercase italic">{m.name}</p>
-                                                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{m.role}</p>
-                                                    </div>
-                                                </div>
-                                                <Plus className="w-5 h-5 text-gray-600 group-hover:text-indigo-400 transition-colors" />
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    <div className="mt-12 pt-8 border-t border-white/5">
-                                        <h4 className="text-[12px] font-black text-purple-400 uppercase tracking-[0.2em] italic mb-6 px-4">Escuadrón Táctico Designado</h4>
-                                        <div className="space-y-4">
-                                            {squadMembers.map(m => (
-                                                <div key={m.id} className="flex items-center justify-between p-8 bg-white/[0.03] border border-white/10 rounded-[3rem] hover:bg-white/[0.08] transition-all group">
-                                                    <div className="flex items-center gap-6">
-                                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black italic text-white shadow-xl ${
-                                                            m.role.toLowerCase().includes('editor') ? 'bg-purple-600' : 'bg-blue-600'
-                                                        }`}>
-                                                            {m.name[0]}
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5">MIEMBRO OPERATIVO</p>
-                                                            <p className="text-2xl font-black text-white italic tracking-tighter uppercase">{m.name} <span className="text-indigo-400 ml-2">// {m.role}</span></p>
-                                                        </div>
-                                                    </div>
-                                                    <button 
-                                                        onClick={() => toggleMember(m.id, true)}
-                                                        className="p-4 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-2xl transition-all"
-                                                    >
-                                                        <X className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            {squadMembers.length === 0 && (
-                                                <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-[3rem]">
-                                                    <Shield className="w-12 h-12 text-gray-800 mx-auto mb-4 opacity-20" />
-                                                    <p className="text-xs font-black text-gray-600 uppercase tracking-widest">Sin miembros vinculados</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'tasks' && (
-                                <div className="space-y-8">
-                                    <h4 className="text-[12px] font-black text-indigo-400 uppercase tracking-[0.2em] italic px-4">Pipeline de Operaciones</h4>
-                                    <div className="space-y-4">
-                                        {activeTasks.map(task => (
-                                            <div key={task.id} className="p-10 bg-white/[0.03] border border-white/5 rounded-[3rem] flex items-center justify-between group hover:bg-white/[0.08] transition-all">
-                                                <div className="flex items-center gap-10">
-                                                    <div className="w-5 h-5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.5)]" />
-                                                    <div>
-                                                        <p className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-3 italic">{task.client?.replace(/_/g, ' ') || 'PROYECTO INTERNO'}</p>
-                                                        <h5 className="text-3xl font-black text-white uppercase tracking-tighter italic leading-none">{task.title}</h5>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] bg-white/5 px-6 py-3 rounded-2xl border border-white/5">
-                                                        Octubre 2026
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {activeTasks.length === 0 && (
-                                            <div className="text-center py-32 border-2 border-dashed border-white/5 rounded-[4rem]">
-                                                <ListTodo className="w-16 h-16 text-gray-800 mx-auto mb-6 opacity-20" />
-                                                <p className="text-sm font-black text-gray-600 uppercase tracking-[0.3em] italic">Pipeline despejado // Sin tareas activas</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-            </div>
-        </motion.div>
-    </div>
-);
+            </motion.div>
+        </div>
+    );
 }
 
+function SummaryCard({ label, value, icon: Icon }) {
+    return (
+        <div className="px-6 py-5 rounded-[24px] bg-white/[0.03] border border-white/5 flex flex-col gap-1 transition-all hover:border-white/10 group">
+            <div className="flex items-center gap-2 mb-1">
+                <Icon className="w-3 h-3 text-gray-600 group-hover:text-indigo-400 transition-colors" />
+                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{label}</span>
+            </div>
+            <span className="text-xs font-black text-white uppercase truncate">{value}</span>
+        </div>
+    );
+}
+
+function CardInput({ label, value, onChange, icon: Icon, isSelect, options, type = 'text' }) {
+    return (
+        <div className="space-y-3">
+            <label className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">
+                <Icon className="w-3 h-3 text-indigo-500/40" /> {label}
+            </label>
+            <div className="relative group">
+                <div className="absolute -inset-[1px] bg-white/5 rounded-2xl group-hover:bg-indigo-500/20 transition-all" />
+                {isSelect ? (
+                    <select 
+                        className="relative w-full bg-[#0F0F1A] border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm appearance-none cursor-pointer"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                    >
+                        {options.map(opt => (
+                            <option key={typeof opt === 'string' ? opt : opt.value} value={typeof opt === 'string' ? opt : opt.value}>
+                                {typeof opt === 'string' ? opt : opt.label}
+                            </option>
+                        ))}
+                    </select>
+                ) : (
+                    <input 
+                        type={type} 
+                        className="relative w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/40 transition-all font-bold text-sm"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                    />
+                )}
+            </div>
+        </div>
+    );
+}
 function TabButton({ active, onClick, icon: Icon, label }) {
     return (
         <button
@@ -993,7 +858,7 @@ function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitti
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-indigo-950/20 backdrop-blur-xl" />
             <motion.div initial={{ scale: 0.95, y: 30, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 30, opacity: 0 }} className="relative w-full max-w-md bg-[#0F0F1A]/90 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 shadow-3xl">
-                <h3 className="text-3xl font-black text-white uppercase italic italic mb-8">Nuevo Talento</h3>
+                <h3 className="text-3xl font-black text-white uppercase italic mb-8">Nuevo Talento</h3>
                 <form onSubmit={onSubmit} className="space-y-6">
                     <input required className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" placeholder="Nombre" value={newMember.name} onChange={(e) => setNewMember({ ...newMember, name: e.target.value })} />
                     <div className="grid grid-cols-2 gap-4">

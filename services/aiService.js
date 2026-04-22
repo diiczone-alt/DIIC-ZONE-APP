@@ -111,5 +111,34 @@ export const aiService = {
                 text: "Error de conexión con el Agente Estratégico. Por favor, verifica tu conexión o intenta más tarde." 
             };
         }
+    },
+    
+    /**
+     * Generates a suggested response for a lead based on brand context.
+     * @param {Object} lead - current lead data
+     * @param {Object} context - brand/client context
+     * @param {string} lastMessage - optional last received message
+     */
+    generateResponseSuggestion: async (lead, context, lastMessage = '') => {
+        try {
+            const response = await fetch('/api/ai/suggest-response', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lead, context, lastMessage })
+            });
+
+            if (response.ok) {
+                return await response.json();
+            } else {
+                throw new Error("Suggestion API failed");
+            }
+        } catch (error) {
+            console.error("[aiService] Suggestion Failure:", error);
+            // Fallback mock
+            return {
+                text: `¡Hola ${lead.full_name}! Qué gusto saludarte. Tenemos disponibilidad en ${context.name} para tu consulta sobre ${lead.industry || 'nuestros servicios'}. ¿Te gustaría agendar una cita?`,
+                isFallback: true
+            };
+        }
     }
 };

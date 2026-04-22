@@ -41,7 +41,8 @@ export default function StrategyTopBar({
     onToggleCompactMode,
     theme,
     onToggleTheme,
-    onClose
+    onClose,
+    onApplyTemplate
 }) {
     const activeCampaign = campaigns.find(c => c.id === activeCampaignId);
     const [isCampaignMenuOpen, setIsCampaignMenuOpen] = useState(false);
@@ -138,6 +139,21 @@ export default function StrategyTopBar({
 
                 {/* Right Section: Navigation & Actions */}
                 <div className="flex items-center gap-4 relative z-10">
+                    {/* Plantillas Button */}
+                    <button 
+                        onClick={() => onApplyTemplate('authority')}
+                        className={`px-4 py-3 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 group/template ${
+                            theme === 'dark' 
+                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white' 
+                            : 'bg-emerald-500/5 border-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
+                        }`}
+                        title="Aplicar Plantilla Plan Autoridad"
+                    >
+                        <LayoutTemplate className="w-5 h-5 group-hover/template:rotate-3 transition-transform" />
+                        <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Plan Autoridad</span>
+                    </button>
+
+                    {/* Proactive Theme Toggle */}
                     <button 
                         onClick={onToggleTheme}
                         className={`p-3 rounded-2xl transition-all shadow-lg active:scale-95 group/theme flex items-center justify-center border ${
@@ -149,7 +165,20 @@ export default function StrategyTopBar({
                     >
                         {theme === 'dark' ? <Sun className="w-5 h-5 transition-transform group-hover/theme:rotate-90" /> : <Moon className="w-5 h-5 transition-transform group-hover/theme:-rotate-12" />}
                     </button>
-                    {/* Empty or auxiliary actions go here */}
+
+                    {/* Master Save Button */}
+                    <button 
+                        onClick={onSave}
+                        className={`px-6 py-3 rounded-2xl flex items-center gap-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl relative overflow-hidden group/save ${
+                            theme === 'dark'
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-600/30'
+                            : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/20'
+                        }`}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover/save:translate-x-[100%] transition-transform duration-1000" />
+                        <Save className={`w-4 h-4 ${!isStrategySaved ? 'animate-bounce' : ''}`} />
+                        <span>Desplegar Cambios</span>
+                    </button>
                 </div>
             </header>
 

@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { agencyService } from '@/services/agencyService';
@@ -209,6 +210,65 @@ export default function AdminNodeManagement() {
         }
     };
 
+    const handleAssignMember = async (memberId, targetCity) => {
+        try {
+            await agencyService.updateTeamMember(memberId, { city: targetCity });
+            setFullTeam(prev => prev.map(m => m.id === memberId ? { ...m, city: targetCity } : m));
+            toast.success("Personal asignado a Sede Operativa");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al asignar talento");
+        }
+    };
+
+    const handleUnassignMember = async (memberId) => {
+        try {
+            await agencyService.updateTeamMember(memberId, { city: "Remoto" }); 
+            setFullTeam(prev => prev.map(m => m.id === memberId ? { ...m, city: "Remoto" } : m));
+            toast.success("Talento desvinculado de la sede");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al desvincular");
+        }
+    };
+
+    const handleAssignDirector = async (nodeId, memberName) => {
+        try {
+            if(agencyService.updateBranchOffice) {
+                await agencyService.updateBranchOffice(nodeId, { director: memberName });
+            }
+            setBranchOffices(prev => prev.map(b => b.id === nodeId ? { ...b, director: memberName } : b));
+            toast.success("Director de Sede Actualizado");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al asignar director");
+        }
+    };
+
+    const handleAssignClient = async (clientId, targetCity) => {
+        try {
+            await agencyService.updateClient(clientId, { city: targetCity });
+            setClients(prev => prev.map(c => c.id === clientId ? { ...c, city: targetCity } : c));
+            setBranchOffices(prev => [...prev]); // force refresh
+            toast.success("Empresa añadida a la sede");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al asignar empresa");
+        }
+    };
+
+    const handleUnassignClient = async (clientId) => {
+        try {
+            await agencyService.updateClient(clientId, { city: "Remoto" });
+            setClients(prev => prev.map(c => c.id === clientId ? { ...c, city: "Remoto" } : c));
+            setBranchOffices(prev => [...prev]); // force refresh
+            toast.success("Empresa removida de la sede");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al desvincular empresa");
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500 text-left">
             {/* NODE HEADER */}
@@ -376,9 +436,18 @@ export default function AdminNodeManagement() {
                         </AnimatePresence>
 
                         {/* NODE PANEL (DETAILS) */}
-                        <div className="space-y-6">
+                        <div className="space-y-6 relative z-30">
                             {selectedNode ? (
-                                <NodeFocusPanel node={selectedNode} team={fullTeam} />
+                                <NodeFocusPanel 
+                                    node={selectedNode} 
+                                    team={fullTeam}
+                                    allClients={clients}
+                                    onAssign={handleAssignMember}
+                                    onUnassign={handleUnassignMember}
+                                    onAssignDirector={(name) => handleAssignDirector(selectedNode.id, name)}
+                                    onAssignClient={handleAssignClient}
+                                    onUnassignClient={handleUnassignClient}
+                                />
                             ) : (
                                 <div className="bg-[#0A0A12] border border-white/5 rounded-[40px] p-10 flex flex-col items-center justify-center text-center opacity-40 h-full min-h-[400px]">
                                     <MapPin className="w-12 h-12 text-gray-600 mb-4" />
@@ -597,21 +666,44 @@ function MiniBar({ label, value, color }) {
     );
 }
 
-function NodeFocusPanel({ node, team }) {
+function NodeFocusPanel({ node, team, allClients, onAssign, onUnassign, onAssignDirector, onAssignClient, onUnassignClient }) {
+    const [assigningRole, setAssigningRole] = useState(null); // 'estratega', 'cm', 'creative', 'director', 'client'
+
     // Filtrar equipo local por ciudad y rol
     const localTeam = useMemo(() => {
         return team.filter(m => m.city?.toLowerCase() === node.city?.toLowerCase());
     }, [team, node.city]);
 
     const strategist = localTeam.find(m => m.role?.toLowerCase().includes('estrateg') || m.role?.toLowerCase().includes('manager'));
-    const cm = localTeam.find(m => m.role === 'Community Manager');
+    const cm = localTeam.find(m => m.role?.toLowerCase() === 'community manager' || m.role?.toLowerCase().includes('cm'));
     const creatives = localTeam.filter(m => 
         ['filmmaker', 'editor de video', 'diseñador'].includes(m.role?.toLowerCase())
     );
 
+    // Filter available records for the modal based on what role is being assigned
+    const availablePool = useMemo(() => {
+        if(!assigningRole) return [];
+        
+        if (assigningRole === 'client') {
+            return (allClients || []).filter(c => c.city?.toLowerCase() !== node.city?.toLowerCase());
+        }
+
+        return team.filter(m => {
+            const r = (m.role || '').toLowerCase();
+            // Ya están asignados a nosotros
+            if (m.city?.toLowerCase() === node.city?.toLowerCase()) return false;
+            
+            if (assigningRole === 'estratega') return r.includes('estrateg') || r.includes('manager');
+            if (assigningRole === 'cm') return r === 'community manager' || r.includes('cm') || r.includes('content');
+            if (assigningRole === 'creative') return r.includes('film') || r.includes('editor') || r.includes('diseña');
+            if (assigningRole === 'director') return true; // anyone can be a node director conceptually, or filter by seniors
+            return false;
+        });
+    }, [team, allClients, assigningRole, node.city]);
+
     return (
-        <div className="bg-[#0A0A12] border border-indigo-500/20 rounded-[40px] p-8 lg:p-10 relative overflow-hidden h-full">
-            <div className="absolute top-0 right-0 p-8 opacity-5">
+        <div className="bg-[#0A0A12] border border-indigo-500/20 rounded-[40px] p-8 lg:p-10 relative overflow-hidden h-full z-40">
+            <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
                 <Building2 className="w-32 h-32" />
             </div>
 
@@ -627,57 +719,101 @@ function NodeFocusPanel({ node, team }) {
 
             <div className="space-y-6 mb-10">
                 {/* ROL: ESTRATEGA */}
-                <div className="space-y-3">
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                        <Zap className="w-3 h-3 text-yellow-500" /> Estrategia Maestra
+                <div className="space-y-3 relative z-10">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center justify-between">
+                        <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-yellow-500" /> Estrategia Maestra</span>
+                        {!strategist && (
+                            <button 
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAssigningRole('estratega'); }} 
+                                className="flex items-center gap-1 text-[9px] text-indigo-400 hover:text-white transition-colors bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/50 cursor-pointer pointer-events-auto"
+                            >
+                                + Añadir
+                            </button>
+                        )}
                     </p>
                     {strategist ? (
-                        <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl group hover:border-white/20 transition-all">
-                            <div className="w-10 h-10 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center font-black">
-                                {strategist.name.charAt(0)}
+                        <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl group hover:border-white/20 transition-all">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center font-black">
+                                    {strategist.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black text-white uppercase">{strategist.name}</p>
+                                    <p className="text-[9px] text-gray-500 font-bold uppercase">{strategist.role}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xs font-black text-white uppercase">{strategist.name}</p>
-                                <p className="text-[9px] text-gray-500 font-bold uppercase">{strategist.role}</p>
-                            </div>
+                            <button 
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnassign(strategist.id); }} 
+                                className="p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white cursor-pointer pointer-events-auto" title="Desvincular"
+                            >
+                                <XCircle className="w-4 h-4" />
+                            </button>
                         </div>
                     ) : (
-                        <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-2xl text-center">
-                            <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Estratega Vacante</p>
+                        <div 
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAssigningRole('estratega'); }} 
+                            className="p-4 bg-white/5 border border-dashed border-white/10 rounded-2xl text-center cursor-pointer hover:bg-white/10 transition-colors pointer-events-auto"
+                        >
+                            <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">+ Asignar Estratega</p>
                         </div>
                     )}
                 </div>
 
                 {/* ROL: COMMUNITY MANAGER */}
-                <div className="space-y-3">
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                        <Users className="w-3 h-3 text-indigo-500" /> Gestión de Comunidad
+                <div className="space-y-3 relative z-10">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center justify-between">
+                        <span className="flex items-center gap-2"><Users className="w-3 h-3 text-indigo-500" /> Gestión de Comunidad</span>
+                        {!cm && (
+                            <button 
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAssigningRole('cm'); }} 
+                                className="flex items-center gap-1 text-[9px] text-indigo-400 hover:text-white transition-colors bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/50 cursor-pointer pointer-events-auto"
+                            >
+                                + Añadir
+                            </button>
+                        )}
                     </p>
                     {cm ? (
-                        <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl group hover:border-white/20 transition-all">
-                            <div className="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-500 flex items-center justify-center font-black">
-                                {cm.name.charAt(0)}
+                        <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl group hover:border-white/20 transition-all">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-500 flex items-center justify-center font-black">
+                                    {cm.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black text-white uppercase">{cm.name}</p>
+                                    <p className="text-[9px] text-gray-500 font-bold uppercase">Community Manager Certificado</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xs font-black text-white uppercase">{cm.name}</p>
-                                <p className="text-[9px] text-gray-500 font-bold uppercase">Community Manager Certificado</p>
-                            </div>
+                            <button 
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnassign(cm.id); }} 
+                                className="p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white cursor-pointer pointer-events-auto" title="Desvincular"
+                            >
+                                <XCircle className="w-4 h-4" />
+                            </button>
                         </div>
                     ) : (
-                        <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-2xl text-center">
-                            <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">CM por Asignar</p>
+                        <div 
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAssigningRole('cm'); }} 
+                            className="p-4 bg-white/5 border border-dashed border-white/10 rounded-2xl text-center cursor-pointer hover:bg-white/10 transition-colors pointer-events-auto"
+                        >
+                            <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">+ Asignar CM</p>
                         </div>
                     )}
                 </div>
 
                 {/* ROL: CÉLULA CREATIVA */}
-                <div className="space-y-3">
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                        <Video className="w-3 h-3 text-pink-500" /> Célula Creativa Local
+                <div className="space-y-3 relative z-10">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center justify-between">
+                        <span className="flex items-center gap-2"><Video className="w-3 h-3 text-pink-500" /> Célula Creativa Local</span>
+                        <button 
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAssigningRole('creative'); }} 
+                            className="flex items-center gap-1 text-[9px] text-indigo-400 hover:text-white transition-colors bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/50 cursor-pointer pointer-events-auto"
+                        >
+                            + Añadir
+                        </button>
                     </p>
                     <div className="grid grid-cols-1 gap-2">
                         {creatives.length > 0 ? creatives.map((member, i) => (
-                            <div key={i} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl">
+                            <div key={i} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl group transition-all hover:bg-white/10">
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-full bg-pink-500/10 text-pink-500 flex items-center justify-center text-[10px] font-black">
                                         {member.name.charAt(0)}
@@ -687,44 +823,87 @@ function NodeFocusPanel({ node, team }) {
                                         <p className="text-[8px] text-gray-600 uppercase font-black">{member.role}</p>
                                     </div>
                                 </div>
-                                <div className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[7px] font-black uppercase">
-                                    {member.status || 'Activo'}
+                                <div className="flex items-center gap-2">
+                                    <div className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[7px] font-black uppercase">
+                                        {member.status || 'Activo'}
+                                    </div>
+                                    <button 
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnassign(member.id); }} 
+                                        className="p-1.5 bg-red-500/10 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white cursor-pointer pointer-events-auto" title="Expulsar de célula"
+                                    >
+                                        <XCircle className="w-3 h-3" />
+                                    </button>
                                 </div>
                             </div>
                         )) : (
-                            <div className="p-8 bg-indigo-500/5 border border-dashed border-indigo-500/10 rounded-3xl text-center group cursor-pointer hover:bg-indigo-500/10 transition-all">
-                                <PlusIcon className="w-5 h-5 text-indigo-500/50 mx-auto mb-2" />
-                                <p className="text-[9px] text-indigo-400 font-black uppercase tracking-widest">Iniciar Reclutamiento</p>
+                            <div 
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAssigningRole('creative'); }} 
+                                className="p-8 bg-indigo-500/5 border border-dashed border-indigo-500/10 rounded-3xl text-center group cursor-pointer hover:bg-indigo-500/10 transition-all pointer-events-auto"
+                            >
+                                <PlusIcon className="w-5 h-5 text-indigo-500/50 mx-auto mb-2 group-hover:text-indigo-400 transition-colors pointer-events-none" />
+                                <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest pointer-events-none mb-1">Iniciar Reclutamiento</p>
+                                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest pointer-events-none">Vincular talento creativo local</p>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* --- CARTERA DE CLIENTES (NUEVO: ALL) --- */}
-                <div className="space-y-4 pt-6 border-t border-white/5">
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                        <Globe className="w-3 h-3 text-blue-400" /> Cartera de Clientes Completa
+                {/* --- CARTERA DE CLIENTES --- */}
+                <div className="space-y-4 pt-6 border-t border-white/5 relative z-10 text-left">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center justify-between">
+                        <span className="flex items-center gap-2"><Globe className="w-3 h-3 text-blue-400" /> Cartera de Clientes</span>
+                        <button 
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAssigningRole('client'); }} 
+                            className="flex items-center gap-1 text-[9px] text-indigo-400 hover:text-white transition-colors bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/50 cursor-pointer pointer-events-auto"
+                        >
+                            + Añadir
+                        </button>
                     </p>
-                    <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                        {node.clients && node.clients.length > 0 ? node.clients.map((client, i) => (
-                            <div key={i} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl group hover:border-indigo-500/20 transition-all">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-black border border-blue-500/20">
-                                        {client.name.charAt(0)}
+                    <div className="grid grid-cols-1 gap-2 max-h-[340px] overflow-y-auto custom-scrollbar pr-2">
+                        {node.clients && node.clients.length > 0 ? (
+                            node.clients.map((client, i) => (
+                                <div key={i} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl group hover:border-indigo-500/20 transition-all">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-black border border-blue-500/20">
+                                            {client.name.charAt(0)}
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-xs font-black text-white uppercase">{client.name}</p>
+                                            <p className="text-[8px] text-gray-500 font-bold uppercase">{client.industry || client.business_type || 'Empresa'}</p>
+                                        </div>
                                     </div>
-                                    <div className="text-left">
-                                        <p className="text-xs font-black text-white uppercase">{client.name}</p>
-                                        <p className="text-[8px] text-gray-500 font-bold uppercase">{client.industry || client.business_type || 'Empresa'}</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-black text-emerald-400 tracking-tighter">${(Number(client.price) || 0).toLocaleString()}</p>
+                                            <p className="text-[7px] text-gray-600 font-black uppercase tracking-widest">Aporte</p>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Link 
+                                                href={`/dashboard/strategy?client=${client.id}`}
+                                                className="p-1.5 bg-indigo-500/10 text-indigo-400 rounded-md hover:bg-indigo-500 hover:text-white transition-all cursor-pointer pointer-events-auto"
+                                                title="Ver Pizarra Estratgica"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <Network className="w-4 h-4" />
+                                            </Link>
+                                            <button 
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnassignClient(client.id); }} 
+                                                className="p-1.5 bg-red-500/10 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white cursor-pointer pointer-events-auto" title="Quitar Cliente"
+                                            >
+                                                <XCircle className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-[10px] font-black text-emerald-400 tracking-tighter">${(Number(client.price) || 0).toLocaleString()}</p>
-                                    <p className="text-[7px] text-gray-600 font-black uppercase tracking-widest">Aporte Mensual</p>
-                                </div>
-                            </div>
-                        )) : (
-                            <div className="p-8 border border-dashed border-white/10 rounded-3xl text-center">
-                                <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Sin Clientes en esta Sede</p>
+                            ))
+                        ) : (
+                            <div 
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAssigningRole('client'); }} 
+                                className="p-10 bg-blue-500/5 border border-dashed border-blue-500/20 rounded-[32px] text-center group cursor-pointer hover:bg-blue-500/10 transition-all pointer-events-auto flex flex-col items-center justify-center bg-gradient-to-b from-transparent to-blue-500/5"
+                            >
+                                <Globe className="w-6 h-6 text-blue-500/40 mb-3 group-hover:scale-110 group-hover:text-blue-400 transition-all" />
+                                <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest pointer-events-none mb-1">+ Asignar Empresa</p>
+                                <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest pointer-events-none italic">Sede sin cartera de clientes activa</p>
                             </div>
                         )}
                     </div>
@@ -746,21 +925,96 @@ function NodeFocusPanel({ node, team }) {
                 </div>
             </div>
 
-            <div className="space-y-4 pt-4">
-                <p className="text-left text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Director de Nodo</p>
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-[24px] border border-white/5 group hover:border-indigo-500/30 transition-all cursor-pointer">
+            <div className="space-y-4 pt-4 relative z-10">
+                <p className="text-left text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 flex justify-between items-center">
+                    Director de Nodo
+                    <button 
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAssigningRole('director'); }} 
+                        className="bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/50 hover:bg-indigo-500 hover:text-white transition-all cursor-pointer pointer-events-auto"
+                    >
+                        + Modificar
+                    </button>
+                </p>
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-[24px] border border-white/5 group hover:border-indigo-500/30 transition-all">
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-black text-lg">
-                            {node.director.substring(0, 1)}
+                        <div className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-black text-lg shadow-[0_0_15px_rgba(99,102,241,0.5)]">
+                            {node.director ? node.director.substring(0, 1) : '?'}
                         </div>
                         <div className="text-left">
-                            <div className="text-xs font-black text-white uppercase">{node.director}</div>
+                            <div className="text-xs font-black text-white uppercase">{node.director || "PENDIENTE"}</div>
                             <div className="text-[9px] text-gray-500 font-bold uppercase">Gestor Regional Certificado</div>
                         </div>
                     </div>
-                    <ArrowUpRight className="w-5 h-5 text-gray-600 group-hover:text-white transition-colors" />
+                    <div className="flex gap-2 items-center">
+                        {node.director && node.director !== "Pendiente" && (
+                            <button 
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAssignDirector("Pendiente"); }} 
+                                className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 cursor-pointer pointer-events-auto" title="Remover Director"
+                            >
+                                <XCircle className="w-4 h-4" />
+                            </button>
+                        )}
+                        <ArrowUpRight className="w-5 h-5 text-gray-600 group-hover:text-white transition-colors" />
+                    </div>
                 </div>
             </div>
+
+            {/* ASSIGNMENT MODAL OVERLAY */}
+            <AnimatePresence>
+                {assigningRole && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-50 bg-[#0A0A12]/95 backdrop-blur-md flex flex-col p-8"
+                    >
+                        <button onClick={() => setAssigningRole(null)} className="absolute top-6 right-6 text-gray-500 hover:text-white">
+                            <XCircle className="w-6 h-6" />
+                        </button>
+                        <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Asignar Talento</h3>
+                        <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mb-6">Puesto: {assigningRole}</p>
+                        
+                        <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                            {availablePool.length > 0 ? availablePool.map((m, i) => (
+                                <div key={m.id || i} className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-indigo-500/50 transition-all">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-black">
+                                            {m.name.charAt(0)}
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-xs font-black text-white uppercase">{m.name}</p>
+                                            <p className="text-[9px] text-gray-400 uppercase">{(m.role || m.industry || 'Perfil')}</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.preventDefault(); e.stopPropagation();
+                                            if (assigningRole === 'director') {
+                                                onAssignDirector(m.name);
+                                            } else if (assigningRole === 'client') {
+                                                onAssignClient(m.id, node.city);
+                                            } else {
+                                                onAssign(m.id, node.city);
+                                            }
+                                            setAssigningRole(null);
+                                        }} 
+                                        className="bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20 pointer-events-auto"
+                                    >
+                                        Seleccionar
+                                    </button>
+                                </div>
+                            )) : (
+                                <div className="text-center py-10">
+                                    <AlertCircle className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                                    <p className="text-sm font-bold text-gray-400">No hay personal libre con este perfil</p>
+                                    <p className="text-[10px] text-gray-600 mt-2">Todos los talentos de este rol ya están asignados a esta u otra sede, o no existen en la base.</p>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 }

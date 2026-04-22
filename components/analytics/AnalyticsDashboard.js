@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { Calendar, ChevronDown, Download, TrendingUp, Users, Eye, MousePointer, Activity, Zap, BrainCircuit, Smartphone, Monitor } from 'lucide-react';
@@ -9,9 +9,22 @@ import PredictiveInsights from './PredictiveInsights';
 import DeviceBreakdown from './DeviceBreakdown';
 import ContentPerformance from './ContentPerformance';
 
+import { useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+
 export default function AnalyticsDashboard() {
+    const searchParams = useSearchParams();
+    const clientId = searchParams.get('client');
+    const [activeClient, setActiveClient] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [dateRange, setDateRange] = useState('Last 30 Days');
+
+    useEffect(() => {
+        if (clientId) {
+            supabase.from('clients').select('name').eq('id', clientId).single()
+                .then(({ data }) => setActiveClient(data));
+        }
+    }, [clientId]);
 
     return (
         <div className="min-h-screen bg-[#050511] p-6 md:p-8 space-y-8 text-white relative overflow-hidden">
@@ -28,15 +41,17 @@ export default function AnalyticsDashboard() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-bold uppercase tracking-widest animate-pulse">
-                                <Activity className="w-3 h-3 inline mr-1" /> Live Data Stream
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${activeClient ? 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400' : 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 animate-pulse'}`}>
+                                <Activity className="w-3 h-3 inline mr-1" /> {activeClient ? 'Ecosistema Privado' : 'Live Data Stream'}
                             </span>
                         </div>
                         <h1 className="text-4xl md:text-5xl font-black tracking-tight uppercase">
-                            Centro de Comando <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">Analítico</span>
+                            {activeClient ? `${activeClient.name} - Analítica` : <>Centro de Comando <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">Analítico</span></>}
                         </h1>
-                        <p className="text-gray-400 font-light mt-2 max-w-2xl">
-                            Visualización estratégica de rendimiento. Datos en tiempo real procesados por DIIC Intelligence.
+                        <p className="text-gray-400 font-light mt-2 max-w-2xl italic">
+                            {activeClient 
+                                ? `Visualización estratégica del crecimiento digital para la marca ${activeClient.name}.`
+                                : 'Visualización estratégica de rendimiento global. Datos en tiempo real procesados por DIIC Intelligence.'}
                         </p>
                     </div>
 

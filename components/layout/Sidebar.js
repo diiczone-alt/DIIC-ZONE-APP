@@ -13,15 +13,17 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 
+import { useSearchParams } from 'next/navigation';
+
 // Static Items (Always Visible)
 const MAIN_ITEMS = [
     { name: 'Dashboard', icon: Home, href: '/dashboard', color: 'text-blue-400' },
     { name: 'Mi Progreso', icon: Zap, href: '/dashboard/profile', color: 'text-yellow-400' },
-    { name: 'Galería & Recursos', icon: Images, href: '/dashboard/gallery', color: 'text-blue-400', glow: true },
     { name: 'Zona Creativa', icon: LayoutGrid, href: '/dashboard/studio', color: 'text-fuchsia-400', glow: true },
     { name: 'Flujo de Contenido', icon: Kanban, href: '/dashboard/pipeline', color: 'text-emerald-400' },
     { name: 'Calendarios', icon: CalendarDays, href: '/dashboard/calendar', color: 'text-rose-400', glow: true },
     { name: 'Proyectos', icon: Clapperboard, href: '/dashboard/projects', color: 'text-indigo-400' },
+    { name: 'Galería', icon: Images, href: '/dashboard/gallery', color: 'text-blue-400', glow: true },
 ];
 
 // Accordion Groups
@@ -71,8 +73,18 @@ export default function Sidebar() {
     const [isClientCenterOpen, setIsClientCenterOpen] = useState(false);
     const [openGroup, setOpenGroup] = useState(null); // 'growth' | 'evolution' | null
     const { setIsExpanded } = useSidebar();
+    const searchParams = useSearchParams();
+    const clientId = searchParams.get('client');
     const { user } = useAuth();
     const [hasConnectivity, setHasConnectivity] = useState(true);
+
+    // Helper to preserve client context across navigation
+    const getScopedHref = (baseHref) => {
+        if (!clientId) return baseHref;
+        const url = new URL(baseHref, 'http://localhost'); // Using dummy base for URL parsing
+        url.searchParams.set('client', clientId);
+        return url.pathname + url.search;
+    };
 
     useEffect(() => {
         const checkConnectivity = async () => {
@@ -169,7 +181,7 @@ export default function Sidebar() {
                                 {group.items.map((item) => {
                                     const isActive = pathname === item.href;
                                     return (
-                                        <Link key={item.href} href={item.href} className="block pl-12 pr-3">
+                                        <Link key={item.href} href={getScopedHref(item.href)} className="block pl-12 pr-3">
                                             <div className={`flex items-center justify-between py-2 rounded-lg transition-colors ${isActive ? (item.color || 'text-indigo-400') + ' font-medium' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'} ${item.special ? 'bg-amber-500/10 border border-amber-500/20 my-1' : ''}`}>
                                                 <div className="flex items-center gap-3">
                                                     {!isActive && !item.special && <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50" />}
@@ -219,7 +231,7 @@ export default function Sidebar() {
                 {/* 1. Main Items (Flat List) */}
                 {MAIN_ITEMS.map((item, index) => (
                     <div key={item.href}>
-                        <Link href={item.href} className="block">
+                        <Link href={getScopedHref(item.href)} className="block">
                             <div
                                 className={`flex items-center gap-4 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden group/item ${pathname === item.href
                                     ? 'bg-white/10 text-white'
@@ -283,7 +295,7 @@ export default function Sidebar() {
                         </div>
 
                         {/* Quick Settings Icon */}
-                        <Link href="/dashboard/settings" title="Configuración" className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-white transition-all shrink-0">
+                        <Link href={getScopedHref("/dashboard/settings")} title="Configuración" className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-white transition-all shrink-0">
                             <Settings className="w-3 h-3" />
                         </Link>
                     </div>

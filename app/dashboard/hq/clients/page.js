@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { isCloudConnected, supabase } from '@/lib/supabase';
 import StrategicOutliner from '@/components/shared/Strategy/StrategicOutliner';
 import StrategyCreationWizard from '@/components/shared/Strategy/StrategyCreationWizard';
-import { ECUADOR_CITIES, MEDICAL_SPECIALTIES, MARKETING_TYPES, PLAN_OPTIONS } from '@/lib/constants';
+import { ECUADOR_CITIES, MEDICAL_SPECIALTIES, AGRO_SPECIALTIES, INDUSTRY_OPTIONS, MARKETING_TYPES, PLAN_OPTIONS, CREATIVE_RATES } from '@/lib/constants';
 import PremiumDropdown from '@/components/shared/PremiumDropdown';
 import GlassInput from '@/components/shared/GlassInput';
 
@@ -177,9 +177,11 @@ export default function HQClientsPage() {
     };
 
     const handleCyclePlan = async (id, currentPlan) => {
-        const plans = ['Basic', 'Premium', 'Agency'];
+        const plans = ['Basic', 'Agency', 'Premium'];
         const nextIdx = (plans.indexOf(currentPlan) + 1) % plans.length;
-        await handleUpdateClient(id, { plan: plans[nextIdx] });
+        const nextPlan = plans[nextIdx];
+        const planDef = PLAN_OPTIONS.find(p => p.value === nextPlan);
+        await handleUpdateClient(id, { plan: nextPlan, price: planDef ? planDef.price : 0 });
     };
 
     const cmOptions = useMemo(() => {
@@ -278,7 +280,7 @@ export default function HQClientsPage() {
     };
 
     const handleNavigateStrategy = (clientId) => {
-        router.push(`/dashboard/strategy?client=${clientId}`);
+        router.push(`/dashboard/hq/strategy?client=${clientId}`);
     };
 
     const handleDeleteClient = (id) => {
@@ -454,7 +456,7 @@ export default function HQClientsPage() {
                                     </td>
                                     <td className="px-6 py-6 text-right whitespace-nowrap relative">
                                         <div className="flex justify-end items-center gap-2 font-black uppercase tracking-widest text-[10px]">
-                                            <button className="px-4 py-2 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all" onClick={() => handleOpenPreview(client)}>
+                                            <button className="px-4 py-2 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all font-black uppercase tracking-widest text-[9px]" onClick={() => handleNavigateStrategy(client.id)}>
                                                 Ver Estrategia
                                             </button>
                                             <button onClick={() => handleDeleteClient(client.id)} className="p-2 bg-white/5 hover:bg-red-500/10 rounded-xl text-gray-400 hover:text-red-500 transition-all border border-white/5">
@@ -511,280 +513,406 @@ export default function HQClientsPage() {
                 {isEditModalOpen && (
                     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-lg" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative w-full max-w-4xl bg-[#080814] border border-white/10 rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col h-[85vh]">
+                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative w-full max-w-6xl bg-[#080814] border border-white/10 rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row h-[85vh]">
                             
-                            {/* Modern Identity Header */}
-                            <div className="relative h-48 flex items-end p-10 overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-b from-indigo-600/20 via-indigo-600/5 to-transparent" />
-                                
-                                {/* Background Patterns */}
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] -mr-32 -mt-32" />
-                                <div className="absolute top-10 right-10 text-[10px] font-black text-indigo-400/30 uppercase tracking-[0.5em] hidden md:block">
-                                    Administrative Unit // HQ
+                            {/* LEFT SIDEBAR: Visual Branding (Fixed) */}
+                            <div className="w-full md:w-[35%] h-full relative border-r border-white/5 bg-[#05050A] flex flex-col justify-between p-10 overflow-hidden">
+                                {/* Ambient Background */}
+                                <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
+                                    <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-indigo-600/20 rounded-full blur-[120px]" />
+                                    <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-cyan-600/10 rounded-full blur-[100px]" />
                                 </div>
 
-                                <div className="relative z-10 flex items-center gap-6">
-                                    <div className="relative group">
-                                        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-[28px] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                                        <div className="relative w-20 h-20 rounded-[24px] bg-[#0A0A1F] border border-white/10 flex items-center justify-center text-3xl font-black text-white shadow-2xl">
-                                            {editingClient?.name?.[0] || 'D'}
+                                {/* Top: Brand Visual */}
+                                <div className="relative z-10 space-y-12">
+                                    <div className="flex justify-between items-start">
+                                        <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.5em] leading-none">
+                                            0.6 — Final Identity
+                                        </div>
+                                        <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center">
+                                            <Shield className="w-3.5 h-3.5 text-white/20" />
                                         </div>
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[8px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
-                                                <Fingerprint className="w-2.5 h-2.5" /> ID: {editingClient?.id}
-                                            </span>
-                                            <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 ${editingClient?.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
-                                                <div className={`w-1.5 h-1.5 rounded-full ${editingClient?.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                                                {editingClient.status === 'active' ? 'Activo' : 'Pausado'}
-                                            </span>
+
+                                    <div className="flex flex-col items-center">
+                                        <div className="relative group mb-8">
+                                            <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-[40px] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+                                            <div className="relative w-32 h-32 rounded-[32px] bg-[#0A0A1F] border border-white/10 flex items-center justify-center text-5xl font-black text-white shadow-2xl overflow-hidden">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
+                                                <span className="relative z-10">{editingClient?.name?.[0] || 'D'}</span>
+                                            </div>
                                         </div>
-                                        <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none flex items-center gap-3">
-                                            Identidad de Socio
+                                        <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter text-center leading-tight">
+                                            {editingClient?.name || 'Partner'}
                                         </h2>
-                                        <p className="text-gray-400 text-[11px] font-bold tracking-tight mt-3 opacity-60 flex items-center gap-2">
-                                            <Shield className="w-3.5 h-3.5 text-indigo-400" /> Ecosistema de Datos Operativos e Identidad Visual
+                                        <div className="h-[1px] w-12 bg-indigo-500/30 my-6" />
+                                        <p className="text-[10px] font-black text-indigo-400/60 uppercase tracking-[0.3em] text-center">
+                                            OPERATIONAL ECOSYSTEM
                                         </p>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Capsule Navigation */}
-                            <div className="px-10 py-6 border-b border-white/5 bg-white/[0.01]">
-                                <div className="flex p-1.5 bg-white/[0.03] border border-white/5 rounded-[20px] w-fit">
-                                    {[
-                                        { id: 'operative', label: 'Logística', icon: Layout },
-                                        { id: 'team', label: 'Escuadra', icon: Users },
-                                        { id: 'strategy', label: 'Hojas de Ruta', icon: Target },
-                                        { id: 'growth', label: 'Performance', icon: TrendingUp }
-                                    ].map(tab => (
-                                        <button
-                                            key={tab.id}
-                                            onClick={() => setActiveEditTab(tab.id)}
-                                            className={`flex items-center gap-2.5 px-6 py-3 rounded-[15px] transition-all text-[10px] font-black uppercase tracking-widest ${
-                                                activeEditTab === tab.id 
-                                                    ? 'bg-indigo-600 text-white shadow-[0_4px_15px_rgba(79,70,229,0.3)]' 
-                                                    : 'text-gray-500 hover:text-white hover:bg-white/5'
-                                            }`}
-                                        >
-                                            <tab.icon className="w-3.5 h-3.5" />
-                                            {tab.label}
-                                        </button>
-                                    ))}
+                                {/* Bottom: Meta Data */}
+                                <div className="relative z-10 space-y-8">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500 border-b border-white/5 pb-2">
+                                            <span>Security Protocol</span>
+                                            <span className="text-indigo-400">ENCRYPTED</span>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-1 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
+                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Partner ID</span>
+                                                <span className="text-xs font-mono font-bold text-white tracking-widest">{editingClient?.id}</span>
+                                            </div>
+                                            <div className="flex-1 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
+                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Status</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${editingClient?.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'}`} />
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest ${editingClient?.status === 'active' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                        {editingClient?.status === 'active' ? 'Active' : 'Paused'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-end justify-between opacity-20 group-hover:opacity-40 transition-opacity">
+                                        <div className="space-y-1">
+                                            <div className="w-16 h-[1px] bg-white" />
+                                            <div className="w-10 h-[1px] bg-white" />
+                                            <div className="w-14 h-[1px] bg-white" />
+                                        </div>
+                                        <div className="text-[8px] font-mono text-white leading-none text-right">
+                                            ADMIN_HUB_V4.8<br />
+                                            SYSTEMS_CORE_INIT
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Tab Content */}
-                            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                                <form onSubmit={handleSaveEdit} id="edit-client-form">
-                                    {activeEditTab === 'operative' && (
-                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 p-4">
-                                            <div className="space-y-8">
-                                                <GlassInput 
-                                                    label="Nombre de la Marca" 
-                                                    value={newClient.name} 
-                                                    onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} 
-                                                    icon={Building2}
-                                                    placeholder="Nombre comercial..."
-                                                />
-                                                
-                                                <PremiumDropdown 
-                                                    label="Ubicación Estratégica" 
-                                                    value={newClient.city} 
-                                                    onChange={(val) => setNewClient({ ...newClient, city: val })} 
-                                                    options={ECUADOR_CITIES} 
-                                                    searchable={true}
-                                                    icon={Globe}
-                                                />
+                            {/* RIGHT CONTENT: Control Panel (Scrollable) */}
+                            <div className="flex-1 h-full flex flex-col bg-[#080814]">
+                                {/* Header / Nav */}
+                                <div className="px-10 py-8 border-b border-white/5 flex items-center justify-between">
+                                    <div className="flex p-1 bg-white/[0.03] border border-white/5 rounded-[18px]">
+                                        {[
+                                            { id: 'operative', label: 'Logística', icon: Layout },
+                                            { id: 'team', label: 'Escuadra', icon: Users },
+                                            { id: 'strategy', label: 'Hojas de Ruta', icon: Target },
+                                            { id: 'growth', label: 'Performance', icon: TrendingUp }
+                                        ].map(tab => (
+                                            <button
+                                                key={tab.id}
+                                                onClick={() => setActiveEditTab(tab.id)}
+                                                className={`flex items-center gap-2 px-6 py-3 rounded-[14px] transition-all text-[9.5px] font-black uppercase tracking-widest ${
+                                                    activeEditTab === tab.id 
+                                                        ? 'bg-white text-black shadow-xl ring-4 ring-white/5' 
+                                                        : 'text-gray-500 hover:text-white hover:bg-white/5'
+                                                }`}
+                                            >
+                                                <tab.icon className={`w-3.5 h-3.5 ${activeEditTab === tab.id ? 'text-indigo-600' : ''}`} />
+                                                {tab.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button onClick={() => setIsEditModalOpen(false)} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all">
+                                        <ArrowLeft className="w-5 h-5" />
+                                    </button>
+                                </div>
 
-                                                <GlassInput 
-                                                    label="Industria / Sector" 
-                                                    value={newClient.industry} 
-                                                    onChange={(e) => setNewClient({ ...newClient, industry: e.target.value })} 
-                                                    icon={Shield}
-                                                    placeholder="Ej: Médico, Real Estate..."
-                                                />
+                                {/* Content Grid */}
+                                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+                                    <form onSubmit={handleSaveEdit} id="edit-client-form">
+                                        <AnimatePresence mode="wait">
+                                            {activeEditTab === 'operative' && (
+                                                <motion.div 
+                                                    key="operative"
+                                                    initial={{ opacity: 0, x: 10 }} 
+                                                    animate={{ opacity: 1, x: 0 }} 
+                                                    exit={{ opacity: 0, x: -10 }}
+                                                    className="space-y-12"
+                                                >
+                                                    {/* Technical Specs Header */}
+                                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                                        <SpecItem label="Plan Actual" value={editingClient?.plan || 'Standard'} icon={Shield} />
+                                                        <SpecItem label="MRR Revenue" value={`$${editingClient?.price || 0}`} icon={DollarSign} />
+                                                        <SpecItem label="Location" value={editingClient?.city || 'HQ'} icon={Globe} />
+                                                        <SpecItem label="Sector" value={editingClient?.industry || 'General'} icon={Activity} />
+                                                    </div>
 
-                                                {newClient.industry?.toLowerCase().includes('médico') && (
-                                                    <PremiumDropdown 
-                                                        label="Especialidad Médica" 
-                                                        value={newClient.specialty} 
-                                                        onChange={(val) => setNewClient({ ...newClient, specialty: val })} 
-                                                        options={MEDICAL_SPECIALTIES} 
-                                                        icon={Stethoscope}
-                                                    />
-                                                )}
-                                            </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                                        <div className="space-y-10">
+                                                            <GlassInput 
+                                                                label="Nombre de la Marca" 
+                                                                value={newClient.name} 
+                                                                onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} 
+                                                                icon={Building2}
+                                                                placeholder="Nombre comercial..."
+                                                            />
+                                                            <PremiumDropdown 
+                                                                label="Ubicación Estratégica" 
+                                                                value={newClient.city} 
+                                                                onChange={(val) => setNewClient({ ...newClient, city: val })} 
+                                                                options={ECUADOR_CITIES} 
+                                                                searchable={true}
+                                                                icon={Globe}
+                                                            />
+                                                            <PremiumDropdown 
+                                                                label="Industria / Sector" 
+                                                                value={newClient.industry} 
+                                                                onChange={(val) => setNewClient({ ...newClient, industry: val })} 
+                                                                options={INDUSTRY_OPTIONS}
+                                                                icon={Shield}
+                                                                searchable={true}
+                                                            />
+                                                            {newClient.industry?.toLowerCase().includes('médico') && (
+                                                                <PremiumDropdown 
+                                                                    label="Especialidad Médica" 
+                                                                    value={newClient.specialty} 
+                                                                    onChange={(val) => setNewClient({ ...newClient, specialty: val })} 
+                                                                    options={MEDICAL_SPECIALTIES} 
+                                                                    icon={Stethoscope}
+                                                                />
+                                                            )}
+                                                            {(newClient.industry?.toLowerCase().includes('agro') || newClient.industry?.toLowerCase().includes('ganader')) && (
+                                                                <PremiumDropdown 
+                                                                    label="Rama Agropecuaria" 
+                                                                    value={newClient.specialty} 
+                                                                    onChange={(val) => setNewClient({ ...newClient, specialty: val })} 
+                                                                    options={AGRO_SPECIALTIES} 
+                                                                    icon={Activity}
+                                                                />
+                                                            )}
+                                                        </div>
 
-                                            <div className="space-y-8">
-                                                <GlassInput 
-                                                    label="WhatsApp de Contacto" 
-                                                    value={newClient.whatsapp_number} 
-                                                    onChange={(e) => setNewClient({ ...newClient, whatsapp_number: e.target.value })} 
-                                                    icon={MessageSquare}
-                                                    placeholder="+593 ..."
-                                                    className="font-mono"
-                                                />
+                                                        <div className="space-y-10">
+                                                            <GlassInput 
+                                                                label="WhatsApp de Contacto" 
+                                                                value={newClient.whatsapp_number} 
+                                                                onChange={(e) => setNewClient({ ...newClient, whatsapp_number: e.target.value })} 
+                                                                icon={MessageSquare}
+                                                                placeholder="+593 ..."
+                                                                className="font-mono"
+                                                            />
+                                                            <GlassInput 
+                                                                label="Inversión Mensual (USD)" 
+                                                                value={newClient.price} 
+                                                                onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })} 
+                                                                icon={DollarSign}
+                                                                type="number"
+                                                                placeholder="0.00"
+                                                            />
+                                                            <GlassInput 
+                                                                label="Email Sync" 
+                                                                value={newClient.email} 
+                                                                onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} 
+                                                                icon={Mail}
+                                                                type="email"
+                                                                placeholder="cliente@ejemplo.com"
+                                                            />
+                                                            <PremiumDropdown 
+                                                                label="Modelo de Negocio" 
+                                                                value={newClient.business_type} 
+                                                                onChange={(val) => setNewClient({ ...newClient, business_type: val })} 
+                                                                options={[
+                                                                    { value: 'Servicios', label: 'Servicios Profesionales' }, 
+                                                                    { value: 'Productos', label: 'E-commerce / Retail' }, 
+                                                                    { value: 'Personal', label: 'Marca Personal' },
+                                                                    { value: 'Educativo', label: 'Capacitación / Formación' },
+                                                                    { value: 'Infoproductos', label: 'Infoproductos / Cursos' }
+                                                                ]} 
+                                                                icon={Zap}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
 
-                                                <GlassInput 
-                                                    label="Inversión Mensual (USD)" 
-                                                    value={newClient.price} 
-                                                    onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })} 
-                                                    icon={DollarSign}
-                                                    type="number"
-                                                    placeholder="0.00"
-                                                />
+                                            {activeEditTab === 'team' && (
+                                                <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-10">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                        <PremiumDropdown label="CM Responsable" icon={Star} value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
+                                                        <PremiumDropdown label="Editor Asignado" icon={Zap} value={newClient.editor} onChange={(val) => setNewClient({ ...newClient, editor: val })} options={editorOptions} />
+                                                        <PremiumDropdown label="Filmmaker / Videógrafo" icon={Zap} value={newClient.filmmaker} onChange={(val) => setNewClient({ ...newClient, filmmaker: val })} options={filmmakerOptions} />
+                                                        <PremiumDropdown label="Plan Estratégico" icon={Shield} value={newClient.plan} onChange={(val) => {
+                                                            const planDef = PLAN_OPTIONS.find(p => p.value === val);
+                                                            setNewClient({ ...newClient, plan: val, price: planDef ? planDef.price : newClient.price });
+                                                        }} options={PLAN_OPTIONS} />
+                                                    </div>
 
-                                                <GlassInput 
-                                                    label="Email Sync (Sincronización)" 
-                                                    value={newClient.email} 
-                                                    onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} 
-                                                    icon={Mail}
-                                                    type="email"
-                                                    placeholder="cliente@ejemplo.com"
-                                                />
+                                                    {/* Desglose de Gastos Operativos (Creativos) */}
+                                                    {(() => {
+                                                        const planSelected = PLAN_OPTIONS.find(p => p.value === newClient.plan) || PLAN_OPTIONS[0];
+                                                        const { videos, reels } = planSelected.deliverables;
+                                                        const editorEarnings = (reels * CREATIVE_RATES.reel_edit) + (videos * CREATIVE_RATES.vid_promo);
+                                                        const filmmakerEarnings = reels * CREATIVE_RATES.reel_prod;
+                                                        const remainingMargin = (newClient.price || 0) - editorEarnings - filmmakerEarnings - CREATIVE_RATES.cm_base;
 
-                                                <PremiumDropdown 
-                                                    label="Modelo de Negocio" 
-                                                    value={newClient.business_type} 
-                                                    onChange={(val) => setNewClient({ ...newClient, business_type: val })} 
-                                                    options={[
-                                                        { value: 'Servicios', label: 'Servicios Profesionales' }, 
-                                                        { value: 'Productos', label: 'E-commerce / Retail' }, 
-                                                        { value: 'Personal', label: 'Marca Personal' }
-                                                    ]} 
-                                                    icon={Zap}
-                                                />
-                                            </div>
-                                        </motion.div>
-                                    )}
+                                                        return (
+                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                                <div className="p-6 rounded-[2rem] bg-indigo-900/10 border border-indigo-500/20 relative overflow-hidden group">
+                                                                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-3 flex items-center gap-2"><Layout className="w-3 h-3" /> Pago a Editor</h4>
+                                                                    <div className="text-3xl font-black text-white italic relative z-10">${editorEarnings}</div>
+                                                                    <div className="text-[10px] text-gray-500 mt-2 relative z-10">({reels} reels x ${CREATIVE_RATES.reel_edit}, {videos} vids x ${CREATIVE_RATES.vid_promo})</div>
+                                                                </div>
+                                                                <div className="p-6 rounded-[2rem] bg-emerald-900/10 border border-emerald-500/20 relative overflow-hidden group">
+                                                                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-emerald-400 mb-3 flex items-center gap-2"><Video className="w-3 h-3" /> Pago Filmmaker</h4>
+                                                                    <div className="text-3xl font-black text-white italic relative z-10">${filmmakerEarnings}</div>
+                                                                    <div className="text-[10px] text-gray-500 mt-2 relative z-10">Rodaje: {reels} reels x ${CREATIVE_RATES.reel_prod}</div>
+                                                                </div>
+                                                                <div className="p-6 rounded-[2rem] bg-amber-900/10 border border-amber-500/20 relative overflow-hidden group">
+                                                                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-3 flex items-center gap-2"><DollarSign className="w-3 h-3" /> Margen Base</h4>
+                                                                    <div className="text-3xl font-black text-white italic relative z-10">${remainingMargin > 0 ? remainingMargin : 0}</div>
+                                                                    <div className="text-[10px] text-gray-500 mt-2 relative z-10">CM Base: ${CREATIVE_RATES.cm_base} descontado.</div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
 
-                                    {activeEditTab === 'team' && (
-                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-                                            <div className="p-8 rounded-[30px] bg-white/[0.02] border border-white/5 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <PremiumDropdown label="Community Manager Responsable" icon={Star} value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
-                                                <PremiumDropdown label="Editor de Video Asignado" icon={Zap} value={newClient.editor} onChange={(val) => setNewClient({ ...newClient, editor: val })} options={editorOptions} />
-                                                <PremiumDropdown label="Filmmaker / Videógrafo" icon={Zap} value={newClient.filmmaker} onChange={(val) => setNewClient({ ...newClient, filmmaker: val })} options={filmmakerOptions} />
-                                                <PremiumDropdown label="Plan de Servicio" icon={Shield} value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={[{ value: 'Basic', label: 'DIIC Basic' }, { value: 'Premium', label: 'DIIC Premium' }, { value: 'Agency', label: 'DIIC Full Agency' }]} />
-                                            </div>
-                                            <div className="p-6 rounded-3xl bg-amber-500/5 border border-amber-500/10 flex items-start gap-4">
-                                                <AlertCircle className="w-5 h-5 text-amber-500 mt-1" />
-                                                <p className="text-xs text-amber-500/80 font-medium leading-relaxed uppercase tracking-tight">Cualquier cambio en la escuadra afectará el cálculo de rentabilidad del cliente y las notificaciones de tareas automáticas.</p>
-                                            </div>
-                                        </motion.div>
-                                    )}
-
-                                    {activeEditTab === 'strategy' && (
-                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                                <div className="space-y-6">
-                                                    <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest pl-2">Información de Onboarding</h4>
-                                                    <div className="p-8 rounded-[30px] bg-white/[0.02] border border-white/5 space-y-8">
-                                                        <div>
-                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-3">¿A qué se dedican?</p>
-                                                            <p className="text-white text-sm font-bold italic leading-relaxed">"{newClient.onboarding_data?.whatTheyDo || 'Sin definir en onboarding'}"</p>
+                                                    <div className="p-8 rounded-[2rem] bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-6">
+                                                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+                                                            <Shield className="w-6 h-6 text-indigo-400" />
                                                         </div>
                                                         <div>
-                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-3">Diferenciación Única</p>
-                                                            <p className="text-indigo-300 text-sm font-bold italic leading-relaxed">"{newClient.onboarding_data?.differentiation || 'Sin definir'}"</p>
+                                                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 italic">Squad Synchronization Notice</h4>
+                                                            <p className="text-[11px] text-gray-500 font-medium leading-relaxed">Cualquier cambio en la escuadra afectará el cálculo de rentabilidad del cliente y las notificaciones de tareas automáticas del sistema central.</p>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-3">Nicho Objetivo</p>
-                                                            <div className="px-5 py-3 rounded-2xl bg-white/5 border border-white/5 text-white font-black uppercase text-[10px] tracking-widest inline-block">
-                                                                {newClient.onboarding_data?.niche || 'General'}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+
+                                            {activeEditTab === 'strategy' && (
+                                                <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-10">
+                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                                        <div className="space-y-6">
+                                                            <div className="flex items-center gap-3 text-[10px] font-black text-white px-2">
+                                                                <div className="w-4 h-[1px] bg-indigo-500" /> ONBOARDING DATA
+                                                            </div>
+                                                            <div className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 space-y-8 relative overflow-hidden group">
+                                                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-500/10 transition-colors" />
+                                                                <div>
+                                                                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-3">Core Purpose</p>
+                                                                    <p className="text-white text-sm font-bold italic leading-relaxed">"{newClient.onboarding_data?.whatTheyDo || 'Sin definir'}"</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-3">Unique Differentiation</p>
+                                                                    <p className="text-indigo-300 text-sm font-bold italic leading-relaxed">"{newClient.onboarding_data?.differentiation || 'Sin definir'}"</p>
+                                                                </div>
+                                                                <div className="pt-4 flex items-center justify-between border-t border-white/5">
+                                                                    <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Target Niche</span>
+                                                                    <span className="px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-black text-[9px] uppercase tracking-widest">
+                                                                        {newClient.onboarding_data?.niche || 'General'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-6">
+                                                            <div className="flex items-center gap-3 text-[10px] font-black text-emerald-400 px-2 uppercase tracking-widest">
+                                                                <div className="w-4 h-[1px] bg-emerald-500" /> Growth Objectives
+                                                            </div>
+                                                            <div className="p-8 rounded-[2.5rem] bg-emerald-500/[0.03] border border-emerald-500/10 space-y-8">
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Monthly Goal</span>
+                                                                    <div className="flex items-end gap-2">
+                                                                        <span className="text-emerald-400 font-black text-4xl italic tracking-tighter leading-none">{newClient.onboarding_data?.monthlyGoal || 0}</span>
+                                                                        <span className="text-[10px] font-black text-emerald-600/60 uppercase tracking-widest pb-1">Conversions</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="p-4 rounded-2xl bg-black/20 border border-white/5">
+                                                                    <p className="text-[10px] text-emerald-500/60 font-medium italic leading-relaxed uppercase tracking-tight">"El cliente prioriza la generación de leads calificados sobre el alcance masivo en esta etapa."</p>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div className="space-y-6">
-                                                    <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest pl-2">Objetivos de Venta</h4>
-                                                    <div className="p-8 rounded-[30px] bg-emerald-500/5 border border-emerald-500/10 space-y-6">
-                                                        <div className="flex justify-between items-center bg-black/20 p-4 rounded-2xl border border-white/5">
-                                                            <span className="text-[10px] font-black text-gray-400 uppercase">Conversiones Meta</span>
-                                                            <span className="text-emerald-400 font-black text-xl italic">{newClient.onboarding_data?.monthlyGoal || 0}</span>
+                                                </motion.div>
+                                            )}
+
+                                            {activeEditTab === 'growth' && (
+                                                <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="h-full flex flex-col items-center justify-center space-y-12 py-10">
+                                                    <div className="w-full max-w-lg space-y-12">
+                                                        <div className="text-center space-y-8">
+                                                            <div className="space-y-2">
+                                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Current Growth Level</p>
+                                                                <div className="h-[1px] w-24 bg-indigo-500/30 mx-auto" />
+                                                            </div>
+                                                            <div className="flex justify-center gap-6">
+                                                                {[1, 2, 3, 4, 5].map(level => (
+                                                                    <button
+                                                                        key={level}
+                                                                        type="button"
+                                                                        onClick={() => setNewClient({ ...newClient, growth_level: level })}
+                                                                        className={`w-16 h-20 rounded-2xl border-2 flex flex-col items-center justify-center transition-all ${
+                                                                            newClient.growth_level >= level 
+                                                                                ? 'bg-indigo-600 border-indigo-400 text-white shadow-[0_0_40px_rgba(79,70,229,0.25)]' 
+                                                                                : 'bg-white/5 border-white/5 text-gray-700'
+                                                                        }`}
+                                                                    >
+                                                                        <span className="text-2xl font-black">{level}</span>
+                                                                        <div className={`w-1.5 h-1.5 rounded-full mt-2 ${newClient.growth_level >= level ? 'bg-white' : 'bg-gray-800'}`} />
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                            <p className="text-sm font-black text-indigo-400 tracking-[0.2em] uppercase italic">
+                                                                {['Estancado', 'Estable', 'En Crecimiento', 'Aceleración', 'Escalado Total'][newClient.growth_level - 1]}
+                                                            </p>
                                                         </div>
-                                                        <p className="text-[10px] text-emerald-500/60 font-medium italic">"El cliente prioriza la generación de leads calificados sobre el alcance masivo."</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
 
-                                    {activeEditTab === 'growth' && (
-                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
-                                            <div className="flex flex-col items-center">
-                                                <div className="w-full max-w-md space-y-8">
-                                                    <div className="text-center space-y-4">
-                                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Nivel de Crecimiento Actual</p>
-                                                        <div className="flex justify-center gap-4">
-                                                            {[1, 2, 3, 4, 5].map(level => (
-                                                                <button
-                                                                    key={level}
-                                                                    type="button"
-                                                                    onClick={() => setNewClient({ ...newClient, growth_level: level })}
-                                                                    className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center text-xl font-black transition-all ${
-                                                                        newClient.growth_level >= level 
-                                                                            ? 'bg-indigo-600 border-indigo-400 text-white shadow-[0_0_30px_rgba(79,70,229,0.3)]' 
-                                                                            : 'bg-white/5 border-white/5 text-gray-700'
-                                                                    }`}
-                                                                >
-                                                                    {level}
-                                                                </button>
-                                                            ))}
+                                                        <div className="space-y-4 pt-12 border-t border-white/5 relative">
+                                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-6 py-1 rounded-full bg-[#080814] border border-white/5 text-[9px] font-black text-gray-600 uppercase tracking-widest">
+                                                                STRATEGIST LOG BOOK
+                                                            </div>
+                                                            <textarea 
+                                                                value={newClient.notes} 
+                                                                onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })} 
+                                                                className="w-full bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-10 text-gray-300 outline-none focus:border-indigo-500/30 transition-all font-medium text-sm italic resize-none shadow-inner" 
+                                                                rows="6"
+                                                                placeholder="Anota aquí las observaciones estratégicas, cuellos de botella o hitos alcanzados..."
+                                                            />
                                                         </div>
-                                                        <p className="text-[10px] font-black text-indigo-400 tracking-widest pt-2">
-                                                            {['Estancado', 'Estable', 'En Crecimiento', 'Aceleración', 'Escalado Total'][newClient.growth_level - 1]}
-                                                        </p>
                                                     </div>
-
-                                                    <div className="space-y-4 pt-10 border-t border-white/5">
-                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                                                            <BookOpen className="w-3 h-3" /> Bitácora de Estratega
-                                                        </label>
-                                                        <textarea 
-                                                            value={newClient.notes} 
-                                                            onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })} 
-                                                            className="w-full bg-white/[0.03] border border-white/5 rounded-3xl p-8 text-gray-300 outline-none focus:border-indigo-500/50 transition-all font-medium text-sm italic resize-none" 
-                                                            rows="5"
-                                                            placeholder="Anota aquí las observaciones estratégicas, cuellos de botella o hitos alcanzados..."
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </form>
-                            </div>
-
-                            {/* Premium Modal Footer */}
-                            <div className="p-10 border-t border-white/5 bg-black/40 backdrop-blur-md flex flex-col md:flex-row justify-between items-center gap-6">
-                                <div className="flex items-center gap-3 text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] opacity-40">
-                                    <Shield className="w-4 h-4" /> Secure Admin Hub v4.8
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </form>
                                 </div>
-                                <div className="flex gap-6 w-full md:w-auto">
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setIsEditModalOpen(false)} 
-                                        className="px-8 py-4 text-gray-500 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all active:scale-95"
-                                    >
-                                        Descartar
-                                    </button>
-                                    <button 
-                                        form="edit-client-form"
-                                        type="submit" 
-                                        disabled={isSubmitting} 
-                                        className="group relative flex-1 md:flex-none px-12 py-4 bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-black rounded-2xl uppercase tracking-[0.2em] text-[10px] shadow-[0_10px_30px_rgba(79,70,229,0.3)] hover:shadow-[0_15px_40px_rgba(79,70,229,0.5)] active:scale-95 transition-all overflow-hidden"
-                                    >
-                                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                                        <span className="relative flex items-center justify-center gap-3">
-                                            {isSubmitting ? 'Sincronizando...' : 'Guardar Hojas de Ruta'}
+
+                                {/* Footer Action Bar */}
+                                <div className="px-10 py-10 border-t border-white/5 bg-black/40 backdrop-blur-md flex flex-col md:flex-row justify-between items-center gap-8">
+                                    <div className="flex items-center gap-6">
+                                        <div className="flex items-center gap-2 text-indigo-500/40 text-[9px] font-black uppercase tracking-[0.3em]">
+                                            <Shield className="w-3.5 h-3.5" /> SECURE_INIT
+                                        </div>
+                                        <div className="h-4 w-[1px] bg-white/5" />
+                                        <div className="flex items-center gap-4 text-white/20 text-[9px] font-black uppercase tracking-[0.2em]">
+                                            <span>REV 0.04</span>
+                                            <span>HQ:LATAM</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-8 w-full md:w-auto">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setIsEditModalOpen(false)} 
+                                            className="px-6 py-4 text-gray-500 font-black uppercase tracking-[0.3em] text-[10px] hover:text-white transition-all active:scale-95"
+                                        >
+                                            Discard Changes
+                                        </button>
+                                        <button 
+                                            form="edit-client-form"
+                                            type="submit" 
+                                            disabled={isSubmitting} 
+                                            className="group relative flex-1 md:flex-none px-12 py-4 bg-white text-black font-black rounded-2xl uppercase tracking-[0.2em] text-[10px] shadow-[0_20px_40px_rgba(255,255,255,0.05)] hover:shadow-[0_25px_50px_rgba(255,255,255,0.1)] active:scale-95 transition-all overflow-hidden flex items-center gap-4"
+                                        >
+                                            {isSubmitting ? 'Syncing...' : 'Deploy Roadmap'}
                                             {!isSubmitting && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
-                                        </span>
-                                    </button>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>
+
                     </div>
                 )}
             </AnimatePresence>
@@ -921,10 +1049,27 @@ function InviteButton({ label, type, color, icon: Icon }) {
     };
 
     return (
-        <button onClick={handleCopy} className={`flex items-center gap-3 px-6 py-4 rounded-2xl border ${colors[color]} font-black uppercase text-[10px] transition-all active:scale-95 shadow-lg`}>
-            <Icon className="w-4 h-4" />
-            {copied ? '¡COPIADO!' : label}
-            <Copy className="w-3 h-3 opacity-30 ml-2" />
+        <button 
+            onClick={handleCopy}
+            className={`flex items-center gap-3 px-5 py-3 border rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 group/invite ${colors[color]}`}
+        >
+            <Icon className={`w-4 h-4 transition-transform ${copied ? 'scale-0' : 'group-hover/invite:rotate-12'}`} />
+            {copied ? '¡Enlace Copiado!' : label}
+            <div className={`w-1 h-1 rounded-full ml-auto ${copied ? 'bg-current animate-ping' : 'bg-current/10'}`} />
         </button>
+    );
+}
+
+function SpecItem({ label, value, icon: Icon }) {
+    return (
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col gap-2 group hover:bg-white/[0.04] transition-colors">
+            <div className="flex items-center gap-2 opacity-40">
+                <Icon className="w-3 h-3" />
+                <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
+            </div>
+            <div className="text-white font-bold text-xs truncate">
+                {value}
+            </div>
+        </div>
     );
 }

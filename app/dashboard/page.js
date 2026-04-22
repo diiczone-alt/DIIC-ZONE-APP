@@ -10,7 +10,7 @@ import {
   Layout, MessageCircle, MoreVertical, 
   ChevronRight, TrendingUp, PieChart, Video, 
   Palette, FileText, ArrowRight, Settings, LogOut, User, Shield,
-  Globe, UserPlus, Target
+  Globe, UserPlus, Target, Fingerprint, Building2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -155,6 +155,81 @@ function DonutChart({ value, label, color, icon: Icon }) {
   );
 }
 
+// ─── Brand Identity Sidebar (Client Version) ────────────────────
+function BrandIdentityPanel({ client }) {
+    if (!client) return null;
+    const brandInitial = client.name?.charAt(0).toUpperCase() || 'S';
+
+    return (
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full bg-[#050510] border border-white/5 rounded-[3rem] overflow-hidden relative group mb-12"
+        >
+            {/* Ambient Background */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/5 blur-[100px] -z-10 rounded-full" />
+            
+            <div className="flex flex-col md:flex-row items-center gap-10 p-10">
+                {/* Visual Identity Area */}
+                <div className="flex items-center gap-8">
+                    <div className="w-24 h-24 rounded-[2rem] bg-white text-black flex items-center justify-center text-4xl font-black shadow-[0_0_50px_rgba(255,255,255,0.1)] relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-gray-400" />
+                        <span className="relative z-10">{brandInitial}</span>
+                    </div>
+                    <div className="space-y-1">
+                        <div className="text-[8px] font-black text-gray-600 uppercase tracking-[0.5em] mb-1">Identidad de Marca</div>
+                        <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">{client.name}</h2>
+                    </div>
+                </div>
+
+                {/* Vertical Divider */}
+                <div className="hidden md:block w-[1px] h-12 bg-white/5" />
+
+                {/* Technical Specs Area */}
+                <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+                    <div className="space-y-1">
+                        <div className="text-[7px] font-black text-indigo-400 uppercase tracking-widest pl-1">Partner ID</div>
+                        <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-gray-400 text-[10px] font-mono tracking-widest uppercase">
+                            {client.id || 'C-PENDING'}
+                        </div>
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className="text-[7px] font-black text-indigo-400 uppercase tracking-widest pl-1">Status Protocol</div>
+                        <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl flex items-center gap-2">
+                            <div className={`w-1.5 h-1.5 rounded-full ${client.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                            <span className="text-white text-[9px] font-black uppercase tracking-widest">{client.status || 'Active'}</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className="text-[7px] font-black text-indigo-400 uppercase tracking-widest pl-1">Industria / Sector</div>
+                        <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-[9px] font-black uppercase tracking-widest truncate">
+                            {client.industry || 'General'}
+                        </div>
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className="text-[7px] font-black text-indigo-400 uppercase tracking-widest pl-1">Business Model</div>
+                        <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-[9px] font-black uppercase tracking-widest truncate">
+                            {client.business_type || 'Servicios'}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Security Badge */}
+                <div className="hidden lg:flex flex-col items-end gap-2 pr-4">
+                    <div className="p-3 rounded-2xl bg-indigo-500/5 border border-indigo-500/20">
+                        <Fingerprint className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div className="text-[7px] font-black text-gray-600 uppercase tracking-[0.2em]">Vault Secure</div>
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
+
 // ─── Reverted Dashboard Content ──────────────────────────────────
 function DashboardContent() {
   const { user, loading: authLoading, getHomeRoute } = useAuth();
@@ -239,7 +314,7 @@ function DashboardContent() {
             if (leads) setCrmLeads(leads);
 
             // 7. NEW: Integration Check - Force Jessica Data if empty (Demo Mode)
-            if (!sm || sm.length === 0) {
+            if (!socialMetrics || socialMetrics.length === 0) {
                 const { MOCK_DATA } = require('@/lib/mockData');
                 setSocialMetrics(MOCK_DATA.social_analytics.filter(s => s.user_id === 'jessica_user_id'));
                 setBrandMetrics(MOCK_DATA.brand_analytics.find(b => b.user_id === 'jessica_user_id'));
@@ -293,7 +368,7 @@ function DashboardContent() {
         title: 'Costo por Paciente', 
         value: `$${cpa}`, 
         delta: '-4.2%', 
-        icon: Target, // Make sure to import Target or use similar
+        icon: Target, 
         color: '#f59e0b', 
         chartData: "M 0,20 Q 25,35 50,15 T 100,25" 
     },
@@ -375,6 +450,9 @@ function DashboardContent() {
                  <span className="text-gray-600 block text-xs mt-1 uppercase tracking-widest font-black">Revisa tus últimos activos y reportes debajo.</span>
               </p>
            </div>
+           
+           {/* Identity Panel (Mirror of HQ Admin Sidebar) */}
+           <BrandIdentityPanel client={clientData} />
         </section>
       )}
 

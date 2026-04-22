@@ -74,7 +74,7 @@ const initialStrategyData = {
     activeCampaignId: 'camp_default'
 };
 
-export default function StrategyBoard({ role, onClose, isSubcomponent = false }) {
+export default function StrategyBoard({ role, onClose, isSubcomponent = false, clientId: propClientId }) {
     // --- STATE ---
     const [strategyData, setStrategyData] = useState({
         ...initialStrategyData,
@@ -205,23 +205,39 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false })
     const searchParams = useSearchParams();
     const clientId = searchParams.get('client');
 
-    // Sync Strategy Data with HQ Client Record
+    // Sync Strategy Data with HQ Client Record & Load Persistent Strategy
     useEffect(() => {
-        if (clientId) {
-            const client = agencyService.getClientById(clientId);
-            if (client) {
-                setStrategyData(prev => ({
-                    ...prev,
-                    projectName: client.name,
-                    profile: {
-                        ...prev.profile,
-                        brandName: client.name,
-                        targetAudience: client.target || prev.profile.targetAudience
-                    }
-                }));
+        const fetchPersistentData = async () => {
+            const finalClientId = propClientId || clientId;
+            if (finalClientId) {
+                // 1. Fetch Client Profile for Context
+                const client = await agencyService.getClientById(finalClientId);
+                if (client) {
+                    setStrategyData(prev => ({
+                        ...prev,
+                        projectName: client.name,
+                        profile: {
+                            ...prev.profile,
+                            brandName: client.name,
+                            targetAudience: client.target || prev.profile.targetAudience
+                        }
+                    }));
+                }
+
+                // 2. Fetch Persistent Strategy from DB
+                const savedStrategy = await agencyService.loadStrategy(finalClientId);
+                if (savedStrategy && savedStrategy.data) {
+                    // Si hay datos reales, los cargamos directamente
+                    setStrategyData(savedStrategy.data);
+                    setIsStrategySaved(true);
+                } else if (client && client.plan?.toLowerCase() === 'authority') {
+                    // Fallback: Si no hay estrategia pero es Plan Autoridad, sugerimos la plantilla
+                    console.log("Sugerencia: Aplicar plantilla Plan Autoridad para nuevo cliente.");
+                }
             }
-        }
-    }, [clientId]);
+        };
+        fetchPersistentData();
+    }, [clientId, propClientId]);
     const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
     const [isConfiguring, setIsConfiguring] = useState(false);
     const [activeTool, setActiveTool] = useState('select');
@@ -473,10 +489,24 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false })
         [activeCampaign, selectedEdgeId]);
 
     // --- TOP BAR ACTIONS ---
-    const handleSaveStrategy = useCallback(() => {
-        setIsStrategySaved(true);
-        alert('Estructura completa guardada correctamente.');
-    }, []);
+    const handleSaveStrategy = useCallback(async () => {
+        const finalClientId = propClientId || clientId;
+        if (!finalClientId) {
+            toast.error("No se puede guardar: No hay un ID de cliente vinculado.");
+            return;
+        }
+
+        try {
+            await agencyService.saveStrategy(finalClientId, strategyData);
+            setIsStrategySaved(true);
+            toast.success('Estrategia guardada en la base de datos de DIIC Zone.', {
+                description: `Sincronización completa para ${strategyData.projectName}`
+            });
+        } catch (err) {
+            toast.error("Error al guardar la estrategia.");
+            console.error(err);
+        }
+    }, [strategyData, clientId, propClientId]);
 
     const handleGeneratePlanner = useCallback(async () => {
         if (!activeCampaign || isProcessingPlanner) return;
@@ -735,15 +765,40 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false })
 
     const handleApplyTemplate = useCallback((templateName) => {
         const templates = {
-            // Updated to align with 600px columns: 40 (Pos A), 640 (Pos A of Col 1), etc.
             default: [
                 { id: 'd1', type: 'reel_viral', x: 40, y: 150, label: 'Video Viral' },
                 { id: 'd2', type: 'estilo_vida', x: 640, y: 150, label: 'Conexión' }
+            ],
+            authority: [
+                // 6 Reels (Conciencia / Interés)
+                ...Array.from({ length: 6 }).map((_, i) => ({ type: 'reel_viral', label: `Reel Viral #${i+1}`, x: 40, y: 150 + (i * 200) })),
+                // 12 Posts (Conexión / Autoridad)
+                ...Array.from({ length: 12 }).map((_, i) => ({ type: 'imagen', label: `Post Estático #${i+1}`, x: 640, y: 150 + (i * 150) })),
+                // 2 Filmmaker (Autoridad / Conversión)
+                { type: 'educativo', label: 'Video Filmmaker #1', x: 1240, y: 150 },
+                { type: 'educativo', label: 'Video Filmmaker #2', x: 1240, y: 450 }
             ]
         };
         const nodesToAdd = templates[templateName] || templates.default;
-        nodesToAdd.forEach(n => handleAddNode(n, n.x, n.y));
-    }, [handleAddNode]);
+        
+        // Reset current campaign nodes and add new ones
+        updateActiveCampaign(c => {
+            const newNodes = nodesToAdd.map(n => ({
+                id: `node_tpl_${Math.random().toString(36).substr(2, 5)}`,
+                type: n.type,
+                x: n.x, y: n.y,
+                data: { 
+                    title: n.label, 
+                    status: 'Idea', 
+                    funnelLevel: n.x === 40 ? 'conciencia' : (n.x === 640 ? 'conexión' : 'autoridad'),
+                    subtype: n.type === 'reel_viral' ? 'v_reels' : (n.type === 'imagen' ? 'i_post' : 'v_youtube')
+                }
+            }));
+            return { ...c, nodes: newNodes, edges: [] };
+        });
+        
+        toast.success(`Plantilla '${templateName}' aplicada con éxito.`);
+    }, [updateActiveCampaign]);
 
     const handleNodeMove = useCallback((id, x, y) => {
         updateActiveCampaign(c => {
@@ -851,6 +906,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false })
                 strategyName={strategyData.name}
                 strategyStatus={strategyData.status}
                 projectName={strategyData.projectName}
+                onSave={handleSaveStrategy}
                 campaigns={strategyData.campaigns}
                 activeCampaignId={strategyData.activeCampaignId}
                 strategyHealth={strategyHealth}
@@ -878,6 +934,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false })
                 theme={theme}
                 onToggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
                 onClose={onClose}
+                onApplyTemplate={handleApplyTemplate}
             />
 
             <div className="flex-1 flex overflow-hidden relative">

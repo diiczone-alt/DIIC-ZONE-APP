@@ -112,16 +112,18 @@ export const agencyService = {
             if (error) throw error;
 
             // SYNC TO PROFILE (Propagate Brand Identity)
-            if (updates.name || updates.city || updates.whatsapp_number || updates.marketing_type || updates.plan) {
-                console.log(`🔄 Syncing changes to public profiles for client ${id}`);
+            if (updates.name || updates.city || updates.whatsapp_number || updates.industry || updates.plan || updates.business_type || updates.specialty) {
+                console.log(`🔄 Syncing identity changes to public profile for client ${id}`);
                 await supabase
                     .from('profiles')
                     .update({
                         full_name: updates.name,
                         location: updates.city,
                         whatsapp: updates.whatsapp_number,
-                        marketing_type: updates.marketing_type,
-                        plan: updates.plan
+                        marketing_type: updates.industry, // Sync industry to marketing_type
+                        plan: updates.plan,
+                        business_type: updates.business_type,
+                        specialty: updates.specialty
                     })
                     .eq('client_id', id);
             }
@@ -1454,6 +1456,66 @@ export const agencyService = {
         } catch (error) {
             console.error("Error deleting operating expense:", error);
             return false;
+        }
+    },
+
+    // --- STRATEGIC PERSISTENCE (GOD MODE) ---
+    loadStrategy: async (clientId) => {
+        if (!clientId) return null;
+        try {
+            const { data, error } = await supabase
+                .from('strategies')
+                .select('*')
+                .eq('client_id', clientId)
+                .single();
+            
+            if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
+                console.error("Error loading strategy:", error);
+                return null;
+            }
+            return data;
+        } catch (err) {
+            console.error("Strategy load exception:", err);
+            return null;
+        }
+    },
+
+    saveStrategy: async (clientId, strategyData) => {
+        if (!clientId) return null;
+        try {
+            // Check if exists
+            const { data: existing } = await supabase
+                .from('strategies')
+                .select('id')
+                .eq('client_id', clientId)
+                .single();
+
+            if (existing) {
+                const { data, error } = await supabase
+                    .from('strategies')
+                    .update({ 
+                        data: strategyData,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('client_id', clientId)
+                    .select();
+                if (error) throw error;
+                return data[0];
+            } else {
+                const { data, error } = await supabase
+                    .from('strategies')
+                    .insert([{
+                        client_id: clientId,
+                        data: strategyData,
+                        updated_at: new Date().toISOString()
+                    }])
+                    .select();
+                if (error) throw error;
+                return data[0];
+            }
+        } catch (err) {
+            console.error("Strategy save exception:", err);
+            throw err;
         }
     }
 };
