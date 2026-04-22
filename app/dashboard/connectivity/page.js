@@ -45,7 +45,8 @@ export default function ConnectivityPage() {
         youtube: 'PENDING',
         twitter: 'PENDING',
         linkedin: 'PENDING',
-        whatsapp: 'PENDING'
+        whatsapp: 'PENDING',
+        google: 'PENDING'
     });
 
     const [isLearning, setIsLearning] = useState(false);
@@ -135,16 +136,7 @@ export default function ConnectivityPage() {
         setAiSuggestion(null);
     };
 
-    const platforms = [
-        { 
-            id: 'whatsapp', 
-            name: 'WhatsApp Medical API', 
-            icon: Zap, 
-            status: connections.whatsapp, 
-            handle: activeClient?.whatsapp_number || 'No Vinculado', 
-            color: '#25D366', 
-            provider: 'whatsapp' 
-        },
+    const socialPlatforms = [
         { 
             id: 'instagram', 
             name: 'Instagram Professional', 
@@ -163,6 +155,45 @@ export default function ConnectivityPage() {
             color: '#1877F2', 
             provider: 'facebook' 
         },
+        { 
+            id: 'tiktok', 
+            name: 'TikTok Ads & Bio', 
+            icon: MessageSquare, // Using MessageSquare as placeholder if Music etc not there
+            status: connections.tiktok, 
+            handle: activeClient?.onboarding_data?.tiktok || 'No Vinculado', 
+            color: '#00F2EA', 
+            provider: 'tiktok' 
+        },
+        { 
+            id: 'youtube', 
+            name: 'YouTube Health', 
+            icon: Youtube, 
+            status: connections.youtube, 
+            handle: activeClient?.onboarding_data?.youtube || 'No Vinculado', 
+            color: '#FF0000', 
+            provider: 'google' 
+        }
+    ];
+
+    const apiPlatforms = [
+        { 
+            id: 'whatsapp', 
+            name: 'WhatsApp Medical API', 
+            icon: Zap, 
+            status: connections.whatsapp, 
+            handle: activeClient?.whatsapp_number || 'No Vinculado', 
+            color: '#25D366', 
+            provider: 'whatsapp' 
+        },
+        { 
+            id: 'google', 
+            name: 'Google My Business', 
+            icon: ShieldCheck, 
+            status: connections.google, 
+            handle: activeClient?.city || 'Clínica No Registrada', 
+            color: '#4285F4', 
+            provider: 'google' 
+        }
     ];
 
     const handleConfigure = (p) => {
@@ -185,49 +216,51 @@ export default function ConnectivityPage() {
                     <div className="flex items-center gap-6">
                         <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter">Conectividad & Auto.</h1>
                         
-                        {/* God Mode Client Selector */}
-                        <div className="relative mt-2">
-                            <button 
-                                onClick={() => setIsClientSelectorOpen(!isClientSelectorOpen)}
-                                className="flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all shadow-xl"
-                            >
-                                <span className="text-xs font-black uppercase tracking-widest text-emerald-400">
-                                    {activeClient ? activeClient.name : 'Seleccionar Marca'}
-                                </span>
-                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isClientSelectorOpen ? 'rotate-180' : ''}`} />
-                            </button>
+                        {/* God Mode Client Selector - ONLY VISIBLE IN GLOBAL MODE */}
+                        {!clientId && (
+                            <div className="relative mt-2">
+                                <button 
+                                    onClick={() => setIsClientSelectorOpen(!isClientSelectorOpen)}
+                                    className="flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all shadow-xl"
+                                >
+                                    <span className="text-xs font-black uppercase tracking-widest text-emerald-400">
+                                        {activeClient ? activeClient.name : 'Seleccionar Marca'}
+                                    </span>
+                                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isClientSelectorOpen ? 'rotate-180' : ''}`} />
+                                </button>
 
-                            <AnimatePresence>
-                                {isClientSelectorOpen && (
-                                    <motion.div 
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: 10 }}
-                                        className="absolute top-full left-0 mt-3 w-72 bg-[#0a0a1a] border border-white/10 rounded-[2rem] shadow-2xl z-50 overflow-hidden"
-                                    >
-                                        <div className="p-3 space-y-1">
-                                            {clients.map(client => (
-                                                <button 
-                                                    key={client.id}
-                                                    onClick={() => handleSelectClient(client)}
-                                                    className={`w-full flex items-center justify-between px-5 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeClient?.id === client.id ? 'bg-emerald-500/10 text-emerald-400' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
-                                                >
-                                                    {client.name}
-                                                    {activeClient?.id === client.id && <Check className="w-4 h-4" />}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
+                                <AnimatePresence>
+                                    {isClientSelectorOpen && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 10 }}
+                                            className="absolute top-full left-0 mt-3 w-72 bg-[#0a0a1a] border border-white/10 rounded-[2rem] shadow-2xl z-50 overflow-hidden"
+                                        >
+                                            <div className="p-3 space-y-1">
+                                                {clients.map(client => (
+                                                    <button 
+                                                        key={client.id}
+                                                        onClick={() => handleSelectClient(client)}
+                                                        className={`w-full flex items-center justify-between px-5 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeClient?.id === client.id ? 'bg-emerald-500/10 text-emerald-400' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                                                    >
+                                                        {client.name}
+                                                        {activeClient?.id === client.id && <Check className="w-4 h-4" />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        )}
                     </div>
                     
                     <div className="flex items-center gap-4">
                         <div className="px-4 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                             <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">
-                                {activeClient ? `Sincronización Médica: ${activeClient.name}` : 'Modo Global Administrativo'}
+                                {activeClient ? `Ecosistema Activo: ${activeClient.name}` : 'Configuración de Conexiones Globales'}
                             </span>
                         </div>
                     </div>
@@ -246,46 +279,101 @@ export default function ConnectivityPage() {
                 </div>
             </div>
 
-            {/* Platform Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {platforms.map((p, i) => (
-                    <motion.div 
-                        key={p.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        className="bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-8 space-y-8 relative overflow-hidden group"
-                    >
-                        <div className={`absolute -top-20 -right-20 w-40 h-40 blur-[80px] rounded-full opacity-20 pointer-events-none`} style={{ backgroundColor: p.color }} />
-                        
-                        <div className="flex justify-between items-start relative z-10">
-                            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center" style={{ color: p.color }}>
-                                <p.icon className="w-8 h-8" />
-                            </div>
-                            <div className={`px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${p.status === 'CONNECTED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
-                                {p.status}
-                            </div>
-                        </div>
-
-                        <div className="space-y-2 relative z-10">
-                            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">{p.name}</h3>
-                            <p className="text-sm font-bold text-gray-400 tracking-widest">{p.handle}</p>
-                        </div>
-
-                        <div className="pt-6 border-t border-white/5 flex items-center justify-between relative z-10">
-                            <div className="flex items-center gap-2">
-                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest italic">DIIC SECURE</span>
-                            </div>
-                            <button 
-                                onClick={() => p.status === 'CONNECTED' ? setIsChatOpen(true) : handleConfigure(p)}
-                                className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-white transition-colors"
+            {/* Sections */}
+            <div className="space-y-16">
+                {/* Social Ecosystem */}
+                <div className="space-y-8">
+                    <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em] flex items-center gap-4 ml-4">
+                        <div className="w-10 h-[1px] bg-white/10" /> Ecosistema de Redes Sociales
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                        {socialPlatforms.map((p, i) => (
+                            <motion.div 
+                                key={p.id}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: i * 0.05 }}
+                                className="bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-8 space-y-8 relative overflow-hidden group hover:border-white/20 transition-all"
                             >
-                                {p.status === 'CONNECTED' ? 'Ver Mensajes' : 'Vincular'}
-                            </button>
-                        </div>
-                    </motion.div>
-                ))}
+                                <div className={`absolute -top-20 -right-20 w-40 h-40 blur-[80px] rounded-full opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity`} style={{ backgroundColor: p.color }} />
+                                
+                                <div className="flex justify-between items-start relative z-10">
+                                    <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-lg" style={{ color: p.color }}>
+                                        <p.icon className="w-8 h-8" />
+                                    </div>
+                                    <div className={`px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${p.status === 'CONNECTED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
+                                        {p.status}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 relative z-10">
+                                    <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">{p.name}</h3>
+                                    <p className="text-xs font-bold text-gray-400 tracking-widest truncate">{p.handle}</p>
+                                </div>
+
+                                <div className="pt-6 border-t border-white/5 flex items-center justify-between relative z-10">
+                                    <div className="flex items-center gap-2">
+                                        <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest italic">VERIFICADO</span>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleConfigure(p)}
+                                        className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-white transition-colors"
+                                    >
+                                        Vincular
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* API & Communication Infrastructure */}
+                <div className="space-y-8">
+                    <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.5em] flex items-center gap-4 ml-4">
+                        <div className="w-10 h-[1px] bg-indigo-500/20" /> Infraestructura de Mensajería & APIs
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {apiPlatforms.map((p, i) => (
+                            <motion.div 
+                                key={p.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 + (i * 0.1) }}
+                                className="bg-gradient-to-br from-indigo-500/[0.05] to-transparent border border-white/10 rounded-[2.5rem] p-10 space-y-8 relative overflow-hidden group hover:border-indigo-500/30 transition-all"
+                            >
+                                <div className={`absolute -top-20 -right-20 w-40 h-40 blur-[80px] rounded-full opacity-10 pointer-events-none group-hover:opacity-30 transition-opacity`} style={{ backgroundColor: p.color }} />
+                                
+                                <div className="flex justify-between items-start relative z-10">
+                                    <div className="w-20 h-20 rounded-[2rem] bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shadow-xl" style={{ color: p.color }}>
+                                        <p.icon className="w-10 h-10" />
+                                    </div>
+                                    <div className={`px-4 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${p.status === 'CONNECTED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-pink-500/10 border-pink-500/20 text-pink-400'}`}>
+                                        {p.status}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 relative z-10">
+                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">{p.name}</h3>
+                                    <p className="text-sm font-bold text-gray-500 tracking-widest">{p.handle}</p>
+                                </div>
+
+                                <div className="pt-8 border-t border-white/5 flex items-center justify-between relative z-10">
+                                    <div className="flex items-center gap-2">
+                                        <Zap className="w-4 h-4 text-emerald-400" />
+                                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">ACTIVE NODE</span>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleConfigure(p)}
+                                        className="text-[10px] font-black text-white hover:text-indigo-400 px-6 py-2 rounded-xl bg-indigo-600/20 border border-indigo-500/20 uppercase tracking-widest transition-all"
+                                    >
+                                        Configurar
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
             </div>
 
             {/* WhatsApp / Omni-Channel Hub Overlay */}

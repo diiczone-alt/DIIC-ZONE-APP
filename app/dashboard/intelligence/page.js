@@ -143,28 +143,52 @@ export default function IntelligencePage() {
         }
     };
 
-    const addKnowledge = async () => {
+    const loadMedicalTraining = async () => {
         if (!selectedAgent) return;
-        const title = prompt('Título del conocimiento (Ej: Protocolo de Citas):');
-        const content = prompt('Detalle técnico para el bot:');
-        if (!title || !content) return;
-
+        setSaving(true);
         try {
-            const { data, error } = await supabase
-                .from('ai_knowledge_base')
-                .insert({
+            const training = [
+                { title: 'Triaje Inicial Urología', content: 'Si el paciente tiene dolor agudo lumbar, recomendar acudir a urgencias. Si es para control de próstata, preguntar si trae resultados de PSA. Mantener siempre la calma y profesionalismo.' },
+                { title: 'Protocolos de Ecografía', content: 'Informar que para ecografía renal o de vejiga debe venir con la VEJIGA LLENA (beber 1L de agua 1h antes).' },
+                { title: 'Atención Nocturna', content: 'Hola, soy el asistente virtual de la Dra. Jessica Rey. En este momento el consultorio está cerrado, pero puedo ayudarle a agendar una cita o darle instrucciones básicas de preparación.' }
+            ];
+
+            for (const item of training) {
+                await supabase.from('ai_knowledge_base').insert({
                     user_id: user.id,
                     agent_id: selectedAgent.id,
-                    title,
-                    content,
+                    title: item.title,
+                    content: item.content,
                     category: 'EXPERTO'
-                })
-                .select()
-                .single();
-            if (error) throw error;
-            setKnowledge([data, ...knowledge]);
+                });
+            }
+
+            // Update bot instructions
+            const newInstructions = `Eres Sentinel 24/7, el asistente experto en urología de la Dra. Jessica Rey. Tu objetivo es: 1. Responder dudas básicas sobre patologías (Próstata, Cálculos, Infecciones). 2. Agendar citas incluso fuera de horario. 3. Dar instrucciones de preparación clínica de forma empática y profesional. Nunca des diagnósticos definitivos, siempre remite a la doctora.`;
+            
+            await supabase.from('ai_agents').update({ 
+                tone_instructions: newInstructions,
+                role_type: 'MEDICO'
+            }).eq('id', selectedAgent.id);
+
+            setSelectedAgent({...selectedAgent, tone_instructions: newInstructions, role_type: 'MEDICO'});
+            
+            // Reload knowledge
+            const { data } = await supabase
+                .from('ai_knowledge_base')
+                .select('*')
+                .eq('user_id', user.id)
+                .or(`agent_id.is.null,agent_id.eq.${selectedAgent.id}`)
+                .order('created_at', { ascending: false });
+            setKnowledge(data || []);
+
+            toast.success("Entrenamiento Médico Cargado", {
+                description: "Sentinel 24/7 ha sido capacitado en protocolos de urología."
+            });
         } catch (err) {
-            alert('Error al añadir: ' + err.message);
+            console.error("Error loading training:", err);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -276,9 +300,7 @@ export default function IntelligencePage() {
                                         <option value="MEDICO">Protocolo Clínico</option>
                                         <option value="ADMIN">Administración Interna</option>
                                     </select>
-                                </div>
-
-                                <div className="space-y-2">
+                                                            <div className="space-y-2">
                                     <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest ml-1">Instrucciones de Personalidad</label>
                                     <textarea 
                                         rows="8"
@@ -288,14 +310,22 @@ export default function IntelligencePage() {
                                         placeholder="Define cómo debe interactuar este bot..."
                                     />
                                 </div>
+
+                                <button 
+                                    onClick={loadMedicalTraining}
+                                    className="w-full py-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-[8px] font-black uppercase tracking-widest hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Sparkles className="w-3 h-3" /> Cargar Entrenamiento Médico
+                                </button>
                             </div>
 
                             <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-3">
                                 <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
                                 <p className="text-[9px] font-medium text-gray-400 leading-normal italic">
-                                    Este bot está configurado para "Marketing para Médicos". Priorizará el agendamiento y la calificación térmica de cada lead.
+                                    Sentinel 24/7 automatiza las respuestas nocturnas y el agendamiento. Este agente está especializado en protocolos de urología.
                                 </p>
                             </div>
+            </div>
                         </div>
                     </div>
 
