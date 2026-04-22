@@ -9,9 +9,12 @@ import {
     Bot, BrainCircuit, Wallet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ScheduleModal from './ScheduleModal';
 
 export default function LeadProfileView({ lead, onClose }) {
     const [activeTab, setActiveTab] = useState('timeline');
+    const [showSchedule, setShowSchedule] = useState(false);
+    const [isSynced, setIsSynced] = useState(false);
 
     if (!lead) return null;
 
@@ -37,10 +40,35 @@ export default function LeadProfileView({ lead, onClose }) {
                             <span className="flex items-center gap-1"><BriefcaseIcon niche={lead.niche} /> {lead.niche}</span>
                         </div>
                         <div className="flex gap-2 mt-3">
-                            <ActionButton icon={MessageCircle} label="WhatsApp" color="text-[#25D366] hover:bg-[#25D366]/10" />
-                            <ActionButton icon={Phone} label="Llamar" color="text-blue-400 hover:bg-blue-400/10" />
-                            <ActionButton icon={Mail} label="Email" color="text-yellow-400 hover:bg-yellow-400/10" />
-                            <ActionButton icon={Calendar} label="Agendar" color="text-purple-400 hover:bg-purple-400/10" />
+                            <div className="relative group/wa">
+                                <ActionButton 
+                                    icon={MessageCircle} 
+                                    label="WhatsApp Business" 
+                                    color="text-[#25D366] hover:bg-[#25D366]/10 border-[#25D366]/20" 
+                                    onClick={() => window.open('https://wa.me/525512345678', '_blank')}
+                                />
+                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-[#25D366] text-white text-[8px] font-black uppercase rounded-lg opacity-0 group-hover/wa:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg shadow-[#25D366]/20 flex items-center gap-2">
+                                    <Bot className="w-3 h-3" /> Sincronización IA Activa
+                                </div>
+                            </div>
+                            <ActionButton 
+                                icon={Phone} 
+                                label="Llamar" 
+                                color="text-blue-400 hover:bg-blue-400/10" 
+                                onClick={() => window.open('tel:+525512345678')}
+                            />
+                            <ActionButton 
+                                icon={Mail} 
+                                label="Email" 
+                                color="text-yellow-400 hover:bg-yellow-400/10" 
+                                onClick={() => window.open('mailto:contacto@dentalpro.com')}
+                            />
+                            <ActionButton 
+                                icon={Calendar} 
+                                label="Agendar" 
+                                color={isSynced ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" : "text-purple-400 hover:bg-purple-400/10"}
+                                onClick={() => setShowSchedule(true)}
+                            />
                         </div>
                     </div>
                 </div>
@@ -120,7 +148,10 @@ export default function LeadProfileView({ lead, onClose }) {
                             <p className="text-sm text-indigo-200">
                                 Enviar propuesta "Plan Growth" basándose en su interés por Reels y Ads.
                             </p>
-                            <button className="mt-2 w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors">
+                            <button 
+                                onClick={() => alert('Generando Propuesta PDF Estratégica...') }
+                                className="mt-2 w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-indigo-600/20"
+                            >
                                 Generar Propuesta
                             </button>
                         </div>
@@ -145,16 +176,39 @@ export default function LeadProfileView({ lead, onClose }) {
                         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Etiquetas</h4>
                         <div className="flex flex-wrap gap-2">
                             {['Real Estate', 'Urgente', 'Presupuesto Alto'].map(tag => (
-                                <span key={tag} className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded-md text-[10px] text-gray-300 border border-white/5 cursor-pointer transition-colors">
+                                <span key={tag} className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded-md text-[10px] text-gray-300 border border-white/5 cursor-pointer transition-colors hover:border-indigo-500/30">
                                     {tag}
                                 </span>
                             ))}
-                            <button className="px-2 py-1 border border-dashed border-gray-600 rounded-md text-[10px] text-gray-500 hover:text-white hover:border-gray-400 transition-colors">+ Add</button>
+                            <button 
+                                onClick={() => alert('Añadir nueva etiqueta estratégica...')}
+                                className="px-2 py-1 border border-dashed border-gray-600 rounded-md text-[10px] text-gray-500 hover:text-white hover:border-gray-400 transition-colors"
+                            >
+                                + Add
+                            </button>
                         </div>
                     </div>
 
                 </div>
             </div>
+            <AnimatePresence>
+                {showSchedule && (
+                    <ScheduleModal 
+                        lead={lead} 
+                        onClose={() => setShowSchedule(false)} 
+                        onSchedule={(data) => {
+                            console.log('Scheduled:', data);
+                            setIsSynced(true);
+                            // Visual feedback
+                            const toast = document.createElement('div');
+                            toast.innerText = `Cita agendada para el ${data.date} a las ${data.time}. Sincronizado con Google Calendar.`;
+                            toast.className = "fixed bottom-8 right-8 bg-emerald-600 text-white px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest z-[100] animate-bounce";
+                            document.body.appendChild(toast);
+                            setTimeout(() => toast.remove(), 4000);
+                        }} 
+                    />
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 }
@@ -305,9 +359,12 @@ function FilesTab() {
 
 // --- HELPERS ---
 
-function ActionButton({ icon: Icon, label, color }) {
+function ActionButton({ icon: Icon, label, color, onClick }) {
     return (
-        <button className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-white/5 transition-all ${color} bg-[#151520]`}>
+        <button 
+            onClick={onClick}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-white/5 transition-all ${color} bg-[#151520]`}
+        >
             <Icon className="w-3.5 h-3.5" />
             {label}
         </button>

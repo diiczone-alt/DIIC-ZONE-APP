@@ -16,7 +16,19 @@ import { MEDICAL_PROTOCOLS, getUrologyTags } from '@/services/medicalInstruction
 import PipelineBoard from '@/components/crm/PipelineBoard';
 import UnifiedInbox from '@/components/crm/UnifiedInbox';
 import CRMAnalytics from '@/components/crm/CRMAnalytics';
-import { LayoutGrid, List, MessageSquare as InboxIcon, BarChart3, Settings2 } from 'lucide-react';
+import BroadcastCenter from '@/components/crm/BroadcastCenter';
+import ProductivityView from '@/components/crm/ProductivityView';
+import { LayoutGrid, List, MessageSquare as InboxIcon, BarChart3, Settings2, megaphone } from 'lucide-react';
+
+// Helper para etiquetas de nicho comerciales
+const getNicheLabel = (niche = '') => {
+    const val = niche.toLowerCase();
+    if (['doctor', 'medico', 'médico', 'medical', 'salud', 'clinica', 'clínica'].some(k => val.includes(k))) return 'MARKETING PARA MÉDICOS';
+    if (['gym', 'fitness', 'gimnasio', 'deporte', 'entrenador'].some(k => val.includes(k))) return 'MARKETING PARA GIMNASIOS';
+    if (['curso', 'formacion', 'formación', 'educacion', 'educación', 'mentoria', 'mentoría'].some(k => val.includes(k))) return 'FORMACIONES Y CURSOS';
+    if (['agro', 'campo', 'agropecuario', 'industrial'].some(k => val.includes(k))) return 'SECTOR AGROPECUARIO';
+    return 'ESTRATEGIA DE NEGOCIOS';
+};
 
 export default function CRMPage() {
     const { user } = useAuth();
@@ -70,7 +82,7 @@ export default function CRMPage() {
                 // Load all brands for the selector (Only for Admins without fixed context)
                 const { data: clientData } = await supabase
                     .from('clients')
-                    .select('id, name, city, growth_level, industry, price');
+                    .select('id, name, city, growth_level, industry, niche, price');
                 setClients(clientData || []);
 
                 // Find the active client
@@ -204,13 +216,35 @@ export default function CRMPage() {
         <main className="min-h-screen bg-[#050510] text-white p-6 md:p-10 space-y-10">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-white/5 pb-8">
-                    <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-3">
+                    <div className="flex flex-col gap-2">
+                        {/* High-Performance Breadcrumb Navigation */}
+                        <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.4em] text-gray-500 mb-2">
+                            <span 
+                                onClick={() => router.push('/dashboard')}
+                                className="hover:text-indigo-400 cursor-pointer transition-colors"
+                            >
+                                Dashboard
+                            </span>
+                            <div className="w-1 h-1 bg-gray-700 rounded-full" />
+                            <span className="text-gray-400">
+                                {activeClient ? getNicheLabel(activeClient.niche || activeClient.industry) : 'Global Management'}
+                            </span>
+                            {activeClient && (
+                                <>
+                                    <div className="w-1 h-1 bg-gray-700 rounded-full" />
+                                    <span className="text-white italic tracking-tighter transition-all">
+                                        {activeClient.name}
+                                    </span>
+                                </>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-4">
                             <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white">
                                 {activeClient ? activeClient.name : 'Inteligencia Estratégica CRM'}
                             </h1>
                             {activeClient && (
-                                <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
+                                <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2 h-fit mt-1">
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                     <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Sincronización Real Activa</span>
                                 </div>
@@ -302,6 +336,7 @@ export default function CRMPage() {
                         { id: 'pipeline', label: 'Pipeline Kanban', icon: LayoutGrid },
                         { id: 'list', label: 'Lista CRM', icon: List },
                         { id: 'inbox', label: 'Inbox Omnicanal', icon: InboxIcon },
+                        { id: 'broadcast', label: 'Difusión Masiva', icon: Send },
                         { id: 'analytics', label: 'Dashboard Inteligente', icon: BarChart3 },
                     ].map(view => (
                         <button
@@ -318,7 +353,10 @@ export default function CRMPage() {
                 <div className="flex items-center gap-4">
                     <div className="h-6 w-[1px] bg-white/10 hidden md:block" />
                     <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Vista Optimizada para Productividad</p>
-                    <button className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-gray-500 hover:text-white transition-all">
+                    <button 
+                        onClick={() => setActiveView('productivity')}
+                        className={`p-2.5 border rounded-xl transition-all ${activeView === 'productivity' ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30' : 'bg-white/5 border-white/10 text-gray-500 hover:text-white'}`}
+                    >
                         <Settings2 className="w-4 h-4" />
                     </button>
                 </div>
@@ -349,6 +387,18 @@ export default function CRMPage() {
                     {activeView === 'analytics' && (
                         <div className="min-h-[750px] border border-white/5 rounded-[3rem] overflow-hidden shadow-2xl">
                              <CRMAnalytics />
+                        </div>
+                    )}
+
+                    {activeView === 'productivity' && (
+                        <div className="h-[750px] border border-white/5 rounded-[3rem] overflow-hidden shadow-2xl">
+                             <ProductivityView />
+                        </div>
+                    )}
+
+                    {activeView === 'broadcast' && (
+                        <div className="h-[750px] border border-white/5 rounded-[3rem] overflow-hidden shadow-2xl">
+                             <BroadcastCenter />
                         </div>
                     )}
 

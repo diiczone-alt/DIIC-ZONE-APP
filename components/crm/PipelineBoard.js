@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Plus, MoreHorizontal, ChevronLeft, ChevronRight, Filter, Search } from 'lucide-react';
+import { Plus, MoreHorizontal, ChevronLeft, ChevronRight, Filter, Search, Sparkles } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import LeadCard from './LeadCard';
 import LeadProfileView from './LeadProfileView';
@@ -140,33 +140,41 @@ export default function PipelineBoard() {
             {/* --- PIPELINE CANVAS --- */}
             <div 
                 ref={scrollContainerRef}
-                className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar p-8 relative scroll-smooth"
+                className="flex-1 overflow-x-hidden overflow-y-hidden p-3 relative"
             >
                 {/* Ambient Background Glow */}
                 <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
                 <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none"></div>
 
                 <DragDropContext onDragEnd={onDragEnd}>
-                    <div className="flex gap-6 h-full min-w-max relative z-10 pb-4">
+                    <div className="flex gap-2 h-full w-full relative z-10">
                         {data.columnOrder.map((columnId) => {
                         const column = data.columns[columnId];
                         const leads = data.columnsData[columnId].map(leadId => data.leads[leadId]);
 
                         return (
-                            <div key={column.id} className="w-[340px] flex flex-col bg-[#0A0A12]/80 backdrop-blur-xl rounded-3xl border border-white/5 h-full max-h-full shadow-2xl relative group/col isolate">
+                            <div key={column.id} className="flex-1 min-w-[160px] flex flex-col bg-[#0A0A12]/80 backdrop-blur-xl rounded-2xl border border-white/5 h-full max-h-full shadow-xl relative group/col isolate overflow-hidden">
                                 {/* Glowing Header Top Border */}
                                 <div className={`absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-current to-transparent opacity-50 ${column.color.replace('border-', 'text-')} group-hover/col:opacity-100 transition-opacity`}></div>
 
                                 {/* Column Header */}
-                                <div className="p-5 border-b border-white/5 flex justify-between items-center bg-white/[0.02] rounded-t-3xl">
+                                <div className="p-3 border-b border-white/5 flex justify-between items-center bg-white/[0.02] rounded-t-2xl">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentColor] ${column.color.replace('border-', 'bg-')} ${column.color.replace('border-', 'text-')}`}></div>
                                         <h3 className="font-black text-white text-xs uppercase tracking-widest">{column.title}</h3>
                                         <span className="bg-white/5 border border-white/10 text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-md">{leads.length}</span>
                                     </div>
-                                    <button className="w-6 h-6 rounded-full hover:bg-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-colors">
-                                        <MoreHorizontal className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            title="Acciones en Masa"
+                                            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-indigo-500/20 text-gray-500 hover:text-indigo-400 flex items-center justify-center transition-all border border-transparent hover:border-indigo-500/30"
+                                        >
+                                            <Sparkles className="w-4 h-4" />
+                                        </button>
+                                        <button className="w-8 h-8 rounded-xl hover:bg-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-colors">
+                                            <MoreHorizontal className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Droppable Area */}
@@ -202,7 +210,7 @@ export default function PipelineBoard() {
                                 </Droppable>
 
                                 {/* Column Footer (Total Value) */}
-                                <div className="p-4 border-t border-white/5 bg-[#050511]/50 rounded-b-3xl flex justify-between items-center bg-gradient-to-b from-transparent to-black/20">
+                                <div className="p-2.5 border-t border-white/5 bg-[#050511]/50 rounded-b-2xl flex justify-between items-center bg-gradient-to-b from-transparent to-black/20">
                                     <span className="text-[10px] uppercase font-black tracking-widest text-gray-500">Valor Total Pipeline</span>
                                     <span className={`text-sm font-black font-display tracking-tight ${leads.reduce((sum, item) => sum + item.value, 0) > 0 ? 'text-emerald-400' : 'text-gray-600'}`}>
                                         ${leads.reduce((sum, item) => sum + item.value, 0).toLocaleString()}

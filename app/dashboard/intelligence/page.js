@@ -5,11 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Brain, ShieldCheck, MessageSquare, Save, Plus, 
     Trash2, Bot, Sparkles, ChevronRight, AlertCircle, 
-    Info, Target, UserCheck, Activity, Settings2, X
+    Info, Target, UserCheck, Activity, Settings2, X,
+    CheckCircle2
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import AITrainingMonitor from '@/components/intelligence/AITrainingMonitor';
+import AdvancedBotTraining from '@/components/intelligence/AdvancedBotTraining';
 
 export default function IntelligencePage() {
     const { user, loading: authLoading } = useAuth();
@@ -20,6 +23,8 @@ export default function IntelligencePage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
+    const [viewMode, setViewMode] = useState('editor'); // 'editor' or 'lab'
+    const router = useRouter();
     const searchParams = useSearchParams();
     const clientId = searchParams.get('client');
 
@@ -95,7 +100,9 @@ export default function IntelligencePage() {
                     name,
                     role_type: 'GENERAL',
                     status: 'ACTIVE',
-                    tone_instructions: 'Trato profesional y empático.'
+                    tone_instructions: 'Trato profesional y empático.',
+                    personality_tone: 'PROFESIONAL',
+                    golden_rules: ''
                 })
                 .select()
                 .single();
@@ -118,6 +125,8 @@ export default function IntelligencePage() {
                     name: selectedAgent.name,
                     role_type: selectedAgent.role_type,
                     tone_instructions: selectedAgent.tone_instructions,
+                    personality_tone: selectedAgent.personality_tone,
+                    golden_rules: selectedAgent.golden_rules,
                     base_prompt: selectedAgent.base_prompt,
                     status: 'ACTIVE',
                     updated_at: new Date().toISOString()
@@ -192,6 +201,32 @@ export default function IntelligencePage() {
         }
     };
 
+    const addKnowledge = async () => {
+        if (!selectedAgent) return;
+        const title = prompt('Título del conocimiento (ej: Horarios de Cirugía):');
+        const content = prompt('Contenido del conocimiento:');
+        if (!title || !content) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('ai_knowledge_base')
+                .insert({
+                    user_id: user.id,
+                    agent_id: selectedAgent.id,
+                    title,
+                    content,
+                    category: 'EXPERT'
+                })
+                .select()
+                .single();
+            
+            if (error) throw error;
+            setKnowledge([data, ...knowledge]);
+        } catch (err) {
+            alert('Error al añadir conocimiento: ' + err.message);
+        }
+    };
+
     if (authLoading || (loading && !agents.length)) return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-[#050510] text-white gap-6">
             <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}>
@@ -206,15 +241,31 @@ export default function IntelligencePage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-white/5 pb-8">
                 <div>
-                    <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter flex items-center gap-4">
-                        <Brain className="w-10 h-10 text-indigo-500" /> AI BOT FACTORY
+                    <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter flex items-center gap-4 text-white">
+                        <Brain className="w-10 h-10 text-indigo-500" /> VENTAS & IA
                     </h1>
                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-2">
-                        {activeClient?.name || 'DIIC Strategist'} • Centro de Control Multi-Agente
+                        {activeClient?.name || 'CENTRO DE CRECIMIENTO'} • Terminal de Inteligencia Médica
                     </p>
                 </div>
 
                 <div className="flex gap-4">
+                    {selectedAgent && (
+                        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                            <button 
+                                onClick={() => setViewMode('editor')}
+                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'editor' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                            >
+                                Perfil
+                            </button>
+                            <button 
+                                onClick={() => setViewMode('lab')}
+                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'lab' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                            >
+                                Laboratorio
+                            </button>
+                        </div>
+                    )}
                     <button 
                         onClick={handleCreateAgent}
                         className="bg-white/5 hover:bg-white/10 text-white px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/10 flex items-center gap-2 transition-all"
@@ -272,11 +323,43 @@ export default function IntelligencePage() {
                 </button>
             </div>
 
-            {/* Selected Bot Editor */}
+            {/* Performance & DNA Monitor */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="h-full">
+                    <AITrainingMonitor />
+                </div>
+                <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-[0_0_50px_rgba(79,70,229,0.2)] flex flex-col justify-center relative overflow-hidden group">
+                    <div className="relative z-10">
+                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">Modo Executive Mobile</h3>
+                        <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mt-2">Acceso instantáneo para la Dra. Jessica Rey</p>
+                        <ul className="mt-6 space-y-3">
+                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Visualización de ROI Diario</li>
+                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Alertas de Fuga de Leads</li>
+                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Control de Pauta Masiva</li>
+                        </ul>
+                        <button 
+                            onClick={() => router.push('/dashboard/crm?view=productivity')}
+                            className="mt-8 px-8 py-3 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-xl shadow-white/10"
+                        >
+                             Ir al Hub Móvil
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Selected Bot Views */}
             {selectedAgent ? (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Bot Persona */}
-                    <div className="lg:col-span-4 space-y-6">
+                <AnimatePresence mode="wait">
+                    {viewMode === 'editor' ? (
+                        <motion.div 
+                            key="editor"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+                        >
+                            {/* Bot Persona */}
+                            <div className="lg:col-span-4 space-y-6">
                         <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 space-y-6">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 text-indigo-400">
@@ -300,15 +383,55 @@ export default function IntelligencePage() {
                                         <option value="MEDICO">Protocolo Clínico</option>
                                         <option value="ADMIN">Administración Interna</option>
                                     </select>
-                                                            <div className="space-y-2">
-                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest ml-1">Instrucciones de Personalidad</label>
+                                                            <div className="space-y-4">
+                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest ml-1">Dimensión de Personalidad (Tono)</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            { id: 'PROFESIONAL', label: 'Pro', icon: '🛡️' },
+                                            { id: 'EMPATICO', label: 'Empático', icon: '❤️' },
+                                            { id: 'AUTORITARIO', label: 'Experto', icon: '🎓' },
+                                            { id: 'AMIGABLE', label: 'Friendly', icon: '🤝' },
+                                            { id: 'PERSUASIVO', label: 'Sales', icon: '🔥' },
+                                            { id: 'QUIRURGICO', label: 'Quirúrgico', icon: '🔪' },
+                                        ].map((tone) => (
+                                            <button
+                                                key={tone.id}
+                                                onClick={() => setSelectedAgent({...selectedAgent, personality_tone: tone.id})}
+                                                className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-tight border transition-all flex items-center gap-2 ${
+                                                    selectedAgent.personality_tone === tone.id
+                                                    ? 'bg-indigo-600 border-indigo-400 text-white'
+                                                    : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'
+                                                }`}
+                                            >
+                                                <span>{tone.icon}</span> {tone.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest ml-1">Instrucciones de Voz</label>
                                     <textarea 
-                                        rows="8"
+                                        rows="4"
                                         value={selectedAgent.tone_instructions}
                                         onChange={(e) => setSelectedAgent({...selectedAgent, tone_instructions: e.target.value})}
                                         className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-indigo-500 outline-none transition-all resize-none leading-relaxed"
                                         placeholder="Define cómo debe interactuar este bot..."
                                     />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[8px] font-black text-rose-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                        <ShieldCheck className="w-3 h-3" /> Reglas de Oro (ADN Inamovible)
+                                    </label>
+                                    <textarea 
+                                        rows="4"
+                                        value={selectedAgent.golden_rules}
+                                        onChange={(e) => setSelectedAgent({...selectedAgent, golden_rules: e.target.value})}
+                                        className="w-full bg-rose-500/5 border border-rose-500/20 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-rose-500 outline-none transition-all resize-none leading-relaxed"
+                                        placeholder="REGLA 1: Nunca dar precios sin cita. REGLA 2: Siempre saludar con el nombre..."
+                                    />
+                                    <p className="text-[7px] text-gray-600 italic px-1">Estas instrucciones tienen máxima prioridad sobre el conocimiento general.</p>
                                 </div>
 
                                 <button 
@@ -374,7 +497,18 @@ export default function IntelligencePage() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </motion.div>
+                    ) : (
+                        <motion.div 
+                            key="lab"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                        >
+                            <AdvancedBotTraining selectedAgent={selectedAgent} />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             ) : (
                 <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[3rem] gap-6">
                     <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-gray-700">

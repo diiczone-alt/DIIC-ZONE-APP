@@ -214,53 +214,14 @@ export default function ConnectivityPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 border-b border-white/5 pb-10">
                 <div className="space-y-4">
                     <div className="flex items-center gap-6">
-                        <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter">Conectividad & Auto.</h1>
-                        
-                        {/* God Mode Client Selector - ONLY VISIBLE IN GLOBAL MODE */}
-                        {!clientId && (
-                            <div className="relative mt-2">
-                                <button 
-                                    onClick={() => setIsClientSelectorOpen(!isClientSelectorOpen)}
-                                    className="flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all shadow-xl"
-                                >
-                                    <span className="text-xs font-black uppercase tracking-widest text-emerald-400">
-                                        {activeClient ? activeClient.name : 'Seleccionar Marca'}
-                                    </span>
-                                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isClientSelectorOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                <AnimatePresence>
-                                    {isClientSelectorOpen && (
-                                        <motion.div 
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: 10 }}
-                                            className="absolute top-full left-0 mt-3 w-72 bg-[#0a0a1a] border border-white/10 rounded-[2rem] shadow-2xl z-50 overflow-hidden"
-                                        >
-                                            <div className="p-3 space-y-1">
-                                                {clients.map(client => (
-                                                    <button 
-                                                        key={client.id}
-                                                        onClick={() => handleSelectClient(client)}
-                                                        className={`w-full flex items-center justify-between px-5 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeClient?.id === client.id ? 'bg-emerald-500/10 text-emerald-400' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
-                                                    >
-                                                        {client.name}
-                                                        {activeClient?.id === client.id && <Check className="w-4 h-4" />}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        )}
+                        <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white">Conectividad & Auto.</h1>
                     </div>
                     
                     <div className="flex items-center gap-4">
-                        <div className="px-4 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">
-                                {activeClient ? `Ecosistema Activo: ${activeClient.name}` : 'Configuración de Conexiones Globales'}
+                        <div className="px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest leading-none">
+                                Centro de Mando: {activeClient?.name || 'Dra. Jessica Rey'}
                             </span>
                         </div>
                     </div>

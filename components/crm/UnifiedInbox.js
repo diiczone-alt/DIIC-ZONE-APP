@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { 
     Search, Bot, User, MessageCircle, MoreVertical, Paperclip, 
-    Send, CheckCircle2, AlertCircle, Phone, X, Shield, Wallet, MapPin, DollarSign, BrainCircuit
+    Send, CheckCircle2, AlertCircle, Phone, X, Shield, Wallet, MapPin, DollarSign, BrainCircuit, ShoppingCart,
+    Mic, Volume2, Waveform
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import MedicalCatalog from './MedicalCatalog';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Mock Data for the Inbox Demo
 const mockConversations = [
@@ -56,6 +58,7 @@ const mockConversations = [
 export default function UnifiedInbox() {
     const [selectedId, setSelectedId] = useState(mockConversations[0].id);
     const [filter, setFilter] = useState('Todos');
+    const [showCatalog, setShowCatalog] = useState(false);
 
     const activeChat = mockConversations.find(c => c.id === selectedId);
 
@@ -144,6 +147,11 @@ export default function UnifiedInbox() {
                                 <div>
                                     <h3 className="text-white font-bold flex items-center gap-2">
                                         {activeChat.name}
+                                        {activeChat.score > 80 && (
+                                            <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter">
+                                                <Shield className="w-3 h-3" /> Verificado
+                                            </div>
+                                        )}
                                         {activeChat.botActive 
                                             ? <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded-full text-[10px] font-bold border border-indigo-500/30 flex items-center gap-1"><Bot className="w-3 h-3" /> IA Respondiendo</span>
                                             : <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-bold border border-emerald-500/30 flex items-center gap-1"><User className="w-3 h-3" /> Humano</span>
@@ -202,11 +210,37 @@ export default function UnifiedInbox() {
                             )}
                             <div className="flex bg-[#151520] border border-white/10 rounded-2xl overflow-hidden shadow-inner">
                                 <button className="p-4 text-gray-500 hover:text-white transition-colors"><Paperclip className="w-5 h-5" /></button>
-                                <textarea 
-                                    className="flex-1 bg-transparent text-white text-sm p-4 resize-none focus:outline-none custom-scrollbar"
-                                    placeholder="Mensaje o comando para la IA..."
-                                    rows="1"
-                                ></textarea>
+                                <button 
+                                    onClick={() => setShowCatalog(!showCatalog)}
+                                    className={`p-4 transition-colors ${showCatalog ? 'text-indigo-400 bg-indigo-500/10' : 'text-gray-500 hover:text-white'}`}
+                                    title="Catálogo Médico"
+                                >
+                                    <ShoppingCart className="w-5 h-5" />
+                                </button>
+                                <div className="flex-1 relative bg-transparent">
+                                    <textarea 
+                                        className="w-full bg-transparent text-white text-sm p-4 resize-none focus:outline-none custom-scrollbar"
+                                        placeholder="Mensaje o comando para la IA..."
+                                        rows="1"
+                                    ></textarea>
+                                    
+                                    {/* AI VOICE PREVIEW OVERLAY (Tactical) */}
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3 bg-indigo-500/10 px-3 py-1.5 rounded-full border border-indigo-500/20 opacity-0 hover:opacity-100 transition-opacity cursor-pointer group/voice">
+                                        <div className="flex gap-1 items-end h-3">
+                                            <div className="w-[2px] h-full bg-indigo-400 animate-[bounce_1s_infinite]" />
+                                            <div className="w-[2px] h-[60%] bg-indigo-400 animate-[bounce_1.2s_infinite]" />
+                                            <div className="w-[2px] h-[80%] bg-indigo-400 animate-[bounce_0.8s_infinite]" />
+                                            <div className="w-[2px] h-[40%] bg-indigo-400 animate-[bounce_1.5s_infinite]" />
+                                        </div>
+                                        <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest group-hover/voice:text-white transition-colors">Voz IA Lista</span>
+                                    </div>
+                                </div>
+                                <button className="p-4 text-emerald-400 hover:text-emerald-300 transition-colors relative group/mic">
+                                    <Mic className="w-5 h-5 group-hover/mic:scale-110 transition-transform" />
+                                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-2 bg-black border border-white/10 rounded-xl text-[9px] font-black uppercase text-white whitespace-nowrap opacity-0 group-hover/mic:opacity-100 transition-opacity pointer-events-none">
+                                        Enviar Nota de Voz IA (Voz de Dra. Rey)
+                                    </div>
+                                </button>
                                 <button className="p-4 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors flex items-center justify-center min-w-[60px]">
                                     <Send className="w-5 h-5" />
                                 </button>
@@ -221,25 +255,51 @@ export default function UnifiedInbox() {
                 )}
             </div>
 
-            {/* COLUMN 3: CRM LEAD INTELLIGENCE DOCK (KOMMO STYLE) */}
+            {/* COLUMN 3: CRM LEAD INTELLIGENCE DOCK / CATALOG */}
             {activeChat && (
                 <div className="w-[340px] bg-[#0A0A12] border-l border-white/5 flex flex-col overflow-y-auto custom-scrollbar z-10">
-                    <div className="h-16 border-b border-white/5 flex items-center px-6 sticky top-0 bg-[#0A0A12]/80 backdrop-blur-md z-10">
-                        <h3 className="font-bold text-white text-sm tracking-widest uppercase">Perfil del Lead</h3>
-                    </div>
-                    
-                    <div className="p-6 space-y-6">
-                        {/* Header Stats */}
-                        <div className="text-center">
-                            <div className="w-20 h-20 bg-gradient-to-br from-[#151520] to-[#202030] rounded-full mx-auto mb-3 border-2 border-white/10 flex items-center justify-center relative shadow-xl shadow-black">
-                                <span className="text-2xl font-bold text-white">{activeChat.name.charAt(0)}</span>
-                                <div className="absolute -bottom-2 -right-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                                    Score: {activeChat.score}
+                    <AnimatePresence mode="wait">
+                        {showCatalog ? (
+                            <motion.div 
+                                key="catalog" 
+                                initial={{ opacity: 0, x: 20 }} 
+                                animate={{ opacity: 1, x: 0 }} 
+                                exit={{ opacity: 0, x: 20 }}
+                                className="h-full"
+                            >
+                                <MedicalCatalog 
+                                    onClose={() => setShowCatalog(false)} 
+                                    onSelect={(service) => {
+                                        // Simulator: Add message to chat (UI only)
+                                        console.log("Selected service:", service);
+                                        setShowCatalog(false);
+                                    }} 
+                                />
+                            </motion.div>
+                        ) : (
+                            <motion.div 
+                                key="intelligence" 
+                                initial={{ opacity: 0, x: -20 }} 
+                                animate={{ opacity: 1, x: 0 }} 
+                                exit={{ opacity: 0, x: -20 }}
+                                className="flex flex-col"
+                            >
+                                <div className="h-16 border-b border-white/5 flex items-center px-6 sticky top-0 bg-[#0A0A12]/80 backdrop-blur-md z-10">
+                                    <h3 className="font-bold text-white text-sm tracking-widest uppercase">Perfil del Lead</h3>
                                 </div>
-                            </div>
-                            <h2 className="text-xl font-bold text-white">{activeChat.name}</h2>
-                            <p className="text-sm text-gray-500 flex items-center justify-center gap-1 mt-1"><BriefcaseIcon /> {activeChat.niche}</p>
-                        </div>
+                                
+                                <div className="p-6 space-y-6">
+                                    {/* Header Stats */}
+                                    <div className="text-center">
+                                        <div className="w-20 h-20 bg-gradient-to-br from-[#151520] to-[#202030] rounded-full mx-auto mb-3 border-2 border-white/10 flex items-center justify-center relative shadow-xl shadow-black">
+                                            <span className="text-2xl font-bold text-white">{activeChat.name.charAt(0)}</span>
+                                            <div className="absolute -bottom-2 -right-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                                                Score: {activeChat.score}
+                                            </div>
+                                        </div>
+                                        <h2 className="text-xl font-bold text-white">{activeChat.name}</h2>
+                                        <p className="text-sm text-gray-500 flex items-center justify-center gap-1 mt-1"><BriefcaseIcon /> {activeChat.niche}</p>
+                                    </div>
 
                         {/* CRM Pipeline Status */}
                         <div className="bg-[#151520] p-4 rounded-2xl border border-white/5">
@@ -267,11 +327,21 @@ export default function UnifiedInbox() {
                                 <Bot className="w-4 h-4" /> Sugerencia IA
                             </h4>
                             <p className="text-sm text-indigo-200 leading-relaxed relative z-10">
-                                El cliente ha denotado interés técnico. Sugiero enviar el Catálogo Interactivo y agendar una llamada de 15 min.
+                                {activeChat.score < 50 
+                                    ? "Este lead parece ser un 'curioso'. No ha respondido sobre presupuesto. ¿Mover a archivo?"
+                                    : "El cliente ha denotado interés técnico. Sugiero enviar el Catálogo Interactivo y agendar una llamada de 15 min."
+                                }
                             </p>
-                            <button className="mt-4 w-full bg-indigo-500/20 hover:bg-indigo-500 flex items-center justify-center py-2 text-indigo-300 hover:text-white text-xs font-bold rounded-lg border border-indigo-500/30 transition-all relative z-10">
-                                Ejecutar Acción
-                            </button>
+                            <div className="flex gap-2 mt-4 relative z-10">
+                                <button className="flex-1 bg-indigo-500/20 hover:bg-indigo-500 flex items-center justify-center py-2 text-indigo-300 hover:text-white text-xs font-bold rounded-lg border border-indigo-500/30 transition-all">
+                                    {activeChat.score < 50 ? "Archivar" : "Agendar Cita"}
+                                </button>
+                                {activeChat.score < 50 && (
+                                    <button className="px-3 py-2 bg-red-500/10 hover:bg-red-500 text-red-300 hover:text-white rounded-lg border border-red-500/30 transition-all" title="Descartar como Curioso">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Basic Info Fields */}
@@ -286,7 +356,10 @@ export default function UnifiedInbox() {
                             </div>
                         </div>
 
-                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             )}
         </div>
