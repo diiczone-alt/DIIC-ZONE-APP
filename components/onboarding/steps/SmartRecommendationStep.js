@@ -9,14 +9,23 @@ export default function SmartRecommendationStep({ onNext, formData }) {
 
     // Lógica ficticia de cálculo de nivel para demo
     const calculateLevel = () => {
-        const { businessInfo } = formData;
+        const { existingChannels } = formData;
         let score = 1;
 
-        // Reglas simples basadas en la info del negocio
-        if (businessInfo?.usesCRM) score++;
-        if (formData.niche === 'Médico' || isDoctor) score += 2;
+        // Infraestructura técnica actual
+        if (existingChannels?.crm === 'yes') score += 1.5;
+        if (existingChannels?.booking === 'yes') score += 1;
+        if (existingChannels?.whatsapp === 'yes') score += 0.5;
         
-        return Math.min(score, 5); // Max nivel 5
+        // Complejidad por Nicho
+        if (isDoctor) score += 0.5;
+
+        // Aseguramos nivel 3 si ya gestionan leads y agenda (Marca/Automatización activa)
+        if (existingChannels?.crm === 'yes' && existingChannels?.booking === 'yes') {
+            return 3;
+        }
+        
+        return Math.max(1, Math.min(Math.ceil(score), 5));
     };
 
     const level = calculateLevel();

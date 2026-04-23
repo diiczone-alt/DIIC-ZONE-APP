@@ -1,4 +1,4 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const file = 'c:/PROYECTOS/DIICZONE_APP/components/workstation/cm/CMWorkstationLayout.js';
 let content = fs.readFileSync(file, 'utf8');
 

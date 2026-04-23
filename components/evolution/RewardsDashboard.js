@@ -11,7 +11,7 @@ export default function RewardsDashboard() {
         <div className="space-y-8">
             {/* Hero Section - Level Status */}
             <div className="relative p-8 rounded-[2.5rem] bg-gradient-to-r from-indigo-900 to-purple-900 border border-white/10 overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+                <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20" />
                 <div className="absolute top-0 right-0 p-12 opacity-30">
                     <Crown className="w-64 h-64 text-white rotate-12" />
                 </div>

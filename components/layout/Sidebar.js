@@ -269,18 +269,27 @@ export default function Sidebar() {
                 <div className="relative group/profile">
 
                     {/* Premium Profile Card */}
-                    <div className="flex items-center gap-3 p-2 rounded-2xl bg-indigo-500/5 border border-white/5 group-hover/profile:bg-indigo-500/10 transition-all relative overflow-hidden group/item w-full">
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                    <div 
+                        className="flex items-center gap-3 p-2 rounded-2xl border border-white/5 group-hover/profile:bg-white/5 transition-all relative overflow-hidden group/item w-full"
+                        style={{ backgroundColor: `${user?.user_metadata?.primary_color}08` || 'rgba(99, 102, 241, 0.05)' }}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity" />
                         
                         <div className="relative shrink-0 ml-1.5 group-hover:ml-0 transition-all">
-                            {/* Colorful Avatar Border (Master Admin Style) */}
-                            <div className="w-9 h-9 rounded-xl p-[1.5px] bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-500 shadow-lg shadow-indigo-500/20">
+                            {/* Colorful Avatar Border (Brand Identity Style) */}
+                            <div 
+                                className="w-9 h-9 rounded-xl p-[1.5px] shadow-lg shadow-black/20"
+                                style={{ background: `linear-gradient(to tr, ${user?.user_metadata?.primary_color || '#6366f1'}, ${user?.user_metadata?.secondary_color || '#ec4899'}, #10b981)` }}
+                            >
                                 <div className="w-full h-full rounded-[9px] bg-[#050510] flex items-center justify-center text-white font-black text-[10px]">
                                     {(user?.user_metadata?.full_name || user?.full_name || 'DZ').substring(0, 2).toUpperCase()}
                                 </div>
                             </div>
                             <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#050510] rounded-full flex items-center justify-center">
-                                <div className="w-2 h-2 bg-emerald-500 rounded-full border border-[#050510] shadow-[0_0_8px_#10b981]" />
+                                <div 
+                                    className="w-2 h-2 rounded-full border border-[#050510] shadow-[0_0_8px_currentColor]" 
+                                    style={{ backgroundColor: user?.user_metadata?.primary_color || '#10b981', color: user?.user_metadata?.primary_color || '#10b981' }}
+                                />
                             </div>
                         </div>
 

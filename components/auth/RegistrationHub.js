@@ -97,7 +97,7 @@ export default function RegistrationHub({ initialType = 'client' }) {
     return (
         <div className="min-h-screen bg-[#050510] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
             {/* Background */}
-            <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+            <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none bg-[url('/noise.svg')]" />
             <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[150px] opacity-20 pointer-events-none transition-colors duration-1000 ${type === 'client' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
 
             <div className="w-full max-w-2xl relative z-10">

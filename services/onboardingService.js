@@ -130,7 +130,9 @@ export const onboardingService = {
                         goal: formData.goal || '',
                         niche: formData.niche || '',
                         drive_data: formData.drive || formData.driveData || null,
-                        social_links: formData.social || {}
+                        social_links: formData.social || {},
+                        primary_color: formData.colors?.primary || '#6366f1',
+                        secondary_color: formData.colors?.secondary || '#ec4899'
                     }
                 });
             } catch (authErr) {

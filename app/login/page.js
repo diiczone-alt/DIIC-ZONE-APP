@@ -96,7 +96,7 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen bg-[#050511] flex items-center justify-center p-6 relative overflow-hidden">
             {/* Background Effects */}
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
+            <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 pointer-events-none" />
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[128px]" />
             <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[128px]" />
 

@@ -63,7 +63,7 @@ export default function DesignDashboard({ project, onBack }) {
 
                             {/* Image Placeholder area */}
                             <div className="aspect-video bg-[#050511] rounded-[22px] m-1 border border-dashed border-white/5 flex items-center justify-center relative group">
-                                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10"></div>
+                                <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-10"></div>
                                 <div className="text-center relative z-10 transition-transform duration-500 group-hover:scale-105">
                                     <div className="w-24 h-24 bg-gradient-to-tr from-fuchsia-600 to-purple-600 rounded-2xl mx-auto mb-4 shadow-2xl rotate-3 flex items-center justify-center">
                                         <Layout className="w-10 h-10 text-white" />

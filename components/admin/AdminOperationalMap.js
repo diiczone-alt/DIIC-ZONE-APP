@@ -42,7 +42,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
     return (
         <div className="relative bg-[#050511] border border-white/5 rounded-[40px] overflow-hidden min-h-[600px] flex items-center justify-center p-10 group/map">
             
-            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('/noise.svg')]" />
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
 
             {/* Filter Controls */}

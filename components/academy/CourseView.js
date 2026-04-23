@@ -51,7 +51,7 @@ export default function CourseView({ course, onBack }) {
                 <div className="lg:col-span-2 space-y-6">
                     {/* Video Player Placeholder */}
                     <div className="aspect-video bg-black rounded-3xl border border-white/10 overflow-hidden relative group">
-                        <div className={`absolute inset-0 ${course.bgColor} opacity-5 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]`} />
+                        <div className={`absolute inset-0 ${course.bgColor} opacity-5 bg-[url('/noise.svg')]`} />
 
                         <div className="absolute inset-0 flex items-center justify-center">
                             <motion.button

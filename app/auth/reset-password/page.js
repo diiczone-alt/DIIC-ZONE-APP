@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
 
     return (
         <div className="min-h-screen bg-[#050511] flex items-center justify-center p-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
+            <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 pointer-events-none" />
             <div className="max-w-md w-full relative z-10">
                 <div className="text-center mb-10">
                     <div className="w-16 h-16 mx-auto bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6 shadow-2xl shadow-emerald-500/20">

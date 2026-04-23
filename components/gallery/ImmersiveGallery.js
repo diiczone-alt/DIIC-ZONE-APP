@@ -264,7 +264,7 @@ function ScreenNode({ data, x, y, z, rotateY, isActive, onClick }) {
                     className="absolute inset-0 opacity-60 group-hover:opacity-100 transition-opacity"
                     style={{ background: `linear-gradient(45deg, ${data.color}20, ${data.color}10)` }}
                 />
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+                <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
                 <div className="absolute bottom-0 left-0 w-full p-4 flex justify-between items-end">

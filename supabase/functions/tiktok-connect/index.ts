@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CLIENT_KEY = Deno.env.get("TIKTOK_CLIENT_KEY")!;
 const CLIENT_SECRET = Deno.env.get("TIKTOK_CLIENT_SECRET")!;
-const REDIRECT_URI = "http://localhost:3000/auth/callback/tiktok";
+const REDIRECT_URI = "https://diiczone-app.vercel.app/auth/callback/tiktok";
 
 Deno.serve(async (req) => {
   // Manejo de CORS
