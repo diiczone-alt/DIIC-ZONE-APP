@@ -7,7 +7,7 @@ import {
     Download, Briefcase, Calculator,
     ArrowUpRight, History, Calendar,
     AlertCircle, Scale, PenTool, Users,
-    ChevronRight, Wallet
+    ChevronRight, Wallet, Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -99,50 +99,152 @@ function SettlementsView({ data }) {
 }
 
 function ContractsView() {
+    const [selectedMember, setSelectedMember] = useState(null);
+    const [selectedRole, setSelectedRole] = useState('EDITOR');
+    const [contractStatus, setContractStatus] = useState('IDLE');
+    const [contractData, setContractData] = useState(null);
+
+    const handleGenerate = () => {
+        if (!selectedMember) {
+            toast.error("Selecciona un creativo");
+            return;
+        }
+        
+        setContractStatus('GENERATING');
+        
+        setTimeout(() => {
+            const newContract = {
+                id: `TAL-${Math.floor(Math.random()*90000) + 10000}`,
+                date: new Date().toLocaleDateString(),
+                name: selectedMember.name,
+                role: selectedRole,
+                hash: 'TALENT_SECURE_' + Math.random().toString(36).substring(7).toUpperCase(),
+            };
+            setContractData(newContract);
+            setContractStatus('READY');
+            toast.success("Contrato de Talento Generado");
+        }, 1500);
+    };
+
+    const ROLES = [
+        { id: 'EDITOR', name: 'Editor de Video', desc: 'Edición y post-producción de contenido.' },
+        { id: 'FILMMAKER', name: 'Filmmaker', desc: 'Producción audiovisual y rodajes en campo.' },
+        { id: 'DESIGNER', name: 'Diseñador Gráfico', desc: 'Diseño de piezas estáticas y carruseles.' },
+        { id: 'CM', name: 'Community Manager', desc: 'Gestión de redes y atención estratégica.' }
+    ];
+
     return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-[#0A0A12] border border-white/10 rounded-[40px] p-10 space-y-8">
-                <div className="flex items-center gap-4 text-emerald-500">
-                    <FileText className="w-8 h-8" />
-                    <h3 className="text-xl font-black text-white uppercase">Generador de Contratos Digitales</h3>
-                </div>
-                <div className="space-y-4 text-xs text-gray-400 font-medium leading-relaxed bg-white/5 p-6 rounded-2xl border border-white/5">
-                    <p className="border-b border-white/10 pb-4">
-                        <span className="text-white font-black">DIIC ZONE – Contrato de Prestación de Servicios Digitales.</span>
-                    </p>
-                    <p>Por medio del presente, el creativo se compromete a entregar piezas bajo los estándares de DIIC ZONE...</p>
-                    <ul className="space-y-2 list-disc list-inside">
-                        <li>Independencia total (Sin relación laboral).</li>
-                        <li>Confidencialidad absoluta de activos de clientes.</li>
-                        <li>Pago sujeto a validación de calidad y tiempos.</li>
-                        <li>Uso autorizado de marca DIIC ZONE para portafolio.</li>
-                    </ul>
-                </div>
-                <div className="pt-6">
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-left"
+        >
+            <div className="lg:col-span-1 space-y-6">
+                <div className="bg-[#0A0A12] border border-white/5 rounded-[2.5rem] p-8 space-y-8">
+                    <div className="space-y-4">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex items-center gap-2">
+                            <User className="w-3 h-3" /> 1. Nombre del Creativo
+                        </label>
+                        <input 
+                            type="text"
+                            placeholder="Nombre legal completo..."
+                            onChange={(e) => setSelectedMember({ name: e.target.value })}
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-black text-white outline-none focus:border-purple-500 transition-all"
+                        />
+                    </div>
+
+                    <div className="space-y-4">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex items-center gap-2">
+                            <Briefcase className="w-3 h-3" /> 2. Rol / Especialidad
+                        </label>
+                        <div className="grid grid-cols-1 gap-3">
+                            {ROLES.map(role => (
+                                <button
+                                    key={role.id}
+                                    onClick={() => setSelectedRole(role.id)}
+                                    className={`p-4 rounded-2xl border transition-all text-left ${selectedRole === role.id ? 'bg-purple-500/20 border-purple-500 text-white shadow-lg' : 'bg-white/5 border-white/5 text-gray-500 hover:border-white/10'}`}
+                                >
+                                    <div className="text-xs font-black uppercase italic mb-1">{role.name}</div>
+                                    <p className="text-[9px] font-medium leading-tight opacity-70">{role.desc}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     <button
-                        onClick={() => toast.success("Contrato generado para nuevo creativo")}
-                        className="w-full py-4 bg-white text-black font-black text-xs uppercase rounded-2xl hover:bg-gray-200 transition-all flex items-center justify-center gap-3"
+                        onClick={handleGenerate}
+                        disabled={contractStatus === 'GENERATING'}
+                        className="w-full bg-white text-black py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-3 shadow-xl"
                     >
-                        <PenTool className="w-4 h-4" /> Generar & Enviar para Firma
+                        {contractStatus === 'GENERATING' ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Sellar Contrato Staff'}
                     </button>
                 </div>
             </div>
 
-            <div className="space-y-6">
-                <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-[40px] p-8">
-                    <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Firmas Recientes</h4>
-                    <div className="space-y-3">
-                        <div className="p-4 text-center text-[10px] text-gray-600 font-bold italic border border-white/5 rounded-2xl">
-                            Esperando nuevas firmas digitales...
+            <div className="lg:col-span-2">
+                <AnimatePresence mode="wait">
+                    {contractStatus === 'READY' ? (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }} 
+                            animate={{ opacity: 1, scale: 1 }} 
+                            className="bg-white p-12 rounded-[2.5rem] shadow-2xl relative overflow-hidden text-gray-900 min-h-[600px]"
+                        >
+                             <div className="relative z-10 space-y-10">
+                                <div className="flex justify-between items-start border-b-2 border-gray-100 pb-8">
+                                    <div>
+                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter">DIIC ZONE • Acuerdo de Staff</h3>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-relaxed">Registro Legal ID: {contractData.id}</p>
+                                    </div>
+                                    <span className="bg-purple-600 text-white px-4 py-1 rounded-full text-[9px] font-black uppercase">Vinculación Oficial</span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-10">
+                                    <div className="space-y-2">
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Especialista (Firmante)</p>
+                                        <p className="text-sm font-black uppercase">{contractData.name}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Designación Técnica</p>
+                                        <p className="text-sm font-black uppercase">{contractData.role}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <h4 className="text-xs font-black uppercase border-b border-gray-100 pb-2">Cláusulas de Colaboración Operativa</h4>
+                                    <div className="space-y-4 text-[11px] leading-relaxed font-medium text-gray-600 italic">
+                                        <p><strong>1. PRESTACIÓN DE SERVICIOS:</strong> El especialista se compromete a la ejecución de tareas audiovisuales y creativas bajo demanda de DIIC ZONE HQ.</p>
+                                        <p><strong>2. ESTÁNDARES DE CALIDAD:</strong> Toda entrega debe ajustarse a los manuales de producción y tiempos de entrega estipulados en el tablero de operaciones.</p>
+                                        <p><strong>3. PROPIEDAD Y CONFIDENCIALIDAD:</strong> El contenido generado es propiedad patrimonial de DIIC ZONE. Se prohíbe la divulgación de procesos internos.</p>
+                                    </div>
+                                </div>
+
+                                <div className="pt-24 flex justify-between items-end border-t-2 border-gray-100">
+                                    <div className="space-y-4">
+                                        <div className="w-48 h-12 border-b-2 border-gray-900/20 flex flex-col items-center justify-center">
+                                            <p className="text-[8px] font-black text-gray-400 uppercase">Firma Digital DIIC HQ</p>
+                                            <p className="font-serif italic text-lg text-purple-600">CERTIFIED_OS</p>
+                                        </div>
+                                        <p className="text-[9px] font-black uppercase">Director de Operaciones</p>
+                                    </div>
+                                    <div className="space-y-4 text-right">
+                                        <div className="w-48 h-12 border-b-2 border-gray-900/20 flex items-center justify-center">
+                                            <p className="text-[8px] font-black text-gray-400 uppercase italic">Huella Digital del Especialista</p>
+                                        </div>
+                                        <p className="text-[9px] font-black uppercase">Aceptación de Protocolos</p>
+                                    </div>
+                                </div>
+                             </div>
+                        </motion.div>
+                    ) : (
+                        <div className="h-[600px] border-2 border-dashed border-white/5 rounded-[3rem] flex flex-col items-center justify-center gap-6 bg-white/[0.01]">
+                            <PenTool className="w-16 h-16 text-white/5" />
+                            <div className="text-center space-y-2">
+                                <p className="text-gray-500 font-bold text-sm uppercase tracking-widest">Protocolo de Firma de Staff...</p>
+                                <p className="text-[10px] text-gray-600 italic">Identifica al especialista para iniciar el blindaje de la red operativa.</p>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-[40px] p-8">
-                    <h4 className="text-xs font-black text-white mb-2">Seguridad Legal DIIC</h4>
-                    <p className="text-[10px] text-gray-500 leading-relaxed font-medium">
-                        Todos los contratos incluyen firma criptográfica y sello de tiempo para validez legal en mediaciones internacionales.
-                    </p>
-                </div>
+                    )}
+                </AnimatePresence>
             </div>
         </motion.div>
     );

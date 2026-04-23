@@ -13,9 +13,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { agencyService } from '@/services/agencyService';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import AdminClientContracts from './AdminClientContracts';
 
 export default function AdminOperationalGovernance() {
-    const [activeSection, setActiveSection] = useState('rates'); // 'rates', 'payroll', 'saas', 'op_gov', 'ledger'
+    const [activeSection, setActiveSection] = useState('rates'); // 'rates', 'payroll', 'saas', 'op_gov', 'ledger', 'legal'
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState({
         rates: [],
@@ -254,6 +255,7 @@ export default function AdminOperationalGovernance() {
                         <NavTab active={activeSection === 'saas'} onClick={() => setActiveSection('saas')} icon={DollarSign} label="Infraestructura SaaS" />
                         <NavTab active={activeSection === 'op_gov'} onClick={() => setActiveSection('op_gov')} icon={Building2} label="Operaciones & Sedes" />
                         <NavTab active={activeSection === 'ledger'} onClick={() => setActiveSection('ledger')} icon={ClipboardList} label="Libro Mayor" />
+                        <NavTab active={activeSection === 'legal'} onClick={() => setActiveSection('legal')} icon={ShieldCheck} label="Legal & Contratos" />
                     </div>
                 </div>
             </div>
@@ -463,6 +465,11 @@ export default function AdminOperationalGovernance() {
                                     </table>
                                 </div>
                              </div>
+                        </motion.div>
+                    )}
+                    {activeSection === 'legal' && (
+                        <motion.div key="legal" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
+                            <AdminClientContracts />
                         </motion.div>
                     )}
                 </AnimatePresence>

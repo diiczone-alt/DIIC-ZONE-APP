@@ -45,7 +45,7 @@ const ACCORDION_GROUPS = [
         items: [
             { name: 'Planes y Crecimiento', icon: Rocket, href: '/dashboard/growth', color: 'text-cyan-400', special: true },
             { name: 'CRM Inteligente', icon: Users, href: '/dashboard/crm', color: 'text-indigo-400' },
-            { name: 'Conectividad & Auto.', icon: Share2, href: '/dashboard/connectivity' },
+            { name: 'Ecosistema & Redes', icon: Share2, href: '/dashboard/connectivity' },
             { name: 'Ventas & IA', icon: Zap, href: '/dashboard/intelligence' },
             { name: 'Tienda Online', icon: ShoppingBag, href: '/dashboard/store' },
             { name: 'Analíticas', icon: BarChart3, href: '/dashboard/analytics' },
@@ -59,7 +59,6 @@ const ACCORDION_GROUPS = [
         icon: GraduationCap,
         items: [
             { name: 'Academia', icon: GraduationCap, href: '/dashboard/academy', color: 'text-amber-400', special: true },
-            { name: 'IA & Auto', icon: Bot, href: '/dashboard/ai-automation' },
             { name: 'Recompensas', icon: Award, href: '/dashboard/rewards' },
         ]
     }

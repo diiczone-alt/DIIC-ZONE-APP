@@ -13,6 +13,7 @@ import StrategyCreationWizard from '@/components/shared/Strategy/StrategyCreatio
 import { ECUADOR_CITIES, MEDICAL_SPECIALTIES, AGRO_SPECIALTIES, INDUSTRY_OPTIONS, MARKETING_TYPES, PLAN_OPTIONS, CREATIVE_RATES } from '@/lib/constants';
 import PremiumDropdown from '@/components/shared/PremiumDropdown';
 import GlassInput from '@/components/shared/GlassInput';
+import AdminClientAIHub from '@/components/admin/AdminClientAIHub';
 
 export default function HQClientsPage() {
     const [activeMenu, setActiveMenu] = useState(null);
@@ -599,7 +600,8 @@ export default function HQClientsPage() {
                                             { id: 'operative', label: 'Logística', icon: Layout },
                                             { id: 'team', label: 'Escuadra', icon: Users },
                                             { id: 'strategy', label: 'Hojas de Ruta', icon: Target },
-                                            { id: 'growth', label: 'Performance', icon: TrendingUp }
+                                            { id: 'growth', label: 'Performance', icon: TrendingUp },
+                                            { id: 'ai', label: 'Cerebro AI', icon: Sparkles }
                                         ].map(tab => (
                                             <button
                                                 key={tab.id}
@@ -873,6 +875,12 @@ export default function HQClientsPage() {
                                                             />
                                                         </div>
                                                     </div>
+                                                </motion.div>
+                                            )}
+
+                                            {activeEditTab === 'ai' && (
+                                                <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="space-y-6">
+                                                    <AdminClientAIHub client={editingClient} />
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>

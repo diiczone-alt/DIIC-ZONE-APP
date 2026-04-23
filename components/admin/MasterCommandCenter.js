@@ -26,9 +26,9 @@ import AdminCapacitySystem from './AdminCapacitySystem';
 import AdminDynamicPricing from './AdminDynamicPricing';
 import AdminClientEvolution from './AdminClientEvolution';
 import AdminOperationalGovernance from './AdminOperationalGovernance';
+import AdminClientContracts from './AdminClientContracts';
+import AdminAIChatbot from './AdminAIChatbot';
 import AdminDualAudit from './AdminDualAudit';
-
-
 
 export default function MasterCommandCenter() {
     const [clients, setClients] = useState([]);
@@ -191,6 +191,24 @@ export default function MasterCommandCenter() {
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${view === 'bi' ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'text-cyan-400 border border-cyan-500/20 bg-cyan-500/5'}`}
                         >
                             Inteligencia Maestra
+                        </button>
+                        <button
+                            onClick={() => {
+                                setView('client-contracts');
+                                toast.success("Accediendo a Bóveda Legal", { description: "Blindaje de Contratos de Clientes activo." });
+                            }}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${view === 'client-contracts' ? 'bg-indigo-700 text-white shadow-lg' : 'text-indigo-300 border border-indigo-500/20 bg-indigo-500/10'}`}
+                        >
+                            Contrato Cliente
+                        </button>
+                        <button
+                            onClick={() => {
+                                setView('ai-chat');
+                                toast.success("Cerebro Conversacional Activo", { description: "Motor de IA en línea." });
+                            }}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${view === 'ai-chat' ? 'bg-cyan-600 text-white shadow-lg' : 'text-cyan-300 border border-cyan-500/20 bg-cyan-500/10'}`}
+                        >
+                            Cerebro AI
                         </button>
                     </div>
                     <div className="flex gap-4 shrink-0 overflow-x-auto no-scrollbar">
@@ -432,7 +450,7 @@ export default function MasterCommandCenter() {
                                         desc="Contrato de Representación: Blindaje oficial."
                                         icon={ShieldCheck}
                                         color="indigo"
-                                        onClick={() => setView('docs')}
+                                        onClick={() => setView('client-contracts')}
                                     />
                                     <PillarCard
                                         title="Estructura Red"
@@ -656,6 +674,24 @@ export default function MasterCommandCenter() {
                         exit={{ opacity: 0, scale: 0.95 }}
                     >
                         <AdminOperationalGovernance />
+                    </motion.div>
+                ) : view === 'client-contracts' ? (
+                    <motion.div
+                        key="client-contracts"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                    >
+                        <AdminClientContracts />
+                    </motion.div>
+                ) : view === 'ai-chat' ? (
+                    <motion.div
+                        key="ai-chat"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                    >
+                        <AdminAIChatbot />
                     </motion.div>
                 ) : null}
             </AnimatePresence>

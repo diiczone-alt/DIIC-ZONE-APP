@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     BrainCircuit, Activity, TrendingUp, Compass, 
-    ShieldCheck, Zap, BarChart3, Users, Target
+    ShieldCheck, Zap, BarChart3, Users, Target, Bot
 } from 'lucide-react';
 
 // Import existing intelligence modules
 import AdminBusinessIntelligence from './AdminBusinessIntelligence';
 import BusinessIntelligenceDashboard from '../business/BusinessIntelligenceDashboard';
 import CommercialIntelligenceDashboard from '../connectivity/crm/CommercialIntelligenceDashboard';
+import AdminAIChatbot from './AdminAIChatbot';
 
 export default function AdminMasterIntelligence() {
     const [subView, setSubView] = useState('strategic'); // 'strategic' | 'operational' | 'commercial'
@@ -36,13 +37,21 @@ export default function AdminMasterIntelligence() {
             icon: Zap, 
             desc: 'Ventas & ROI',
             color: 'amber'
+        },
+        { 
+            id: 'ai', 
+            label: 'Motor de IA (Chat)', 
+            icon: Bot, 
+            desc: 'Aprendizaje & Cierre',
+            color: 'cyan'
         }
     ];
 
     const tabColors = {
         indigo: 'text-indigo-400 border-indigo-500/20 bg-indigo-500/5',
         emerald: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5',
-        amber: 'text-amber-400 border-amber-500/20 bg-amber-500/5'
+        amber: 'text-amber-400 border-amber-500/20 bg-amber-500/5',
+        cyan: 'text-cyan-400 border-cyan-500/20 bg-cyan-500/5'
     };
 
     return (
@@ -89,6 +98,7 @@ export default function AdminMasterIntelligence() {
                         {subView === 'strategic' && <AdminBusinessIntelligence />}
                         {subView === 'operational' && <BusinessIntelligenceDashboard />}
                         {subView === 'commercial' && <CommercialIntelligenceDashboard />}
+                        {subView === 'ai' && <AdminAIChatbot />}
                     </motion.div>
                 </AnimatePresence>
             </div>

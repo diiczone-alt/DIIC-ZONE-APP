@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 import AITrainingMonitor from '@/components/intelligence/AITrainingMonitor';
-import AdvancedBotTraining from '@/components/intelligence/AdvancedBotTraining';
+import AdminClientAIHub from '@/components/admin/AdminClientAIHub';
 
 export default function IntelligencePage() {
     const { user, loading: authLoading } = useAuth();
@@ -23,7 +23,6 @@ export default function IntelligencePage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
-    const [viewMode, setViewMode] = useState('editor'); // 'editor' or 'lab'
     const router = useRouter();
     const searchParams = useSearchParams();
     const clientId = searchParams.get('client');
@@ -108,7 +107,6 @@ export default function IntelligencePage() {
             if (error) throw error;
             setAgents([data, ...agents]);
             setSelectedAgent(data);
-            setViewMode('editor');
         } catch (err) {
             console.error('Error al crear:', err);
         }
@@ -241,233 +239,143 @@ export default function IntelligencePage() {
 
     return (
         <main className="min-h-screen bg-[#050510] text-white p-6 md:p-10 space-y-10">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-white/5 pb-8">
-                <div>
-                    <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter flex items-center gap-4 text-white">
-                        <Brain className="w-10 h-10 text-indigo-500" /> VENTAS & IA
-                    </h1>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mt-2">
-                        {activeClient?.name || 'CENTRO DE CRECIMIENTO'} • Terminal de Inteligencia Médica
-                    </p>
+            {/* FUTURISTIC HEADER */}
+            <div className="relative p-10 rounded-[3rem] overflow-hidden border border-white/5 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent backdrop-blur-3xl">
+                <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
+                    <Brain className="w-64 h-64 text-indigo-400" />
                 </div>
-
-                <div className="flex gap-4">
-                    {selectedAgent && (
-                        <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 shadow-2xl">
-                            <button 
-                                onClick={() => setViewMode('editor')}
-                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${viewMode === 'editor' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-500 hover:text-white'}`}
-                            >
-                                <Bot className="w-3.5 h-3.5" /> Perfil
-                            </button>
-                            <button 
-                                onClick={() => setViewMode('lab')}
-                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${viewMode === 'lab' ? 'bg-indigo-600 text-white shadow-xl scale-105 shadow-indigo-600/30' : 'text-indigo-400/60 hover:text-indigo-400'}`}
-                            >
-                                <Brain className="w-3.5 h-3.5" /> Laboratorio
-                                {viewMode !== 'lab' && <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />}
-                            </button>
+                
+                <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
+                    <div>
+                        <div className="flex items-center gap-5 mb-4">
+                            <div className="p-4 bg-indigo-500/20 rounded-2xl border border-indigo-500/20 shadow-2xl shadow-indigo-500/20">
+                                <Sparkles className="w-10 h-10 text-indigo-400" />
+                            </div>
+                            <h1 className="text-4xl md:text-7xl font-black italic uppercase tracking-tighter text-white">
+                                VENTAS <span className="text-indigo-500">&</span> IA
+                            </h1>
                         </div>
-                    )}
-                    <button 
-                        onClick={handleCreateAgent}
-                        className="bg-white/5 hover:bg-white/10 text-white px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/10 flex items-center gap-2 transition-all"
-                    >
-                        <Plus className="w-4 h-4" /> Nuevo Asistente
-                    </button>
-                    {selectedAgent && (
+                        <p className="text-[11px] font-black text-gray-500 uppercase tracking-[0.5em] pl-2 drop-shadow-sm">
+                             {activeClient?.name || 'CENTRO DE CRECIMIENTO'} • Terminal de Inteligencia DNA
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-5">
                         <button 
-                            onClick={handleSaveAgent}
-                            disabled={saving}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/20"
+                            onClick={() => handleCreateAgent()}
+                            className="group relative px-8 py-5 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10 transition-all overflow-hidden active:scale-95"
                         >
-                            <Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Aplicar Cambios'}
+                            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-white/5 to-indigo-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                            <span className="flex items-center gap-3 relative z-10">
+                                <Plus className="w-5 h-5 text-indigo-400" /> Nuevo Asistente
+                            </span>
                         </button>
-                    )}
+                        
+                        {selectedAgent && (
+                            <button 
+                                onClick={handleSaveAgent}
+                                disabled={saving}
+                                className="group relative px-12 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-2xl shadow-indigo-600/30 overflow-hidden active:scale-95"
+                            >
+                                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <span className="flex items-center gap-3 relative z-10">
+                                    <Save className="w-5 h-5" /> {saving ? 'Sincronizando...' : 'Aplicar Cambios'}
+                                </span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* Bots Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {/* BOTS SELECTION STRIP */}
+            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6">
                 {agents.map((agent) => (
                     <motion.button
                         key={agent.id}
                         onClick={() => setSelectedAgent(agent)}
-                        className={`p-4 rounded-2xl border transition-all text-left relative overflow-hidden group ${
+                        whileHover={{ y: -8, scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`p-6 rounded-[2.5rem] border transition-all text-left relative overflow-hidden group ${
                             selectedAgent?.id === agent.id 
-                            ? 'bg-indigo-600/20 border-indigo-500 shadow-lg shadow-indigo-500/10' 
+                            ? 'bg-indigo-600/20 border-indigo-500 scale-105 shadow-2xl shadow-indigo-500/20' 
                             : 'bg-white/[0.02] border-white/5 hover:border-white/20'
                         }`}
                     >
-                        <div className="relative z-10 flex flex-col gap-3">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedAgent?.id === agent.id ? 'bg-indigo-500 text-white' : 'bg-white/5 text-gray-400'}`}>
-                                <Bot className="w-4 h-4" />
+                        {selectedAgent?.id === agent.id && (
+                            <div className="absolute top-4 right-4">
+                                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)] animate-pulse" />
+                            </div>
+                        )}
+                        <div className="relative z-10 flex flex-col gap-5">
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500 ${selectedAgent?.id === agent.id ? 'bg-indigo-500 text-white shadow-xl shadow-indigo-500/30' : 'bg-white/5 text-gray-500'}`}>
+                                <Bot className="w-6 h-6" />
                             </div>
                             <div>
-                                <h4 className="text-[10px] font-black uppercase tracking-tight text-white group-hover:text-indigo-300 transition-colors line-clamp-1">{agent.name}</h4>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <div className={`w-1 h-1 rounded-full ${agent.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-gray-600'}`} />
-                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{agent.role_type}</span>
+                                <h4 className="text-[12px] font-black uppercase tracking-tight text-white group-hover:text-indigo-300 transition-colors line-clamp-1 italic">{agent.name}</h4>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <div className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-[8px] font-black text-gray-500 uppercase tracking-widest">{agent.role_type}</div>
                                 </div>
                             </div>
+                        </div>
+                        <div className="absolute -bottom-6 -right-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700">
+                            <Brain className="w-32 h-32 text-white" />
                         </div>
                     </motion.button>
                 ))}
                 
                 <button 
                     onClick={() => handleCreateAgent()}
-                    className="p-8 rounded-[2.5rem] border-2 border-dashed border-white/5 hover:border-indigo-500/30 hover:bg-indigo-500/[0.02] transition-all flex flex-col items-center justify-center gap-4 text-gray-600 group"
+                    className="p-8 rounded-[2.5rem] border-2 border-dashed border-white/5 hover:border-indigo-500/30 hover:bg-indigo-500/[0.03] transition-all flex flex-col items-center justify-center gap-5 text-gray-600 group active:scale-95"
                 >
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-all">
-                        <Plus className="w-6 h-6" />
+                    <div className="w-14 h-14 rounded-3xl bg-white/5 flex items-center justify-center group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-all border border-transparent group-hover:border-indigo-500/20 shadow-inner">
+                        <Plus className="w-7 h-7" />
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] group-hover:text-white transition-colors">Añadir Especialista</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] group-hover:text-white transition-colors">Añadir Especialista</span>
                 </button>
             </div>
 
             {/* Main View Area */}
             {selectedAgent ? (
                 <AnimatePresence mode="wait">
-                    {viewMode === 'editor' ? (
-                        <motion.div 
-                            key="editor"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="space-y-8"
-                        >
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <AITrainingMonitor />
-                                <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-[0_0_50px_rgba(79,70,229,0.2)] flex flex-col justify-center relative overflow-hidden group">
-                                    <div className="relative z-10">
-                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">Modo Executive Mobile</h3>
-                                        <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mt-2">Acceso instantáneo para la Dra. Jessica Rey</p>
-                                        <ul className="mt-6 space-y-3">
-                                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Visualización de ROI Diario</li>
-                                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Alertas de Fuga de Leads</li>
-                                            <li className="flex items-center gap-3 text-xs font-bold text-white"><CheckCircle2 className="w-4 h-4" /> Control de Pauta Masiva</li>
-                                        </ul>
-                                        <button 
-                                            onClick={() => router.push('/dashboard/crm?view=productivity')}
-                                            className="mt-8 px-8 py-3 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-xl shadow-white/10"
-                                        >
-                                            Ir al Hub Móvil
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                                <div className="lg:col-span-4 space-y-6">
-                                    <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 space-y-6">
-                                        <div className="flex items-center justify-between font-black text-[9px] uppercase tracking-widest text-indigo-400">
-                                            <div className="flex items-center gap-2 italic"><Activity className="w-4 h-4" /> Configuración</div>
-                                            <span className="opacity-50">ID: {selectedAgent.id.substring(0, 8)}</span>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Especialidad</label>
-                                                <select 
-                                                    value={selectedAgent.role_type}
-                                                    onChange={(e) => setSelectedAgent({...selectedAgent, role_type: e.target.value})}
-                                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-indigo-500 outline-none"
-                                                >
-                                                    <option value="GENERAL">Asistente General</option>
-                                                    <option value="CRM">Lead Management</option>
-                                                    <option value="VENTAS">Ventas</option>
-                                                    <option value="MEDICO">Protocolo Clínico</option>
-                                                </select>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Personalidad</label>
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    {['PROFESIONAL', 'EMPATICO', 'AUTORITARIO'].map((t) => (
-                                                        <button 
-                                                            key={t}
-                                                            onClick={() => setSelectedAgent({...selectedAgent, personality_tone: t})}
-                                                            className={`py-2 rounded-lg text-[7px] font-black border transition-all ${selectedAgent.personality_tone === t ? 'bg-indigo-600 border-indigo-400' : 'bg-white/5 border-white/10 text-gray-500'}`}
-                                                        >
-                                                            {t}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Instrucciones</label>
-                                                <textarea 
-                                                    rows="4"
-                                                    value={selectedAgent.tone_instructions}
-                                                    onChange={(e) => setSelectedAgent({...selectedAgent, tone_instructions: e.target.value})}
-                                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-indigo-500 outline-none resize-none"
-                                                />
-                                            </div>
-
-                                            <button 
-                                                onClick={loadMedicalTraining}
-                                                className="w-full py-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-[8px] font-black uppercase tracking-widest hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2"
-                                            >
-                                                <Sparkles className="w-3 h-3" /> Cargar Entrenamiento Médico
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="lg:col-span-8">
-                                    <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 space-y-6 h-full">
-                                        <div className="flex justify-between items-center">
-                                            <div className="flex items-center gap-2 text-emerald-400 text-[9px] font-black uppercase tracking-widest italic">
-                                                <Target className="w-4 h-4" /> Bóveda de Conocimiento
-                                            </div>
-                                            <button onClick={addKnowledge} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-[8px] font-black uppercase tracking-widest">
-                                                <Plus className="w-3 h-3" /> Añadir
-                                            </button>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {knowledge.length === 0 ? (
-                                                <div className="col-span-2 py-16 text-center border-2 border-dashed border-white/5 rounded-3xl text-gray-600 text-[9px] font-black uppercase">Vacío</div>
-                                            ) : (
-                                                knowledge.map((item) => (
-                                                    <div key={item.id} className="p-5 rounded-2xl bg-black/40 border border-white/5 space-y-2">
-                                                        <h4 className="text-[10px] font-black text-white uppercase italic">{item.title}</h4>
-                                                        <p className="text-[9px] text-gray-500 leading-relaxed italic line-clamp-3">{item.content}</p>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ) : (
-                        <motion.div 
-                            key="lab"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                        >
-                            <AdvancedBotTraining selectedAgent={selectedAgent} />
-                        </motion.div>
-                    )}
+                    <motion.div 
+                        key={selectedAgent.id}
+                        initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+                        animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                        exit={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+                        transition={{ duration: 0.5, ease: "circOut" }}
+                        className="space-y-10"
+                    >
+                        <AdminClientAIHub 
+                            client={{ 
+                                ...activeClient, 
+                                id: selectedAgent.id,
+                                name: selectedAgent.name
+                            }} 
+                        />
+                    </motion.div>
                 </AnimatePresence>
             ) : (
-                <div className="py-24 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[4rem] gap-8 bg-white/[0.01]">
-                    <div className="w-24 h-24 rounded-[2.5rem] bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                        <UserCheck className="w-12 h-12" />
+                <div className="py-32 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-[5rem] gap-12 bg-white/[0.01] backdrop-blur-3xl relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                    <div className="w-32 h-32 rounded-[4rem] bg-indigo-500/10 flex items-center justify-center text-indigo-400 shadow-2xl shadow-indigo-500/10 relative z-10">
+                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }}>
+                            <UserCheck className="w-16 h-16" />
+                        </motion.div>
                     </div>
-                    <div className="text-center space-y-4">
-                        <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white">Desconectado</h3>
-                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Activa tu primer asistente para comenzar.</p>
+                    <div className="text-center space-y-5 relative z-10">
+                        <h3 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white">SISTEMA DESCONECTADO</h3>
+                        <p className="text-gray-500 text-[11px] font-black uppercase tracking-[0.3em] max-w-lg mx-auto leading-loose italic">
+                            Sincroniza tu primer nodo de inteligencia virtual para desplegar la red neuronal táctica de tu marca.
+                        </p>
                     </div>
                     <button 
                         onClick={seedSentinel}
-                        className="bg-indigo-600 text-white px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest"
+                        className="group relative bg-indigo-600 text-white px-16 py-6 rounded-3xl text-[12px] font-black uppercase tracking-[0.3em] shadow-2xl shadow-indigo-600/30 overflow-hidden active:scale-95 transition-all"
                     >
-                        Activar Sentinel 24/7
+                        <div className="absolute inset-x-0 top-0 h-[1px] bg-white/20 animate-pulse" />
+                        <span className="relative z-10 flex items-center gap-4">
+                            <Zap className="w-5 h-5 fill-current text-yellow-400" /> Activar Sentinel 24/7
+                        </span>
                     </button>
                 </div>
             )}

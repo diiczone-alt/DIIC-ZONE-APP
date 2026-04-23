@@ -9,6 +9,7 @@ import {
     MoreVertical, User, Briefcase
 } from 'lucide-react';
 import AdminGoalValidation from './AdminGoalValidation';
+import AdminClientAIHub from './AdminClientAIHub';
 import { calculateClientHealth } from '../connectivity/ClientHealthEngine';
 import { analyzeClientGrowth, detectUpsellOpportunities } from '../connectivity/ClientGrowthEngine';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,17 +17,49 @@ import { toast } from 'sonner';
 
 export default function AdminClientEvolution() {
     const [selectedClient, setSelectedClient] = useState(null);
+    const [detailTab, setDetailTab] = useState('goals'); // 'goals' | 'ai'
 
     if (selectedClient) {
         return (
-            <div className="space-y-6">
-                <button
-                    onClick={() => setSelectedClient(null)}
-                    className="flex items-center gap-2 text-gray-500 hover:text-white transition-all text-xs font-black uppercase tracking-widest"
-                >
-                    <ChevronRight className="w-4 h-4 rotate-180" /> Volver a Cartera
-                </button>
-                <AdminGoalValidation />
+            <div className="space-y-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <button
+                        onClick={() => setSelectedClient(null)}
+                        className="flex items-center gap-2 text-gray-500 hover:text-white transition-all text-xs font-black uppercase tracking-widest"
+                    >
+                        <ChevronRight className="w-4 h-4 rotate-180" /> Volver a Cartera
+                    </button>
+
+                    <div className="flex gap-2 bg-black/40 p-1.5 rounded-2xl border border-white/5 backdrop-blur-xl">
+                        <button
+                            onClick={() => setDetailTab('goals')}
+                            className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${detailTab === 'goals' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+                        >
+                            Hoja de Ruta (Metas)
+                        </button>
+                        <button
+                            onClick={() => setDetailTab('ai')}
+                            className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${detailTab === 'ai' ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+                        >
+                            Cerebro de Marca (IA)
+                        </button>
+                    </div>
+                </div>
+
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={detailTab}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                    >
+                        {detailTab === 'goals' ? (
+                            <AdminGoalValidation />
+                        ) : (
+                            <AdminClientAIHub client={selectedClient} />
+                        )}
+                    </motion.div>
+                </AnimatePresence>
             </div>
         );
     }

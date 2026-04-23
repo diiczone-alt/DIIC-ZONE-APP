@@ -36,14 +36,34 @@ export default function AdminWorkloadManager({ teamData = [], globalMetrics = {}
         { type: "Producción Premium", weight: 8, time: "25h" }
     ];
 
-    // Estado inicial de la carga (simulado con DB local)
-    const [teamLoad, setTeamLoad] = useState(TEAM_DB.map(m => ({
-        ...m,
-        assigned: Math.round(m.capacity * (m.load / 100)), // Convertir % a horas para UI actual
-        status: m.load > 90 ? 'red' : m.load > 70 ? 'yellow' : 'emerald'
-    })));
+    // Estado inicial de la carga (Priorizar teamData real del motor de inteligencia)
+    const [teamLoad, setTeamLoad] = useState(() => {
+        if (teamData && teamData.length > 0) {
+            return teamData.map(m => ({
+                ...m,
+                assigned: m.assigned || (Math.round(m.capacity * (m.load / 100)) || 0),
+                status: m.status || (m.load > 90 ? 'red' : m.load > 70 ? 'yellow' : 'emerald')
+            }));
+        }
+        return TEAM_DB.map(m => ({
+            ...m,
+            assigned: Math.round(m.capacity * (m.load / 100)), // Convertir % a horas para UI actual
+            status: m.load > 90 ? 'red' : m.load > 70 ? 'yellow' : 'emerald'
+        }));
+    });
 
     const [assignmentSuggestion, setAssignmentSuggestion] = useState(null);
+    
+    // Sincronizar carga si teamData cambia (Live Sync HQ)
+    useEffect(() => {
+        if (teamData && teamData.length > 0) {
+            setTeamLoad(teamData.map(m => ({
+                ...m,
+                assigned: m.assigned || (Math.round(m.capacity * (m.load / 100)) || 0),
+                status: m.status || (m.load > 90 ? 'red' : m.load > 70 ? 'yellow' : 'emerald')
+            })));
+        }
+    }, [teamData]);
 
     const simulateIncomingTask = (type) => {
         // Mapear tipo de proyecto a requerimientos (mock)

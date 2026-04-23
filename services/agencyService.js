@@ -1236,6 +1236,8 @@ export const agencyService = {
                 bottlenecks: risks.filter(r => r.severity === 'critical').length
             };
 
+            const totalAssignedHours = Number(processedTeam.reduce((acc, m) => acc + m.assigned, 0).toFixed(1));
+            const totalCapacity = processedTeam.length * 40;
             const globalLoad = Math.round(processedTeam.reduce((acc, m) => acc + m.load, 0) / (processedTeam.length || 1));
 
             return {
@@ -1246,6 +1248,8 @@ export const agencyService = {
                 productionStats,
                 globalMetrics: {
                     globalLoad,
+                    assignedHours: totalAssignedHours,
+                    totalCapacity: totalCapacity,
                     totalMembers: processedTeam.length,
                     activeTasksCount: activeTasks.length,
                     threatLevel: risks.filter(r => r.severity === 'critical').length > 2 ? 'crítico' : 'estable'
@@ -1517,5 +1521,10 @@ export const agencyService = {
             console.error("Strategy save exception:", err);
             throw err;
         }
+    },
+
+    getGlobalMetrics: async () => {
+        const intel = await agencyService.getOperationalIntelligence();
+        return intel?.globalMetrics || { globalLoad: 0, assignedHours: 0, totalCapacity: 0 };
     }
 };
