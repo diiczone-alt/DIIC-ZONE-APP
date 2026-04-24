@@ -6,7 +6,13 @@
  */
 
 // Base de Datos de Talento (Se poblará desde Supabase)
-export const TEAM_DB = [];
+export const TEAM_DB = [
+    { id: 1, name: "Andrés V.", role: "Editor", load: 45, capacity: 40, reputation: 4.8, skills: ['Reels', 'Dinámico', 'Speedramp'] },
+    { id: 2, name: "Carla M.", role: "Editor", load: 82, capacity: 40, reputation: 4.9, skills: ['Corporate', 'Clean', 'Color'] },
+    { id: 3, name: "Mateo R.", role: "Editor", load: 30, capacity: 40, reputation: 4.2, skills: ['Field', 'Nature', 'Documentary'] },
+    { id: 4, name: "Sofía G.", role: "Filmmaker", load: 55, capacity: 40, reputation: 4.7, skills: ['Cine', 'Docu', 'Lighting'] },
+    { id: 5, name: "Jorge L.", role: "Web Dev", load: 15, capacity: 40, reputation: 4.5, skills: ['React', 'Landing', 'Supabase'] }
+];
 
 const WEIGHTS = {
     AVAILABILITY: 0.4, // Disponibilidad es lo más crítico para evitar burnout

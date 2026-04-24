@@ -20,12 +20,8 @@ export default function SubProfileStep({ onNext, updateData, profileType }) {
         realestate: ['Agencia Inmobiliaria', 'Promotora / Constructora', 'Inversión Inmobiliaria', 'Gestión de Alquileres', 'Arquitectura / Interiorismo', 'Otro'],
         retail: ['Tienda Física (Local)', 'Supermercado', 'Franquicia', 'Distribución / Mayorista', 'Moda Retail', 'Otro'],
         consulting: ['Estrategia de Negocio', 'Recursos Humanos', 'Operaciones / Procesos', 'Transformación Digital', 'Ventas / Comercial', 'Otro'],
-        manufacturing: ['Industrial / Fábrica', 'Artesanía / Hecho a Mano', 'Automotriz', 'Textil', 'Alimentaria', 'Otro'],
-        construction: ['Obra Civil', 'Reformas / Interiorismo', 'Instalaciones / Energía', 'Materiales de Construcción', 'Otro'],
-        transport: ['Logística de Envios', 'Transporte de Pasajeros', 'Almacenamiento / Stock', 'Delivery', 'Flotas de Vehículos', 'Otro'],
-        travel: ['Agencia de Viajes', 'Guía Turístico', 'Experiencias / Aventuras', 'Cruceros', 'Turismo Rural', 'Otro'],
-        ong: ['Fundación', 'Asociación Cultural', 'Ayuda Humanitaria', 'Medio Ambiente', 'Derechos Humanos', 'Otro'],
-        government: ['Ayuntamiento / Municipalidad', 'Ministerio / Entidad Pública', 'Servicios Ciudadanos', 'Turismo Público', 'Otro'],
+        agro: ['Servicios Veterinarios', 'Insumos Agrícolas', 'Ganaderia / Bovina', 'Ecografías / Reproducción', 'Maquinaria de Campo', 'Asesoría Agropecuaria', 'Otro'],
+        industrial: ['Sistemas de Riego', 'Fábrica / Manufactura', 'Logística Industrial', 'Energía / Solar', 'Mantenimiento Técnico', 'Otro'],
         other: ['Servicios Generales', 'Comercio Variado', 'Sector Industrial', 'Entorno Creativo', 'Otro']
     };
 

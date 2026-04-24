@@ -21,7 +21,11 @@ export default function AdminQualityControl() {
     const [selectedProject, setSelectedProject] = useState(null);
 
     // Mock enhanced with metrics needed for calculation
-    const pendingProjects = [];
+    const pendingProjects = [
+        { id: 1, name: "Reel Autoridad Médica", type: "video", author: "Carla M.", phase: 3, riskLevel: 'low', activators: [] },
+        { id: 2, name: "Producción Campo - Santo Domingo", type: "video", author: "Mateo R.", phase: 2, riskLevel: 'low', activators: [] },
+        { id: 3, name: "Diseño Landing Page Elite", type: "design", author: "Jorge L.", phase: 1, riskLevel: 'low', activators: [] }
+    ];
 
     // Mock historial data for a selected author (in production this comes from DB)
     const authorMetrics = {

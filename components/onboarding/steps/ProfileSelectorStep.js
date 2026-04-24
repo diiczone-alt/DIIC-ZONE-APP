@@ -6,13 +6,14 @@ import {
     Coins, Landmark, Stethoscope, UtensilsCrossed,
     Cpu, Gavel, Factory, HeartHandshake,
     Home, Store, Truck, Plane,
-    Briefcase, MoreHorizontal, Mic, User
+    Briefcase, MoreHorizontal, Mic, User, Sprout
 } from 'lucide-react';
 
 export default function ProfileSelectorStep({ onNext, updateData }) {
     const profiles = [
         { id: 'personal', label: 'Marca Personal', icon: User, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'hover:border-purple-500' },
         { id: 'doctor', label: 'Médico', icon: Stethoscope, color: 'text-red-400', bg: 'bg-red-500/10', border: 'hover:border-red-500' },
+        { id: 'agro', label: 'Agropecuario', icon: Sprout, color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'hover:border-emerald-500' },
         { id: 'creator', label: 'Blog / Podcast', icon: Mic, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'hover:border-pink-500' },
         { id: 'marketing', label: 'Marketing Digital', icon: Megaphone, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'hover:border-blue-500' },
         { id: 'ecommerce', label: 'E-commerce', icon: ShoppingBag, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'hover:border-emerald-500' },

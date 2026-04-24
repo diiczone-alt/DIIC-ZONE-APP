@@ -23,10 +23,11 @@ import { LayoutGrid, List, MessageSquare as InboxIcon, BarChart3, Settings2, meg
 // Helper para etiquetas de nicho comerciales
 const getNicheLabel = (niche = '') => {
     const val = niche.toLowerCase();
-    if (['doctor', 'medico', 'médico', 'medical', 'salud', 'clinica', 'clínica'].some(k => val.includes(k))) return 'MARKETING PARA MÉDICOS';
+    if (['doctor', 'medico', 'médico', 'medical', 'salud', 'clinica', 'clínica', 'urologia', 'urología'].some(k => val.includes(k))) return 'MARKETING PARA MÉDICOS';
     if (['gym', 'fitness', 'gimnasio', 'deporte', 'entrenador'].some(k => val.includes(k))) return 'MARKETING PARA GIMNASIOS';
     if (['curso', 'formacion', 'formación', 'educacion', 'educación', 'mentoria', 'mentoría'].some(k => val.includes(k))) return 'FORMACIONES Y CURSOS';
-    if (['agro', 'campo', 'agropecuario', 'industrial'].some(k => val.includes(k))) return 'SECTOR AGROPECUARIO';
+    if (['agro', 'campo', 'agropecuario', 'agropecuaria', 'vete', 'veterinaria'].some(k => val.includes(k))) return 'MARKETING AGROPECUARIO';
+    if (['industrial', 'fabrica', 'fábrica', 'manufactura'].some(k => val.includes(k))) return 'MARKETING INDUSTRIAL';
     return 'ESTRATEGIA DE NEGOCIOS';
 };
 
@@ -252,7 +253,7 @@ export default function CRMPage() {
                         </div>
                         
                         {/* Context-Aware Selector Control */}
-                        {!activeClient ? (
+                        {(!activeClient || (user?.user_metadata?.role !== 'CLIENT')) ? (
                             <div className="flex items-center gap-4 mt-2">
                                 <div className="relative">
                                     <button 
@@ -448,9 +449,9 @@ export default function CRMPage() {
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="border-b border-white/5">
-                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">Paciente & Consulta</th>
-                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">Estado Clínico</th>
-                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">Tratamiento</th>
+                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">{activeClient?.industry?.includes('Médico') || activeClient?.industry?.includes('Urología') ? 'Paciente & Consulta' : 'Lead & Seguimiento'}</th>
+                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">{activeClient?.industry?.includes('Médico') || activeClient?.industry?.includes('Urología') ? 'Estado Clínico' : 'Estado de Venta'}</th>
+                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">{activeClient?.industry?.includes('Médico') || activeClient?.industry?.includes('Urología') ? 'Tratamiento' : 'Servicio / Interés'}</th>
                                             <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">Facturación</th>
                                             <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest text-right">IA Bot</th>
                                         </tr>

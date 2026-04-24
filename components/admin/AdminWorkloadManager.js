@@ -31,6 +31,7 @@ export default function AdminWorkloadManager({ teamData = [], globalMetrics = {}
     const projectWeights = [
         { type: "Post Simple", weight: 1, time: "1.2h" },
         { type: "Reel Editado", weight: 2, time: "1.8h" },
+        { type: "Video Agropecuario", weight: 4, time: "5.5h" },
         { type: "Video Médico", weight: 4, time: "4.5h" },
         { type: "Campaña Completa", weight: 6, time: "12h" },
         { type: "Producción Premium", weight: 8, time: "25h" }
@@ -70,6 +71,7 @@ export default function AdminWorkloadManager({ teamData = [], globalMetrics = {}
         const taskReqs = {
             "Reel Editado": { requiredRole: "Editor", tags: ['Reels', 'Dinámico'] },
             "Video Médico": { requiredRole: "Editor", tags: ['Corporate', 'Clean'] },
+            "Video Agropecuario": { requiredRole: "Editor", tags: ['Field', 'Nature'] },
             "Campaña Completa": { requiredRole: "Filmmaker", tags: ['Cine', 'Docu'] },
             "Diseño Web": { requiredRole: "Web Dev", tags: ['React', 'Landing'] }
         };

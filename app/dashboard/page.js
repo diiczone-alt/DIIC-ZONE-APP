@@ -286,7 +286,7 @@ function DashboardContent() {
 
   const stats = [
     { 
-        title: 'Captación de Pacientes', 
+        title: clientData?.industry?.includes('Médico') || clientData?.industry?.includes('Urología') ? 'Captación de Pacientes' : 'Captación de Leads', 
         value: totalNewLeads.toString(), 
         delta: '+18.5%', 
         icon: UserPlus, 
@@ -294,7 +294,7 @@ function DashboardContent() {
         chartData: "M 0,40 Q 30,15 60,35 T 100,5" 
     },
     { 
-        title: 'Costo por Paciente', 
+        title: clientData?.industry?.includes('Médico') || clientData?.industry?.includes('Urología') ? 'Costo por Paciente' : 'Costo por Lead', 
         value: `$${cpa}`, 
         delta: '-4.2%', 
         icon: Target, 
@@ -369,7 +369,7 @@ function DashboardContent() {
               
               <div className="relative">
                  <h1 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter leading-none select-none">
-                    ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">{(user?.user_metadata?.full_name || user?.full_name || 'Estratega').split(' ')[0]}</span>.
+                    ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">{user?.user_metadata?.brand || (user?.user_metadata?.full_name || user?.full_name || 'Estratega').split(' ')[0]}</span>.
                  </h1>
                  <div className="absolute -top-4 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-[80px] -z-10" />
               </div>
@@ -481,7 +481,7 @@ function DashboardContent() {
                         if (!acc[campId]) {
                             acc[campId] = { 
                                 id: campId, 
-                                name: campId === 'camp_001' ? 'Captación Medicina Estética' : 'Branding Nova Clínica',
+                                name: campId === 'camp_001' ? (clientData?.industry?.includes('Médico') ? 'Captación Medicina Estética' : 'Campaña de Ventas') : (clientData?.industry?.includes('Médico') ? 'Branding Nova Clínica' : 'Autoridad de Marca'),
                                 objective: campId === 'camp_001' ? 'Conversiones (WhatsApp)' : 'Alcance',
                                 spend: 0, clicks: 0, conversions: 0, budget_daily: campId === 'camp_001' ? 25 : 10
                             };

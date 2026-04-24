@@ -23,13 +23,14 @@ export default function AdminNodeTraining() {
         // ... previous data
         {
             id: 1,
+            idName: "Manta Hub",
             city: "Manta",
             team: "Vista Media",
             equipment: "Sony A7IV, Ronin RS3, Lavaliers Wireless",
             experience: "5 años",
             portfolio: "vimeo.com/vistamedia",
             status: "training",
-            step: 3, // 1: Request, 2: Evaluation, 3: Training, 4: Certify, 5: Activation
+            step: 3,
             progress: 65
         },
         {
@@ -43,6 +44,18 @@ export default function AdminNodeTraining() {
             status: "evaluation",
             step: 2,
             progress: 20
+        },
+        {
+            id: 3,
+            idName: "Santo Domingo Hub",
+            city: "Santo Domingo",
+            team: "AgroDigital Team",
+            equipment: "Blackmagic 6K, Drones DJI, Audio Pro",
+            experience: "7 años",
+            portfolio: "agrodigital.ec",
+            status: "training",
+            step: 4,
+            progress: 85
         }
     ];
 
@@ -205,6 +218,13 @@ export default function AdminNodeTraining() {
                                         hook="Problema Común"
                                         stats="+50% Alcance Orgánico"
                                         color="blue"
+                                    />
+                                    <NicheProfileCard
+                                        niche="Agropecuario"
+                                        format="Procesos / Confianza"
+                                        hook="Resultado de Campo"
+                                        stats="+55% Retorno Inversión"
+                                        color="orange"
                                     />
                                 </div>
 
@@ -540,7 +560,8 @@ function NicheProfileCard({ niche, format, hook, stats, color }) {
         indigo: "text-indigo-400 border-indigo-500/20 bg-indigo-500/5",
         emerald: "text-emerald-400 border-emerald-500/20 bg-emerald-500/5",
         pink: "text-pink-400 border-pink-500/20 bg-pink-500/5",
-        blue: "text-blue-400 border-blue-500/20 bg-blue-500/5"
+        blue: "text-blue-400 border-blue-500/20 bg-blue-500/5",
+        orange: "text-orange-400 border-orange-500/20 bg-orange-500/5"
     };
 
     return (
