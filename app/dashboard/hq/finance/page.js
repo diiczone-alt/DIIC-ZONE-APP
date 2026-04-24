@@ -120,7 +120,6 @@ export default function HQFinancePage() {
                     <span>FINANZAS AGENCY</span>
                 </h2>
                 <div className="flex items-center gap-4">
-                <div className="flex items-center gap-4">
                      <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-400">
                          {isSyncing ? (
                              <div className="flex items-center gap-2 text-emerald-400 animate-pulse">
