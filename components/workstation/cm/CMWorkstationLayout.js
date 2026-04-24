@@ -14,12 +14,13 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import ContentKanban from '../../shared/Kanban/ContentKanban';
+import UnifiedCalendar from '../../calendar/UnifiedCalendar';
+import { messagingService } from '@/services/messagingService';
+import { supabase } from '@/lib/supabase';
 import NotificationCenter from '@/components/ui/NotificationCenter';
 import StrategyBoard from '../../shared/Strategy/StrategyBoard';
 import CreativeStudio from '../../events/CreativeBoard';
-import ContentKanban from '../../shared/Kanban/ContentKanban';
-import UnifiedCalendar from '../../calendar/UnifiedCalendar';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
 import { aiService } from '@/services/aiService';
@@ -771,11 +772,61 @@ function CommunicationCenter({ client, squad, tasks = [] }) {
     ]);
 
     const [isTyping, setIsTyping] = useState(false);
+    const [realMessages, setRealMessages] = useState([]);
+    const [activeThread, setActiveThread] = useState(null);
+    const [activeMemberId, setActiveMemberId] = useState(null);
+
+    useEffect(() => {
+        if (subTab === 'empresa' && client) {
+            const syncThread = async () => {
+                const thread = await messagingService.getOrCreateClientChat(client.id);
+                setActiveThread(thread);
+                const historical = await messagingService.getMessages(thread.id);
+                setRealMessages(historical);
+
+                const channel = messagingService.subscribeToMessages(thread.id, (newMsg) => {
+                    setRealMessages(prev => {
+                        if (prev.find(m => m.id === newMsg.id)) return prev;
+                        return [...prev, newMsg];
+                    });
+                });
+
+                return () => supabase.removeChannel(channel);
+            };
+            syncThread();
+        }
+
+        if (subTab === 'team' && activeMemberId) {
+            const syncDirect = async () => {
+                const thread = await messagingService.getOrCreateDirectChat(user.id, activeMemberId);
+                setActiveThread(thread);
+                const historical = await messagingService.getMessages(thread.id);
+                setRealMessages(historical);
+
+                const channel = messagingService.subscribeToMessages(thread.id, (newMsg) => {
+                    setRealMessages(prev => {
+                        if (prev.find(m => m.id === newMsg.id)) return prev;
+                        return [...prev, newMsg];
+                    });
+                });
+
+                return () => supabase.removeChannel(channel);
+            };
+            syncDirect();
+        }
+    }, [subTab, client, activeMemberId]);
 
     const handleSend = async () => {
         if (!inputValue.trim() || isTyping) return;
         
         const userMsg = inputValue.trim();
+
+        if ((subTab === 'empresa' || subTab === 'team') && activeThread) {
+            setInputValue('');
+            await messagingService.sendMessage(activeThread.id, user.id, userMsg);
+            return;
+        }
+
         const newMessage = {
             id: Date.now(),
             chatId: activeChat.id,
@@ -819,6 +870,11 @@ function CommunicationCenter({ client, squad, tasks = [] }) {
     const selectChat = (chat) => {
         setActiveChat(chat);
         setSubTab(chat.type === 'ia' ? 'ia' : chat.type === 'enterprise' ? 'empresa' : 'team');
+        if (chat.type === 'member') {
+            setActiveMemberId(chat.id);
+        } else {
+            setActiveMemberId(null);
+        }
         setShowPopover(false);
     };
 
@@ -838,6 +894,7 @@ function CommunicationCenter({ client, squad, tasks = [] }) {
                         key={tab.id}
                         onClick={() => {
                             setSubTab(tab.id);
+                            setActiveMemberId(null);
                             if (tab.id === 'ia') setActiveChat({ id: 'ia', type: 'ia', name: 'Asistente IA' });
                             if (tab.id === 'empresa') setActiveChat({ id: 'enterprise', type: 'enterprise', name: client.name });
                         }}
@@ -876,23 +933,29 @@ function CommunicationCenter({ client, squad, tasks = [] }) {
                             /* Else show the message history for the active chat */
                             <div className="flex flex-col h-full">
                                 {subTab === 'ia' && messages.filter(m => m.chatId === 'ia').length === 0 && <AIChatView tasks={tasks} />}
-                                {subTab === 'empresa' && messages.filter(m => m.chatId === 'enterprise').length === 0 && <EnterpriseChatView client={client} />}
                                 
                                 <div className="space-y-6">
-                                    {messages.filter(m => m.chatId === activeChat.id).map((msg) => (
-                                        <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`max-w-[80%] p-4 rounded-3xl ${
-                                                msg.sender === 'me' 
-                                                ? 'bg-cyan-600 text-white rounded-tr-none' 
-                                                : msg.sender === 'ai' 
-                                                    ? 'bg-white/5 border border-indigo-500/30 text-gray-200 rounded-tl-none backdrop-blur-md'
-                                                    : 'bg-white/5 border border-white/10 text-gray-200 rounded-tl-none'
-                                            }`}>
-                                                <p className="text-sm leading-relaxed">{msg.text}</p>
-                                                <p className="text-[9px] mt-2 opacity-50 font-bold uppercase tracking-widest">{msg.time}</p>
+                                    {((subTab === 'empresa' || subTab === 'team') ? realMessages : messages.filter(m => m.chatId === activeChat.id)).map((msg) => {
+                                        const isAi = msg.sender === 'ai';
+                                        const isMe = msg.sender === 'me' || msg.sender_id === user?.id;
+                                        
+                                        return (
+                                            <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                                <div className={`max-w-[80%] p-4 rounded-3xl ${
+                                                    isMe 
+                                                    ? 'bg-cyan-600 text-white rounded-tr-none' 
+                                                    : isAi
+                                                        ? 'bg-white/5 border border-indigo-500/30 text-gray-200 rounded-tl-none backdrop-blur-md'
+                                                        : 'bg-white/5 border border-white/10 text-gray-200 rounded-tl-none'
+                                                }`}>
+                                                    <p className="text-sm leading-relaxed">{msg.content || msg.text}</p>
+                                                    <p className="text-[9px] mt-2 opacity-50 font-bold uppercase tracking-widest">
+                                                        {msg.time || (msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
 
                                     {isTyping && activeChat.type === 'ia' && (
                                         <div className="flex justify-start">
