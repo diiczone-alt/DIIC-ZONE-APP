@@ -7,37 +7,60 @@ import { AnimatePresence } from 'framer-motion';
 import LeadCard from './LeadCard';
 import LeadProfileView from './LeadProfileView';
 
-const initialData = {
-    columns: {
-        'new': { id: 'new', title: 'Nuevo Lead', color: 'border-blue-500' },
-        'contacted': { id: 'contacted', title: 'Contactado', color: 'border-indigo-500' },
-        'interested': { id: 'interested', title: 'Interesado', color: 'border-purple-500' },
-        'quote': { id: 'quote', title: 'Cotización', color: 'border-yellow-500' },
-        'negotiation': { id: 'negotiation', title: 'Negociación', color: 'border-orange-500' },
-        'won': { id: 'won', title: 'Cerrado - Venta', color: 'border-emerald-500' },
-        'lost': { id: 'lost', title: 'Perdido', color: 'border-red-500' },
-    },
-    columnOrder: ['new', 'contacted', 'interested', 'quote', 'negotiation', 'won', 'lost'],
-    leads: {
-        'lead-1': { id: 'lead-1', name: 'Dr. Roberto M.', value: 1500, source: 'whatsapp', status: 'new', score: 85, niche: 'Salud' },
-        'lead-2': { id: 'lead-2', name: 'Inmobiliaria City', value: 3200, source: 'ads', status: 'contacted', score: 60, niche: 'Real Estate' },
-        'lead-3': { id: 'lead-3', name: 'Restaurante K', value: 800, source: 'instagram', status: 'quote', score: 92, niche: 'Gastronomía' },
-        'lead-4': { id: 'lead-4', name: 'Abogados & Co', value: 2100, source: 'web', status: 'negotiation', score: 75, niche: 'Legal' },
-    },
-    columnsData: {
-        'new': ['lead-1'],
-        'contacted': ['lead-2'],
-        'interested': [],
-        'quote': ['lead-3'],
-        'negotiation': ['lead-4'],
-        'won': [],
-        'lost': [],
-    }
+const COLUMN_CONFIG = {
+    'incoming': { id: 'incoming', title: 'LEADS ENTRANTES', color: 'border-red-500', glow: 'shadow-[0_0_15px_#ef444430]' },
+    'contact': { id: 'contact', title: 'CONTACTO INICIAL', color: 'border-blue-500', glow: 'shadow-[0_0_15px_#3b82f630]' },
+    'rebound': { id: 'rebound', title: 'REPESCA 15 DÍAS', color: 'border-orange-500', glow: 'shadow-[0_0_15px_#f9731630]' },
+    'identified': { id: 'identified', title: 'CURSO INTERÉS ID', color: 'border-yellow-500', glow: 'shadow-[0_0_15px_#eab30830]' },
+    'negotiation': { id: 'negotiation', title: 'NEGOCIACIÓN', color: 'border-indigo-500', glow: 'shadow-[0_0_15px_#6366f130]' },
+    'won': { id: 'won', title: 'CERRADO - VENTA', color: 'border-emerald-500', glow: 'shadow-[0_0_15px_#10b98130]' },
 };
 
-export default function PipelineBoard() {
+const COLUMN_ORDER = ['incoming', 'contact', 'rebound', 'identified', 'negotiation', 'won'];
+
+export default function PipelineBoard({ leads = [] }) {
     const [isBrowser, setIsBrowser] = useState(false);
-    const [data, setData] = useState(initialData);
+    const [data, setData] = useState({
+        columns: COLUMN_CONFIG,
+        columnOrder: COLUMN_ORDER,
+        leads: {},
+        columnsData: {
+            'incoming': [], 'contact': [], 'rebound': [], 'identified': [], 'negotiation': [], 'won': []
+        }
+    });
+
+    useEffect(() => {
+        setIsBrowser(true);
+        if (leads.length > 0) {
+            const leadsMap = {};
+            const colsData = {
+                'incoming': [], 'contact': [], 'rebound': [], 'identified': [], 'negotiation': [], 'won': []
+            };
+
+            leads.forEach(lead => {
+                const id = lead.id;
+                leadsMap[id] = {
+                    ...lead,
+                    name: lead.full_name,
+                    value: Number(lead.price_estimated || 0),
+                    status: lead.status?.toLowerCase() || 'incoming'
+                };
+                
+                const colKey = lead.status?.toLowerCase() || 'incoming';
+                if (colsData[colKey]) {
+                    colsData[colKey].push(id);
+                } else {
+                    colsData['incoming'].push(id);
+                }
+            });
+
+            setData(prev => ({
+                ...prev,
+                leads: leadsMap,
+                columnsData: colsData
+            }));
+        }
+    }, [leads]);
     const [selectedLead, setSelectedLead] = useState(null);
     const scrollContainerRef = useRef(null);
 
@@ -183,9 +206,9 @@ export default function PipelineBoard() {
                                         <div
                                             {...provided.droppableProps}
                                             ref={provided.innerRef}
-                                            className={`flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3 transition-colors ${snapshot.isDraggingOver ? 'bg-white/5' : ''}`}
+                                            className={`flex-1 p-2 overflow-y-auto custom-scrollbar space-y-2 transition-all duration-300 ${snapshot.isDraggingOver ? 'bg-indigo-500/5' : ''}`}
                                         >
-                                            {leads.map((lead, index) => (
+                                            {leads.length > 0 ? leads.map((lead, index) => (
                                                 <Draggable key={lead.id} draggableId={lead.id} index={index}>
                                                     {(provided, snapshot) => (
                                                         <div
@@ -198,7 +221,12 @@ export default function PipelineBoard() {
                                                         </div>
                                                     )}
                                                 </Draggable>
-                                            ))}
+                                            )) : (
+                                                <div className="h-full flex flex-col items-center justify-center opacity-20 py-20 pointer-events-none">
+                                                    <div className="w-12 h-12 rounded-full border-2 border-dashed border-white/20 mb-4" />
+                                                    <p className="text-[8px] font-black uppercase tracking-widest">Sin Leads</p>
+                                                </div>
+                                            )}
                                             {provided.placeholder}
 
                                             {/* Quick Add Button */}
@@ -210,11 +238,17 @@ export default function PipelineBoard() {
                                 </Droppable>
 
                                 {/* Column Footer (Total Value) */}
-                                <div className="p-2.5 border-t border-white/5 bg-[#050511]/50 rounded-b-2xl flex justify-between items-center bg-gradient-to-b from-transparent to-black/20">
-                                    <span className="text-[10px] uppercase font-black tracking-widest text-gray-500">Valor Total Pipeline</span>
-                                    <span className={`text-sm font-black font-display tracking-tight ${leads.reduce((sum, item) => sum + item.value, 0) > 0 ? 'text-emerald-400' : 'text-gray-600'}`}>
-                                        ${leads.reduce((sum, item) => sum + item.value, 0).toLocaleString()}
-                                    </span>
+                                <div className="p-3 border-t border-white/5 bg-[#050511]/80 rounded-b-2xl flex flex-col gap-1 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.5)]">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[8px] uppercase font-black tracking-widest text-gray-600">V. Total Columna</span>
+                                        <span className={`text-[11px] font-black font-display tracking-tight ${leads.reduce((sum, item) => sum + (item.value || 0), 0) > 0 ? 'text-emerald-400' : 'text-gray-700'}`}>
+                                            ${leads.reduce((sum, item) => sum + (item.value || 0), 0).toLocaleString()}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center opacity-40">
+                                        <span className="text-[7px] uppercase font-bold text-gray-700">Conversión Est.</span>
+                                        <span className="text-[8px] font-black text-gray-600">14%</span>
+                                    </div>
                                 </div>
                             </div>
                         );

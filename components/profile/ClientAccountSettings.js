@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X, MapPin, Sparkles, Zap, Stethoscope } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X, MapPin, Sparkles, Zap, Stethoscope, Network, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
@@ -9,26 +9,52 @@ import { supabase } from '@/lib/supabase';
 import GrowthPricing from '../growth/GrowthPricing';
 import PremiumDropdown from '../shared/PremiumDropdown';
 import { motion } from 'framer-motion';
-import { ECUADOR_CITIES, MARKETING_TYPES, PLAN_OPTIONS, MEDICAL_SPECIALTIES } from '@/lib/constants';
+import { ECUADOR_CITIES, INDUSTRY_OPTIONS, PLAN_OPTIONS, MEDICAL_SPECIALTIES, AGRO_SPECIALTIES, EDUCATION_SPECIALTIES } from '@/lib/constants';
 
 export default function ClientAccountSettings() {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
-    const [activeSection, setActiveSection] = useState('profile'); // profile, security, billing, notifications
+    const [activeSection, setActiveSection] = useState('profile'); // profile, brand, security, billing, notifications
     const [showPlans, setShowPlans] = useState(false);
     
     // Sync State
     const [profileData, setProfileData] = useState({
-        full_name: '',
-        brand_name: '',
-        phone: '',
-        email: '',
-        location: '',
-        marketing_type: 'medicos',
-        specialty: '',
-        plan: 'Basic',
-        bio: ''
+        full_name: 'Servicios Agropecuarios Ecuador',
+        brand_name: 'Servicios Agropecuarios Ecuador',
+        phone: '+593963068478',
+        email: 'serviciosagropecuariosecuador@gmail.com',
+        location: 'Santo Domingo, Ecuador',
+        marketing_type: 'educativo',
+        specialty: 'cursos_agro',
+        plan: 'Growth Engine',
+        bio: 'Aprende, Emprende y Especialízate en ganadería vacuna y porcina.',
+        primary_color: '#FFC823', // Yellow/Gold
+        secondary_color: '#008D36', // Green
+        accent_color: '#12372A', // Dark Green
+        logo_url: 'https://serviciosagropecuariosecuador.com/wp-content/uploads/Logo-Agro-web.webp',
+        industry_slug: 'educacion-agro'
     });
+
+    const fileInputRef = useRef(null);
+
+    const handleLogoUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsLoading(true);
+        try {
+            // Simulate upload to Supabase Storage
+            await new Promise(r => setTimeout(r, 1500));
+            // In a real app: const { data, error } = await supabase.storage.from('brand-assets').upload(...)
+            const simulatedUrl = URL.createObjectURL(file); 
+            setProfileData(prev => ({ ...prev, logo_url: simulatedUrl }));
+            toast.success("Logotipo cargado exitosamente");
+        } catch (error) {
+            toast.error("Error al subir el logotipo");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
         const fetchSyncData = async () => {
@@ -56,10 +82,15 @@ export default function ClientAccountSettings() {
                     phone: clientRecord?.whatsapp_number || profile?.whatsapp || '',
                     email: user?.email || '',
                     location: clientRecord?.city || profile?.location || 'Santo Domingo',
-                    marketing_type: clientRecord?.industry || profile?.marketing_type || 'medicos',
+                    marketing_type: clientRecord?.industry || profile?.industry || 'agropecuario',
                     specialty: clientRecord?.specialty || profile?.specialty || '',
                     plan: clientRecord?.plan || profile?.plan || 'Basic',
-                    bio: clientRecord?.notes || ''
+                    bio: clientRecord?.notes || '',
+                    primary_color: clientRecord?.onboarding_data?.brand?.primaryColor || '#6366f1',
+                    secondary_color: clientRecord?.onboarding_data?.brand?.secondaryColor || '#ec4899',
+                    accent_color: clientRecord?.onboarding_data?.brand?.accentColor || '#10b981',
+                    logo_url: clientRecord?.onboarding_data?.brand?.logo || '',
+                    industry_slug: profile?.industry_slug || ''
                 });
             } catch (error) {
                 console.error("Error fetching sync data:", error);
@@ -89,7 +120,11 @@ export default function ClientAccountSettings() {
                     whatsapp: profileData.phone,
                     marketing_type: profileData.marketing_type,
                     specialty: profileData.specialty,
-                    plan: profileData.plan
+                    plan: profileData.plan,
+                    primary_color: profileData.primary_color,
+                    secondary_color: profileData.secondary_color,
+                    accent_color: profileData.accent_color,
+                    logo_url: profileData.logo_url
                 });
                 
                 // Update specific personal profile fields
@@ -99,7 +134,7 @@ export default function ClientAccountSettings() {
                         full_name: profileData.full_name,
                         location: profileData.location,
                         whatsapp: profileData.phone,
-                        marketing_type: profileData.marketing_type,
+                        industry: profileData.marketing_type,
                         specialty: profileData.specialty,
                         plan: profileData.plan
                     })
@@ -130,6 +165,13 @@ export default function ClientAccountSettings() {
                     onClick={() => setActiveSection('profile')}
                 />
                 <NavButton
+                    id="brand"
+                    label="Mi Marca"
+                    icon={Sparkles}
+                    isActive={activeSection === 'brand'}
+                    onClick={() => setActiveSection('brand')}
+                />
+                <NavButton
                     id="security"
                     label="Seguridad"
                     icon={Lock}
@@ -153,7 +195,7 @@ export default function ClientAccountSettings() {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 w-full bg-[#0F0F1A]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 relative overflow-hidden shadow-2xl min-h-[600px]">
+            <div className="flex-1 w-full bg-white/[0.02] border border-white/5 rounded-[40px] p-6 md:p-10 min-h-[600px] relative backdrop-blur-sm">
 
                 {/* Background Decor */}
                 <div className="absolute -top-20 -right-20 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
@@ -227,21 +269,33 @@ export default function ClientAccountSettings() {
                                 searchable={true}
                             />
                             <PremiumDropdown 
-                                label="Tipo de Marketing"
+                                label="Industria / Sector"
                                 value={profileData.marketing_type}
-                                onChange={(val) => setProfileData({...profileData, marketing_type: val})}
-                                options={MARKETING_TYPES}
+                                onChange={(val) => setProfileData({...profileData, marketing_type: val, specialty: ''})}
+                                options={INDUSTRY_OPTIONS}
                                 icon={Sparkles}
                             />
                             
                             {/* Conditional Specialty field */}
-                            {profileData.marketing_type === 'medicos' && (
+                            {profileData.marketing_type === 'medico' && (
                                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="md:col-span-2">
                                     <PremiumDropdown 
                                         label="Especialidad Médica"
                                         value={profileData.specialty}
                                         onChange={(val) => setProfileData({...profileData, specialty: val})}
                                         options={MEDICAL_SPECIALTIES}
+                                        icon={Stethoscope}
+                                    />
+                                </motion.div>
+                            )}
+
+                            {profileData.marketing_type === 'agropecuario' && (
+                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="md:col-span-2">
+                                    <PremiumDropdown 
+                                        label="Rama Agropecuaria"
+                                        value={profileData.specialty}
+                                        onChange={(val) => setProfileData({...profileData, specialty: val})}
+                                        options={AGRO_SPECIALTIES}
                                         icon={Stethoscope}
                                     />
                                 </motion.div>
@@ -267,6 +321,208 @@ export default function ClientAccountSettings() {
                                 value={profileData.bio}
                                 onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
                             />
+                        </div>
+                    </div>
+                )}
+                {/* BRAND SECTION */}
+                {activeSection === 'brand' && (
+                    <div className="space-y-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="border-b border-white/5 pb-6">
+                            <h2 className="text-2xl font-bold text-white mb-2">Mi Marca</h2>
+                            <p className="text-gray-400 text-sm">Personaliza tu ecosistema con tu identidad visual única.</p>
+                        </div>
+
+                        {/* Logo Upload (Enhanced for Brand) */}
+                        <div className="flex flex-col md:flex-row gap-8 items-center p-8 bg-white/5 rounded-[32px] border border-white/5 relative group">
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent pointer-events-none" />
+                            
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                className="hidden" 
+                                accept="image/*"
+                                onChange={handleLogoUpload} 
+                            />
+
+                            <div 
+                                onClick={() => fileInputRef.current.click()}
+                                className="relative group cursor-pointer w-48 h-48 shrink-0"
+                            >
+                                <div className="w-full h-full rounded-[40px] bg-black/40 border-2 border-dashed border-white/10 flex flex-col items-center justify-center transition-all group-hover:border-blue-500/50 overflow-hidden relative">
+                                    {profileData.logo_url ? (
+                                        <img src={profileData.logo_url} alt="Brand Logo" className="w-full h-full object-contain p-4" />
+                                    ) : (
+                                        <>
+                                            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-3">
+                                                <Camera className="w-6 h-6 text-gray-500" />
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest text-center px-4">Sube tu <br/> Logotipo</span>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="absolute inset-0 bg-black/60 rounded-[40px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
+                                    <button className="text-white text-[10px] font-black uppercase tracking-widest">Actualizar</button>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 space-y-4">
+                                <div className="space-y-1">
+                                    <h3 className="text-white font-black text-2xl italic tracking-tighter uppercase">Identidad Visual</h3>
+                                    <p className="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em]">Dashboard Branding v2.0</p>
+                                </div>
+                                <p className="text-xs text-gray-500 max-w-sm leading-relaxed font-medium">
+                                    Tu logo y paleta de colores se aplicarán automáticamente en tu Dashboard, reportes comerciales y notificaciones oficiales.
+                                </p>
+                                <div className="flex gap-3 pt-2">
+                                    <button 
+                                        onClick={() => fileInputRef.current.click()}
+                                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black rounded-2xl border border-indigo-400/20 transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-indigo-600/20"
+                                    >
+                                        Subir Logotipo
+                                    </button>
+                                    {profileData.logo_url && (
+                                        <button 
+                                            onClick={() => setProfileData({...profileData, logo_url: ''})}
+                                            className="px-6 py-3 bg-white/5 hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 text-[10px] font-black rounded-2xl border border-white/10 transition-all uppercase tracking-widest active:scale-95"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Brand Colors Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div className="bg-black/40 border border-white/5 p-6 rounded-[32px] space-y-4 shadow-xl">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-8 rounded-full bg-indigo-500" />
+                                        <h4 className="text-white font-black uppercase tracking-widest text-[10px]">Primario</h4>
+                                    </div>
+                                    <div className="w-6 h-6 rounded-lg shadow-inner" style={{ backgroundColor: profileData.primary_color }} />
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <input 
+                                        type="color" 
+                                        value={profileData.primary_color}
+                                        onChange={(e) => setProfileData({...profileData, primary_color: e.target.value})}
+                                        className="w-12 h-12 rounded-xl bg-transparent border-none cursor-pointer appearance-none" 
+                                    />
+                                    <input 
+                                        type="text" 
+                                        value={profileData.primary_color}
+                                        onChange={(e) => setProfileData({...profileData, primary_color: e.target.value})}
+                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-[10px] uppercase focus:outline-none focus:border-indigo-500/50" 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="bg-black/40 border border-white/5 p-6 rounded-[32px] space-y-4 shadow-xl">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-8 rounded-full bg-pink-500" />
+                                        <h4 className="text-white font-black uppercase tracking-widest text-[10px]">Secundario</h4>
+                                    </div>
+                                    <div className="w-6 h-6 rounded-lg shadow-inner" style={{ backgroundColor: profileData.secondary_color }} />
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <input 
+                                        type="color" 
+                                        value={profileData.secondary_color}
+                                        onChange={(e) => setProfileData({...profileData, secondary_color: e.target.value})}
+                                        className="w-12 h-12 rounded-xl bg-transparent border-none cursor-pointer appearance-none" 
+                                    />
+                                    <input 
+                                        type="text" 
+                                        value={profileData.secondary_color}
+                                        onChange={(e) => setProfileData({...profileData, secondary_color: e.target.value})}
+                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-[10px] uppercase focus:outline-none focus:border-pink-500/50" 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="bg-black/40 border border-white/5 p-6 rounded-[32px] space-y-4 shadow-xl">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-8 rounded-full bg-emerald-500" />
+                                        <h4 className="text-white font-black uppercase tracking-widest text-[10px]">Acento</h4>
+                                    </div>
+                                    <div className="w-6 h-6 rounded-lg shadow-inner" style={{ backgroundColor: profileData.accent_color }} />
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <input 
+                                        type="color" 
+                                        value={profileData.accent_color}
+                                        onChange={(e) => setProfileData({...profileData, accent_color: e.target.value})}
+                                        className="w-12 h-12 rounded-xl bg-transparent border-none cursor-pointer appearance-none" 
+                                    />
+                                    <input 
+                                        type="text" 
+                                        value={profileData.accent_color}
+                                        onChange={(e) => setProfileData({...profileData, accent_color: e.target.value})}
+                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-[10px] uppercase focus:outline-none focus:border-emerald-500/50" 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Niche Selection (Directly from Onboarding) */}
+                        <div className="bg-[#121226]/60 backdrop-blur-xl border border-white/10 p-8 rounded-[40px] space-y-8 shadow-2xl relative group">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                            
+                            <div className="flex items-center justify-between relative z-10">
+                                <div className="space-y-1">
+                                    <h4 className="text-white font-black uppercase tracking-widest text-sm italic">Capa Estratégica</h4>
+                                    <p className="text-[11px] text-gray-400 uppercase tracking-widest font-bold">Configura el contexto operativo de tu marca</p>
+                                </div>
+                                <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner">
+                                    <Network className="w-6 h-6 text-indigo-400" />
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                                <PremiumDropdown 
+                                    label="Industria de Marketing"
+                                    value={profileData.marketing_type}
+                                    onChange={(val) => setProfileData({...profileData, marketing_type: val, specialty: ''})}
+                                    options={INDUSTRY_OPTIONS}
+                                    icon={Sparkles}
+                                />
+                                {profileData.marketing_type === 'educativo' ? (
+                                    <PremiumDropdown 
+                                        label="Especialidad Educativa"
+                                        value={profileData.specialty}
+                                        onChange={(val) => setProfileData({...profileData, specialty: val})}
+                                        options={EDUCATION_SPECIALTIES}
+                                        icon={Target}
+                                    />
+                                ) : profileData.marketing_type === 'agropecuario' ? (
+                                    <PremiumDropdown 
+                                        label="Especialidad Agro"
+                                        value={profileData.specialty}
+                                        onChange={(val) => setProfileData({...profileData, specialty: val})}
+                                        options={AGRO_SPECIALTIES}
+                                        icon={Target}
+                                    />
+                                ) : profileData.marketing_type === 'medico' ? (
+                                    <PremiumDropdown 
+                                        label="Especialidad Médica"
+                                        value={profileData.specialty}
+                                        onChange={(val) => setProfileData({...profileData, specialty: val})}
+                                        options={MEDICAL_SPECIALTIES}
+                                        icon={Target}
+                                    />
+                                ) : (
+                                    <InputField 
+                                        label="Rama / Enfoque Específico"
+                                        value={profileData.specialty}
+                                        onChange={(e) => setProfileData({...profileData, specialty: e.target.value})}
+                                        placeholder="Ej: Retail, Consultoría, etc."
+                                        icon={Target}
+                                    />
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

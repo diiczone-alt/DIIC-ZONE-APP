@@ -92,7 +92,14 @@ export default function OnboardingWizard({ initialType = 'client' }) {
         // --- BYPASS CRÍTICO PARA USUARIOS REGISTRADOS ---
         if (user?.user_metadata?.onboarding_completed) {
             console.log('[OnboardingWizard] Usuario ya registrado detectado. Redirigiendo al Dashboard...');
-            router.push('/dashboard');
+            const industrySlug = user.industry_slug || user.user_metadata?.industry_slug || 'general';
+            const clientSlug = user.client_slug || user.user_metadata?.client_slug || 'workspace';
+            
+            if (user.role === 'CLIENT') {
+                router.push(`/dashboard/${industrySlug}/${clientSlug}/profile`);
+            } else {
+                router.push('/dashboard');
+            }
             return;
         }
 

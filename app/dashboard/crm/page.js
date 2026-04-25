@@ -20,7 +20,24 @@ import BroadcastCenter from '@/components/crm/BroadcastCenter';
 import ProductivityView from '@/components/crm/ProductivityView';
 import { LayoutGrid, List, MessageSquare as InboxIcon, BarChart3, Settings2, megaphone } from 'lucide-react';
 
-// Helper para etiquetas de nicho comerciales
+// Helper para terminología dinámica según el nicho
+const getCRMTerminology = (niche = '', role = '') => {
+    const val = niche.toLowerCase();
+    const isMedical = ['doctor', 'medico', 'médico', 'medical', 'salud', 'clinica', 'clínica', 'urologia', 'urología'].some(k => val.includes(k));
+    const isAgro = ['agro', 'campo', 'agropecuario', 'agropecuaria', 'vete', 'veterinaria'].some(k => val.includes(k));
+    
+    return {
+        unitName: isMedical ? 'Paciente' : isAgro ? 'Productor' : 'Lead',
+        unitPlural: isMedical ? 'Pacientes' : isAgro ? 'Clientes Agro' : 'Prospectos',
+        statusLabel: isMedical ? 'Estado Clínico' : isAgro ? 'Venta Agropecuaria' : 'Estado de Venta',
+        processLabel: isMedical ? 'Protocolo Médico' : isAgro ? 'Pipeline Agro' : 'Pipeline Comercial',
+        serviceLabel: isMedical ? 'Tratamiento' : isAgro ? 'Insumo / Servicio' : 'Servicio / Interés',
+        sectionTitle: isMedical ? 'Gestión de Pacientes' : isAgro ? 'Inteligencia del Campo' : 'Control de Leads',
+        selectionRequired: role === 'CLIENT' ? 'Cargando Marca...' : 'Operativo Global: Selección Requerida',
+        placeholder: isMedical ? 'Sincronizando Pacientes Reales' : isAgro ? 'Sincronizando Gestión del Campo' : 'Sincronizando Leads de Marca'
+    };
+};
+
 const getNicheLabel = (niche = '') => {
     const val = niche.toLowerCase();
     if (['doctor', 'medico', 'médico', 'medical', 'salud', 'clinica', 'clínica', 'urologia', 'urología'].some(k => val.includes(k))) return 'MARKETING PARA MÉDICOS';
@@ -64,12 +81,14 @@ export default function CRMPage() {
         full_name: '',
         phone: '',
         email: '',
-        industry: 'Urología General',
+        industry: '',
         status: 'PROSPECTO',
         city: '',
         price_estimated: 0,
-        source: 'Instagram'
+        source: 'Ads'
     });
+
+    const labels = getCRMTerminology(activeClient?.industry || activeClient?.niche || '', user?.role);
 
     useEffect(() => {
         if (!user) return;
@@ -78,87 +97,110 @@ export default function CRMPage() {
             setLoading(true);
             try {
                 // Priority: URL Param -> User Metadata -> Auth Context ID
-                const targetId = clientId || user.user_metadata?.client_id || user.client_id;
+            const isStaff = user.role !== 'CLIENT';
+            // Isolation Rule: Client users see ONLY their own brand. Staff see selected or global.
+            const targetId = isStaff 
+                ? (clientId || user.user_metadata?.client_id || user.client_id)
+                : (user.client_id || user.user_metadata?.client_id);
 
-                // Load all brands for the selector (Only for Admins without fixed context)
-                const { data: clientData } = await supabase
-                    .from('clients')
-                    .select('id, name, city, growth_level, industry, niche, price');
-                setClients(clientData || []);
+            const { data: clientData } = await supabase
+                .from('clients')
+                .select('id, name, city, growth_level, industry, niche, price');
+            
+            // If Client, filter the selector data too
+            setClients(isStaff ? (clientData || []) : (clientData?.filter(c => c.id === targetId) || []));
 
-                // Find the active client
-                let active = null;
-                if (targetId) {
-                    active = clientData?.find(c => c.id === targetId);
-                    
-                    // Critical Hack for Jessica Rey Context if DB sync lags
-                    if (!active && (targetId === 'C-REYS' || user.full_name?.includes('Jessica'))) {
-                        active = { name: 'Dra. Jessica Rey', id: 'C-REYS' };
-                    }
-                    setActiveClient(active);
-                } else {
-                    setActiveClient(null);
-                }
-
-                // Load Leads logic
-                let query = supabase.from('crm_leads').select('*');
-                if (targetId) {
-                    query = query.eq('client_id', targetId);
-                }
+            // Find the active client
+            let active = null;
+            if (targetId) {
+                active = clientData?.find(c => c.id === targetId);
                 
-                const { data: leadData, error: leadError } = await query.order('created_at', { ascending: false });
-                if (leadError) throw leadError;
-                setLeads(leadData || []);
-
-                // Stats calculation
-                const revenue = leadData?.reduce((sum, item) => sum + Number(item.price_estimated || 0), 0) || 0;
-
-                setStats({
-                    totalLeads: leadData?.length || 0,
-                    pendingAppointments: 12, 
-                    monthlyRevenue: revenue,
-                    aiDraftsCount: Math.floor(Math.random() * 20)
+                // Si es un cliente y no lo encontramos en la lista, creamos un objeto base
+                if (!active && user.role === 'CLIENT') {
+                    active = { 
+                        id: targetId, 
+                        name: user.user_metadata?.brand_name || user.user_metadata?.client_name || user.client_name || 'Mi Marca',
+                        industry: user.user_metadata?.industry || user.industry || 'Agropecuario'
+                    };
+                }
+                setActiveClient(active);
+            } else if (user.role === 'CLIENT') {
+                // Fallback extremo para asegurar que el cliente vea SU marca
+                const fallbackId = user.client_id || user.user_metadata?.client_id;
+                setActiveClient({
+                    id: fallbackId,
+                    name: user.user_metadata?.brand_name || user.user_metadata?.client_name || 'Servicios Agropecuarios',
+                    industry: user.user_metadata?.industry || 'Agropecuario'
                 });
-
-            } catch (err) {
-                console.error('[CRM] Load Failed:', err);
-            } finally {
-                setLoading(false);
+            } else {
+                setActiveClient(null);
             }
-        }
-        loadInitialData();
-    }, [user, clientId]);
 
-    const handleSelectClient = (client) => {
-        const params = new URLSearchParams(searchParams);
-        if (client) {
-            params.set('client', client.id);
-        } else {
-            params.delete('client');
-        }
-        router.push(`?${params.toString()}`);
-        setIsClientSelectorOpen(false);
-    };
+            // Load Leads logic
+            let query = supabase.from('crm_leads').select('*');
+            if (targetId) {
+                query = query.eq('client_id', targetId);
+            } else if (!isStaff) {
+                // If not staff and no ID, return empty to prevent data leak
+                setLeads([]);
+                setLoading(false);
+                return;
+            }
+            
+            const { data: leadData, error: leadError } = await query.order('created_at', { ascending: false });
+            if (leadError) throw leadError;
+            setLeads(leadData || []);
 
-    const handleGenerateSuggestion = async (lead) => {
-        if (!lead || !activeClient) return;
-        setSuggesting(true);
-        setAiSuggestion(null);
-        try {
-            const { aiService } = await import('@/services/aiService');
-            const result = await aiService.generateResponseSuggestion(lead, activeClient);
-            setAiSuggestion(result.text);
-        } catch (error) {
-            console.error("AI Suggestion Error:", error);
+            // Stats calculation
+            const revenue = leadData?.reduce((sum, item) => sum + Number(item.price_estimated || 0), 0) || 0;
+
+            setStats({
+                totalLeads: leadData?.length || 0,
+                pendingAppointments: 12, 
+                monthlyRevenue: revenue,
+                aiDraftsCount: Math.floor(Math.random() * 20)
+            });
+
+        } catch (err) {
+            console.error('[CRM] Load Failed:', err);
         } finally {
-            setSuggesting(false);
+            setLoading(false);
         }
-    };
+    }
+    loadInitialData();
+}, [user, clientId]);
 
-    const handleCreateLead = async (e) => {
-        e.preventDefault();
-        try {
-            const targetId = clientId || user.user_metadata?.client_id || user.client_id || 'C-REYS';
+const handleSelectClient = (client) => {
+    if (user.role === 'CLIENT') return; // Restriction
+    const params = new URLSearchParams(searchParams);
+    if (client) {
+        params.set('client', client.id);
+    } else {
+        params.delete('client');
+    }
+    router.push(`?${params.toString()}`);
+    setIsClientSelectorOpen(false);
+};
+
+const handleGenerateSuggestion = async (lead) => {
+    if (!lead || !activeClient) return;
+    setSuggesting(true);
+    setAiSuggestion(null);
+    try {
+        const { aiService } = await import('@/services/aiService');
+        const result = await aiService.generateResponseSuggestion(lead, activeClient);
+        setAiSuggestion(result.text);
+    } catch (error) {
+        console.error("AI Suggestion Error:", error);
+    } finally {
+        setSuggesting(false);
+    }
+};
+
+const handleCreateLead = async (e) => {
+    e.preventDefault();
+    try {
+        const targetId = user.role === 'CLIENT' ? user.client_id : (clientId || user.user_metadata?.client_id || user.client_id || 'C-REYS');
             const { data, error } = await supabase
                 .from('crm_leads')
                 .insert([{ ...newLead, client_id: targetId }])
@@ -177,12 +219,12 @@ export default function CRMPage() {
                 price_estimated: 0,
                 source: 'Instagram'
             });
-            toast.success("Paciente registrado correctamente", {
+            toast.success(`${labels.unitName} registrado correctamente`, {
                 description: `${data[0].full_name} añadido al CRM.`
             });
         } catch (err) {
             console.error("Error creating lead:", err);
-            toast.error("Error al registrar paciente");
+            toast.error(`Error al registrar ${labels.unitName.toLowerCase()}`);
         }
     };
 
@@ -207,53 +249,56 @@ export default function CRMPage() {
     if (loading) return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-[#050510]">
             <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-                <Users className="w-12 h-12 text-emerald-500 opacity-50" />
+                <Activity className="w-12 h-12 text-indigo-500 opacity-50" />
             </motion.div>
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mt-6 animate-pulse">Sincronizando Pacientes Reales</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 mt-6 animate-pulse">{labels.placeholder}</p>
         </div>
     );
 
     return (
         <main className="min-h-screen bg-[#050510] text-white p-6 md:p-10 space-y-10">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-white/5 pb-8">
-                    <div className="flex flex-col gap-2">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-white/5 pb-8 relative overflow-hidden group">
+                    <div className="flex flex-col gap-2 relative z-10">
                         {/* High-Performance Breadcrumb Navigation */}
                         <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.4em] text-gray-500 mb-2">
                             <span 
                                 onClick={() => router.push('/dashboard')}
                                 className="hover:text-indigo-400 cursor-pointer transition-colors"
                             >
-                                Dashboard
+                                DIIC ZONE
                             </span>
                             <div className="w-1 h-1 bg-gray-700 rounded-full" />
-                            <span className="text-gray-400">
-                                {activeClient ? getNicheLabel(activeClient.niche || activeClient.industry) : 'Global Management'}
+                            <span className="text-indigo-400">
+                                {activeClient ? getNicheLabel(activeClient.industry || activeClient.niche) : 'GLOBAL HUB'}
                             </span>
-                            {activeClient && (
+                             {activeClient && (
                                 <>
                                     <div className="w-1 h-1 bg-gray-700 rounded-full" />
-                                    <span className="text-white italic tracking-tighter transition-all">
-                                        {activeClient.name}
-                                    </span>
+                                    <span className="text-white">CRM</span>
                                 </>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-4">
-                            <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white">
-                                {activeClient ? activeClient.name : 'Inteligencia Estratégica CRM'}
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                                <Sparkles className="w-3 h-3 text-indigo-500" />
+                                {labels.sectionTitle}
+                            </span>
+                            <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase leading-[0.8]">
+                                {activeClient ? (
+                                    <>
+                                        {labels.unitName} <br/>
+                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-6xl md:text-7xl">
+                                            {activeClient.name}
+                                        </span>
+                                    </>
+                                ) : 'PROYECTO CRM'}
                             </h1>
-                            {activeClient && (
-                                <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2 h-fit mt-1">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Sincronización Real Activa</span>
-                                </div>
-                            )}
                         </div>
-                        
+                                           
                         {/* Context-Aware Selector Control */}
-                        {(!activeClient || (user?.user_metadata?.role !== 'CLIENT')) ? (
+                        {(!activeClient || (user?.role !== 'CLIENT')) ? (
                             <div className="flex items-center gap-4 mt-2">
                                 <div className="relative">
                                     <button 
@@ -306,7 +351,7 @@ export default function CRMPage() {
                             </p>
                         )}
                     <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] mt-4 italic">
-                        {activeClient ? `Personalizado para ${activeClient.name}` : 'Protocolo de Seguridad DIIC v3.2'}
+                        {activeClient ? `Inteligencia Avanzada para ${activeClient.name}` : 'Protocolo de Seguridad DIIC v3.2'}
                     </p>
                 </div>
 
@@ -315,7 +360,7 @@ export default function CRMPage() {
                         <Search className="w-4 h-4 text-gray-500 mr-3" />
                         <input 
                             type="text" 
-                            placeholder="Buscar paciente..." 
+                            placeholder={`Buscar ${labels.unitName?.toLowerCase() || 'dato'}...`}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="bg-transparent text-sm font-bold outline-none text-white w-48" 
@@ -325,7 +370,7 @@ export default function CRMPage() {
                         onClick={() => setIsRegisterModalOpen(true)}
                         className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
                     >
-                        <UserPlus className="w-4 h-4" /> Nuevo Registro
+                        <UserPlus className="w-4 h-4" /> Nuevo {labels.unitName}
                     </button>
                 </div>
             </div>
@@ -375,7 +420,7 @@ export default function CRMPage() {
                 >
                     {activeView === 'pipeline' && (
                         <div className="h-[750px] border border-white/5 rounded-[3rem] overflow-hidden shadow-2xl">
-                             <PipelineBoard />
+                             <PipelineBoard leads={leads} />
                         </div>
                     )}
 
@@ -409,8 +454,8 @@ export default function CRMPage() {
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 {[
                                     { label: 'Facturación Total', val: `$${stats.monthlyRevenue.toLocaleString()}`, sub: 'ACUMULADO REAL', icon: DollarSign, color: '#10b981' },
-                                    { label: 'Pacientes Activos', val: stats.totalLeads, sub: 'EN TRATAMIENTO', icon: Users, color: '#6366f1' },
-                                    { label: 'Citas Hoy', val: '12', sub: 'VALIDANDO AGENDA', icon: Calendar, color: '#f59e0b' },
+                                    { label: `${labels.unitPlural} Activos`, val: stats.totalLeads, sub: 'EN SEGUIMIENTO', icon: Users, color: '#6366f1' },
+                                    { label: 'Agendamientos', val: '12', sub: 'ESTA SEMANA', icon: Calendar, color: '#f59e0b' },
                                     { label: 'IA Sugerencias', val: stats.aiDraftsCount, sub: 'PENDIENTES BOTS', icon: Sparkles, color: '#ec4899' },
                                 ].map((s, i) => (
                                     <div key={i} className="bg-white/[0.02] border border-white/5 p-6 rounded-[2rem] relative overflow-hidden group hover:border-white/10 transition-all">
@@ -434,7 +479,7 @@ export default function CRMPage() {
                                             onClick={() => setActiveTab('reales')}
                                             className={`text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'reales' ? 'text-emerald-400' : 'text-gray-500 hover:text-white'}`}
                                         >
-                                            Pacientes Reales
+                                            {labels.unitPlural}
                                         </button>
                                         <div className="h-4 w-[1px] bg-white/10" />
                                         <button 
@@ -449,10 +494,10 @@ export default function CRMPage() {
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="border-b border-white/5">
-                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">{activeClient?.industry?.includes('Médico') || activeClient?.industry?.includes('Urología') ? 'Paciente & Consulta' : 'Lead & Seguimiento'}</th>
-                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">{activeClient?.industry?.includes('Médico') || activeClient?.industry?.includes('Urología') ? 'Estado Clínico' : 'Estado de Venta'}</th>
-                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">{activeClient?.industry?.includes('Médico') || activeClient?.industry?.includes('Urología') ? 'Tratamiento' : 'Servicio / Interés'}</th>
-                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">Facturación</th>
+                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">Identidad {labels.unitName}</th>
+                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">{labels.statusLabel}</th>
+                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">{labels.serviceLabel}</th>
+                                            <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest">Inversión Est.</th>
                                             <th className="px-10 py-5 text-[9px] font-black text-gray-600 uppercase tracking-widest text-right">IA Bot</th>
                                         </tr>
                                     </thead>
@@ -486,9 +531,9 @@ export default function CRMPage() {
                                                 <td className="px-10 py-5">
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-1.5 h-1.5 rounded-full ${lead.status === 'ACTIVE' || lead.status === 'AGENDADO' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                                        <span className="text-[10px] font-black text-white uppercase tracking-widest italic">{lead.status || 'PROSPECTO'}</span>
+                                                        <span className="text-[10px] font-black text-white uppercase tracking-widest italic">{lead.status || labels.unitName.toUpperCase()}</span>
                                                     </div>
-                                                    {/* Patient Journey Progress Bar */}
+                                                    {/* Journey Progress Bar */}
                                                     <div className="w-24 h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
                                                         <div 
                                                             className="h-full bg-gradient-to-r from-emerald-500 to-teal-400" 
@@ -534,12 +579,12 @@ export default function CRMPage() {
                                         </div>
                                         <div className="space-y-4">
                                             <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">
-                                                {activeClient ? 'Sin Pacientes en esta Marca' : 'Modo Dios: Selección Requerida'}
+                                                {activeClient ? `Sin ${labels.unitPlural} en esta Marca` : labels.selectionRequired}
                                             </h3>
                                             <p className="text-gray-500 text-xs font-bold uppercase tracking-widest leading-relaxed">
                                                 {activeClient 
-                                                    ? `Aún no hay pacientes registrados para ${activeClient.name}. Comienza vinculando tus redes sociales o realizando una importación.`
-                                                    : 'Por seguridad y privacidad de datos, debes seleccionar una marca específica para visualizar su CRM y pacientes reales.'}
+                                                    ? `Aún no hay ${labels.unitPlural.toLowerCase()} registrados para ${activeClient.name}. Comienza vinculando tus redes sociales o realizando una importación.`
+                                                    : 'Por seguridad y privacidad de datos, el acceso al CRM requiere la vinculación de un nodo de marca operativo.'}
                                             </p>
                                         </div>
                                         {!activeClient && (
@@ -706,8 +751,8 @@ export default function CRMPage() {
                             <div className="p-10">
                                 <div className="flex justify-between items-center mb-8">
                                     <div className="space-y-1">
-                                        <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">Nuevo Paciente</h2>
-                                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">Protocolo de Ingreso CRM Médico</p>
+                                        <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">Nuevo {labels.unitName}</h2>
+                                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">{labels.processLabel} CRM</p>
                                     </div>
                                     <button onClick={() => setIsRegisterModalOpen(false)} className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-all">
                                         <X className="w-6 h-6" />
@@ -721,7 +766,7 @@ export default function CRMPage() {
                                             <input 
                                                 required
                                                 type="text" 
-                                                placeholder="Ej. Dr. Mario Perez"
+                                                placeholder={labels.unitName === 'Paciente' ? "Ej. Dr. Mario Perez" : "Ej. Juan Perez"}
                                                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:border-emerald-500/50 outline-none transition-all font-bold text-sm"
                                                 value={newLead.full_name}
                                                 onChange={(e) => setNewLead({...newLead, full_name: e.target.value})}
@@ -742,27 +787,33 @@ export default function CRMPage() {
 
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Patología / Servicio</label>
+                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">{labels.unitName === 'Paciente' ? 'Patología / Servicio' : 'Segmento / Interés'}</label>
                                             <select 
                                                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:border-emerald-500/50 outline-none transition-all font-bold text-sm text-white appearance-none"
                                                 value={newLead.industry}
                                                 onChange={(e) => setNewLead({...newLead, industry: e.target.value})}
                                             >
-                                                {getUrologyTags().map(tag => (
-                                                    <option key={tag} value={tag} className="bg-[#0a0a1a]">{tag}</option>
-                                                ))}
+                                                {labels.unitName === 'Paciente' ? (
+                                                     getUrologyTags().map(tag => (
+                                                        <option key={tag} value={tag} className="bg-[#0a0a1a]">{tag}</option>
+                                                     ))
+                                                ) : (
+                                                    ['Interés General', 'Servicio Premium', 'Consulta Directa', 'Seguimiento Ads'].map(tag => (
+                                                        <option key={tag} value={tag} className="bg-[#0a0a1a]">{tag}</option>
+                                                    ))
+                                                )}
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Estado Initial</label>
+                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Estado Inicial</label>
                                             <select 
                                                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:border-emerald-500/50 outline-none transition-all font-bold text-sm text-white appearance-none"
                                                 value={newLead.status}
                                                 onChange={(e) => setNewLead({...newLead, status: e.target.value})}
                                             >
-                                                <option value="PROSPECTO" className="bg-[#0a0a1a]">PROSPECTO</option>
-                                                <option value="AGENDADO" className="bg-[#0a0a1a]">AGENDADO</option>
-                                                <option value="URGENCIA" className="bg-[#0a0a1a]">URGENCIA</option>
+                                                <option value="PROSPECTO" className="bg-[#0a0a1a]">LEAD ENTRANTE</option>
+                                                <option value="AGENDADO" className="bg-[#0a0a1a]">CITA AGENDADA</option>
+                                                <option value="NEGOCIO" className="bg-[#0a0a1a]">NEGOCIACIÓN</option>
                                             </select>
                                         </div>
                                     </div>
@@ -783,7 +834,7 @@ export default function CRMPage() {
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Ciudad / Clínica</label>
+                                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Ciudad / Ubicación</label>
                                             <input 
                                                 type="text" 
                                                 placeholder="Ej. Santo Domingo"
@@ -798,7 +849,7 @@ export default function CRMPage() {
                                         type="submit"
                                         className="w-full py-6 mt-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-3xl text-xs font-black uppercase tracking-[0.4em] transition-all shadow-2xl shadow-emerald-900/30 active:scale-95"
                                     >
-                                        Finalizar Registro Médico
+                                        Finalizar Registro de {labels.unitName}
                                     </button>
                                 </form>
                             </div>

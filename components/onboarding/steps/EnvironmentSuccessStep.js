@@ -38,6 +38,7 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
     const isMounted = useRef(true);
     const retryTimeoutRef = useRef(null);
     const hasExecuted = useRef(false);
+    const finalSlugs = useRef({ industry: 'general', client: 'workspace' });
 
     useEffect(() => {
         isMounted.current = true;
@@ -92,6 +93,13 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                         ]);
 
                         if (isMounted.current && result) {
+                            if (result.industry_slug && result.client_slug) {
+                                finalSlugs.current = {
+                                    industry: result.industry_slug,
+                                    client: result.client_slug
+                                };
+                            }
+
                             if (result.isUpdate) {
                                 setIsAlreadyMember(true);
                                 setLogs(prev => [...prev, 'Registro previo detectado. Actualizando credenciales...']);
@@ -230,7 +238,9 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
             const route = roleRoutes[formData.role] || '/dashboard';
             router.push(route);
         } else {
-            router.push('/dashboard');
+            const destIndustry = finalSlugs.current.industry || 'general';
+            const destClient = finalSlugs.current.client || 'workspace';
+            router.push(`/dashboard/${destIndustry}/${destClient}/profile`);
         }
     };
 

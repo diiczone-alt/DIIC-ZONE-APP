@@ -12,7 +12,7 @@ import {
 const mockCampaigns = [
     { 
         id: 'c1', 
-        name: 'Recordatorio Preventivo Próstata', 
+        name: 'Recordatorio de Acción Estratégica', 
         status: 'completed', 
         sent: 450, 
         delivered: 442, 
@@ -22,7 +22,7 @@ const mockCampaigns = [
     },
     { 
         id: 'c2', 
-        name: 'Promoción Cirugía Robótica Q2', 
+        name: 'Lanzamiento Nueva Temporada Q2', 
         status: 'active', 
         sent: 1200, 
         delivered: 1150, 
@@ -202,7 +202,7 @@ export default function BroadcastCenter() {
                                 <div className="space-y-6 text-left">
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-2">Nombre de Campaña</label>
-                                        <input type="text" placeholder="Ej: Invitación Masterclass Urología" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:border-indigo-500 outline-none transition-all" />
+                                        <input type="text" placeholder="Ej: Invitación Evento Lanzamiento" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:border-indigo-500 outline-none transition-all" />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-6">
@@ -212,7 +212,7 @@ export default function BroadcastCenter() {
                                                 <option>Todos los leads (1,650)</option>
                                                 <option>Etapa: Interesados (240)</option>
                                                 <option>Etapa: Nuevos (45)</option>
-                                                <option>Tag: Paciente Recurrente (312)</option>
+                                                <option>Tag: Cliente Recurrente (312)</option>
                                             </select>
                                         </div>
                                         <div className="space-y-2">

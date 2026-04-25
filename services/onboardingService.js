@@ -28,6 +28,31 @@ export const onboardingService = {
             let clientId = currentProfile?.client_id;
             let teamId = currentProfile?.team_id;
 
+            // --- GENERAR SLUGS PARA NAMESPACING ---
+            const sluggify = (text) => text.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
+                .replace(/[^\w ]+/g, '') // Remove non-word chars
+                .replace(/ +/g, '-'); // Replace spaces with hyphens
+
+            const industrySlug = sluggify(formData.profileType || 'general');
+            const brandSlug = sluggify(brandName);
+
+            // Mapping for human-readable industry names
+            const industryMap = {
+                'doctor': 'Marketing para Médicos',
+                'agro': 'Marketing Agropecuario',
+                'legal': 'Marketing Jurídico',
+                'personal': 'Marca Personal',
+                'ecommerce': 'E-commerce',
+                'realestate': 'Bienes Raíces',
+                'tech': 'Tecnología / TI',
+                'education': 'Educación',
+                'horeca': 'Hostelería / HoReCa',
+                'marketing': 'Marketing Digital'
+            };
+
+            const industryName = industryMap[formData.profileType] || formData.profileType || 'General';
+
             // 2. Sincronización de Base de Datos (Clients or Team)
             try {
                 if (profileType === 'client') {
@@ -52,12 +77,15 @@ export const onboardingService = {
                         .upsert({
                             id: targetId,
                             name: brandName,
+                            slug: brandSlug,
                             email: user.email,
                             city: city,
-                            type: formData.profileType || 'Business',
+                            type: industryName,
+                            industry: industryName,
+                            specialty: formData.niche || 'General',
                             status: 'ONBOARDING_COMPLETED',
                             priority: 'MEDIUM',
-                            plan: 'STARTUP',
+                            plan: 'Basic',
                             onboarding_data: formData 
                         }, { onConflict: 'id' })
                         .select()
@@ -102,6 +130,10 @@ export const onboardingService = {
                     role: profileType === 'creative' ? (formData.role || 'CREATIVE').toUpperCase() : profileType.toUpperCase(),
                     client_id: clientId,
                     team_id: teamId,
+                    industry: industryName,
+                    specialty: formData.niche || 'General',
+                    industry_slug: industrySlug,
+                    client_slug: brandSlug,
                     cv_url: formData.cv_url || '',
                     cv_summary: formData.cv_summary || '',
                     skills: formData.skills || [],
@@ -126,6 +158,9 @@ export const onboardingService = {
                         brand: brandName,
                         city: city,
                         profile_type: profileType,
+                        industry: industryName,
+                        industry_slug: industrySlug,
+                        client_slug: brandSlug,
                         crm_usage: formData.businessInfo?.usesCRM || false,
                         goal: formData.goal || '',
                         niche: formData.niche || '',
@@ -139,7 +174,7 @@ export const onboardingService = {
                 console.error('[OnboardingService] Error actualizando Auth Metadata:', authErr);
             }
 
-            return { success: true, clientId, isUpdate: !!currentProfile?.client_id };
+            return { success: true, clientId, industry_slug: industrySlug, client_slug: brandSlug, isUpdate: !!currentProfile?.client_id };
 
         } catch (error) {
             console.error('[OnboardingService] Error fatal en finalización:', error);

@@ -12,7 +12,7 @@ export async function POST(req) {
         }
 
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-pro",
+            model: "gemini-2.5-flash",
             systemInstruction: `
                 Eres un experto en Ventas y atención al cliente de DIIC ZONE.
                 Tu objetivo es generar una respuesta persuasiva, profesional y empática para un paciente/lead.

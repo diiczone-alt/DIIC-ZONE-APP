@@ -159,9 +159,9 @@ export const agencyService = {
                 full_name: updates.full_name,
                 location: updates.location,
                 whatsapp: updates.whatsapp,
-                marketing_type: updates.marketing_type,
-                plan: updates.plan,
-                specialty: updates.specialty
+                industry: updates.marketing_type,
+                specialty: updates.specialty,
+                plan: updates.plan
             };
             
             const { error: pError } = await supabase
@@ -176,8 +176,18 @@ export const agencyService = {
                 name: updates.full_name,
                 city: updates.location,
                 whatsapp_number: updates.whatsapp,
-                industry: updates.marketing_type, // Mapping marketing type to industry for legacy support
-                plan: updates.plan
+                industry: updates.marketing_type, // Mapping marketing type to industry
+                specialty: updates.specialty,
+                plan: updates.plan,
+                // Preserving existing onboarding_data and updating brand section
+                onboarding_data: {
+                    brand: {
+                        primaryColor: updates.primary_color,
+                        secondaryColor: updates.secondary_color,
+                        accentColor: updates.accent_color,
+                        logo: updates.logo_url
+                    }
+                }
             };
 
             const { data: cData, error: cError } = await supabase
@@ -233,7 +243,7 @@ export const agencyService = {
             if (error) throw error;
             return data;
         } catch (error) {
-            console.error("Error fetching client by ID:", error);
+            console.error("Error fetching client by ID:", error?.message || error);
             return null;
         }
     },

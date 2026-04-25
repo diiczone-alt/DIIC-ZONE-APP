@@ -78,7 +78,11 @@ export const AuthProvider = ({ children }) => {
                 role: role,
                 client_id: client_id,
                 full_name: fullName,
-                team_id: teamId
+                team_id: teamId,
+                industry: data?.industry || metadata?.industry || 'general',
+                industry_slug: data?.industry_slug || metadata?.industry_slug || 'general',
+                client_slug: data?.client_slug || metadata?.client_slug || 'default',
+                onboarding_completed: metadata?.onboarding_completed || false
             };
         } catch (err) {
             console.error('[AuthContext] Unexpected fetchProfile error:', err);
@@ -329,10 +333,16 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const getHomeRoute = (role) => {
+    const getHomeRoute = (role, industrySlug = null, clientSlug = null) => {
         const safeRole = (role || 'CLIENT').toUpperCase();
         if (safeRole === 'ADMIN') return '/dashboard/hq';
-        if (safeRole === 'CLIENT') return '/dashboard';
+        
+        if (safeRole === 'CLIENT') {
+            if (industrySlug && clientSlug) {
+                return `/dashboard/${industrySlug}/${clientSlug}`;
+            }
+            return '/dashboard';
+        }
         
         const roleRoutes = {
             COMMUNITY: '/workstation/community-manager',

@@ -36,7 +36,7 @@ export default function ScheduleModal({ lead, onClose, onSchedule }) {
                         </div>
                         <div>
                             <h3 className="text-white font-black italic uppercase tracking-tighter text-lg">Agendar Cita</h3>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Dra. Jessica Rey • Google Calendar Sync</p>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sincronización Inteligente • Inteligencia de Calendario</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -56,12 +56,12 @@ export default function ScheduleModal({ lead, onClose, onSchedule }) {
                             >
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Paciente</label>
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Para</label>
                                         <div className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white font-bold flex items-center gap-3">
                                             <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-[10px]">
-                                                {lead.name.charAt(0)}
+                                                {lead.name?.charAt(0) || lead.full_name?.charAt(0)}
                                             </div>
-                                            {lead.name}
+                                            {lead.name || lead.full_name}
                                         </div>
                                     </div>
 
