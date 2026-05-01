@@ -8,12 +8,15 @@ import ClientLevelSystem from './ClientLevelSystem';
 import ClientRewards from './ClientRewards';
 import ClientAccountSettings from './ClientAccountSettings';
 import ClientIdentityWrapper from './ClientIdentityWrapper';
+import ClientServiceCatalog from './ClientServiceCatalog';
+import { useAuth } from '@/context/AuthContext';
 // ...
 
 export default function ClientProfileHub() {
     const [isMounted, setIsMounted] = useState(false);
+    const { user } = useAuth();
     const searchParams = useSearchParams();
-    const [subTab, setSubTab] = useState('identity'); // 'identity', 'progress', 'rewards', 'settings'
+    const [subTab, setSubTab] = useState('identity'); // 'identity', 'catalog', 'progress', 'rewards', 'settings'
 
     useEffect(() => {
         setIsMounted(true);
@@ -21,7 +24,7 @@ export default function ClientProfileHub() {
 
     useEffect(() => {
         const tabParam = searchParams.get('tab');
-        if (tabParam && ['identity', 'progress', 'rewards', 'settings'].includes(tabParam)) {
+        if (tabParam && ['identity', 'catalog', 'progress', 'rewards', 'settings'].includes(tabParam)) {
             setSubTab(tabParam);
         }
     }, [searchParams]);
@@ -39,6 +42,13 @@ export default function ClientProfileHub() {
                         icon={Network}
                         active={subTab === 'identity'}
                         onClick={() => setSubTab('identity')}
+                    />
+                    <TabButton
+                        id="catalog"
+                        label="Catálogo"
+                        icon={TrendingUp}
+                        active={subTab === 'catalog'}
+                        onClick={() => setSubTab('catalog')}
                     />
                     <TabButton
                         id="progress"
@@ -75,6 +85,7 @@ export default function ClientProfileHub() {
                         transition={{ duration: 0.2 }}
                     >
                         {subTab === 'identity' && <ClientIdentityWrapper />}
+                        {subTab === 'catalog' && <ClientServiceCatalog clientId={user?.client_id} />}
                         {subTab === 'progress' && <ClientLevelSystem />}
                         {subTab === 'rewards' && <ClientRewards />}
                         {subTab === 'settings' && <ClientAccountSettings />}

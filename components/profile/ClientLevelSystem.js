@@ -13,10 +13,13 @@ import {
     Gift
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import GrowthAlertSystem from '../connectivity/GrowthAlertSystem';
 import { agencyService } from '@/services/agencyService';
+import { toast } from 'sonner';
 
 export default function ClientLevelSystem({ initialLevel = 1 }) {
+    const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
     const clientId = 1;
     const [level, setLevel] = useState(initialLevel);
@@ -54,17 +57,17 @@ export default function ClientLevelSystem({ initialLevel = 1 }) {
     const levels = [
         {
             id: 1,
-            name: "Inicio Digital",
+            name: "Presencia Digital",
             color: "emerald",
             mainGoal: "Existir profesionalmente",
-            indicator: "Presencia digital creada",
+            indicator: "Identidad creada",
             status: "El cliente apenas comienza.",
             suggestedContent: "Diseño de Marca, Bio Optimizada, 6 Posts Base",
             complexity: "BAJA",
-            fullDescription: "En esta fase, el objetivo es garantizar que tu marca 'exista' en el ecosistema digital con una estética profesional y coherente.",
+            fullDescription: "En esta fase, el objetivo es garantizar que tu marca 'exista' en el ecosistema digital con una identidad visual coherente.",
             technicalTasks: [
                 "Diseño de Identidad Visual (Logo/Colores)",
-                "Configuración de Perfiles de Instagram/TikTok",
+                "Configuración de Perfiles Sociales",
                 "Optimización de Biografías (SEO)",
                 "Garantía de Estética: Primer Grid Profesional"
             ],
@@ -82,18 +85,18 @@ export default function ClientLevelSystem({ initialLevel = 1 }) {
                 { id: 'templates', label: "Plantillas Básicas", icon: LayoutGrid },
                 { id: 'support', label: "Soporte Base", icon: Info }
             ],
-            icon: Circle
+            icon: Globe
         },
         {
             id: 2,
-            name: "Presencia",
+            name: "Estrategia",
             color: "yellow",
             mainGoal: "Ser visible y constante",
             indicator: "Marca activa y reconocida",
             status: "Ya se ve, pero aún no vende de forma automática.",
             suggestedContent: "Contenido 12/mes, Reels Virales, Historias Vendedoras",
             complexity: "MEDIA",
-            fullDescription: "Aquí construimos el hábito. El algoritmo debe reconocerte como un creador activo para empezar a mostrarte a más personas.",
+            fullDescription: "Aquí construimos el hábito. El algoritmo debe reconocerte como un creador activo para empezar a generar tracción.",
             technicalTasks: [
                 "Ejecución de Calendario Mensual (12 Posts)",
                 "Producción de 2-4 Reels Profesionales",
@@ -113,17 +116,17 @@ export default function ClientLevelSystem({ initialLevel = 1 }) {
                 { id: 'review', label: "Revisión Mensual", icon: CheckCircle2 },
                 { id: 'auto-suggest', label: "Sugerencias Auto", icon: Zap }
             ],
-            icon: LayoutGrid
+            icon: Target
         },
         {
             id: 3,
-            name: "Confianza",
+            name: "Marca",
             color: "orange",
             mainGoal: "Generar credibilidad sólida",
             indicator: "Marca confiable y experta",
             status: "La gente confía, pero el proceso de venta es manual.",
             suggestedContent: "Videos Testimoniales, Portafolios de Éxito, Livestreaming",
-            complexity: "MEDIA-ALTA",
+            complexity: "ALTA",
             fullDescription: "El enfoque cambia del 'qué vendes' al 'por qué eres el mejor'. Validamos tu autoridad con pruebas sociales.",
             technicalTasks: [
                 "Producción de Video Corporativo/Expertice",
@@ -144,17 +147,17 @@ export default function ClientLevelSystem({ initialLevel = 1 }) {
                 { id: 'bio-opt', label: "Optimización Bio", icon: Type },
                 { id: 'early', label: "Acceso Anticipado", icon: Rocket }
             ],
-            icon: Award
+            icon: Star
         },
         {
             id: 4,
-            name: "Autoridad",
+            name: "Automatización",
             color: "blue",
             mainGoal: "Ser el referente y vender",
             indicator: "Sistema de ventas con tracción",
             status: "Es referencia nacional. El CRM ya captura leads.",
             suggestedContent: "Masterclass, Funnels de Lead Magnet, Facebook Ads",
-            complexity: "ALTA",
+            complexity: "AVANZADA",
             fullDescription: "Configuramos la maquinaria pesada. Tu marca personal se convierte en un activo que genera dinero mientras descansas.",
             technicalTasks: [
                 "Implementación de CRM Estratégico",
@@ -175,7 +178,7 @@ export default function ClientLevelSystem({ initialLevel = 1 }) {
                 { id: 'competitors', label: "Análisis Competencia", icon: TrendingUp },
                 { id: 'premium-rev', label: "Review Premium", icon: Video }
             ],
-            icon: Star
+            icon: Zap
         },
         {
             id: 5,
@@ -404,7 +407,10 @@ export default function ClientLevelSystem({ initialLevel = 1 }) {
                             </p>
                         </div>
                         {activeLevel === level && (
-                            <button className={`w-full py-4 bg-${currentLevelData.color}-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-${currentLevelData.color}-500/20 flex items-center justify-center gap-2 group border border-white/10`}>
+                            <button 
+                                onClick={() => router.push('?tab=catalog')}
+                                className={`w-full py-4 bg-${currentLevelData.color}-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-${currentLevelData.color}-500/20 flex items-center justify-center gap-2 group border border-white/10`}
+                            >
                                 Lograr Siguiente Meta <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                             </button>
                         )}
@@ -449,7 +455,13 @@ export default function ClientLevelSystem({ initialLevel = 1 }) {
                                 "Mike, vas por buen camino con tu <span className="text-indigo-400 font-black">PRESENCIA (LVL 2)</span>, pero para escalar necesitamos que tus <span className="text-white">REELS PROFESSIONAL</span> y el <span className="text-white">MENSAJE CLARO</span> estén terminados. ¿Vemos el flujo de guiones?"
                             </p>
                         </div>
-                        <button className="w-full py-4 bg-indigo-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2 group border border-white/10">
+                        <button 
+                            onClick={() => {
+                                router.push('?tab=identity');
+                                toast.info("Consultando al Coach IA...");
+                            }}
+                            className="w-full py-4 bg-indigo-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2 group border border-white/10"
+                        >
                             Lograr Siguiente Meta <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </button>
                     </div>

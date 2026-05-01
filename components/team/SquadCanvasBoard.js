@@ -103,38 +103,34 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
 
     // Initialize Layout with Persistent Memory
     useEffect(() => {
-        if (!team || team.length === 0) return;
+        if (!team || team.length === 0) {
+            setNodes([]);
+            setEdges([]);
+            return;
+        }
+
+        console.log(`📡 [SquadCanvas] Building structure for ${team.length} members. Sede: ${activeSede}`);
 
         const generatedNodes = [];
         const generatedEdges = [];
         const savedLayout = JSON.parse(localStorage.getItem('diiczone_squad_layout') || '{}');
 
-        // Filter by Sede: based on CLIENT location AND Team Member resident location
-        let filteredTeam = team;
+        // Filter by Sede
+        let filteredTeam = [...team];
 
         if (activeSede !== 'Todas') {
-            // 1. Get businesses (clients) located in the activeSede (Normalised)
             const sedeClients = (allClients || []).filter(c => (c.city || '').toLowerCase().trim() === activeSede.toLowerCase().trim());
-            
-            // 2. Identify personnel actively attached to these businesses
             const activePersonnelNames = new Set(sedeClients.flatMap(c => [c.cm, c.editor, c.filmmaker]).filter(Boolean));
             
-            // Core members actually working the brands OR actively assigned to the Node/City
             const coreMembers = team.filter(m => {
                 const memberCity = (m.city || '').toLowerCase().trim();
                 const targetSede = activeSede.toLowerCase().trim();
-                
                 const isResident = memberCity === targetSede;
                 const hasLocalBrands = sedeClients.length > 0;
-
-                // Solo incluimos residentes si la sede est activa con marcas
-                // De lo contrario, solo incluimos a personal explcitamente asignado mediante brands
                 return activePersonnelNames.has(m.name) || (isResident && hasLocalBrands);
             });
             
             const squadSet = new Set(coreMembers.map(m => m.id));
-
-            // Include leaders (Estrategas/HQ) UP the chain
             let addedNew = true;
             while(addedNew) {
                 addedNew = false;
@@ -145,22 +141,20 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
                     }
                 });
             }
-
-            // Eliminamos la lógica "Down the chain" para no traer a creativos de otras ciudades
-            // solo porque su líder esté asignado a esta ciudad.
-
             filteredTeam = team.filter(m => squadSet.has(m.id));
         }
 
         const strategists = filteredTeam.filter(m => (m.role || '').toLowerCase().includes('estratega'));
         const cms = filteredTeam.filter(m => (m.role || '').toLowerCase().includes('community manager'));
-        const creatives = filteredTeam.filter(m => !(m.role || '').toLowerCase().includes('estratega') && !(m.role || '').toLowerCase().includes('community manager'));
+        const creatives = filteredTeam.filter(m => 
+            !(m.role || '').toLowerCase().includes('estratega') && 
+            !(m.role || '').toLowerCase().includes('community manager')
+        );
 
-        // Simple layouting math (Fallback)
-        const LEVEL_Y = { ESTRATEGAS: 50, CMS: 400, CREATIVES: 800 };
-        const X_SPACING = { ESTRATEGAS: 400, CMS: 350, CREATIVES: 300 };
+        // Simple layouting math
+        const LEVEL_Y = { ESTRATEGAS: 50, CMS: 450, CREATIVES: 850 };
+        const X_SPACING = { ESTRATEGAS: 400, CMS: 350, CREATIVES: 320 };
 
-        // Centering X coordinates
         const startX = (arr, spacing) => -((arr.length - 1) * spacing) / 2;
 
         const addMembersToNodes = (members, levelY, spacing) => {
@@ -170,17 +164,23 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
                     id: m.id,
                     type: 'customMember',
                     position: savedLayout[m.id] || { x: start + (idx * spacing), y: levelY },
-                    data: { label: m.name, role: m.role, city: m.city, salary: m.salary, member: m, onAudit }
+                    data: { 
+                        label: m.name || 'Sin Nombre', 
+                        role: m.role || 'Talento', 
+                        city: m.city, 
+                        salary: m.salary, 
+                        member: m, 
+                        onAudit 
+                    }
                 });
 
-                // Reconstruct Edges if they have a leader
                 if (m.squad_lead_id) {
                     generatedEdges.push({
                         id: `e-${m.squad_lead_id}-${m.id}`,
                         source: m.squad_lead_id,
                         target: m.id,
                         animated: true,
-                        style: { stroke: '#818cf8', strokeWidth: 3 }, // Indigo glow
+                        style: { stroke: '#818cf8', strokeWidth: 3 },
                         markerEnd: { type: MarkerType.ArrowClosed, color: '#818cf8' },
                     });
                 }
@@ -291,6 +291,7 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
             </div>
 
             <ReactFlow
+                key={`flow-${activeSede}-${nodes.length}`}
                 nodes={nodes}
                 edges={edges}
                 onNodesChange={onNodesChange}

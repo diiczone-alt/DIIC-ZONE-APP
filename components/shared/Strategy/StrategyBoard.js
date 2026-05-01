@@ -101,6 +101,19 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
         activeCampaignId: 'camp_default'
     });
 
+    // --- GLOBAL SYNC FOR PIPELINE ---
+    useEffect(() => {
+        if (!strategyData.activeCampaignId) return;
+        const activeCampaign = strategyData.campaigns.find(c => c.id === strategyData.activeCampaignId);
+        if (activeCampaign && activeCampaign.nodes) {
+            try {
+                localStorage.setItem('diiczone_global_pipeline', JSON.stringify(activeCampaign.nodes));
+            } catch (e) {
+                console.error("Failed to sync pipeline to localStorage", e);
+            }
+        }
+    }, [strategyData]);
+
     // --- AUTO-LAYOUT LOGIC: INTELLIGENT STRATEGIC MAPPING ---
     const layoutRef = useRef({}); // Track which campaigns have been auto-laid out
 

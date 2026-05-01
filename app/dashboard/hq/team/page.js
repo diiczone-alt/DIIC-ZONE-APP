@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Users, Shield, Star, Zap, 
@@ -42,10 +42,10 @@ export default function HQTeamPage() {
 
     const isHQLive = useRealtimeSync(['team', 'clients'], () => fetchData(true));
 
-    const openAudit = (member) => {
+    const openAudit = useCallback((member) => {
         setSelectedMember(member);
         setIsAuditOpen(true);
-    };
+    }, []);
 
     const handleAddMember = async (e) => {
         e.preventDefault();
@@ -75,18 +75,28 @@ export default function HQTeamPage() {
     const fetchData = async (isBackground = false) => {
         if (!isBackground) setLoading(true);
         setIsSyncing(true);
+        
         try {
-            console.log(`🚀 [HQ-Team] ${isBackground ? 'Background' : 'Initial'} DB Syncing...`);
+            console.log("📡 [HQ-Team] Fetching data from Supabase...");
             const [teamData, clientData] = await Promise.all([
                 agencyService.getTeam(),
                 agencyService.getClients()
             ]);
             
+            console.log(`✅ [HQ-Team] Data received: ${teamData?.length || 0} members, ${clientData?.length || 0} clients`);
+            
             setTeam(teamData || []);
             setClients(clientData || []);
+            
+            if (teamData?.length > 0) {
+                toast.success("Equipo sincronizado", { 
+                    description: `${teamData.length} talentos cargados correctamente.`,
+                    id: 'sync-success'
+                });
+            }
         } catch (error) {
-            console.error("❌ [HQ-Team] Critical Sync Failed:", error);
-            if (!isBackground) toast.error("Fallo de conexión con la Central HQ");
+            console.error("❌ [HQ-Team] Fetch error:", error);
+            if (!isBackground) toast.error("Error al sincronizar datos");
         } finally {
             setLoading(false);
             setIsSyncing(false);

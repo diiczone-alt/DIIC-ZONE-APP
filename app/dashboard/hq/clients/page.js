@@ -28,6 +28,7 @@ export default function HQClientsPage() {
     const [syncStep, setSyncStep] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showSuccessView, setShowSuccessView] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [previewData, setPreviewData] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -151,8 +152,7 @@ export default function HQClientsPage() {
         try {
             const created = await agencyService.createClient(clientWithId);
             setClients(prev => [created, ...prev]);
-            setIsModalOpen(false); 
-            setNewClient({ name: '', plan: 'Basic', price: 0, target: 0, cm: '', email: '', password_initial: '', whatsapp_number: '', google_drive_folder_id: '', notes: '', onboarding_data: {} });
+            setShowSuccessView(true);
             toast.success("Socio registrado exitosamente");
         } catch (error) {
             console.error("❌ [Flow] Creation Error:", error);
@@ -481,29 +481,89 @@ export default function HQClientsPage() {
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
                         <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative w-full max-w-xl bg-[#11111D] border border-white/10 rounded-[2.5rem] shadow-2xl p-8 overflow-hidden">
-                            <h2 className="text-2xl font-black text-white mb-6 uppercase italic tracking-tighter">Registrar Nuevo Socio</h2>
-                            <form onSubmit={handleCreateClient} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Nombre / Marca</label>
-                                    <input type="text" required value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={[{ value: 'Basic', label: 'Basic' }, { value: 'Premium', label: 'Premium' }, { value: 'Enterprise', label: 'Enterprise' }]} />
-                                    <PremiumDropdown label="CM" value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
-                                </div>
-                                <PremiumDropdown 
-                                    label="Ciudad Base" 
-                                    value={newClient.city} 
-                                    onChange={(val) => setNewClient({ ...newClient, city: val })} 
-                                    options={ECUADOR_CITIES} 
-                                    searchable={true}
-                                    icon={Globe}
-                                />
-                                <div className="flex gap-4 pt-4">
-                                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-gray-500 font-black uppercase tracking-widest text-xs">Cancelar</button>
-                                    <button type="submit" disabled={isSubmitting} className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs">{isSubmitting ? 'Registrando...' : 'Confirmar'}</button>
-                                </div>
-                            </form>
+                            {!showSuccessView ? (
+                                <>
+                                    <h2 className="text-2xl font-black text-white mb-6 uppercase italic tracking-tighter">Registrar Nuevo Socio</h2>
+                                    <form onSubmit={handleCreateClient} className="space-y-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Nombre / Marca</label>
+                                            <input type="text" required value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all" placeholder="Ej: Spiga de Oro" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Email de Contacto (Para invitación)</label>
+                                            <input type="email" required value={newClient.email} onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all font-mono text-sm" placeholder="cliente@ejemplo.com" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={[{ value: 'Basic', label: 'Basic' }, { value: 'Premium', label: 'Premium' }, { value: 'Enterprise', label: 'Enterprise' }]} />
+                                            <PremiumDropdown label="CM" value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
+                                        </div>
+                                        <PremiumDropdown 
+                                            label="Ciudad Base" 
+                                            value={newClient.city} 
+                                            onChange={(val) => setNewClient({ ...newClient, city: val })} 
+                                            options={ECUADOR_CITIES} 
+                                            searchable={true}
+                                            icon={Globe}
+                                        />
+                                        <div className="flex gap-4 pt-4">
+                                            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-gray-500 font-black uppercase tracking-widest text-xs">Cancelar</button>
+                                            <button type="submit" disabled={isSubmitting} className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-xl shadow-indigo-600/20 active:scale-95 transition-all">{isSubmitting ? 'Registrando...' : 'Confirmar Registro'}</button>
+                                        </div>
+                                    </form>
+                                </>
+                            ) : (
+                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center py-6 space-y-8">
+                                    <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto border border-emerald-500/30">
+                                        <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">¡Socio Pre-Registrado!</h3>
+                                        <p className="text-gray-400 text-sm font-medium">El registro base de <span className="text-white font-bold">{newClient.name}</span> está listo. Envía este enlace para que complete su identidad.</p>
+                                    </div>
+
+                                    <div className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl space-y-4">
+                                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest text-left">Link de Invitación Estratégica</p>
+                                        <div className="flex gap-2">
+                                            <div className="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-gray-500 text-[10px] font-mono truncate">
+                                                {`${typeof window !== 'undefined' ? window.location.origin : ''}/onboarding?type=client`}
+                                            </div>
+                                            <button 
+                                                onClick={() => {
+                                                    const url = `${window.location.origin}/onboarding?type=client`;
+                                                    navigator.clipboard.writeText(url);
+                                                    toast.success("Link copiado al portapapeles");
+                                                }}
+                                                className="p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-all active:scale-95"
+                                            >
+                                                <Copy className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-3">
+                                        <button 
+                                            onClick={() => {
+                                                const url = `${window.location.origin}/onboarding?type=client`;
+                                                const text = `¡Hola ${newClient.name}! Bienvenido a DIIC ZONE. Para activar tu ecosistema de marca y sincronizar tu estrategia, por favor completa tu onboarding aquí: ${url}`;
+                                                window.open(`https://wa.me/${newClient.whatsapp_number}?text=${encodeURIComponent(text)}`, '_blank');
+                                            }}
+                                            className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-600/10"
+                                        >
+                                            <MessageSquare className="w-4 h-4" /> Enviar por WhatsApp
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                setIsModalOpen(false);
+                                                setShowSuccessView(false);
+                                                setNewClient({ name: '', plan: 'Basic', price: 0, target: 0, cm: '', email: '', password_initial: '', whatsapp_number: '', google_drive_folder_id: '', notes: '', onboarding_data: {} });
+                                            }} 
+                                            className="w-full py-4 text-gray-500 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all"
+                                        >
+                                            Finalizar y Cerrar
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
                         </motion.div>
                     </div>
                 )}
@@ -623,7 +683,7 @@ export default function HQClientsPage() {
                                 </div>
 
                                 {/* Content Grid */}
-                                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+                                <div className="flex-1 overflow-y-auto p-10 pb-60 custom-scrollbar">
                                     <form onSubmit={handleSaveEdit} id="edit-client-form">
                                         <AnimatePresence mode="wait">
                                             {activeEditTab === 'operative' && (

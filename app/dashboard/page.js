@@ -175,7 +175,6 @@ function DashboardContent() {
   const [production, setProduction] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
 
     // Handle role-based redirection as soon as user is loaded
     useEffect(() => {
@@ -349,49 +348,15 @@ function DashboardContent() {
   return (
     <div className="min-h-screen text-white font-sans selection:bg-indigo-500/30 overflow-x-hidden bg-transparent">
       
-      {/* ─── Premium Navigation Header ─── */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-20 px-8 flex items-center justify-between bg-[#050511]/40 backdrop-blur-xl border-b border-white/5">
-          <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center font-black italic text-lg">D</div>
-                  <span className="text-xl font-black tracking-tight text-white hidden md:block italic uppercase">DIIC <span className="text-gray-500">ZONE</span></span>
-              </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-              <button 
-                  onClick={() => setIsChatOpen(true)}
-                  className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all relative group"
-              >
-                  <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  <div className="absolute top-3 right-3 w-2 h-2 bg-indigo-500 rounded-full animate-ping" />
-                  <div className="absolute top-3 right-3 w-2 h-2 bg-indigo-500 rounded-full" />
-              </button>
-              
-              <div className="h-10 w-px bg-white/5 mx-2" />
-              
-              <div className="flex items-center gap-3 pl-4 border-l border-white/5 cursor-pointer group">
-                  <div className="text-right hidden sm:block leading-none">
-                      <p className="text-[10px] font-black text-white uppercase tracking-tight">{user?.user_metadata?.brand || 'Leslie Rey'}</p>
-                      <p className="text-[7px] font-black text-indigo-400 uppercase tracking-widest mt-1 opacity-80 group-hover:opacity-100 transition-opacity">Socio Diic Zone</p>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-[1px] shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-300">
-                      <div className="w-full h-full rounded-[9px] bg-[#0E0E18] flex items-center justify-center text-white font-bold text-xs">
-                          {user?.user_metadata?.brand?.charAt(0) || 'L'}
-                      </div>
-                  </div>
-              </div>
-          </div>
-      </header>
+      {/* ─── Floating Brand Identity ─── */}
+      <div className="fixed top-8 left-8 z-[100] flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center font-black italic text-xl shadow-2xl">D</div>
+          <span className="text-xl font-black tracking-tight text-white hidden md:block italic uppercase drop-shadow-lg">DIIC <span className="text-gray-500">ZONE</span></span>
+      </div>
 
       <div className="p-6 md:p-10 pt-24 md:pt-32 space-y-12">
       
-      {/* ─── Unified Messaging HUB ─── */}
-      <UnifiedMessagingCenter 
-          isOpen={isChatOpen} 
-          onClose={() => setIsChatOpen(false)} 
-          initialChatType="client_cm"
-      />
+      
       {isStaff ? (
         <section className="relative overflow-hidden rounded-[3rem] border border-white/5 bg-gradient-to-br from-[#0A0A1F] to-[#050510] shadow-2xl">
             {/* Ambient Glow */}

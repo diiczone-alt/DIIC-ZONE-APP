@@ -7,20 +7,26 @@ import {
     Clock, AlertCircle, Search, 
     Filter, Plus, User, Layers
 } from 'lucide-react';
+import { agencyService } from '@/services/agencyService';
 
 export default function ProductionPage() {
     const [productionData, setProductionData] = useState([]);
 
     useEffect(() => {
-        const loadProduction = () => {
+        const loadProduction = async () => {
             try {
-                const tasks = JSON.parse(localStorage.getItem('diic_creative_tasks') || '[]');
-                setProductionData(tasks);
-            } catch (e) { console.error(e); }
+                const allTasks = await agencyService.getTasks();
+                const productionTasks = allTasks.filter(t => 
+                    ['EDITOR', 'DISEÑO', 'FILMMAKER'].includes(t.assigned_role?.toUpperCase()) || 
+                    t.assigned_role === 'Editor de Video' ||
+                    t.assigned_role === 'Diseñador'
+                );
+                setProductionData(productionTasks);
+            } catch (e) { 
+                console.error(e); 
+            }
         };
         loadProduction();
-        window.addEventListener('storage', loadProduction);
-        return () => window.removeEventListener('storage', loadProduction);
     }, []);
 
     return (

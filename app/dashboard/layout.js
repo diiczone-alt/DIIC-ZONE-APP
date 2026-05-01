@@ -3,7 +3,9 @@
 import DynamicSidebar from '../../components/shared/DynamicSidebar';
 import SlimMasterHeader from '../../components/shared/SlimMasterHeader';
 import AIAssistant from '../../components/ui/AIAssistant';
-import { useEffect } from 'react';
+import FloatingClientActions from '../../components/ui/FloatingClientActions';
+import UnifiedMessagingCenter from '../../components/shared/Messaging/UnifiedMessagingCenter';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { SidebarProvider, useSidebar } from '@/components/layout/SidebarContext';
 import { useAuth } from '@/context/AuthContext';
@@ -19,6 +21,7 @@ function DashboardContent({ children }) {
 
     const { user } = useAuth();
     const isClient = user?.role === 'CLIENT';
+    const [isChatOpen, setIsChatOpen] = useState(false);
 
     return (
         <div className="h-screen bg-[#050511] text-foreground flex overflow-hidden font-sans selection:bg-indigo-500/30">
@@ -28,6 +31,21 @@ function DashboardContent({ children }) {
             >
                 {/* ─── Role-Based Header ─── */}
                 {!shouldHideSidebar && !isClient && <SlimMasterHeader />}
+
+                {/* ─── Floating Client Actions (Messages & Notifications) ─── */}
+                {isClient && (
+                    <>
+                        <FloatingClientActions 
+                            isChatOpen={isChatOpen} 
+                            onOpenChat={() => setIsChatOpen(true)} 
+                        />
+                        <UnifiedMessagingCenter 
+                            isOpen={isChatOpen} 
+                            onClose={() => setIsChatOpen(false)} 
+                            initialChatType="client_cm"
+                        />
+                    </>
+                )}
 
                 {/* ─── Cinematic Neon Hexagon Backdrop ─── */}
                 <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden bg-[#050510]">

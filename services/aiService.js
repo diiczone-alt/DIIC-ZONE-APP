@@ -13,11 +13,10 @@ export const aiService = {
     analyzeStrategicProfile: async (url, brandName = '') => {
         // Steps for the UI progress bar
         const steps = [
-            { id: 'scraping', msg: 'Rastreando activos digitales...' },
-            { id: 'parsing', msg: 'Analizando arquitectura de información...' },
-            { id: 'keywords', msg: 'Extrayendo keywords de nicho...' },
-            { id: 'audience', msg: 'Identificando patrones de audiencia...' },
-            { id: 'strategy', msg: 'Generando propuesta de valor CEO...' }
+            { id: 'grounding', msg: 'Activando Motores de Búsqueda Google...' },
+            { id: 'social', msg: 'Rastreando Footprint en FB, IG, TikTok y LinkedIn...' },
+            { id: 'leadership', msg: 'Verificando Liderazgo y Directorio Académico...' },
+            { id: 'synthesis', msg: 'Compilando Inteligencia Estratégica Real...' }
         ];
 
         try {
@@ -29,9 +28,13 @@ export const aiService = {
             });
 
             if (response.ok) {
-                const data = await response.json();
-                console.log("[aiService] Real AI Analysis successful:", data);
-                return { steps, data };
+                const result = await response.json();
+                console.log("[aiService] Real AI Analysis successful:", result);
+                // The API returns { data: {...}, steps: [...] }. Unwrap it.
+                return { 
+                    steps: result.steps || steps, 
+                    data: result.data || result 
+                };
             } else {
                 const err = await response.json();
                 console.warn("[aiService] AI Analysis failed. Reason:", err.error || "API error");
@@ -119,6 +122,52 @@ export const aiService = {
                 text: `¡Hola ${lead.full_name}! Qué gusto saludarte. Tenemos disponibilidad en ${context.name} para tu consulta sobre ${lead.industry || 'nuestros servicios'}. ¿Te gustaría agendar una cita?`,
                 isFallback: true
             };
+        }
+    },
+
+    /**
+     * Generates dynamic growth alerts based on client strategy context
+     */
+    generateDynamicAlerts: async (clientContext) => {
+        try {
+            const response = await fetch('/api/ai/growth-alerts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clientContext })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data.alerts || [];
+            } else {
+                throw new Error("Failed to generate dynamic alerts");
+            }
+        } catch (error) {
+            console.error("[aiService] Growth Alerts Engine Failure:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Generates dynamic rewards system data based on client strategy context
+     */
+    generateDynamicRewards: async (clientContext) => {
+        try {
+            const response = await fetch('/api/ai/rewards-system', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clientContext })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data.rewards || null;
+            } else {
+                throw new Error("Failed to generate dynamic rewards");
+            }
+        } catch (error) {
+            console.error("[aiService] Rewards Engine Failure:", error);
+            throw error;
         }
     }
 };

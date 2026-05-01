@@ -7,8 +7,11 @@ import {
     Target
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function AIRecommendationHUD({ data = {} }) {
+    const router = useRouter();
     // Mock de datos si no se pasan por props para demo
     const strategy = data.focus ? data : {
         focus: 'Retención Temprana',
@@ -92,10 +95,22 @@ export default function AIRecommendationHUD({ data = {} }) {
 
                 {/* ACTIONS */}
                 <div className="flex flex-col md:flex-row gap-4">
-                    <button className="flex-1 py-5 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl hover:bg-white/10 transition-all">
+                    <button 
+                        onClick={() => {
+                            toast.success("Enviando solicitud de ajustes al Strategist...");
+                            router.push('?tab=identity');
+                        }}
+                        className="flex-1 py-5 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl hover:bg-white/10 transition-all"
+                    >
                         Solicitar Ajustes Tácticos
                     </button>
-                    <button className="flex-1 py-5 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3">
+                    <button 
+                        onClick={() => {
+                            toast.success("Estrategia aplicada al calendario de producción.");
+                            router.push('?tab=catalog');
+                        }}
+                        className="flex-1 py-5 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3"
+                    >
                         Aplicar Estrategia Sugerida <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>

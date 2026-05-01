@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, Calendar, LayoutList, Grip, RefreshCw, Plus, Search } from 'lucide-react';
 import ProductionItem from '@/components/production/ProductionItem';
@@ -10,58 +10,81 @@ export default function PipelinePage() {
     const [viewMode, setViewMode] = useState('list'); // list, grid
     const [activeFilter, setActiveFilter] = useState('all');
     const [selectedItem, setSelectedItem] = useState(null);
+    const [items, setItems] = useState([]);
 
-    // Mock Data simulating "The Nervous Center"
-    const ITEMS = [
-        {
-            id: 'PROJ-001',
-            name: 'Campaña "Seguros" - Parte 1',
-            type: 'Video / Reels',
-            department: 'video',
-            status: 'editing', // start, production, review, approval, copy, scheduled, published
-            startDate: '10 Oct',
-            targetDate: '15 Oct',
-            owner: 'Carlos M.',
-            thumbnail: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=500&q=80',
-            sla: 'on-track' // on-track, risk, delayed
-        },
-        {
-            id: 'PROJ-002',
-            name: 'Post "Beneficios 2024"',
-            type: 'Diseño Gráfico',
-            department: 'design',
-            status: 'start',
-            startDate: '12 Oct',
-            targetDate: '20 Oct',
-            owner: 'Ana L.',
-            thumbnail: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=500&q=80',
-            sla: 'on-track'
-        },
-        {
-            id: 'PROJ-003',
-            name: 'Cobertura Evento "Tech Summit"',
-            type: 'Filmmaker Pro',
-            department: 'filmmaker',
-            status: 'production',
-            startDate: '14 Oct',
-            targetDate: '16 Oct',
-            owner: 'Roberto G.',
-            thumbnail: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=500&q=80',
-            sla: 'risk'
-        },
-        {
-            id: 'PROJ-004',
-            name: 'Podcast Ep. 45 - Invitado Especial',
-            type: 'Audition Pro',
-            department: 'audio',
-            status: 'review',
-            startDate: '08 Oct',
-            targetDate: '18 Oct',
-            owner: 'Studio A',
-            thumbnail: 'https://images.unsplash.com/photo-1478737270239-2f52b27fa34e?w=500&q=80',
-            sla: 'delayed'
+    // Translate strategy stage to pipeline status
+    const getPipelineStatus = (strategyStage) => {
+        if (!strategyStage) return 'start';
+        switch(strategyStage.toLowerCase()) {
+            case 'idea': return 'start';
+            case 'producción': return 'production';
+            case 'revisión': return 'review';
+            case 'aprobado': return 'approval';
+            case 'programado': return 'scheduled';
+            case 'publicado': return 'published';
+            default: return 'start';
         }
-    ];
+    };
+
+    // Translate format type to department
+    const getDepartment = (nodeType) => {
+        if (nodeType === 'video' || nodeType === 'reel_viral') return 'video';
+        if (nodeType === 'post_carrusel') return 'design';
+        if (nodeType === 'podcast') return 'audio';
+        return 'design';
+    };
+
+    useEffect(() => {
+        try {
+            const syncedData = localStorage.getItem('diiczone_global_pipeline');
+            if (syncedData) {
+                const nodes = JSON.parse(syncedData);
+                const mapped = nodes.map(n => ({
+                    id: n.id.substring(0,8).toUpperCase(),
+                    name: n.data?.title || 'Contenido Estratégico',
+                    type: n.type === 'video' ? 'Video' : n.type === 'reel_viral' ? 'Reel' : 'Imagen',
+                    department: getDepartment(n.type),
+                    status: getPipelineStatus('idea'), // In real app read from n.data.status or n.stage
+                    startDate: 'Hoy',
+                    targetDate: n.data?.publishDate || 'Por Definir',
+                    owner: 'Sin Asignar',
+                    thumbnail: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=500&q=80',
+                    sla: (n.data?.funnelLevel === 'conversión') ? 'risk' : 'on-track'
+                }));
+                setItems(mapped);
+            } else {
+                // Mock Data simulating "The Nervous Center" if no strategy is active yet
+                setItems([
+                    {
+                        id: 'PROJ-001',
+                        name: 'Campaña "Seguros" - Parte 1',
+                        type: 'Video / Reels',
+                        department: 'video',
+                        status: 'editing', // start, production, review, approval, copy, scheduled, published
+                        startDate: '10 Oct',
+                        targetDate: '15 Oct',
+                        owner: 'Carlos M.',
+                        thumbnail: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=500&q=80',
+                        sla: 'on-track' // on-track, risk, delayed
+                    },
+                    {
+                        id: 'PROJ-002',
+                        name: 'Post "Beneficios 2024"',
+                        type: 'Diseño Gráfico',
+                        department: 'design',
+                        status: 'start',
+                        startDate: '12 Oct',
+                        targetDate: '20 Oct',
+                        owner: 'Ana L.',
+                        thumbnail: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=500&q=80',
+                        sla: 'on-track'
+                    }
+                ]);
+            }
+        } catch(e) {
+            console.error("Error reading pipeline data from localStorage", e);
+        }
+    }, []);
 
     const DEPARTMENTS = [
         { id: 'all', label: 'Todos' },
@@ -72,7 +95,7 @@ export default function PipelinePage() {
         { id: 'web', label: 'Web' },
     ];
 
-    const filteredItems = activeFilter === 'all' ? ITEMS : ITEMS.filter(i => i.department === activeFilter);
+    const filteredItems = activeFilter === 'all' ? items : items.filter(i => i.department === activeFilter);
 
     return (
         <div className="min-h-screen bg-[#050511] text-white p-6 pb-24">

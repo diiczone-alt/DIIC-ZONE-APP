@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { PARRILLA_COLUMNS, CONTENT_STATUS, CONTENT_FORMATS, NODE_CONTENT_SUBTYPES } from './StrategyConstants';
 import ContentKanban from '../Kanban/ContentKanban';
-
+import ProductionItem from '@/components/production/ProductionItem';
 
 const DatePickerOverlay = ({ currentDate, onSelect, onClose }) => {
     // Simple custom calendar implementation for the floating effect
@@ -65,9 +65,46 @@ export default function StrategyContentParrilla({ nodes, onUpdateNode, onBack })
             stage: 'idea',
             responsible: 'Sin Asignar',
             deadline: n.data?.publishDate || 'Por Definir',
-            priority: n.data?.funnelLevel === 'conversión' ? 'Alta' : 'Media'
+            priority: n.data?.funnelLevel === 'conversión' ? 'Alta' : 'Media',
+            rawNode: n
         }));
     }, [nodes]);
+
+    // Translate strategy stage to pipeline status
+    const getPipelineStatus = (strategyStage) => {
+        switch(strategyStage) {
+            case 'idea': return 'start';
+            case 'producción': return 'production';
+            case 'revisión': return 'review';
+            case 'aprobado': return 'approval';
+            case 'programado': return 'scheduled';
+            case 'publicado': return 'published';
+            default: return 'start';
+        }
+    };
+
+    // Translate format type to department
+    const getDepartment = (nodeType) => {
+        if (nodeType === 'video' || nodeType === 'reel_viral') return 'video';
+        if (nodeType === 'post_carrusel') return 'design';
+        if (nodeType === 'podcast') return 'audio';
+        return 'design';
+    };
+
+    const pipelineItems = React.useMemo(() => {
+        return mappedNodes.map(n => ({
+            id: n.id.substring(0,8).toUpperCase(),
+            name: n.title,
+            type: n.type,
+            department: getDepartment(n.rawNode.type),
+            status: getPipelineStatus(n.stage),
+            startDate: 'Hoy',
+            targetDate: n.deadline,
+            owner: n.responsible,
+            thumbnail: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=500&q=80',
+            sla: n.priority === 'Alta' ? 'risk' : 'on-track'
+        }));
+    }, [mappedNodes]);
 
     return (
         <div className="flex-1 flex flex-col min-h-0 bg-[#050511] relative overflow-hidden">
@@ -128,136 +165,23 @@ export default function StrategyContentParrilla({ nodes, onUpdateNode, onBack })
                 </div>
             ) : (
                 <div className="flex-1 overflow-y-auto px-8 pb-12 custom-scrollbar">
-                    <div className="space-y-4 max-w-[1600px] mx-auto">
-                        {/* Floating Table Header */}
-                        <div className="grid grid-cols-[80px_120px_140px_160px_140px_1fr_160px_120px_140px] items-center px-8 py-3 bg-white/[0.02] rounded-2xl border border-white/5 text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] sticky top-0 z-20 backdrop-blur-sm shadow-xl">
-                            <span>IMG</span>
-                            <span>FECHA</span>
-                            <span>FORMATO</span>
-                            <span>ENFOQUE</span>
-                            <span>TIPO</span>
-                            <span>TEMA / TÍTULO</span>
-                            <span>ACTIVO / PRODUCTO</span>
-                            <span>ESTADO</span>
-                            <span className="text-right pr-4">ACCIONES</span>
-                        </div>
-
-                        {nodes.map((node, i) => {
-                            const format = CONTENT_FORMATS[node.type] || CONTENT_FORMATS.post;
-                            
-                            return (
-                                <motion.div
-                                    key={node.id}
-                                    initial={{ opacity: 0, y: 20 }}
+                    <div className="space-y-4 max-w-[1600px] mx-auto pt-4">
+                        <AnimatePresence>
+                            {pipelineItems.map((item, index) => (
+                                <motion.div 
+                                    key={item.id}
+                                    initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    className="group relative"
+                                    transition={{ delay: index * 0.05 }}
                                 >
-                                    <div className="grid grid-cols-[80px_120px_140px_160px_140px_1fr_160px_120px_140px] items-center p-4 bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 hover:border-indigo-500/30 rounded-3xl transition-all shadow-lg hover:shadow-indigo-500/10 hover:translate-x-1 group-hover:scale-[1.01] perspective-1000 origin-left">
-                                        
-                                        {/* ASSET PREVIEW (3D Feel) */}
-                                        <div className="relative w-14 h-14 rounded-2xl bg-black/40 border border-white/10 overflow-hidden flex items-center justify-center group-hover:border-indigo-500/50 transition-colors shadow-2xl">
-                                            {node.type === 'video' || node.type === 'reel_viral' ? (
-                                                <Video className="w-6 h-6 text-indigo-400 group-hover:scale-110 transition-transform" />
-                                            ) : (
-                                                <ImageIcon className="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform" />
-                                            )}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-1.5">
-                                                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                                                    <div className="w-[40%] h-full bg-indigo-500 shadow-[0_0_8px_rgba(79,70,229,0.5)]" />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* FECHA (Interactive) */}
-                                        <div className="relative pl-4">
-                                            <button 
-                                                onClick={() => setActivePicker(activePicker?.id === node.id ? null : { id: node.id, type: 'date' })}
-                                                className="px-3 py-1.5 rounded-xl hover:bg-white/5 flex items-center gap-2 group/btn transition-colors"
-                                            >
-                                                <Calendar className="w-3.5 h-3.5 text-gray-500 group-hover/btn:text-indigo-400" />
-                                                <span className="text-[10px] font-black text-gray-400 group-hover/btn:text-white uppercase tracking-widest">{node.data?.publishDate || '8/3/2026'}</span>
-                                            </button>
-                                            <AnimatePresence>
-                                                {activePicker?.id === node.id && activePicker.type === 'date' && (
-                                                    <DatePickerOverlay 
-                                                        onSelect={(date) => onUpdateNode(node.id, { ...node.data, publishDate: date })} 
-                                                        onClose={() => setActivePicker(null)} 
-                                                    />
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
-
-                                        {/* FORMATO (Interactive) */}
-                                        <div className="pl-4">
-                                            <button className="px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all text-[8px] font-black uppercase tracking-tighter shadow-sm flex items-center gap-2">
-                                                {format.label}
-                                                <ChevronDown className="w-3 h-3 opacity-40" />
-                                            </button>
-                                        </div>
-
-                                        {/* ENFOQUE */}
-                                        <div className="pl-4">
-                                            <div className="flex flex-col gap-1">
-                                                <span className="text-[10px] font-black text-emerald-400 tracking-widest uppercase">INSTITUCIONAL</span>
-                                                <div className="flex gap-1">
-                                                    {[1,2,3].map(d => <div key={d} className="w-3 h-1 rounded-full bg-emerald-500/20" />)}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* TIPO */}
-                                        <div className="pl-4">
-                                            <span className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest hover:border-blue-500 transition-all cursor-pointer">
-                                                HUMANIZACIÓN
-                                            </span>
-                                        </div>
-
-                                        {/* TEMA */}
-                                        <div className="pl-6">
-                                            <div className="flex flex-col">
-                                                <span className="text-[11px] font-bold text-white uppercase tracking-tight line-clamp-1">{node.data?.title}</span>
-                                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest mt-1">PROYECTO: CORPORATIVO X</span>
-                                            </div>
-                                        </div>
-
-                                        {/* PRODUCTO */}
-                                        <div className="pl-4 pr-4">
-                                            <div className="px-4 py-2 rounded-2xl bg-black/40 border border-white/5 flex items-center gap-3 group/link cursor-pointer hover:border-indigo-500/30 transition-all">
-                                                <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400">
-                                                    <Zap className="w-3 h-3" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[9px] font-black text-gray-400 group-hover/link:text-white transition-colors">DÍA DE LA MUJER</span>
-                                                    <span className="text-[7px] text-gray-600 font-bold tracking-widest uppercase">Ver Video</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* ESTADO */}
-                                        <div className="pl-4">
-                                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                <span className="text-[8px] font-black text-emerald-500 uppercase">COMPARTIDO</span>
-                                            </div>
-                                        </div>
-
-                                        {/* ACCIONES */}
-                                        <div className="flex items-center justify-end gap-3 pr-4">
-                                            <button className="p-2 rounded-xl text-gray-600 hover:text-white hover:bg-white/5 transition-all">
-                                                <MessageSquare className="w-4 h-4" />
-                                            </button>
-                                            <button className="p-2 rounded-xl text-gray-600 hover:text-white hover:bg-white/5 transition-all">
-                                                <Send className="w-4 h-4" />
-                                            </button>
-                                            <button className="p-2 rounded-xl text-indigo-400 hover:text-white hover:bg-indigo-500 transition-all shadow-lg hover:shadow-indigo-500/30">
-                                                <MoreHorizontal className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
+                                    <ProductionItem 
+                                        item={item} 
+                                        viewMode="list" 
+                                        onClick={() => {}} 
+                                    />
                                 </motion.div>
-                            );
-                        })}
+                            ))}
+                        </AnimatePresence>
                     </div>
                 </div>
             )}

@@ -3,89 +3,105 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+/**
+ * TACTICAL INSIGHT ENGINE
+ * Specialized modules for Competitors, Friction, and B2B Traffic.
+ * Uses Dynamic Search Grounding to ensure reliability and authenticity.
+ */
 export async function POST(req) {
     try {
-        const { url, brandName, mode, query, field, currentText, file } = await req.json();
+        const { url, brandName, mode, query, context, field, currentText } = await req.json();
         if (!url) return NextResponse.json({ error: 'URL is required' }, { status: 400 });
 
-        // 1. Context Building
-        const contextPrompt = `
-            Actúa como un CONSULTOR ESTRATÉGICO SENIOR de la agencia DIIC ZONE.
-            Marca: ${brandName || 'Sujeto en análisis'}
-            Sitio Web: ${url}
-            Modo: ${mode}
-            ${field ? `Campo a optimizar: ${field}` : ''}
-            ${currentText ? `Contenido actual: ${currentText}` : ''}
-        `;
+        console.log(`[NeuralInsight] Recalibrating ${mode} search for: ${url}`);
 
-        const modePrompts = {
-            competitors: "Investiga profundamente los COMPETIDORES de esta marca usando Google Search. Devuelve un JSON con un array 'competitors' que contenga {name, url, location, reviews, social, strengthsWeaknesses}.",
-            friction: "Analiza el sitio web ${url} buscando PUNTOS DE FRICCIÓN (UX/UI/CRO) que impidan la conversión. Sé muy crítico y profesional.",
-            traffic: "Audita las posibles RUTA DE TRÁFICO y estrategias de pauta para esta marca en su sector.",
-            refine: "Optimiza este texto para que sea más persuasivo y profesional sin perder el core del negocio.",
-            chat: `Responde a esta duda del cliente sobre su estrategia: ${query}. Usa el contexto del sitio ${url} y los datos recolectados.`
-        };
-
-        const systemPrompt = `
-            ${contextPrompt}
-            INSTRUCCIÓN ESPECÍFICA: ${modePrompts[mode] || modePrompts.chat}
-            
-            IMPORTANTE: Si no encuentras datos reales, usa tu conocimiento de industria para dar una proyección estratégica profesional. No digas "no puedo".
-            RESPUESTA SIEMPRE EN FORMATO MARKDOWN PROFESIONAL.
-        `;
-
-        const contentArray = [systemPrompt];
-        if (file && file.data) {
-            contentArray.push({
-                inlineData: {
-                    mimeType: file.mimeType,
-                    data: file.data
-                }
-            });
+        // Extract Handle for better searching on social media
+        let extractedContext = "";
+        if (url.includes('instagram.com/')) {
+            const handle = url.split('instagram.com/')[1].split('/')[0];
+            extractedContext = `\nNOTA IMPORTANTE: Se trata de un perfil de Instagram. El usuario es @${handle}.`;
+        } else if (url.includes('facebook.com/')) {
+            const handle = url.split('facebook.com/')[1].split('/')[0];
+            extractedContext = `\nNOTA IMPORTANTE: Se trata de un perfil de Facebook. El nombre de página/usuario es ${handle}.`;
+        } else if (url.includes('tiktok.com/')) {
+            const handle = url.split('tiktok.com/')[1].split('/')[0];
+            extractedContext = `\nNOTA IMPORTANTE: Se trata de un perfil de TikTok. El usuario es ${handle}.`;
         }
 
-        // 3. Generative Logic with Failover
+        // Initialize Gemini with Dynamic Search Grounding
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash", 
+            tools: [{ 
+                googleSearch: {}
+            }] 
+        });
+
+        let tacticalPrompt = "";
+        const ignoreNameNote = brandName ? `(Nota: Si la URL parece pertenecer a una empresa distinta a "${brandName}", ignora el nombre registrado y basa tu análisis exclusivamente en la marca que encuentres en la URL).` : '';
+        
+        switch (mode) {
+            case 'competitors':
+                tacticalPrompt = `INVESTIGA Y LISTA LOS 3 COMPETIDORES DIRECTOS REALES DEL ECOSISTEMA EN: ${url}. ${ignoreNameNote}
+                Devuelve un JSON con este formato: {"competitors": [{"name": "...", "usp": "...", "threat": "Low/Med/High"}]}`;
+                break;
+            case 'friction':
+                tacticalPrompt = `ANALIZA EL SITIO WEB ${url} Y SUS REDES SOCIALES PARA DETECTAR 3 PUNTOS DE FRICCIÓN EN SU PROCESO DE VENTA (CRO). ${ignoreNameNote}
+                Sé crítico y profesional. Devuelve una lista estructurada en Markdown.`;
+                break;
+            case 'traffic':
+                tacticalPrompt = `AUDITA LAS POSIBLES RUTAS DE TRÁFICO B2B PARA ${url}. ${ignoreNameNote}
+                ¿De dónde vienen sus clientes? (LinkedIn Ads, Google Search, Referidos, etc). Sé específico.`;
+                break;
+            case 'refine':
+                tacticalPrompt = `INVESTIGA Y DETECTA INFORMACIÓN REAL PARA EL CAMPO "${field}" DE LA MARCA "${brandName}" BASÁNDOTE EN: ${url}. 
+                Si ya existe este texto: "${currentText}", mejóralo con datos encontrados en la web. 
+                Sé extremadamente conciso (máximo 3-4 líneas). No uses introducciones tipo "Aquí tienes...".`;
+                break;
+            case 'persuade':
+                tacticalPrompt = `TOMA ESTE TEXTO ESTRATÉGICO: "${currentText}" (del campo ${field}) PARA LA MARCA "${brandName}" Y REESCRÍBELO USANDO SESGOS COGNITIVOS Y COPYWRITING DE ALTA CONVERSIÓN. 
+                Usa el contexto de su web en ${url} para que sea auténtico. 
+                Mantenlo corto, impactante e impulsado por resultados.`;
+                break;
+            default:
+                tacticalPrompt = `Responde a la siguiente consulta estratégica de manera ESTRICTA sobre el ecosistema en la URL exacta: ${url}. ${ignoreNameNote}
+                REGLA DE ORO: NO confundas la marca con empresas homónimas (con el mismo nombre o similar) en otros países o rubros. Asegúrate de que la información que utilizas pertenece EXACTAMENTE al perfil proporcionado y no a otra academia o empresa aleatoria.
+                Consulta del usuario: "${query || 'Análisis general'}"
+                Contexto actual de la plataforma: ${JSON.stringify(context || {})}. 
+                Sé honesto, usa datos reales de búsqueda y si la info pertenece a otro país u otra empresa, corrígete.`;
+        }
+
+        let result;
         try {
-            let model = genAI.getGenerativeModel({ 
-                model: "gemini-2.0-flash", 
-                tools: [{ google_search: {} }] 
+            result = await model.generateContent(tacticalPrompt);
+        } catch (genError) {
+            console.warn("[Insight Engine] Search Model failed (Quota/Limit). Falling back to base model.", genError.message);
+            const fallbackModel = genAI.getGenerativeModel({ 
+                model: "gemini-2.5-flash",
             });
+            result = await fallbackModel.generateContent(tacticalPrompt + "\n\n(NOTA: Tus herramientas de búsqueda en vivo están caídas por límite de cuota. Usa tu conocimiento base y provee estimaciones creíbles y educadas que sean realistas para el nicho mencionado.)");
+        }
 
-            let aiResult;
-            try {
-                aiResult = await model.generateContent(contentArray);
-            } catch (quotaError) {
-                console.warn("Insight API 429 Failover...");
-                model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", tools: [{ google_search: {} }] });
-                aiResult = await model.generateContent(contentArray);
-            }
-
-            const responseText = aiResult.response.text();
-            
-            // If it's competitors mode, try to extract JSON
-            if (mode === 'competitors') {
-                const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    const parsed = JSON.parse(jsonMatch[0]);
-                    return NextResponse.json({ competitors: parsed.competitors || [] });
+        const text = result.response.text();
+        
+        // If mode is competitors, try to parse JSON
+        if (mode === 'competitors') {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                try {
+                    return NextResponse.json(JSON.parse(jsonMatch[0]));
+                } catch (e) {
+                    console.error("JSON Parse error in competitors:", e);
                 }
             }
-
-            return NextResponse.json({ insight: responseText });
-
-        } catch (aiError) {
-            console.error("AI Insight Core Error:", aiError.message);
-            return NextResponse.json({ 
-                insight: "Análisis estratégico proyectado: Basado en el sector de la marca, se recomiendan optimizaciones inmediatas en la arquitectura de conversión y diversificación de canales de tráfico en Meta y Google Ads.", 
-                isFallback: true 
-            });
         }
+
+        return NextResponse.json({ insight: text });
 
     } catch (error) {
-        console.error("Critical Insight API Fail:", error);
+        console.error("INSIGHT ENGINE ERROR:", error);
         return NextResponse.json({ 
-            insight: "Interrupción temporal en la red de inteligencia. Intenta refrescar o continuar con la auditoría manual.",
-            isFallback: true
-        });
+            error: "Falla en el motor de tácticas reales",
+            insight: `Interferencia en la búsqueda: ${error.message}` 
+        }, { status: 500 });
     }
 }

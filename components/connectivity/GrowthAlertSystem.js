@@ -1,148 +1,106 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     AlertTriangle, TrendingDown, Clock,
     Zap, Ban, ArrowUpRight,
     CheckCircle2, Info, Sparkles,
     BarChart3, LayoutGrid, Globe,
     Activity, ShieldAlert, Rocket,
-    Target, Orbit, Lightbulb
+    Target, Orbit, Lightbulb, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AIRecommendationHUD from './AIRecommendationHUD';
-import { analyzePerformance } from './SmartAlertEngine';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { agencyService } from '@/services/agencyService';
+import { aiService } from '@/services/aiService';
+import { toast } from 'sonner';
+
+const ICON_MAP = {
+    AlertTriangle, TrendingDown, Clock, Zap,
+    Info, Sparkles, BarChart3, LayoutGrid, Globe,
+    Activity, ShieldAlert, Rocket, Target, Orbit, Lightbulb, CheckCircle2
+};
 
 export default function GrowthAlertSystem() {
-    const [alerts, setAlerts] = useState([
-        {
-            id: 1,
-            type: 'activity',
-            severity: 'critical',
-            title: 'Baja Actividad Detectada',
-            msg: 'Tu presencia digital está bajando. No hemos detectado publicaciones en los últimos 7 días. La constancia es clave para retener a tu audiencia.',
-            action: 'Activar Plan de Contenido',
-            service: 'Community Manager',
-            icon: Clock,
-            color: 'red'
-        },
-        {
-            id: 2,
-            type: 'performance',
-            severity: 'warning',
-            title: 'Caída de Alcance (-24%)',
-            msg: 'Tus últimos reels han tenido un alcance menor al promedio. Necesitamos optimizar la edición y los ganchos iniciales.',
-            action: 'Optimizar Contenido',
-            service: 'Revisión Creativa',
-            icon: TrendingDown,
-            color: 'yellow'
-        },
-        {
-            id: 3,
-            type: 'system',
-            severity: 'info',
-            title: 'Sistema Incompleto',
-            msg: 'Tu negocio aún no tiene un CRM activo ni automatización de citas. Esto limita tu capacidad de escala y gestión de leads.',
-            action: 'Completar Sistema',
-            service: 'CRM / Automatización',
-            icon: Globe,
-            color: 'blue'
-        },
-        {
-            id: 4,
-            type: 'operational',
-            severity: 'info',
-            title: 'Sugerencia de Revisión',
-            msg: 'Es un buen momento para una revisión estratégica de tus ganchos de vídeo. Hemos detectado una oportunidad de mejora en tus últimos contenidos.',
-            action: 'Agendar Revisión',
-            service: 'Consultoría Estratégica',
-            icon: Sparkles,
-            color: 'indigo'
-        },
-        {
-            id: 5,
-            type: 'operational',
-            severity: 'info',
-            title: 'Optimización de Contenido',
-            msg: 'Recomendamos ajustar el tono de tus publicaciones de la próxima semana para alinearlos con las nuevas tendencias de tu nicho.',
-            action: 'Ver Sugerencias',
-            service: 'Estrategia de Contenido',
-            icon: Target,
-            color: 'blue'
-        },
-        {
-            id: 6,
-            type: 'intelligence_insight',
-            severity: 'success',
-            title: 'Tip de IA: Éxito en Nicho',
-            msg: 'En tu nicho de mercado, los videos testimoniales cortos (20s) están generando un +40% de retención que los anuncios directos.',
-            action: 'Usar este Formato',
-            service: 'Producción de Testimonios',
-            icon: Sparkles,
-            color: 'indigo'
-        },
-        {
-            id: 7,
-            type: 'intelligence_insight',
-            severity: 'success',
-            title: 'Sugerencia de Horario',
-            msg: 'Nuestra IA detectó que tu audiencia interactúa un 25% más los Martes a las 7:00 PM. Recomendamos programar tu próximo Reel estrella en ese horario.',
-            action: 'Programar Ahora',
-            service: 'Community Manager',
-            icon: Clock,
-            color: 'emerald'
-        },
-        {
-            id: 8,
-            type: 'recommendation_insight',
-            severity: 'info',
-            title: 'Recomendación Estratégica IA',
-            msg: 'Tu nueva entrega de video ha sido analizada. Tenemos sugerencias tácticas basadas en patrones de éxito de tu nicho.',
-            action: 'Ver Estrategia Pro',
-            service: 'Motor de Recomendaciones',
-            icon: Sparkles,
-            color: 'indigo',
-            recommendation_data: {
-                focus: 'Retención Temprana',
-                insight: 'En tu nicho, los videos educativos con ganchos de pregunta directa retienen un 40% más de audiencia.',
-                suggestions: [
-                    'El gancho visual de los primeros 2s es potente. Mantener este estilo.',
-                    'Añade un CTA de "Guarda este post" al final para aumentar el alcance algorítmico.'
-                ],
-                bestTime: "7:30 PM",
-                confidence: 94
+    const router = useRouter();
+    const { user } = useAuth();
+    const clientId = user?.client_id || 1;
+    const [alerts, setAlerts] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchAlerts = async () => {
+            try {
+                setIsLoading(true);
+                // 1. Get client strategic context
+                const client = await agencyService.getClientById(clientId);
+                let context = { name: "Cliente Generico" };
+                
+                if (client?.metadata?.strategic) {
+                    context = { ...client.metadata.strategic, maturity_level: client.metadata.maturity_level };
+                }
+
+                // 2. Ask AI to generate alerts
+                const aiAlerts = await aiService.generateDynamicAlerts(context);
+                setAlerts(aiAlerts);
+            } catch (error) {
+                console.error("Failed to fetch growth alerts", error);
+                toast.error("No se pudieron cargar las alertas dinámicas.");
+            } finally {
+                setIsLoading(false);
             }
-        },
-        // --- ALERTAS DEL SAI (Sistema de Alertas Inteligentes) ---
-        {
-            id: 9,
-            type: 'smart_risk',
-            severity: 'critical',
-            title: '🚨 Alerta de Rendimiento',
-            msg: 'Tu audiencia está respondiendo menos (Caída del 28% en comentarios).',
-            action: 'Ver recomendación táctica',
-            service: 'Smart Alert System',
-            icon: AlertTriangle,
-            color: 'red',
-            strategy: 'Se recomienda ajustar estrategia de contenido y probar un nuevo gancho visual educativo.'
-        },
-        {
-            id: 10,
-            type: 'smart_opportunity',
-            severity: 'success',
-            title: '✨ Oportunidad detectada',
-            msg: 'Tu último video educativo está generando un 45% más de compartidos.',
-            action: 'Impulsar con pauta',
-            service: 'Smart Alert System',
-            icon: Sparkles,
-            color: 'emerald',
-            strategy: 'Este formato está funcionado excepcionalmente bien. Repite este estilo y escala con pauta.'
-        }
-    ]);
+        };
+
+        fetchAlerts();
+    }, [clientId]);
 
     const removeAlert = (id) => {
         setAlerts(prev => prev.filter(a => a.id !== id));
     };
+
+    const handleAction = (alert) => {
+        if (alert.targetTab) {
+            router.push(`?tab=${alert.targetTab}`);
+            toast.success(`Navegando a ${alert.targetTab.toUpperCase()}`);
+            return;
+        }
+        
+        // Fallback or specialized actions
+        if (alert.service?.toLowerCase().includes('workshop')) {
+            router.push('?tab=identity');
+            toast.info("Iniciando Workshop de Identidad");
+        } else if (alert.service?.toLowerCase().includes('catálogo')) {
+            router.push('?tab=catalog');
+        } else {
+            toast.info(`Ejecutando: ${alert.action}`);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-between mb-4 px-2">
+                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                        <Search className="w-4 h-4 text-indigo-500 animate-pulse" /> Escaneo de Telemetría Estratégica...
+                    </h3>
+                </div>
+                {[1, 2, 3].map((skeleton) => (
+                    <div key={skeleton} className="relative overflow-hidden bg-[#0A0A12]/50 border border-white/5 rounded-[32px] p-8 animate-pulse">
+                        <div className="flex flex-col md:flex-row gap-8 items-start">
+                            <div className="w-16 h-16 rounded-2xl bg-white/5" />
+                            <div className="flex-1 space-y-4">
+                                <div className="h-6 bg-white/10 rounded-md w-1/3" />
+                                <div className="h-4 bg-white/5 rounded-md w-3/4" />
+                                <div className="h-4 bg-white/5 rounded-md w-1/2" />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
     if (alerts.length === 0) return null;
 
@@ -157,20 +115,22 @@ export default function GrowthAlertSystem() {
 
             <div className="grid grid-cols-1 gap-4">
                 <AnimatePresence>
-                    {alerts.map((alert) => (
-                        <div key={alert.id} className="space-y-4">
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className={`relative overflow-hidden bg-[#0A0A12] border border-${alert.color}-500/20 rounded-[32px] p-8 group hover:border-${alert.color}-500/40 transition-all`}
-                            >
-                                <div className={`absolute top-0 right-0 w-32 h-32 bg-${alert.color}-500/5 blur-3xl rounded-full -mr-16 -mt-16`} />
+                    {alerts.map((alert) => {
+                        const IconComponent = ICON_MAP[alert.iconName] || AlertTriangle;
+                        return (
+                            <div key={alert.id} className="space-y-4">
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className={`relative overflow-hidden bg-[#0A0A12] border border-${alert.color}-500/20 rounded-[32px] p-8 group hover:border-${alert.color}-500/40 transition-all`}
+                                >
+                                    <div className={`absolute top-0 right-0 w-32 h-32 bg-${alert.color}-500/5 blur-3xl rounded-full -mr-16 -mt-16`} />
 
-                                <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
-                                    <div className={`p-5 rounded-2xl bg-${alert.color}-500/10 text-${alert.color}-400 border border-${alert.color}-500/20`}>
-                                        <alert.icon className="w-8 h-8 font-black" />
-                                    </div>
+                                    <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
+                                        <div className={`p-5 rounded-2xl bg-${alert.color}-500/10 text-${alert.color}-400 border border-${alert.color}-500/20`}>
+                                            <IconComponent className="w-8 h-8 font-black" />
+                                        </div>
 
                                     <div className="flex-1 space-y-4 text-left">
                                         <div className="flex items-center gap-3">
@@ -197,7 +157,10 @@ export default function GrowthAlertSystem() {
                                     </div>
 
                                     <div className="w-full md:w-auto self-stretch flex items-center">
-                                        <button className={`w-full md:w-auto px-10 py-5 bg-${alert.color}-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-${alert.color}-500/20 flex items-center justify-center gap-3 group`}>
+                                        <button 
+                                            onClick={() => handleAction(alert)}
+                                            className={`w-full md:w-auto px-10 py-5 bg-${alert.color}-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-${alert.color}-500/20 flex items-center justify-center gap-3 group`}
+                                        >
                                             {alert.action} <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                         </button>
                                     </div>
@@ -236,7 +199,8 @@ export default function GrowthAlertSystem() {
                                 </motion.div>
                             )}
                         </div>
-                    ))}
+                        );
+                    })}
                 </AnimatePresence>
             </div>
 

@@ -8,21 +8,38 @@ import {
     Search, User, Layers, Video, 
     Image as ImageIcon, MoreHorizontal
 } from 'lucide-react';
+import { agencyService } from '@/services/agencyService';
+import EditorWorkspace from '@/components/creative/EditorWorkspace';
+import { AnimatePresence } from 'framer-motion';
 
 export default function CreativeZonePage() {
     const [tasks, setTasks] = useState([]);
     const [filter, setFilter] = useState('Todos');
+    const [activeWorkspaceTask, setActiveWorkspaceTask] = useState(null);
 
     useEffect(() => {
-        const loadTasks = () => {
+        const loadTasks = async () => {
             try {
-                const storedTasks = JSON.parse(localStorage.getItem('diic_creative_tasks') || '[]');
-                setTasks(storedTasks);
-            } catch (e) { console.error(e); }
+                // Fetch tasks from agency service
+                const allTasks = await agencyService.getTasks();
+                
+                // For the creative zone, we show tasks related to production
+                // For now, let's show all tasks or filter by creative roles
+                const creativeTasks = allTasks.filter(t => 
+                    ['EDITOR', 'DISEÑO', 'FILMMAKER'].includes(t.assigned_role?.toUpperCase()) || 
+                    t.assigned_role === 'Editor de Video' ||
+                    t.assigned_role === 'Diseñador'
+                );
+                
+                setTasks(creativeTasks);
+            } catch (e) { 
+                console.error(e); 
+            }
         };
         loadTasks();
-        window.addEventListener('storage', loadTasks);
-        return () => window.removeEventListener('storage', loadTasks);
+        
+        // Listen for custom events if needed, but for now we'll just load once
+        // A more robust app would use real-time subscriptions from Supabase
     }, []);
 
     const filteredTasks = tasks.filter(t => filter === 'Todos' || t.status === filter);
@@ -82,18 +99,32 @@ export default function CreativeZonePage() {
                             </div>
                         ) : (
                             filteredTasks.map(task => (
-                                <CreativeTaskCard key={task.id} task={task} />
+                                <CreativeTaskCard 
+                                    key={task.id} 
+                                    task={task} 
+                                    onOpenWorkspace={() => setActiveWorkspaceTask(task)} 
+                                />
                             ))
                         )}
                     </div>
 
                 </main>
             </div>
+
+            {/* Editor Workspace Modal */}
+            <AnimatePresence>
+                {activeWorkspaceTask && (
+                    <EditorWorkspace 
+                        task={activeWorkspaceTask} 
+                        onClose={() => setActiveWorkspaceTask(null)} 
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
 
-function CreativeTaskCard({ task }) {
+function CreativeTaskCard({ task, onOpenWorkspace }) {
     const isVideo = task.type?.includes('video') || task.type?.includes('reel');
     
     return (
@@ -127,7 +158,10 @@ function CreativeTaskCard({ task }) {
                 </div>
 
                 <div className="pt-4 border-t border-white/5 flex gap-2">
-                    <button className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase rounded-lg transition-all flex items-center justify-center gap-2">
+                    <button 
+                        onClick={onOpenWorkspace}
+                        className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase rounded-lg transition-all flex items-center justify-center gap-2"
+                    >
                         <Play className="w-3 h-3" /> Iniciar
                     </button>
                     <button className="px-3 py-2 bg-white/5 hover:bg-white/10 text-gray-400 rounded-lg transition-all">

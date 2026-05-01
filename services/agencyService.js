@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { MOCK_DATA } from '@/lib/mockData';
+import { toast } from 'sonner';
 
 export const agencyService = {
     // --- CLIENTS (CONNECTED TO REAL DB) ---
@@ -103,17 +104,24 @@ export const agencyService = {
                 if (updates[field] !== undefined) sanitizedUpdates[field] = updates[field];
             });
 
+            toast.info("Iniciando actualización en BD...", { id: 'debug-db' });
+            
             const { data, error } = await supabase
                 .from('clients')
                 .update(sanitizedUpdates)
                 .eq('id', id)
                 .select();
 
-            if (error) throw error;
+            if (error) {
+                toast.error("Error BD Clients: " + error.message, { id: 'debug-db' });
+                throw error;
+            }
+            toast.success("BD Clients actualizada", { id: 'debug-db' });
 
             // SYNC TO PROFILE (Propagate Brand Identity)
             if (updates.name || updates.city || updates.whatsapp_number || updates.industry || updates.plan || updates.business_type || updates.specialty) {
                 console.log(`🔄 Syncing identity changes to public profile for client ${id}`);
+                toast.info("Sincronizando perfiles públicos...", { id: 'debug-profile' });
                 await supabase
                     .from('profiles')
                     .update({
@@ -126,21 +134,24 @@ export const agencyService = {
                         specialty: updates.specialty
                     })
                     .eq('client_id', id);
+                toast.success("Perfiles sincronizados", { id: 'debug-profile' });
             }
 
             // OPTIMISTIC LOCAL CACHE SYNC
+            toast.info("Actualizando caché local...", { id: 'debug-cache' });
             if (typeof window !== 'undefined') {
                 try {
                     const stored = localStorage.getItem('diic_clients');
                     if (stored) {
                         const curr = JSON.parse(stored);
-                        const updated = curr.map(c => c.id === id ? { ...c, ...sanitizedUpdates } : c);
+                        const updated = curr.map(c => c.id == id ? { ...c, ...sanitizedUpdates } : c);
                         localStorage.setItem('diic_clients', JSON.stringify(updated));
                     }
                 } catch (e) {
                     console.warn("⚠️ LocalStorage sync skipped during update");
                 }
             }
+            toast.success("Caché local listo", { id: 'debug-cache' });
 
             console.log(`✅ [${timestamp}] Success: Client ${id} updated.`);
             return data[0];

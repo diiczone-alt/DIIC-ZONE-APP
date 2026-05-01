@@ -97,38 +97,7 @@ const StrategicReportViewer = ({ content }) => {
                     </p>
                 );
             })}
-            {/* FULL SCREEN SCANNER OVERLAY */}
-            <AnimatePresence>
-                {isSimulatingScrape && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md"
-                    >
-                        <div className="relative">
-                            <div className="w-64 h-64 rounded-full border-4 border-indigo-500/20 animate-ping absolute inset-0" />
-                            <div className="w-64 h-64 rounded-full border-2 border-indigo-500/40 relative flex items-center justify-center overflow-hidden">
-                                <motion.div 
-                                    animate={{ top: ['-10%', '110%'] }}
-                                    transition={{ duration: 1.5, repeat: Infinity }}
-                                    className="absolute left-0 right-0 h-1 bg-indigo-500 shadow-[0_0_20px_#6366f1]"
-                                />
-                                <Bot className="w-32 h-32 text-indigo-400 animate-pulse" />
-                            </div>
-                        </div>
-                        <div className="mt-12 text-center space-y-4">
-                            <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">DIIC INTELLIGENCE ENGINE</h2>
-                            <div className="flex items-center justify-center gap-3">
-                                <Activity className="w-5 h-5 text-indigo-500 animate-pulse" />
-                                <p className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent uppercase tracking-wider">
-                                    {analysisMsg || "Sincronizando con satélites..."}
-                                </p>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
         </div>
     );
 };
@@ -188,16 +157,22 @@ export default function ClientStrategicProfile() {
                 console.log("Strategic Profile: No clientId found in user context.");
                 return;
             }
-            const client = await agencyService.getClientById(clientId);
-            if (client) {
-                setProfile(prev => ({
-                    ...prev,
-                    ...client,
-                    brandName: client.name || client.brandName || '',
-                    // Ensure metadata fields are mapped if they exist
-                    ...(client.metadata?.strategic || {})
-                }));
-                if (client.websiteUrl || client.brandName) setIsPreviewMode(true);
+            try {
+                const client = await agencyService.getClientById(clientId);
+                if (client) {
+                    setProfile(prev => ({
+                        ...prev,
+                        ...client,
+                        brandName: client.name || client.brandName || prev.brandName || '',
+                        // Map strategic data from onboarding_data (or fallback to metadata for legacy)
+                        ...(client.onboarding_data?.strategic || client.metadata?.strategic || {})
+                    }));
+                    if (client.onboarding_data?.strategic?.websiteUrl || client.websiteUrl || client.brandName) {
+                        setIsPreviewMode(true);
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading client profile:", error);
             }
         };
         loadClient();
@@ -234,19 +209,45 @@ export default function ClientStrategicProfile() {
     };
 
     const handleConfirm = async () => {
+        if (!clientId) {
+            toast.error("Error: No se encontró la sesión del cliente.");
+            return;
+        }
+        
         setIsSaving(true);
         try {
-            await agencyService.updateClient(clientId, {
+            // Strip out non-strategic keys to avoid large/circular payloads
+            const { id, created_at, metadata, onboarding_data, editor, filmmaker, ...strategicData } = profile;
+
+            // Limpiamos referencias circulares o data inválida de onboarding_data actual
+            const safeOnboardingData = onboarding_data ? JSON.parse(JSON.stringify(onboarding_data)) : {};
+
+            const updatePayload = {
                 name: profile.brandName,
-                websiteUrl: profile.websiteUrl,
-                metadata: {
-                    ...profile.metadata,
-                    strategic: { ...profile }
+                onboarding_data: {
+                    ...safeOnboardingData,
+                    strategic: { 
+                        ...strategicData, 
+                        websiteUrl: profile.websiteUrl || '', 
+                        instagramUrl: profile.instagramUrl || ''
+                    }
                 }
-            });
-            toast.success("Perfil estratégico actualizado");
+            };
+
+            // Sanitización absoluta: Supabase-js puede congelarse (hang) si intentamos pasarle objetos
+            // con referencias circulares complejas (ej. Eventos de React) que escapen al safeOnboardingData.
+            const ultraSafePayload = JSON.parse(JSON.stringify(updatePayload));
+
+            const updatePromise = agencyService.updateClient(clientId, ultraSafePayload);
+
+            // Esperamos que termine el guardado sin forzar un timeout artificial.
+            // Si el servidor de Supabase está despertando (Cold Boot), puede tomar hasta 2 minutos.
+            await updatePromise;
+            
+            toast.success("Perfil estratégico guardado con éxito");
         } catch (error) {
-            toast.error("Error al guardar perfil");
+            console.error("Strategic Profile save error:", error);
+            toast.error("Error al guardar: " + (error.message || "Problema de red"));
         } finally {
             setIsSaving(false);
         }
@@ -264,18 +265,18 @@ export default function ClientStrategicProfile() {
             setIsPreviewMode(true);
             setAnalysisMsg('Infiltrando arquitectura web...');
             
-            // CLEAR PREVIOUS STATE TO PREVENT STALENESS
+            // CLEAR PREVIOUS STATE TO PREVENT STALENESS - VITAL FOR USER FEEDBACK
             setProfile(p => ({
                 ...p,
-                leadership: '...',
-                whatItDoes: '...',
-                whatItOffers: '...',
-                targetAudience: '...',
-                problemSolved: '...',
-                valueProp: '...',
-                tone: '...',
-                mainGoal: '...',
-                marketContext: '...'
+                leadership: 'Analizando...',
+                whatItDoes: 'Escaneando...',
+                whatItOffers: 'Buscando portafolio...',
+                targetAudience: 'Identificando...',
+                problemSolved: 'Mapeando soluciones...',
+                valueProp: 'Extrayendo USP...',
+                tone: 'Definiendo...',
+                mainGoal: 'Mapeando KPIs...',
+                marketContext: 'Auditando mercado...'
             }));
 
             const result = await aiService.analyzeStrategicProfile(
@@ -285,25 +286,27 @@ export default function ClientStrategicProfile() {
 
             console.log("RESULTADO DE INTELIGENCIA RECIBIDO:", result);
 
+            // result should now be { steps, data } from aiService
             const d = result.data || {};
             
-            // ATOMIC UPDATE
+            // ATOMIC UPDATE WITH REAL DATA ONLY
             setProfile(prev => ({
                 ...prev,
-                brandName: decodeEntities(d.brandName || prev.brandName),
-                leadership: decodeEntities(d.leadership || "Fundador/Director no detectado públicamente."),
-                whatItDoes: decodeEntities(d.whatItDoes || "Core de negocio basado en sector web."),
-                whatItOffers: decodeEntities(d.whatItOffers || "Servicios transaccionales detectados."),
-                targetAudience: decodeEntities(d.targetAudience || "Público sectorial afín."),
-                problemSolved: decodeEntities(d.problemSolved || "Dolores de industria identificados."),
-                valueProp: decodeEntities(d.valueProp || "Autoridad en el nicho digital."),
-                tone: decodeEntities(d.tone || "Profesional Directo"),
-                mainGoal: decodeEntities(d.mainGoal || "Conversión Estratégica"),
-                marketContext: decodeEntities(d.marketContext || "Posicionamiento en fase de auditoría.")
+                brandName: d.brandName || prev.brandName,
+                leadership: d.leadership || "Datos no hallados en el footprint público.",
+                whatItDoes: d.whatItDoes || "Información pendiente de extracción profunda.",
+                whatItOffers: d.whatItOffers || "Servicios/Productos no detectados.",
+                targetAudience: d.targetAudience || "Público general del sector.",
+                problemSolved: d.problemSolved || "Problemas comunes de la industria.",
+                valueProp: d.valueProp || "Propuesta en fase de definición.",
+                tone: d.tone || "Profesional",
+                mainGoal: d.mainGoal || "Ventas y Autoridad",
+                marketContext: d.marketContext || "Contexto de mercado estándar."
             }));
             
             setSyncCount(c => c + 1);
 
+            // Use the real steps from the engine
             const displaySteps = result.steps || [
                 { msg: 'Rastreando activos...', icon: 'Target' },
                 { msg: 'Mapeando core...', icon: 'Bot' },
@@ -312,15 +315,23 @@ export default function ClientStrategicProfile() {
 
             for (const step of displaySteps) {
                 setAnalysisMsg(step.msg);
-                await new Promise(r => setTimeout(r, 800));
+                await new Promise(r => setTimeout(r, 1000)); // Slightly longer for 'God Mode' feel
             }
             
             setHasUnsyncedUrl(false);
-            toast.success("Investigación Omni-Nivel completada");
+            toast.success("Investigación Omni-Nivel completada con éxito");
 
         } catch (error) {
             console.error("AI Analysis error:", error);
-            toast.info("Resiliencia activada: Datos parciales mapeados.");
+            // HONEST ERROR FEEDBACK
+            toast.error(error.message || "Fallo en la investigación estratégica");
+            
+            // Reset fields to avoid showing 'Analizando...' if it failed
+            setProfile(p => ({
+                ...p,
+                leadership: '', whatItDoes: '', whatItOffers: '', targetAudience: '',
+                problemSolved: '', valueProp: '', tone: '', mainGoal: '', marketContext: ''
+            }));
         } finally {
             setIsSimulatingScrape(false);
             setAnalysisMsg('');
@@ -402,6 +413,14 @@ export default function ClientStrategicProfile() {
             }
 
             // Using the insight route with mode='chat'
+            // Streamlined context to prevent API errors
+            const profileContext = {
+                leadership: profile.leadership,
+                whatItDoes: profile.whatItDoes,
+                whatItOffers: profile.whatItOffers,
+                valueProp: profile.valueProp
+            };
+
             const response = await fetch('/api/ai/insight', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -410,7 +429,8 @@ export default function ClientStrategicProfile() {
                     brandName: profile.brandName, 
                     mode: 'chat', 
                     query: currentInput,
-                    file: fileData
+                    file: fileData,
+                    context: profileContext // SEND ONLY RELEVANT DATA
                 })
             });
             const data = await response.json();
@@ -439,7 +459,7 @@ export default function ClientStrategicProfile() {
         }
 
         setIsFieldLoading(true);
-        const toastId = toast.loading(action === 'refine' ? "Consultando archivos digitales..." : "Aplicando sesgos cognitivos...");
+        const toastId = toast.loading(action === 'refine' ? "Investigando huella digital en tiempo real..." : "Optimizando con sesgos cognitivos...");
 
         try {
             const body = { 
@@ -514,23 +534,6 @@ export default function ClientStrategicProfile() {
                     )}
                 </div>
 
-                {/* Quick AI micro-actions bar */}
-                <div className="pt-3 border-t border-white/5 flex flex-wrap gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                     <button 
-                        onClick={() => handleFieldAIAction(field, 'refine')} 
-                        disabled={isFieldLoading}
-                        className="px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 text-[10px] uppercase font-black tracking-widest flex items-center gap-2 transition-colors disabled:opacity-50"
-                     >
-                         {isFieldLoading ? <Activity className="w-3 h-3 animate-pulse" /> : <Wand2 className="w-3 h-3" />} Auto-Completar
-                     </button>
-                     <button 
-                        onClick={() => handleFieldAIAction(field, 'persuade')} 
-                        disabled={isFieldLoading || !profile[field]}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-[10px] uppercase font-black tracking-widest flex items-center gap-2 transition-colors disabled:opacity-50"
-                     >
-                         <Sparkles className="w-3 h-3" /> Persuadir
-                     </button>
-                </div>
             </div>
         );
     };
@@ -593,7 +596,7 @@ export default function ClientStrategicProfile() {
                         </div>
                     </div>
 
-                    {/* Quick actions chips */}
+                    {/* Quick actions chips - REINSTATED BY USER REQUEST */}
                     <div className="flex flex-wrap justify-center gap-3 mt-8">
                         <button 
                             disabled={activeInsightBtn === 'competitors'}
@@ -621,93 +624,11 @@ export default function ClientStrategicProfile() {
                         </button>
                     </div>
                 </div>
+            </div>
 
-                {/* Holographic scanner preview */}
-                <AnimatePresence>
-                {(isSimulatingScrape || isPreviewMode) && (
-                    <motion.div 
-                        initial={{ opacity: 0, height: 0, y: 20 }}
-                        animate={{ opacity: 1, height: 'auto', y: 0 }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-8 w-full max-w-2xl mx-auto border rounded-3xl p-5 md:p-6 relative overflow-hidden backdrop-blur-md transition-colors duration-700 text-left bg-white/5 shadow-2xl"
-                        style={{
-                            borderColor: isSimulatingScrape ? 'rgba(99,102,241, 0.4)' : 'rgba(52,211,153, 0.4)'
-                        }}
-                    >
-                        {isSimulatingScrape && (
-                            <>
-                                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.1)_0%,transparent_70%)]" />
-                                <motion.div 
-                                    animate={{ top: ['-20%', '120%'] }}
-                                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                                    className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_15px_#818cf8]"
-                                />
-                            </>
-                        )}
- 
-                        <div className="relative z-10 flex items-center md:items-start gap-4">
-                            <div className="w-10 h-10 shrink-0 rounded-lg bg-black border border-white/10 shadow-xl flex items-center justify-center">
-                                {isSimulatingScrape ? (
-                                    <Database className="w-5 h-5 text-indigo-400 animate-pulse" />
-                                ) : (
-                                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                                )}
-                            </div>
-                            <div className="flex-1 space-y-2 text-center md:text-left">
-                                <div className="space-y-0.5">
-                                    <div className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-[0.2em] mb-1 inline-block ${isSimulatingScrape ? 'bg-indigo-500/20 text-indigo-400 animate-pulse' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                        {isSimulatingScrape ? 'Rastreando' : 'VERIFICADO'}
-                                    </div>
-                                    <h4 className={`text-xl md:text-3xl font-black uppercase tracking-tighter italic leading-none ${isSimulatingScrape ? 'text-indigo-300 animate-pulse' : 'text-white'}`}>
-                                        {isSimulatingScrape ? (analysisMsg || 'Sincronizando...') : decodeEntities(profile.brandName || '').split(/[|\-\u2013]/)[0]}
-                                    </h4>
-                                    {!isSimulatingScrape && profile.brandName?.includes('-') && (
-                                        <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest mt-1">
-                                            {decodeEntities(profile.brandName).split(/[|\-\u2013]/).slice(1).join(' ')}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mt-2 pt-2 border-t border-white/5">
-                                     <div>
-                                        <p className="text-[8px] text-indigo-400 font-black uppercase tracking-widest opacity-60">FUENTES DE INTELIGENCIA</p>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <div className={`p-1.5 rounded-lg bg-white/5 border border-white/10 transition-all duration-300 ${isSimulatingScrape ? 'animate-bounce shadow-[0_0_15px_rgba(66,133,244,0.4)] border-[#4285F4]/30' : ''}`}>
-                                                <div className="w-3 h-3 flex items-center justify-center">
-                                                    <svg viewBox="0 0 24 24" className={`w-full h-full ${isSimulatingScrape ? 'fill-[#4285F4]' : 'fill-gray-600'}`}>
-                                                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                                        <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z" />
-                                                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <div className={`p-1.5 rounded-lg bg-[#1877F2]/10 border border-[#1877F2]/20 transition-all duration-500 ${isSimulatingScrape ? 'animate-bounce delay-75' : ''}`}>
-                                                <Facebook className={`w-3 h-3 ${isSimulatingScrape ? 'text-[#1877F2]' : 'text-gray-600'}`} />
-                                            </div>
-                                            <div className={`p-1.5 rounded-lg bg-[#E4405F]/10 border border-[#E4405F]/20 transition-all duration-700 ${isSimulatingScrape ? 'animate-bounce delay-150' : ''}`}>
-                                                <Instagram className={`w-3 h-3 ${isSimulatingScrape ? 'text-[#E4405F]' : 'text-gray-600'}`} />
-                                            </div>
-                                            <div className={`p-1.5 rounded-lg bg-[#0A66C2]/10 border border-[#0A66C2]/20 transition-all duration-1000 ${isSimulatingScrape ? 'animate-bounce delay-300' : ''}`}>
-                                                <Linkedin className={`w-3 h-3 ${isSimulatingScrape ? 'text-[#0A66C2]' : 'text-gray-600'}`} />
-                                            </div>
-                                        </div>
-                                     </div>
-                                     <div>
-                                        <p className="text-[8px] text-emerald-400 font-black uppercase tracking-widest opacity-60">AUDITORÍA</p>
-                                        <p className="text-gray-400 font-medium text-[10px] line-clamp-1 italic mt-1">
-                                            {isSimulatingScrape ? "Omnilevel..." : (profile.whatItDoes || "Procesado.")}
-                                        </p>
-                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-                </AnimatePresence>
-
-                {/* Inline Research Chat - Activated once a URL is typed */}
-                <AnimatePresence>
-                {profile.websiteUrl && (
+            {/* Inline Research Chat - Activated once a URL is typed */}
+            <AnimatePresence>
+            {profile.websiteUrl && (
                     <motion.div 
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
@@ -819,7 +740,7 @@ export default function ClientStrategicProfile() {
                     </motion.div>
                 )}
                 </AnimatePresence>
-            </div>
+
 
             {/* Tactical Grid Container */}
                 {/* Visual feedback if fields are filled by system */}
@@ -1145,22 +1066,22 @@ export default function ClientStrategicProfile() {
                                         />
                                     </div>
 
-                                    <div className="flex flex-wrap gap-4 pt-4">
+                                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
                                         <button 
                                             onClick={() => handleFieldAIAction(expandedField.field, 'refine')}
                                             disabled={isFieldLoading}
-                                            className="flex-1 py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+                                            className="flex-1 py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-indigo-600/20 disabled:opacity-50 group"
                                         >
-                                            {isFieldLoading ? <Activity className="w-5 h-5 animate-pulse" /> : <Wand2 className="w-5 h-5" />} 
-                                            Auto-Completar con IA
+                                            {isFieldLoading ? <Activity className="w-5 h-5 animate-pulse" /> : <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />} 
+                                            Investigar en la Web
                                         </button>
                                         <button 
                                             onClick={() => handleFieldAIAction(expandedField.field, 'persuade')}
                                             disabled={isFieldLoading || !profile[expandedField.field]}
-                                            className="flex-1 py-5 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                                            className="flex-1 py-5 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 group"
                                         >
-                                            <Sparkles className="w-5 h-5 text-emerald-400" />
-                                            Efecto Persuasión
+                                            <Sparkles className="w-5 h-5 text-emerald-400 group-hover:animate-pulse" />
+                                            Optimizar Copy Estratégico
                                         </button>
                                     </div>
                                     
@@ -1170,40 +1091,6 @@ export default function ClientStrategicProfile() {
                                 </div>
                             </div>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* FULL SCREEN SCANNER OVERLAY - FORCE VISUAL FEEDBACK */}
-            <AnimatePresence>
-                {isSimulatingScrape && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md"
-                    >
-                        <div className="relative">
-                            <div className="w-64 h-64 rounded-full border-4 border-indigo-500/20 animate-ping absolute inset-0" />
-                            <div className="w-64 h-64 rounded-full border-2 border-indigo-500/40 relative flex items-center justify-center overflow-hidden">
-                                <motion.div 
-                                    animate={{ top: ['-10%', '110%'] }}
-                                    transition={{ duration: 1.5, repeat: Infinity }}
-                                    className="absolute left-0 right-0 h-1 bg-indigo-500 shadow-[0_0_20px_#6366f1]"
-                                />
-                                <Bot className="w-32 h-32 text-indigo-400 animate-pulse" />
-                            </div>
-                        </div>
-                        <div className="mt-12 text-center space-y-4">
-                            <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-none">DIIC INTELLIGENCE ENGINE</h2>
-                            <div className="flex items-center justify-center gap-3">
-                                <Activity className="w-5 h-5 text-indigo-500 animate-pulse" />
-                                <p className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent uppercase tracking-[0.2em]">
-                                    {analysisMsg || "Investigando Huella Digital..."}
-                                </p>
-                            </div>
-                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.5em] opacity-50">Omnilevel Research Mode Active</p>
-                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

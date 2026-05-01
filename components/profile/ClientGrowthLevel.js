@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Leaf, Compass, Star, Zap, Rocket, CheckCircle2 } from 'lucide-react';
+import { Leaf, Compass, Star, Zap, Rocket, CheckCircle2, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
@@ -17,7 +17,13 @@ const LEVELS = [
         border: 'border-emerald-500/20',
         desc: 'Para quienes inician. Objetivo: Dar a conocer tu oferta rápidamente y generar confianza básica.',
         content: 'Frecuencia alta, Reels virales, Carruseles educativos simples.',
-        complexity: 'Baja'
+        complexity: 'Baja',
+        focusAreas: [
+            'Construcción de Autoridad Base', 
+            'Optimización de Perfiles Sociales', 
+            'Estrategia de Contenido Viral', 
+            'Prueba Social y Casos Iniciales'
+        ]
     },
     {
         id: 'estrategia',
@@ -28,7 +34,13 @@ const LEVELS = [
         border: 'border-blue-500/20',
         desc: 'Construyendo sistemas. Objetivo: Captación de leads (Lead Magnets) y funnels iniciales.',
         content: 'Frecuencia media, Masterclasses, Casos de estudio, PDFs.',
-        complexity: 'Media'
+        complexity: 'Media',
+        focusAreas: [
+            'Diseño de Embudos (Funnels)', 
+            'Creación de Lead Magnets', 
+            'Nutrición de Base de Datos', 
+            'Estructuración de Oferta Irresistible'
+        ]
     },
     {
         id: 'marca',
@@ -39,7 +51,13 @@ const LEVELS = [
         border: 'border-purple-500/20',
         desc: 'Consolidando autoridad. Objetivo: Vender High Ticket y posicionar como el #1 del nicho.',
         content: 'Frecuencia estratégica, Eventos VSL, Documentales, PR digital.',
-        complexity: 'Alta'
+        complexity: 'Alta',
+        focusAreas: [
+            'Posicionamiento High-Ticket', 
+            'Relaciones Públicas Digitales', 
+            'Eventos VSL y Lanzamientos', 
+            'Autoridad de Nicho Dominante'
+        ]
     },
     {
         id: 'automatizacion',
@@ -50,7 +68,13 @@ const LEVELS = [
         border: 'border-amber-500/20',
         desc: 'Delegando al sistema. Objetivo: Reducir costo de adquisición con IA y flujos automáticos.',
         content: 'Anuncios perennes, Bots integrados, Secuencias automatizadas.',
-        complexity: 'Avanzada'
+        complexity: 'Avanzada',
+        focusAreas: [
+            'Sistemas Perennes de Venta', 
+            'Agentes IA de Calificación', 
+            'Automatización de Email Marketing', 
+            'Optimización de CAC (Costo de Adquisición)'
+        ]
     },
     {
         id: 'escala',
@@ -61,7 +85,13 @@ const LEVELS = [
         border: 'border-cyan-500/20',
         desc: 'Crecimiento exponencial. Objetivo: Dominar múltiples canales y maximizar LTV (Valor de Vida).',
         content: 'Contenido Omnicanal, Creación de productos escalables.',
-        complexity: 'Maestro'
+        complexity: 'Maestro',
+        focusAreas: [
+            'Omnicanalidad Estratégica', 
+            'Delegación de Producción', 
+            'Ecosistema de Múltiples Productos', 
+            'Maximización de LTV (Life-Time Value)'
+        ]
     }
 ];
 
@@ -158,18 +188,35 @@ export default function ClientGrowthLevel({ initialLevel = 'presencia' }) {
                                     </div>
                                     
                                     {isSelected && (
-                                         <div className="mt-6 pt-6 border-t border-white/10 hidden md:block">
-                                             <button 
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleSaveLevel();
-                                                }}
-                                                disabled={isSaving}
-                                                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest bg-white/5 border border-white/5 ${level.color} hover:bg-white/10 transition-colors disabled:opacity-50`}
-                                            >
-                                                 {isSaving ? 'Guardando...' : 'Elegir Nivel'}
-                                             </button>
-                                         </div>
+                                        <div className="mt-8 space-y-6 animate-in fade-in slide-in-from-top-2 duration-500">
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Target className="w-4 h-4 text-gray-400" />
+                                                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Enfoque Profesional (Entregables)</h4>
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    {level.focusAreas.map((focus, i) => (
+                                                        <div key={i} className="flex items-center gap-3 bg-black/40 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                                                            <CheckCircle2 className={`w-4 h-4 ${level.color} shrink-0`} />
+                                                            <span className="text-xs font-bold text-gray-300">{focus}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-6 border-t border-white/10 hidden md:block">
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleSaveLevel();
+                                                    }}
+                                                    disabled={isSaving}
+                                                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest bg-white/5 border border-white/5 ${level.color} hover:bg-white/10 transition-colors disabled:opacity-50`}
+                                                >
+                                                    {isSaving ? 'Guardando...' : 'Confirmar Estrategia'}
+                                                </button>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             </div>
