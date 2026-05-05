@@ -42,7 +42,8 @@ export async function POST(req) {
         switch (mode) {
             case 'competitors':
                 tacticalPrompt = `INVESTIGA Y LISTA LOS 3 COMPETIDORES DIRECTOS REALES DEL ECOSISTEMA EN: ${url}. ${ignoreNameNote}
-                Devuelve un JSON con este formato: {"competitors": [{"name": "...", "usp": "...", "threat": "Low/Med/High"}]}`;
+                Para cada competidor, encuentra OBLIGATORIAMENTE su Sitio Web, Redes Sociales (Instagram/Facebook) y Ubicación/Alcance.
+                Devuelve un JSON con este formato: {"competitors": [{"name": "...", "url": "...", "social": "...", "location": "...", "strengthsWeaknesses": "..."}]}`;
                 break;
             case 'friction':
                 tacticalPrompt = `ANALIZA EL SITIO WEB ${url} Y SUS REDES SOCIALES PARA DETECTAR 3 PUNTOS DE FRICCIÓN EN SU PROCESO DE VENTA (CRO). ${ignoreNameNote}

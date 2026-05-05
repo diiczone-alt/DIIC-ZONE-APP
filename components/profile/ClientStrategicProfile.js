@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Network, Tag, Target, Users, Search, Target as TargetIcon, Zap, Heart, Link as LinkIcon, Globe, Image as ImageIcon, CheckCircle2, ShieldAlert, Crosshair, Plus, Trash2, ShieldCheck, Activity, Bot, Sparkles, Database, Command, Maximize2, Wand2, Edit3, Paperclip, Mic, FileUp, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { Network, Tag, Target, Users, Search, Target as TargetIcon, Zap, Heart, Link as LinkIcon, Globe, Image as ImageIcon, CheckCircle2, ShieldAlert, Crosshair, Plus, Trash2, ShieldCheck, Activity, Bot, Sparkles, Database, Command, Maximize2, Wand2, Edit3, Paperclip, Mic, FileUp, Facebook, Instagram, Linkedin, Camera, Smartphone, Monitor, Layout, Layers, Video } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
@@ -102,6 +102,154 @@ const StrategicReportViewer = ({ content }) => {
     );
 };
 
+// Recording Formats Configuration
+const RECORDING_FORMATS = [
+    {
+        id: 'reels',
+        label: 'Reels / TikTok / Shorts',
+        ratio: '9:16',
+        resolution: '1080 x 1920',
+        fps: '30 / 60 FPS',
+        icon: Smartphone,
+        color: 'from-pink-500 to-rose-500',
+        specs: [
+            'Bitrate: 15-20 Mbps',
+            'Perfil: High Profile',
+            'Audio: 48kHz Stereo',
+            'Margen Seguro: 20% Superior/Inferior'
+        ]
+    },
+    {
+        id: 'youtube',
+        label: 'YouTube / Masterclass',
+        ratio: '16:9',
+        resolution: '3840 x 2160 (4K)',
+        fps: '24 / 30 FPS',
+        icon: Monitor,
+        color: 'from-red-600 to-red-500',
+        specs: [
+            'Bitrate: 45-60 Mbps',
+            'Color: Rec.709 / Log-C',
+            'Audio: 24-bit LPCM',
+            'Enfoque: Eye-Tracking AF'
+        ]
+    },
+    {
+        id: 'ads',
+        label: 'Ads / Feed Premium',
+        ratio: '4:5',
+        resolution: '1080 x 1350',
+        fps: '30 FPS',
+        icon: Layout,
+        color: 'from-indigo-500 to-blue-500',
+        specs: [
+            'Bitrate: 12 Mbps',
+            'Hook: Primeros 3 segundos',
+            'Subtítulos: Estilo Quake',
+            'CTA: Clear Overlay'
+        ]
+    }
+];
+
+// Modal component for Recording Formats
+const RecordingFormatsModal = ({ isOpen, onClose }) => {
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl"
+                    onClick={onClose}
+                >
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                        className="w-full max-w-5xl bg-[#0A0A0F] border border-white/10 rounded-[40px] overflow-hidden shadow-2xl relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Background Decoration */}
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 -z-10" />
+                        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2 -z-10" />
+
+                        <div className="p-8 md:p-12">
+                            <div className="flex items-center justify-between mb-12">
+                                <div className="space-y-1">
+                                    <h3 className="text-4xl font-black text-white uppercase italic tracking-tighter">Configuración de <span className="text-indigo-500">Producción</span></h3>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.4em] flex items-center gap-2">
+                                        <Activity size={10} className="text-indigo-500" /> Estándares de Calidad DIIC Zone v2.0
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={onClose}
+                                    className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all outline-none"
+                                >
+                                    <Plus className="w-6 h-6 rotate-45" />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {RECORDING_FORMATS.map((format) => (
+                                    <div 
+                                        key={format.id}
+                                        className="group p-8 rounded-[32px] bg-white/[0.02] border border-white/5 hover:border-white/20 transition-all duration-500 relative overflow-hidden"
+                                    >
+                                        {/* Gradient Glow */}
+                                        <div className={`absolute -inset-px bg-gradient-to-br ${format.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
+                                        
+                                        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${format.color} flex items-center justify-center text-white shadow-lg mb-8 group-hover:scale-110 transition-transform duration-500`}>
+                                            <format.icon size={32} />
+                                        </div>
+
+                                        <h4 className="text-xl font-black text-white mb-2 uppercase tracking-tight">{format.label}</h4>
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <span className="text-[10px] font-bold text-indigo-400 bg-indigo-400/10 px-2 py-0.5 rounded-md uppercase tracking-widest">{format.ratio}</span>
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{format.resolution}</span>
+                                        </div>
+
+                                        <div className="space-y-3 pt-6 border-t border-white/5">
+                                            {format.specs.map((spec, i) => (
+                                                <div key={i} className="flex items-center gap-2">
+                                                    <div className="w-1 h-1 rounded-full bg-indigo-500" />
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{spec}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="mt-8 flex items-center justify-between">
+                                            <span className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em]">{format.fps}</span>
+                                            <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-all">
+                                                <CheckCircle2 size={14} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-12 p-6 rounded-3xl bg-indigo-500/5 border border-indigo-500/10 flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                                        <Camera size={24} />
+                                    </div>
+                                    <div>
+                                        <h5 className="text-white font-black text-xs uppercase tracking-widest">Hardware Recomendado</h5>
+                                        <p className="text-[10px] text-gray-500 font-medium">Sony Alpha 7S III / FX3 | Lente 35mm f/1.8 | Rode Wireless GO II</p>
+                                    </div>
+                                </div>
+                                <button className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all">
+                                    Ver Guía Técnica Completa
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
 export default function ClientStrategicProfile() {
     const { user } = useAuth();
     // Current client ID from auth context
@@ -124,7 +272,13 @@ export default function ClientStrategicProfile() {
         websiteUrl: '',
         instagramUrl: '',
         linkedinUrl: '',
-        whatsappNumber: ''
+        whatsappNumber: '',
+        recordingFormats: {
+            preferred: 'reels',
+            resolution: '4K',
+            fps: 30
+        },
+        insights: {} // Para guardar reportes de tráfico, fricción, etc.
     });
 
     const [syncCount, setSyncCount] = useState(0);
@@ -364,6 +518,14 @@ export default function ClientStrategicProfile() {
                 }
             } else {
                 setInsightData({ title, content: res.insight, loading: false });
+                // PERSISTENCIA: Guardamos el reporte en el estado del perfil
+                setProfile(p => ({
+                    ...p,
+                    insights: {
+                        ...p.insights,
+                        [mode]: { title, content: res.insight, date: new Date().toISOString() }
+                    }
+                }));
             }
         } catch (error) {
             console.error("Quick Insight Error:", error);
@@ -550,7 +712,37 @@ export default function ClientStrategicProfile() {
                 <p className="text-gray-500 text-sm font-bold uppercase tracking-[0.2em] max-w-2xl mx-auto">
                     Define la identidad central de tu marca. Conecta tus redes y web para que Diiczone entienda tu negocio automáticamente.
                 </p>
+                <div className="flex justify-center gap-4 mt-6 print:hidden">
+                    <button 
+                        onClick={() => window.print()}
+                        className="px-6 py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest text-gray-400 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2"
+                    >
+                        <FileUp size={14} /> Descargar Reporte (PDF)
+                    </button>
+                </div>
             </div>
+
+            {/* Print Styles */}
+            <style jsx global>{`
+                @media print {
+                    body { background: white !important; color: black !important; }
+                    .print\\:hidden { display: none !important; }
+                    .bg-[#0A0A0F], .bg-[#0A0A12], .bg-[#11111E], .bg-black/40, .bg-black/50 { 
+                        background: white !important; 
+                        border: 1px solid #eee !important;
+                        box-shadow: none !important;
+                    }
+                    h2, h3, h4, h5, label, p, span, input, textarea { color: black !important; }
+                    .text-indigo-500, .text-indigo-400, .text-rose-500, .text-rose-400 { color: #4f46e5 !important; }
+                    .border-white/5, .border-white/10, .border-indigo-500/20, .border-rose-500/20 { border-color: #eee !important; }
+                    input, textarea { border: 1px solid #eee !important; padding: 10px !important; }
+                    .rounded-[32px], .rounded-[40px] { border-radius: 12px !important; }
+                    .grid { display: block !important; }
+                    .grid > div { margin-bottom: 20px !important; page-break-inside: avoid; }
+                    .flex { display: flex !important; }
+                    .animate-in, .animate-pulse, .shadow-2xl, .shadow-lg { animation: none !important; box-shadow: none !important; }
+                }
+            `}</style>
 
             {/* MEGA MODO IA: SEARCH ENGINE */}
             <div className="bg-gradient-to-br from-[#0A0A12] to-[#11111E] border border-indigo-500/20 rounded-[40px] p-8 md:p-16 mb-12 relative overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.05)] text-center flex flex-col items-center justify-center min-h-[400px]">
@@ -916,6 +1108,44 @@ export default function ClientStrategicProfile() {
                 </div>
 
             </div>
+
+            {/* AI Generated Insights Section (Saved in DB) */}
+            {profile.insights && Object.keys(profile.insights).length > 0 && (
+                <div className="mt-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="flex items-center gap-4 border-b border-white/5 pb-4">
+                        <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+                            <Bot size={20} />
+                        </div>
+                        <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Reportes de Inteligencia</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {Object.entries(profile.insights).map(([key, data]) => (
+                            <div key={key} className="bg-[#0A0A0F] border border-white/5 rounded-[32px] p-8 space-y-6 hover:border-indigo-500/30 transition-all">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h4 className="text-sm font-black text-white uppercase tracking-widest italic">{data.title}</h4>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Generado el {new Date(data.date).toLocaleDateString()}</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            const newInsights = { ...profile.insights };
+                                            delete newInsights[key];
+                                            setProfile(p => ({ ...p, insights: newInsights }));
+                                        }}
+                                        className="p-2 text-gray-600 hover:text-rose-500 transition-colors print:hidden"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                                <div className="prose prose-invert prose-sm max-w-none">
+                                    <StrategicReportViewer content={data.content} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
             
             <div className="mt-12 flex justify-end">
                  <button 
@@ -1094,6 +1324,12 @@ export default function ClientStrategicProfile() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Recording Formats Modal */}
+            <RecordingFormatsModal 
+                isOpen={showFormats} 
+                onClose={() => setShowFormats(false)} 
+            />
         </div>
     );
 }
