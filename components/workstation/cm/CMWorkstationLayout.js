@@ -2474,7 +2474,7 @@ function CMAcademy({ user }) {
                         <p className="text-4xl font-black italic">3<span className="text-xl opacity-60 ml-2">/ 9</span></p>
                     </div>
                     <button 
-                        onClick={() => handleStartModule("Curso de Maestría CM")}
+                        onClick={() => handleStartModule(modules[0])}
                         className="w-full py-4 bg-white text-cyan-600 font-black uppercase text-[10px] tracking-widest rounded-2xl hover:scale-105 transition-all"
                     >
                         Continuar Curso
@@ -2790,10 +2790,10 @@ function ModulePlayer({ module, onBack }) {
                     </button>
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${module.color}`}>● {module.focus}</span>
-                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">/ Módulo {module.id}</span>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${module?.color || 'text-cyan-400'}`}>● {module?.focus || 'Academy'}</span>
+                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">/ Módulo {module?.id || '0'}</span>
                         </div>
-                        <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{module.title}</h2>
+                        <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">{module?.title || 'Sin Título'}</h2>
                     </div>
                 </div>
                 <div className="flex items-center gap-6">
@@ -2839,7 +2839,7 @@ function ModulePlayer({ module, onBack }) {
                             </div>
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:scale-110 transition-transform duration-700">
-                            <module.icon className={`w-40 h-40 ${module.color}`} />
+                            {module?.icon ? <module.icon className={`w-40 h-40 ${module.color || 'text-cyan-400'}`} /> : <GraduationCap className="w-40 h-40 text-cyan-400/20" />}
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center">
                             <button className="w-20 h-20 rounded-full bg-cyan-500 text-white flex items-center justify-center shadow-2xl shadow-cyan-500/20 hover:scale-110 active:scale-95 transition-all">

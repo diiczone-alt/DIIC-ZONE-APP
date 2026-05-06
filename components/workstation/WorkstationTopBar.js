@@ -10,10 +10,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
+// Command Center Overlay
+import ControlCenterOverlay from './ControlCenterOverlay';
+
 export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) {
     const { user, logout } = useAuth();
     const router = useRouter();
-    const [activePanel, setActivePanel] = useState(null); // 'notifications', 'messages', 'calendar'
+    const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+    const [overlayTab, setOverlayTab] = useState('messages');
     const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     const handleLogout = async () => {
@@ -25,9 +29,9 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
         }
     };
 
-    const togglePanel = (panel) => {
-        if (activePanel === panel) setActivePanel(null);
-        else setActivePanel(panel);
+    const openControlCenter = (tab) => {
+        setOverlayTab(tab);
+        setIsOverlayOpen(true);
     };
 
     return (
@@ -57,8 +61,8 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                     <TopBarButton 
                         icon={<Calendar className="w-4 h-4" />} 
                         label="Agenda" 
-                        isActive={activePanel === 'calendar'}
-                        onClick={() => togglePanel('calendar')}
+                        isActive={isOverlayOpen && overlayTab === 'calendar'}
+                        onClick={() => openControlCenter('calendar')}
                         badge="2"
                     />
                     
@@ -66,8 +70,8 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                     <TopBarButton 
                         icon={<MessageCircle className="w-4 h-4" />} 
                         label="Mensajes" 
-                        isActive={activePanel === 'messages'}
-                        onClick={() => togglePanel('messages')}
+                        isActive={isOverlayOpen && overlayTab === 'messages'}
+                        onClick={() => openControlCenter('messages')}
                         badge="5"
                         badgeColor="bg-indigo-500"
                     />
@@ -76,8 +80,8 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                     <TopBarButton 
                         icon={<Bell className="w-4 h-4" />} 
                         label="Alertas" 
-                        isActive={activePanel === 'notifications'}
-                        onClick={() => togglePanel('notifications')}
+                        isActive={isOverlayOpen && overlayTab === 'alerts'}
+                        onClick={() => openControlCenter('alerts')}
                         badge="!"
                         badgeColor="bg-amber-500"
                     />
@@ -176,38 +180,14 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                 </div>
             </div>
 
-            {/* --- DROPDOWN PANELS (Simplified for Vision) --- */}
+            {/* --- COMMAND CENTER OVERLAY (Top-Down Broad View) --- */}
             <AnimatePresence>
-                {activePanel && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute top-24 right-8 w-80 bg-[#0E0E18] border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-6 z-50 overflow-hidden"
-                    >
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">
-                                {activePanel === 'calendar' && 'Próximas Citas'}
-                                {activePanel === 'messages' && 'Bandeja de Equipo'}
-                                {activePanel === 'notifications' && 'Notificaciones'}
-                            </h3>
-                            <span className="text-[9px] font-mono text-gray-600 uppercase">Ver Todo</span>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer group">
-                                <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mb-1">Hace 10 min</p>
-                                <p className="text-xs font-medium text-white group-hover:text-indigo-400 transition-colors">
-                                    {activePanel === 'calendar' && 'Reunión Semanal con CM'}
-                                    {activePanel === 'messages' && 'CM: Necesitamos el corte del Reel A.'}
-                                    {activePanel === 'notifications' && 'Nuevo proyecto asignado: "Campaña Mayo"'}
-                                </p>
-                            </div>
-                            <div className="p-4 rounded-2xl bg-white/5 border border-white/5 opacity-50">
-                                <p className="text-xs text-gray-500 italic text-center py-2">Sin más actualizaciones hoy.</p>
-                            </div>
-                        </div>
-                    </motion.div>
+                {isOverlayOpen && (
+                    <ControlCenterOverlay 
+                        isOpen={isOverlayOpen} 
+                        onClose={() => setIsOverlayOpen(false)} 
+                        initialTab={overlayTab}
+                    />
                 )}
             </AnimatePresence>
         </div>
