@@ -145,9 +145,9 @@ export default function OnboardingWizard({ initialType = 'client' }) {
         if (isCreative) {
             switch (currentStep) {
                 case 4: return <TalentRoleStep onNext={nextStep} updateData={updateRoot} />;
-                case 5: return <TalentDescriptionStep onNext={nextStep} updateData={updateRoot} />;
-                case 6: return <TalentCVStep onNext={nextStep} updateData={updateRoot} />;
-                case 7: return <SubProfileStep onNext={nextStep} updateData={updateRoot} profileType="creator" />;
+                case 5: return <TalentDescriptionStep onNext={nextStep} updateData={updateRoot} data={formData} />;
+                case 6: return <TalentCVStep onNext={nextStep} updateData={updateRoot} data={formData} />;
+                case 7: return <SubProfileStep onNext={nextStep} updateData={updateRoot} profileType={formData.role || 'creator'} />;
                 case 8: return <DriveSetupStep onNext={nextStep} updateData={(d) => handleUpdateData('driveData', d)} data={formData} />;
                 case 9: return <EnvironmentSuccessStep onNext={nextStep} formData={formData} />;
                 default: return <div className="text-white text-center p-10 font-bold">¡Bienvenido a la Zona Creativa! 🎥</div>;

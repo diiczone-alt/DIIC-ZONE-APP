@@ -2,15 +2,30 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Upload, CheckCircle2, ArrowRight, Briefcase, Plus, X, Phone } from 'lucide-react';
+import { FileText, Upload, CheckCircle2, ArrowRight, Briefcase, Plus, X, Phone, Wand2 } from 'lucide-react';
 
-export default function TalentCVStep({ onNext, updateData }) {
+const ROLE_SKILLS = {
+    designer: ['Adobe Photoshop', 'Adobe Illustrator', 'Canva', 'Figma', 'After Effects', 'InDesign', 'CorelDraw', 'CSS', 'UI/UX'],
+    editor: ['Adobe Premiere Pro', 'After Effects', 'CapCut', 'DaVinci Resolve', 'Final Cut Pro', 'Sony Vegas', 'Audition', 'Color Grading'],
+    filmmaker: ['Dirección de Fotografía', 'Manejo de Estabilizadores', 'Iluminación', 'Drone Pilot', 'Adobe Premiere', 'Storyboarding'],
+    community: ['Copywriting', 'Metric Analysis', 'Ads Manager', 'Planificación Estratégica', 'Diseño Básico', 'Gestión de Crisis'],
+    photo: ['Adobe Lightroom', 'Photoshop', 'Capture One', 'Iluminación de Estudio', 'Retoque High-End', 'Composición Visual'],
+    model: ['Pasarela', 'Acting', 'Posado Fotográfico', 'Protocolo', 'Mantenimiento de Imagen', 'Expresión Corporal'],
+    web: ['React', 'Next.js', 'Tailwind CSS', 'Node.js', 'Supabase', 'Figma to Code', 'SEO Técnico'],
+    print: ['Preprensa', 'Gestión de Color', 'Manejo de Plotter', 'Adobe InDesign', 'Diseño Estructural', 'Sustratos'],
+    event: ['Logística', 'Producción Técnica', 'Booking', 'Dirección de Escena', 'Presupuestación', 'AV Systems'],
+};
+
+export default function TalentCVStep({ onNext, updateData, data }) {
+    const role = data?.role || 'editor';
     const [cvName, setCvName] = useState('');
     const [cvSummary, setCvSummary] = useState('');
     const [whatsapp, setWhatsapp] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [skills, setSkills] = useState([]);
     const [newSkill, setNewSkill] = useState('');
+
+    const suggestedSkills = ROLE_SKILLS[role] || [];
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
@@ -122,31 +137,52 @@ export default function TalentCVStep({ onNext, updateData }) {
             </div>
 
             {/* SKILLS TAGS */}
-            <div className="space-y-3">
-                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Habilidades Clave (Skills)</label>
-                <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-white/5 border border-white/5 rounded-2xl">
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Habilidades & Software</label>
+                    <span className="text-[8px] text-gray-600 font-bold uppercase italic">Selecciona para agregar</span>
+                </div>
+
+                {/* Quick Suggestions based on Role */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                    {suggestedSkills.filter(s => !skills.includes(s)).slice(0, 6).map(s => (
+                        <button 
+                            key={s}
+                            onClick={() => setSkills([...skills, s])}
+                            className="text-[9px] font-black uppercase tracking-tighter px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-500 hover:border-indigo-500/50 hover:text-indigo-400 transition-all flex items-center gap-1.5 group"
+                        >
+                            <Wand2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            {s}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="flex flex-wrap gap-2 min-h-[50px] p-4 bg-white/5 border border-white/5 rounded-3xl">
+                    {skills.length === 0 && (
+                        <p className="text-[10px] text-gray-700 font-black uppercase italic tracking-widest py-2">Sin habilidades seleccionadas...</p>
+                    )}
                     {skills.map(skill => (
                         <motion.span 
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             key={skill} 
-                            className="bg-indigo-500 text-white text-[10px] font-black py-1.5 px-3 rounded-full flex items-center gap-2"
+                            className="bg-indigo-600 text-white text-[10px] font-black py-2 px-4 rounded-xl flex items-center gap-3 shadow-lg shadow-indigo-600/20 border border-indigo-400/30"
                         >
                             {skill}
-                            <button onClick={() => removeSkill(skill)}><X className="w-3 h-3" /></button>
+                            <button onClick={() => removeSkill(skill)} className="hover:text-red-400 transition-colors"><X className="w-3 h-3" /></button>
                         </motion.span>
                     ))}
-                    <div className="flex items-center gap-2 ml-2">
+                    <div className="flex items-center gap-2 ml-2 flex-1">
                         <input 
                             type="text" 
-                            placeholder="Agregar skill..."
+                            placeholder="Otro skill..."
                             value={newSkill}
                             onChange={(e) => setNewSkill(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && addSkill()}
-                            className="bg-transparent border-none text-[10px] text-white focus:outline-none w-24 font-bold"
+                            className="bg-transparent border-none text-[10px] text-white focus:outline-none w-full font-bold uppercase tracking-widest placeholder:text-gray-700"
                         />
-                        <button onClick={addSkill} className="p-1 hover:bg-white/10 rounded-full transition-all">
-                            <Plus className="w-3 h-3 text-gray-400" />
+                        <button onClick={addSkill} className="p-2 hover:bg-white/10 rounded-xl transition-all">
+                            <Plus className="w-4 h-4 text-gray-400" />
                         </button>
                     </div>
                 </div>
@@ -155,10 +191,10 @@ export default function TalentCVStep({ onNext, updateData }) {
             {/* CONTINUE BUTTON */}
             <button
                 onClick={handleContinue}
-                className="w-full py-5 bg-indigo-500 hover:bg-indigo-400 text-white rounded-[24px] font-black text-xl transition-all flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/20 mt-4 group"
+                className="w-full py-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-[28px] font-black text-xl transition-all flex items-center justify-center gap-3 shadow-[0_0_50px_rgba(79,70,229,0.3)] mt-6 group"
             >
-                FINALIZAR REQUISITOS
-                <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                CONTINUAR REGISTRO
+                <ArrowRight className="w-7 h-7 group-hover:translate-x-1 transition-transform" />
             </button>
         </div>
     );

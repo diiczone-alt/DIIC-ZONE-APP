@@ -120,14 +120,18 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
 
         if (activeSede !== 'Todas') {
             const sedeClients = (allClients || []).filter(c => (c.city || '').toLowerCase().trim() === activeSede.toLowerCase().trim());
-            const activePersonnelNames = new Set(sedeClients.flatMap(c => [c.cm, c.editor, c.filmmaker]).filter(Boolean));
+            const activePersonnelNames = new Set(
+                sedeClients.flatMap(c => [c.cm, c.editor, c.filmmaker])
+                    .filter(Boolean)
+                    .map(name => name.trim())
+            );
             
             const coreMembers = team.filter(m => {
                 const memberCity = (m.city || '').toLowerCase().trim();
                 const targetSede = activeSede.toLowerCase().trim();
                 const isResident = memberCity === targetSede;
                 const hasLocalBrands = sedeClients.length > 0;
-                return activePersonnelNames.has(m.name) || (isResident && hasLocalBrands);
+                return activePersonnelNames.has((m.name || '').trim()) || (isResident && hasLocalBrands);
             });
             
             const squadSet = new Set(coreMembers.map(m => m.id));
@@ -144,12 +148,19 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
             filteredTeam = team.filter(m => squadSet.has(m.id));
         }
 
-        const strategists = filteredTeam.filter(m => (m.role || '').toLowerCase().includes('estratega'));
-        const cms = filteredTeam.filter(m => (m.role || '').toLowerCase().includes('community manager'));
-        const creatives = filteredTeam.filter(m => 
-            !(m.role || '').toLowerCase().includes('estratega') && 
-            !(m.role || '').toLowerCase().includes('community manager')
-        );
+        const isEstrategaRole = (r) => {
+            const role = (r || '').toLowerCase();
+            return role.includes('estratega') || role.includes('director') || role.includes('lider');
+        };
+
+        const isCMRole = (r) => {
+            const role = (r || '').toLowerCase();
+            return role.includes('community manager') || role.includes('cm') || role.includes('social media');
+        };
+
+        const strategists = filteredTeam.filter(m => isEstrategaRole(m.role));
+        const cms = filteredTeam.filter(m => isCMRole(m.role));
+        const creatives = filteredTeam.filter(m => !isEstrategaRole(m.role) && !isCMRole(m.role));
 
         // Simple layouting math
         const LEVEL_Y = { ESTRATEGAS: 50, CMS: 450, CREATIVES: 850 };
@@ -290,8 +301,9 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
                 </p>
             </div>
 
-            <ReactFlow
-                key={`flow-${activeSede}-${nodes.length}`}
+            <div className="relative flex-1 bg-[#0A0A14]/40 rounded-[3rem] border border-white/5 overflow-hidden group shadow-2xl">
+                <ReactFlow
+                key={`flow-${activeSede}`}
                 nodes={nodes}
                 edges={edges}
                 onNodesChange={onNodesChange}
@@ -300,10 +312,13 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
                 onConnect={onConnect}
                 onEdgeDoubleClick={onEdgeDoubleClick}
                 nodeTypes={nodeTypes}
+                onInit={(instance) => {
+                    setTimeout(() => instance.fitView({ padding: 0.2 }), 100);
+                }}
                 fitView
-                fitViewOptions={{ padding: 1 }}
+                fitViewOptions={{ padding: 0.2 }}
                 minZoom={0.2}
-                maxZoom={1.5}
+                maxZoom={2}
                 className="custom-flow-theme"
             >
                 <Background color="#ffffff" gap={32} size={1} opacity={0.03} />
@@ -330,6 +345,7 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
                     cursor: grabbing;
                 }
             `}} />
+            </div>
         </div>
     );
 }

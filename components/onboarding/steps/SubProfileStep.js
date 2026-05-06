@@ -2,13 +2,24 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Check } from 'lucide-react';
 
 export default function SubProfileStep({ onNext, updateData, profileType }) {
+    // ... subNiches remain same ...
     // Definición de sub-nichos mapeados a los nuevos IDs de ProfileSelectorStep
     const subNiches = {
         personal: ['Médico', 'Coach / Mentor', 'Consultor Independiente', 'Autor / Escritor', 'Speaker / Conferencista', 'Artista', 'Político', 'Deportista de Élite', 'Influencer', 'Otro'],
         doctor: ['Medicina General', 'Especialista', 'Cirujano', 'Odontólogo', 'Pediatra', 'Psiquiatra', 'Médico Estético', 'Investigador', 'Otro'],
         creator: ['Vlogs / Lifestyle', 'Tech Reviews', 'Gaming / Streamer', 'Educativo / Tutoriales', 'Entretenimiento', 'Podcast de Entrevistas', 'Podcast de Nicho', 'Otro'],
+        designer: ['Branding / Logos', 'Diseño Web / UI UX', 'Social Media Design', 'Ilustración Digital', 'Motion Graphics', 'Diseño de Impresión', 'Arquitectura / 3D', 'Otro'],
+        editor: ['Reels / Shorts / TikTok', 'YouTube / Vlogs', 'Videos Musicales', 'Documentales', 'Comerciales / Ad Creative', 'Color Grading', 'Sound Design', 'Otro'],
+        filmmaker: ['Bodas / Eventos Sociales', 'Corporativo / Entrevistas', 'Videos Musicales', 'Cinematografía', 'Cobertura de Eventos', 'Publicidad', 'Otro'],
+        community: ['Estrategia de Contenido', 'Gestión de Comunidades', 'Pauta Digital / Ads', 'Copywriting', 'Análisis de Métricas', 'Atención al Cliente', 'Otro'],
+        photo: ['Moda / Editorial', 'E-commerce / Producto', 'Eventos / Social', 'Retrato / Headshots', 'Arquitectura / Real Estate', 'Gastronomía', 'Otro'],
+        model: ['Pasarela / Runway', 'Comercial / Publicidad', 'Fitting / E-commerce', 'Fitness / Sport', 'Influencer / Lifestyle', 'Hand / Part Model', 'Otro'],
+        web: ['Desarrollo Frontend', 'Desarrollo Backend', 'Fullstack Developer', 'App Mobile', 'E-commerce (Shopify/Woo)', 'DevOps / Cloud', 'Otro'],
+        print: ['Identidad Corporativa', 'Packaging / Empaques', 'Gran Formato / Vallas', 'Merchandising', 'Editorial / Revistas', 'Preprensa Técnica', 'Otro'],
+        event: ['Producción Técnica', 'Logística de Eventos', 'Booking de Talentos', 'Dirección Artística', 'Streaming / Híbridos', 'Gestión de Patrocinios', 'Otro'],
         marketing: ['Agencia 360', 'Especialista SEO/SEM', 'Content Strategy', 'Social Media Management', 'Diseño Gráfico / Branding', 'PR / Relaciones Públicas', 'Otro'],
         ecommerce: ['Moda & Accesorios', 'Tecnología & Gadgets', 'Hogar & Decoración', 'Cosmética / Belleza', 'Suplementos / Salud', 'Productos Digitales', 'Dropshipping', 'Otro'],
         education: ['Idiomas', 'Marketing & Negocios', 'Programación / Tech', 'Finanzas Personales', 'Música / Arte', 'Academia de Oposiciones', 'Colegio / Universidad', 'Otro'],
@@ -25,7 +36,7 @@ export default function SubProfileStep({ onNext, updateData, profileType }) {
         other: ['Servicios Generales', 'Comercio Variado', 'Sector Industrial', 'Entorno Creativo', 'Otro']
     };
 
-    const [selected, setSelected] = useState(null);
+    const [selected, setSelected] = useState([]);
     const [customValue, setCustomValue] = useState('');
     const [isCustomMode, setIsCustomMode] = useState(false);
     const timeoutRef = useRef(null);
@@ -42,24 +53,29 @@ export default function SubProfileStep({ onNext, updateData, profileType }) {
     const handleSelect = (niche) => {
         if (niche === 'Otro') {
             setIsCustomMode(true);
-            setSelected(niche);
             return;
         }
 
-        setSelected(niche);
-        updateData({ niche });
-        
-        // Efecto visual antes de avanzar
-        timeoutRef.current = setTimeout(() => {
-            onNext();
-        }, 800);
+        setSelected(prev => {
+            if (prev.includes(niche)) {
+                return prev.filter(item => item !== niche);
+            }
+            if (prev.length >= 3) return prev; // Limit to 3
+            return [...prev, niche];
+        });
+    };
+
+    const handleConfirm = () => {
+        if (selected.length === 0) return;
+        updateData({ niches: selected }); // Usamos 'niches' en plural
+        onNext();
     };
 
     const handleCustomSubmit = (e) => {
         e.preventDefault();
         if (!customValue.trim()) return;
 
-        updateData({ niche: customValue.trim() });
+        updateData({ niches: [...selected, customValue.trim()] });
         onNext();
     };
 
@@ -82,33 +98,55 @@ export default function SubProfileStep({ onNext, updateData, profileType }) {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.05 }}
-                            className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-10 content-start"
+                            className="flex flex-col h-full"
                         >
-                            {options.map((opt, idx) => {
-                                const isSelected = selected === opt;
-                                
-                                return (
-                                    <motion.button
-                                        key={opt}
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        onClick={() => handleSelect(opt)}
-                                        className={`p-5 rounded-2xl border transition-all text-left font-bold flex items-center justify-between group backdrop-blur-sm ${
-                                            isSelected 
-                                            ? 'bg-indigo-600 border-indigo-400 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] scale-[0.98]' 
-                                            : 'border-white/5 bg-white/[0.03] text-gray-300 hover:bg-white/[0.08] hover:border-white/20'
-                                        }`}
-                                    >
-                                        <span className={`${isSelected ? 'translate-x-1' : 'group-hover:translate-x-1'} transition-transform`}>{opt}</span>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                                            isSelected ? 'bg-white text-indigo-600 rotate-90' : 'bg-white/5 group-hover:bg-white/20'
-                                        }`}>
-                                            <span className={isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}>→</span>
-                                        </div>
-                                    </motion.button>
-                                );
-                            })}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-6 content-start">
+                                {options.map((opt, idx) => {
+                                    const isSelected = selected.includes(opt);
+                                    
+                                    return (
+                                        <motion.button
+                                            key={opt}
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                            onClick={() => handleSelect(opt)}
+                                            className={`p-5 rounded-2xl border transition-all text-left font-bold flex items-center justify-between group backdrop-blur-sm ${
+                                                isSelected 
+                                                ? 'bg-indigo-600 border-indigo-400 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] scale-[0.98]' 
+                                                : 'border-white/5 bg-white/[0.03] text-gray-300 hover:bg-white/[0.08] hover:border-white/20'
+                                            }`}
+                                        >
+                                            <span className={`${isSelected ? 'translate-x-1' : 'group-hover:translate-x-1'} transition-transform`}>{opt}</span>
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                                                isSelected ? 'bg-white text-indigo-600' : 'bg-white/5 group-hover:bg-white/20'
+                                            }`}>
+                                                {isSelected ? <Check className="w-4 h-4" /> : <span className="opacity-0 group-hover:opacity-100">+</span>}
+                                            </div>
+                                        </motion.button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Confirmation Footer */}
+                            <div className="mt-auto pt-6 flex flex-col md:flex-row items-center justify-between gap-6 bg-black/20 p-6 rounded-[32px] border border-white/5 backdrop-blur-md">
+                                <div className="text-left">
+                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Tu Selección ({selected.length}/3)</p>
+                                    <p className="text-xs text-gray-500 font-medium italic">Selecciona hasta 3 áreas de expertiz para configurar tu nodo.</p>
+                                </div>
+                                <button
+                                    onClick={handleConfirm}
+                                    disabled={selected.length === 0}
+                                    className={`px-10 py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-3 transition-all ${
+                                        selected.length > 0 
+                                        ? 'bg-white text-black hover:scale-[1.05] shadow-xl shadow-white/10' 
+                                        : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                    }`}
+                                >
+                                    Confirmar Selección
+                                    <ArrowRight className="w-5 h-5" />
+                                </button>
+                            </div>
                         </motion.div>
                     ) : (
                         <motion.div 

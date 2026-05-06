@@ -85,22 +85,33 @@ export default function HQTeamPage() {
             
             console.log(`✅ [HQ-Team] Data received: ${teamData?.length || 0} members, ${clientData?.length || 0} clients`);
             
-            setTeam(teamData || []);
-            setClients(clientData || []);
-            
-            if (teamData?.length > 0) {
-                toast.success("Equipo sincronizado", { 
-                    description: `${teamData.length} talentos cargados correctamente.`,
-                    id: 'sync-success'
-                });
+            if (teamData && Array.isArray(teamData)) {
+                setTeam(teamData);
+                setClients(clientData || []);
+                if (!isBackground) {
+                    toast.success(`HQ Sincronizado: ${teamData.length} miembros detectados`);
+                }
+            } else {
+                setTeam([]);
+                setClients(clientData || []);
+                if (!isBackground) toast.error("No se recibieron datos del equipo");
             }
         } catch (error) {
             console.error("❌ [HQ-Team] Fetch error:", error);
-            if (!isBackground) toast.error("Error al sincronizar datos");
+            if (!isBackground) toast.error("Error al sincronizar mando central");
         } finally {
             setLoading(false);
             setIsSyncing(false);
         }
+    };
+
+    const clearAndSync = async () => {
+        setLoading(true);
+        localStorage.removeItem('diic_team');
+        localStorage.removeItem('diic_clients');
+        localStorage.removeItem('diiczone_squad_layout');
+        await fetchData(false);
+        toast.info("Caché limpiada y mando reiniciado");
     };
 
     useEffect(() => {
@@ -111,11 +122,16 @@ export default function HQTeamPage() {
                 const cachedClients = localStorage.getItem('diic_clients');
                 
                 if (cachedTeam && cachedClients) {
-                    setTeam(JSON.parse(cachedTeam));
-                    setClients(JSON.parse(cachedClients));
-                    setLoading(false); // Immediate unlock
-                    console.log("⚡ [HQ-Team] Loaded from Cache");
-                    return true;
+                    const parsedTeam = JSON.parse(cachedTeam);
+                    const parsedClients = JSON.parse(cachedClients);
+                    
+                    if (Array.isArray(parsedTeam) && parsedTeam.length > 0) {
+                        setTeam(parsedTeam);
+                        setClients(parsedClients);
+                        setLoading(false);
+                        console.log("⚡ [HQ-Team] Loaded from Cache");
+                        return true;
+                    }
                 }
             } catch (e) {
                 console.warn("⚠️ [HQ-Team] Cache load failed");
@@ -268,9 +284,20 @@ export default function HQTeamPage() {
                 <div>
                     <div className="flex items-center gap-6 mb-2">
                         <h1 className="text-6xl font-black text-white uppercase tracking-tighter italic">ZONA <span className="text-indigo-500">CREATIVA</span></h1>
-                        <div className={`mt-2 flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition-all duration-500 ${isHQLive ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'bg-red-500/10 border-red-500/20 animate-pulse'}`}>
-                            <div className={`w-2 h-2 rounded-full ${isHQLive ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]' : 'bg-red-500'}`} />
-                            <span className={`text-[10px] font-black tracking-widest uppercase ${isHQLive ? 'text-emerald-500' : 'text-red-500'}`}>HQ {isHQLive ? 'LIVE' : 'OFFLINE'}</span>
+                        <div className="flex items-center gap-2">
+                            <div className={`mt-2 flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition-all duration-500 ${isHQLive ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'bg-red-500/10 border-red-500/20 animate-pulse'}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${isHQLive ? 'bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-red-500'}`} />
+                                <span className={`text-[9px] font-black uppercase tracking-widest ${isHQLive ? 'text-emerald-500' : 'text-red-500'}`}>
+                                    {isHQLive ? 'HQ Live' : 'Sin Conexión'}
+                                </span>
+                            </div>
+                            <button 
+                                onClick={() => fetchData(false)}
+                                className="mt-2 p-1.5 rounded-xl bg-white/5 border border-white/10 text-gray-500 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+                                title="Sincronizar Datos"
+                            >
+                                <Activity className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                            </button>
                         </div>
                     </div>
                     <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -290,7 +317,19 @@ export default function HQTeamPage() {
                         <button onClick={() => setViewMode('squads')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'squads' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Escuadrones</button>
                         <button onClick={() => setViewMode('departments')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'departments' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Departamentos</button>
                     </div>
-                    <InviteButton label="Invitación para Equipo" type="creative" color="indigo" icon={UserPlus} />
+                    <button 
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="px-6 py-3 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 font-black uppercase text-[10px] tracking-widest hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-2"
+                    >
+                        <Plus className="w-4 h-4" /> Registrar Talento
+                    </button>
+                    <button 
+                        onClick={clearAndSync}
+                        className="p-3 rounded-2xl bg-white/5 border border-white/10 text-gray-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
+                        title="Limpiar Caché y Forzar Sincronización"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
                 </div>
             </div>
 
