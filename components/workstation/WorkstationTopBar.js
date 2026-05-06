@@ -180,9 +180,10 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                     </AnimatePresence>
                 </div>
             </div>
+        </div>
 
-            {/* --- GLOBAL OPERATIONAL MODALS (Centered Large Window) --- */}
-            <AnimatePresence>
+        {/* --- GLOBAL OPERATIONAL MODALS (Centered Large Window) --- */}
+        <AnimatePresence>
                 {isModalOpen && (
                     <WorkstationGlobalModal 
                         isOpen={isModalOpen} 

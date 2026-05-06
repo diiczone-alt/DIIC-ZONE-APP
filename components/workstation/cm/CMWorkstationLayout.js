@@ -348,7 +348,7 @@ export default function CMWorkstationLayout() {
                             transition={{ duration: 0.2 }}
                             className="h-full"
                         >
-                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks)}
+                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead)}
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -357,7 +357,7 @@ export default function CMWorkstationLayout() {
     );
 }
 
-function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks) {
+function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead) {
     if (!selectedClient) {
         if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} />;
         if (tab === 'academy') return <CMAcademy user={user} />;

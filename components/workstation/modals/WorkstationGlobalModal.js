@@ -7,7 +7,8 @@ import {
     Send, CheckCheck, MoreHorizontal,
     Star, Target, Activity, Flame
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 const CHATS = [
     { id: 1, user: 'David Strategist', msg: '¿Cómo va el montaje del reel?', time: '12:30', online: true, avatar: 'D' },
@@ -22,11 +23,24 @@ const NOTIFICATIONS = [
 ];
 
 export default function WorkstationGlobalModal({ isOpen, onClose, view = 'messages' }) {
-    console.log('Global Modal Opening:', view);
-    if (!isOpen) return null;
+    const [mounted, setMounted] = useState(false);
 
-    return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-12 overflow-hidden pointer-events-auto">
+    useEffect(() => {
+        setMounted(true);
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+    if (!mounted || !isOpen) return null;
+
+    const modalContent = (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 md:p-12 overflow-hidden pointer-events-auto">
             {/* Backdrop */}
             <motion.div 
                 initial={{ opacity: 0 }}
@@ -77,6 +91,8 @@ export default function WorkstationGlobalModal({ isOpen, onClose, view = 'messag
             </motion.div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 }
 
 function MessagesContent() {
