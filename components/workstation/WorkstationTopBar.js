@@ -10,14 +10,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
-// Command Center Overlay
-import ControlCenterOverlay from './ControlCenterOverlay';
+// Global Modals
+import WorkstationGlobalModal from './modals/WorkstationGlobalModal';
 
 export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) {
     const { user, logout } = useAuth();
     const router = useRouter();
-    const [isOverlayOpen, setIsOverlayOpen] = useState(false);
-    const [overlayTab, setOverlayTab] = useState('messages');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalView, setModalView] = useState('messages');
     const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     const handleLogout = async () => {
@@ -29,12 +29,13 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
         }
     };
 
-    const openControlCenter = (tab) => {
-        setOverlayTab(tab);
-        setIsOverlayOpen(true);
+    const openModal = (view) => {
+        setModalView(view);
+        setIsModalOpen(true);
     };
 
     return (
+        <>
         <div className="h-20 border-b border-white/5 px-8 flex items-center justify-between bg-black/20 backdrop-blur-md relative z-30">
             {/* Left: Dynamic Page Title */}
             <div>
@@ -61,8 +62,8 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                     <TopBarButton 
                         icon={<Calendar className="w-4 h-4" />} 
                         label="Agenda" 
-                        isActive={isOverlayOpen && overlayTab === 'calendar'}
-                        onClick={() => openControlCenter('calendar')}
+                        isActive={isModalOpen && modalView === 'calendar'}
+                        onClick={() => openModal('calendar')}
                         badge="2"
                     />
                     
@@ -70,8 +71,8 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                     <TopBarButton 
                         icon={<MessageCircle className="w-4 h-4" />} 
                         label="Mensajes" 
-                        isActive={isOverlayOpen && overlayTab === 'messages'}
-                        onClick={() => openControlCenter('messages')}
+                        isActive={isModalOpen && modalView === 'messages'}
+                        onClick={() => openModal('messages')}
                         badge="5"
                         badgeColor="bg-indigo-500"
                     />
@@ -80,8 +81,8 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                     <TopBarButton 
                         icon={<Bell className="w-4 h-4" />} 
                         label="Alertas" 
-                        isActive={isOverlayOpen && overlayTab === 'alerts'}
-                        onClick={() => openControlCenter('alerts')}
+                        isActive={isModalOpen && modalView === 'notifications'}
+                        onClick={() => openModal('notifications')}
                         badge="!"
                         badgeColor="bg-amber-500"
                     />
@@ -180,17 +181,17 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                 </div>
             </div>
 
-            {/* --- COMMAND CENTER OVERLAY (Top-Down Broad View) --- */}
+            {/* --- GLOBAL OPERATIONAL MODALS (Centered Large Window) --- */}
             <AnimatePresence>
-                {isOverlayOpen && (
-                    <ControlCenterOverlay 
-                        isOpen={isOverlayOpen} 
-                        onClose={() => setIsOverlayOpen(false)} 
-                        initialTab={overlayTab}
+                {isModalOpen && (
+                    <WorkstationGlobalModal 
+                        isOpen={isModalOpen} 
+                        onClose={() => setIsModalOpen(false)} 
+                        view={modalView}
                     />
                 )}
             </AnimatePresence>
-        </div>
+        </>
     );
 }
 

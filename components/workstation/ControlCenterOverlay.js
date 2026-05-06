@@ -23,58 +23,40 @@ export default function ControlCenterOverlay({ isOpen, onClose, initialTab = 'me
             exit={{ opacity: 0, y: -20 }}
             className="fixed inset-0 z-[1000] bg-[#05050A]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
         >
-            {/* 1. BROAD TOP BAR */}
-            <header className="h-24 border-b border-white/5 px-12 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-12">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-xl shadow-indigo-500/20 rotate-3">
-                            <Zap className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">Command Center</h2>
-                            <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.3em] mt-1.5">Zona Creativa — Operational Node</p>
-                        </div>
-                    </div>
+            {/* FLOATING CLOSE BUTTON */}
+            <button 
+                onClick={onClose}
+                className="absolute top-10 right-12 z-[1100] p-4 bg-white/5 hover:bg-rose-500/20 hover:text-rose-400 border border-white/10 rounded-[1.5rem] text-gray-500 transition-all active:scale-95 shadow-2xl backdrop-blur-md"
+            >
+                <X className="w-6 h-6" />
+            </button>
 
-                    {/* Navigation Tabs */}
-                    <nav className="flex items-center bg-white/5 p-1.5 rounded-2xl border border-white/10">
-                        <TabButton 
-                            active={activeTab === 'messages'} 
-                            onClick={() => setActiveTab('messages')}
-                            icon={<MessageSquare className="w-4 h-4" />}
-                            label="Comunicaciones"
-                        />
-                        <TabButton 
-                            active={activeTab === 'calendar'} 
-                            onClick={() => setActiveTab('calendar')}
-                            icon={<Calendar className="w-4 h-4" />}
-                            label="Cronograma"
-                        />
-                        <TabButton 
-                            active={activeTab === 'alerts'} 
-                            onClick={() => setActiveTab('alerts')}
-                            icon={<Bell className="w-4 h-4" />}
-                            label="Inteligencia"
-                        />
-                    </nav>
-                </div>
-
-                <div className="flex items-center gap-6">
-                    <div className="hidden lg:flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest italic">Sincronización HQ Estable</span>
-                    </div>
-                    <button 
-                        onClick={onClose}
-                        className="p-4 bg-white/5 hover:bg-rose-500/20 hover:text-rose-400 border border-white/10 rounded-[1.5rem] text-gray-500 transition-all active:scale-95"
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
-                </div>
-            </header>
+            {/* FLOATING TABS (Integrated) */}
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 z-[1100]">
+                <nav className="flex items-center bg-[#0E0E18]/80 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+                    <TabButton 
+                        active={activeTab === 'messages'} 
+                        onClick={() => setActiveTab('messages')}
+                        icon={<MessageSquare className="w-4 h-4" />}
+                        label="Comunicaciones"
+                    />
+                    <TabButton 
+                        active={activeTab === 'calendar'} 
+                        onClick={() => setActiveTab('calendar')}
+                        icon={<Calendar className="w-4 h-4" />}
+                        label="Cronograma"
+                    />
+                    <TabButton 
+                        active={activeTab === 'alerts'} 
+                        onClick={() => setActiveTab('alerts')}
+                        icon={<Bell className="w-4 h-4" />}
+                        label="Inteligencia"
+                    />
+                </nav>
+            </div>
 
             {/* 2. THREE-COLUMN COMMAND VIEW */}
-            <main className="flex-1 flex overflow-hidden">
+            <main className="flex-1 flex overflow-hidden pt-32">
                 
                 {/* --- COLUMN 1: CONTEXT SIDEBAR (20%) --- */}
                 <aside className="w-[20%] border-r border-white/5 flex flex-col overflow-hidden bg-black/20">
