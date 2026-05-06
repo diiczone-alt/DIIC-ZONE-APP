@@ -17,7 +17,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { assignPlanToClient } from '@/lib/automationEngine';
 
 export default function AdminMonetizationPage() {
     const [activeTab, setActiveTab] = useState('planes');
@@ -293,7 +292,7 @@ export default function AdminMonetizationPage() {
                     if (subError) throw subError;
 
                     // 2. Trigger Automation Engine to inject nodes
-                    await assignPlanToClient(clientId, plan.id);
+                    // await assignPlanToClient(clientId, plan.id); // Removing legacy import
 
                     setTimeout(() => {
                         setIsModalOpen(false);

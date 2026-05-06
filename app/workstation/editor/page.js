@@ -55,25 +55,7 @@ export default function EditorDashboard() {
     }
 
     return (
-        <div className="flex-1 p-8 space-y-8 overflow-y-auto bg-[#050511]">
-            {/* Header */}
-            <div className="flex justify-between items-end border-b border-white/5 pb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-white mb-1 tracking-tight">Panel de Edición</h1>
-                    <p className="text-sm text-gray-400">Control maestro de cortes y entregas.</p>
-                </div>
-                <div className="flex gap-3">
-                    {/* Financial data hidden as requested */}
-                    <div className="bg-[#0E0E18]/50 px-6 py-3 rounded-2xl border border-white/5 flex flex-col items-end min-w-[140px]">
-                        <span className="text-[10px] text-gray-600 uppercase font-black tracking-widest mb-1">Status Nodo</span>
-                        <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-sm font-black text-white leading-none">ACTIVO</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+        <div className="p-8 space-y-8">
             {/* Project List */}
             <div className="space-y-6">
                 <div className="flex items-center justify-between">

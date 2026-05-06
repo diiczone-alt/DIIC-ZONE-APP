@@ -53,25 +53,28 @@ export default function HQFinancePage() {
     const { metrics, scale, clients } = financeData;
     
     // DYNAMIC CALCULATION FROM REAL PRODUCTION DATA
-    const prodCosts = scale?.production || 0;
+    // We use estimated_production (based on plans) to project the monthly cost of deliverables as requested
+    const prodCosts = scale?.estimated_production || scale?.production || 0;
     const payrollCosts = scale?.payroll || 0; 
     const swCosts = scale?.software || 0;
     const totalExpenses = prodCosts + payrollCosts + swCosts;
     const netProfit = (metrics.income || 0) - totalExpenses;
 
     const chartData = useMemo(() => {
-        const months = [
-            { name: 'Ene', income: 720, expenses: 6800 },
-            { name: 'Feb', income: 750, expenses: 6950 },
-            { name: 'Mar', income: 780, expenses: 7010 },
-            { name: 'Abr', income: metrics.income || 800, expenses: totalExpenses || 7030 }
-        ];
+        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+        const currentDay = new Date().getDate();
         
-        return months.map(m => ({
-            name: m.name,
-            ingresos: m.income,
-            gastos: m.expenses
-        }));
+        const dailyIncome = (metrics.income || 0) / daysInMonth;
+        const dailyExpense = (totalExpenses || 0) / daysInMonth;
+
+        return Array.from({ length: daysInMonth }, (_, i) => {
+            const day = i + 1;
+            return {
+                name: String(day).padStart(2, '0'),
+                ingresos: Math.round(dailyIncome * day),
+                gastos: Math.round(dailyExpense * day)
+            };
+        });
     }, [metrics.income, totalExpenses]);
 
     if (loading) {

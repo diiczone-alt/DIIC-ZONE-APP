@@ -1,11 +1,13 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import {
     Users, ImageIcon, Mic, UploadCloud, Camera,
     Clapperboard, Star, Globe, Printer, Calendar,
     FileText, MessageSquare, LayoutDashboard, ArrowRight,
-    BarChart3, Video, ShoppingBag, CheckCircle2, LayoutGrid
+    BarChart3, Video, ShoppingBag, CheckCircle2, LayoutGrid, ArrowLeft
 } from 'lucide-react';
 
 const DEPARTMENT_CONTENT = {
@@ -134,6 +136,8 @@ const DEPARTMENT_CONTENT = {
 };
 
 export default function DepartmentWelcome({ deptId, onAction }) {
+    const router = useRouter();
+    const { user } = useAuth();
     const data = DEPARTMENT_CONTENT[deptId] || DEPARTMENT_CONTENT.community;
     const DeptIcon = data.icon;
 
@@ -173,6 +177,19 @@ export default function DepartmentWelcome({ deptId, onAction }) {
 
     return (
         <div className="relative min-h-[90vh] flex items-center justify-center overflow-hidden font-display">
+            {/* Back Button for Admins */}
+            {user?.role === 'ADMIN' && (
+                <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={() => router.push('/hub')}
+                    className="absolute top-10 left-10 z-50 flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-gray-400 hover:text-white transition-all group"
+                >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Volver al Hub</span>
+                </motion.button>
+            )}
+
             {/* Background Layer: Neural Grid & Deep Glows */}
             <div className="absolute inset-0 z-0 pointer-events-none">
                 <div className={`absolute top-0 left-1/4 w-[1000px] h-[1000px] ${glowClasses[data.color]} rounded-full blur-[200px] opacity-30 animate-pulse`} />

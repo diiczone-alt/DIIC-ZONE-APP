@@ -21,6 +21,9 @@ const ROLE_DATA = {
     audio: { name: 'Audio', icon: Music, color: 'text-indigo-500' },
     photo: { name: 'Fotografía', icon: Camera, color: 'text-purple-400' },
     dev: { name: 'Desarrollo Web', icon: Globe, color: 'text-cyan-400' },
+    models: { name: 'Modelos', icon: Users, color: 'text-purple-400' },
+    print: { name: 'Imprenta / Merch', icon: Box, color: 'text-amber-400' },
+    events: { name: 'Eventos / Prod', icon: Layout, color: 'text-red-400' },
 };
 
 export default function WorkstationPage() {

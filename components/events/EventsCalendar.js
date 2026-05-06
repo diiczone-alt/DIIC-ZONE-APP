@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, Search, Plus, MoreHorizontal, Calendar as CalendarIcon, Edit2, Link as LinkIcon, Video, CheckCircle2, Clock, Smartphone, Camera, Star, Users, ChevronDown, CheckSquare, ExternalLink, X } from 'lucide-react';
 
 export default function EventsCalendar() {
-    const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 12)); // Oct 12, 2026
+    const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedEventId, setSelectedEventId] = useState(null);
     const [isScheduling, setIsScheduling] = useState(false);
     
@@ -13,31 +13,50 @@ export default function EventsCalendar() {
     const [showViewMenu, setShowViewMenu] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [currentMonthStr, setCurrentMonthStr] = useState('October 2026');
+    
+    const formatMonthStr = (date) => date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(/^\w/, (c) => c.toUpperCase());
+    const [currentMonthStr, setCurrentMonthStr] = useState(formatMonthStr(new Date()));
     const [activeFilter, setActiveFilter] = useState('all');
 
     const handlePrevMonth = () => {
-        setCurrentMonthStr('September 2026');
-        toast.success("Mes anterior cargado");
+        const newDate = new Date(currentDate);
+        newDate.setDate(currentDate.getDate() - 7);
+        setCurrentDate(newDate);
+        setCurrentMonthStr(formatMonthStr(newDate));
     };
     const handleNextMonth = () => {
-        setCurrentMonthStr('November 2026');
-        toast.success("Mes siguiente cargado");
+        const newDate = new Date(currentDate);
+        newDate.setDate(currentDate.getDate() + 7);
+        setCurrentDate(newDate);
+        setCurrentMonthStr(formatMonthStr(newDate));
     };
     const handleGoToToday = () => {
-        setCurrentMonthStr('October 2026');
-        toast.info('Regresando a "Hoy"...');
+        const today = new Date();
+        setCurrentDate(today);
+        setCurrentMonthStr(formatMonthStr(today));
     };
 
-    const days = [
-        { name: 'Mon', num: 11, active: false },
-        { name: 'Tue', num: 12, active: true }, // Active day style (white)
-        { name: 'Wed', num: 13, active: false },
-        { name: 'Thu', num: 14, active: false },
-        { name: 'Fri', num: 15, active: false },
-        { name: 'Sat', num: 16, active: false },
-        { name: 'Sun', num: 17, active: false },
-    ];
+    const getWeekDays = (date) => {
+        const curr = new Date(date);
+        let day = curr.getDay();
+        if (day === 0) day = 7;
+        const first = curr.getDate() - day + 1;
+        const daysArray = [];
+        const today = new Date();
+        
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(curr);
+            d.setDate(first + i);
+            daysArray.push({
+                name: d.toLocaleDateString('es-ES', { weekday: 'short' }).replace(/^\w/, c => c.toUpperCase()),
+                num: d.getDate(),
+                active: d.toDateString() === today.toDateString()
+            });
+        }
+        return daysArray;
+    };
+
+    const days = getWeekDays(currentDate);
 
     const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
 
@@ -319,9 +338,9 @@ export default function EventsCalendar() {
                         </div>
                         {/* Simple static grid for aesthetics */}
                         <div className="grid grid-cols-7 text-center gap-y-3">
-                            {['M','T','W','T','F','S','S'].map(d => <div key={d} className="text-[10px] text-gray-500 font-bold">{d}</div>)}
-                            {[...Array(31)].map((_, i) => (
-                                <div key={i} className={`text-xs font-bold w-6 h-6 flex items-center justify-center mx-auto rounded-full ${i+1 === 12 ? 'bg-white text-black shadow-lg shadow-white/20' : 'text-gray-300'}`}>
+                            {['L','M','X','J','V','S','D'].map(d => <div key={d} className="text-[10px] text-gray-500 font-bold">{d}</div>)}
+                            {[...Array(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate())].map((_, i) => (
+                                <div key={i} className={`text-xs font-bold w-6 h-6 flex items-center justify-center mx-auto rounded-full ${i+1 === currentDate.getDate() ? 'bg-white text-black shadow-lg shadow-white/20' : 'text-gray-300'}`}>
                                     {i+1}
                                 </div>
                             ))}
@@ -577,15 +596,19 @@ export default function EventsCalendar() {
                     {viewMode === 'Month' && (
                         <div className="flex-1 flex flex-col p-6 h-full">
                             <div className="grid grid-cols-7 mb-4">
-                                {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
+                                {['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d => (
                                     <div key={d} className="text-center text-xs font-bold text-gray-500 uppercase">{d}</div>
                                 ))}
                             </div>
                             <div className="flex-1 grid grid-cols-7 grid-rows-5 gap-2">
                                 {[...Array(35)].map((_, i) => {
-                                    const dayNum = i - 2 > 0 && i - 2 <= 31 ? i - 2 : null;
-                                    const isToday = dayNum === 12;
-                                    const hasEvents = dayNum === 12 || dayNum === 14 || dayNum === 18;
+                                    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+                                    const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+                                    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+                                    
+                                    const dayNum = i - startOffset >= 0 && i - startOffset < daysInMonth ? i - startOffset + 1 : null;
+                                    const isToday = dayNum === new Date().getDate() && currentDate.getMonth() === new Date().getMonth();
+                                    const hasEvents = dayNum === currentDate.getDate() || dayNum === currentDate.getDate() + 2 || dayNum === currentDate.getDate() + 5;
                                     
                                     return (
                                         <div key={i} className={`p-2 rounded-2xl border transition-colors cursor-pointer flex flex-col ${dayNum ? 'bg-black/20 border-white/5 hover:border-white/20' : 'opacity-20 border-transparent'} ${isToday ? 'ring-2 ring-violet-500/50 bg-violet-500/10' : ''}`}>
@@ -607,7 +630,7 @@ export default function EventsCalendar() {
                     {viewMode === 'Day' && (
                         <div className="flex-1 flex flex-col h-full relative">
                             <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-                                <h2 className="text-2xl font-black text-white">Martes, 12 Octubre</h2>
+                                <h2 className="text-2xl font-black text-white capitalize">{currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</h2>
                             </div>
                             <div className="flex-1 overflow-y-auto p-6 relative">
                                 <div className="absolute top-1/3 left-0 right-0 h-px bg-red-500/50 z-20 pointer-events-none">

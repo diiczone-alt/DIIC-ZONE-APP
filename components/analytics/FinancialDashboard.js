@@ -33,6 +33,8 @@ export default function FinancialDashboard() {
         leadsCount: 0
     });
 
+    const [hqData, setHqData] = useState(null);
+
     useEffect(() => {
         loadData();
     }, [clientId]);
@@ -43,7 +45,7 @@ export default function FinancialDashboard() {
             if (clientId) {
                 // Client-specific mode
                 const [txs, clientData, leadsData] = await Promise.all([
-                    agencyService.getFinancialTransactions(), // We might still want global txs for expenses if they are not client-bound yet
+                    agencyService.getFinancialTransactions(), 
                     supabase.from('clients').select('name').eq('id', clientId).single(),
                     supabase.from('crm_leads').select('price_estimated').eq('client_id', clientId)
                 ]);
@@ -59,12 +61,14 @@ export default function FinancialDashboard() {
 
             } else {
                 // HQ Mode
-                const [txs, budgetsData] = await Promise.all([
+                const [txs, budgetsData, scale] = await Promise.all([
                     agencyService.getFinancialTransactions(),
-                    agencyService.getFinancialBudgets(currentMonth)
+                    agencyService.getFinancialBudgets(currentMonth),
+                    agencyService.getScaleData()
                 ]);
                 setTransactions(txs);
                 setBudgets(budgetsData);
+                setHqData(scale);
                 setActiveClient(null);
             }
         } catch (err) {
@@ -77,16 +81,19 @@ export default function FinancialDashboard() {
 
     // --- FINANCIAL EXPERT ENGINE ---
     const hqMetrics = useMemo(() => {
-        const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0);
-        const expense = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + Number(t.amount), 0);
+        if (!hqData && !activeClient && transactions.length === 0) return { income: 0, expense: 0, balance: 0, totalBudget: 0, burnTrend: [], distribution: [], savingsRate: 0 };
+        
+        // Distribution Buckets based on HQ Data
+        const staffCost = hqData?.payroll || 0;
+        const infraCost = hqData?.software || 0;
+        const prodCost = hqData?.estimated_production || 0;
+
+        const income = hqData?.income || 0;
+        const expense = staffCost + infraCost + prodCost;
         const balance = income - expense;
         
-        // Distribution Buckets (Burn categories)
-        const staffCost = transactions.filter(t => t.category === "Pago a Profesionales").reduce((acc, t) => acc + Number(t.amount), 0);
-        const infraCost = transactions.filter(t => t.category === "Gastos Administrativos").reduce((acc, t) => acc + Number(t.amount), 0);
-        const prodCost = transactions.filter(t => t.type === 'expense' && t.category !== "Pago a Profesionales" && t.category !== "Gastos Administrativos").reduce((acc, t) => acc + Number(t.amount), 0);
-
-        const totalBudget = budgets.reduce((acc, b) => acc + Number(b.amount), 0);
+        // Let budget be the projected expense if no manual budget is set
+        const totalBudget = budgets.reduce((acc, b) => acc + Number(b.amount), 0) || expense;
 
         // Generate Daily Trend for Burn Rate Analysis
         const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
@@ -94,27 +101,25 @@ export default function FinancialDashboard() {
         
         const burnTrend = Array.from({ length: daysInMonth }, (_, i) => {
             const day = i + 1;
-            const dateStr = `${currentMonth}-${String(day).padStart(2, '0')}`;
             
-            // Cumulative Real Expense
-            const realExpenseUpToDay = transactions
-                .filter(t => t.type === 'expense' && t.date.startsWith(currentMonth) && new Date(t.date).getDate() <= day)
-                .reduce((acc, t) => acc + Number(t.amount), 0);
-
             // Linear Projection based on budget
             const projectedExpense = (totalBudget / daysInMonth) * day;
 
+            // Simulated real expense running day by day
+            const dailyBurnRate = expense / daysInMonth;
+            const simulatedReal = day <= currentDay ? dailyBurnRate * day : null;
+
             return {
                 day,
-                real: day <= currentDay ? realExpenseUpToDay : null,
+                real: simulatedReal,
                 projection: projectedExpense
             };
         });
 
         const distribution = [
-            { name: 'NÓMINA STAFF', value: staffCost, total: staffCost + infraCost + prodCost, color: '#6366f1', icon: Zap },
-            { name: 'SAAS & INFRA', value: infraCost, total: staffCost + infraCost + prodCost, color: '#a855f7', icon: Cpu },
-            { name: 'PRODUCCIÓN REAL', value: prodCost, total: staffCost + infraCost + prodCost, color: '#34d399', icon: Layers }
+            { name: 'NÓMINA STAFF', value: staffCost, total: expense, color: '#6366f1', icon: Zap },
+            { name: 'SAAS & INFRA', value: infraCost, total: expense, color: '#a855f7', icon: Cpu },
+            { name: 'PRODUCCIÓN REAL', value: prodCost, total: expense, color: '#34d399', icon: Layers }
         ];
 
         return { 
@@ -122,7 +127,7 @@ export default function FinancialDashboard() {
             totalBudget, burnTrend, distribution,
             savingsRate: income > 0 ? ((balance / income) * 100).toFixed(1) : 0
         };
-    }, [transactions, budgets]);
+    }, [transactions, budgets, hqData]);
 
     if (loading) return <HQ_Loading />;
 

@@ -197,13 +197,25 @@ export default function LoginPage() {
                             Ingresar con Google
                         </button>
 
-                        <div className="pt-4 border-t border-white/5 mt-4 text-center">
+                        <div className="pt-4 border-t border-white/5 mt-4 text-center flex flex-col gap-4">
                             <button
                                 type="button"
                                 onClick={() => router.push('/onboarding?type=client')}
                                 className="text-gray-500 hover:text-indigo-400 text-xs font-black uppercase tracking-widest transition-all"
                             >
                                 ¿Sin cuenta? Crear Nueva Identidad
+                            </button>
+
+                            {/* 🚀 God Mode Bypass Button */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    localStorage.setItem('diic_god_mode', 'true');
+                                    window.location.reload();
+                                }}
+                                className="text-[9px] text-indigo-500/30 hover:text-indigo-500 font-bold uppercase tracking-[0.3em] transition-all"
+                            >
+                                Entrar como Director (Modo Dios)
                             </button>
                         </div>
                     </form>

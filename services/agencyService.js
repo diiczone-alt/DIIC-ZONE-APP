@@ -97,7 +97,7 @@ export const agencyService = {
                 'projects', 'nextpost', 'price', 'target', 'email', 
                 'password_initial', 'whatsapp_number', 'google_drive_folder_id',
                 'onboarding_data', 'notes',
-                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'marketing_type', 'specialty'
+                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty'
             ];
             const sanitizedUpdates = {};
             validFields.forEach(field => {
@@ -122,19 +122,23 @@ export const agencyService = {
             if (updates.name || updates.city || updates.whatsapp_number || updates.industry || updates.plan || updates.business_type || updates.specialty) {
                 console.log(`🔄 Syncing identity changes to public profile for client ${id}`);
                 toast.info("Sincronizando perfiles públicos...", { id: 'debug-profile' });
-                await supabase
+                const { error: profileError } = await supabase
                     .from('profiles')
                     .update({
                         full_name: updates.name,
                         location: updates.city,
                         whatsapp: updates.whatsapp_number,
-                        marketing_type: updates.industry, // Sync industry to marketing_type
+                        industry: updates.industry,
                         plan: updates.plan,
                         business_type: updates.business_type,
                         specialty: updates.specialty
                     })
                     .eq('client_id', id);
-                toast.success("Perfiles sincronizados", { id: 'debug-profile' });
+                if (profileError) {
+                    console.warn("⚠️ Profile sync warning:", profileError.message);
+                } else {
+                    toast.success("Perfiles sincronizados", { id: 'debug-profile' });
+                }
             }
 
             // OPTIMISTIC LOCAL CACHE SYNC
@@ -573,14 +577,28 @@ export const agencyService = {
             const analyzedClients = clients.map(client => {
                 // Find matching plan in DB (handling possible ID mismatch)
                 const planId = client.plan?.toLowerCase();
-                const planDef = allServices.find(s => s.id === planId || s.name?.toLowerCase().includes(planId));
+                let planDef = allServices.find(s => s.id === planId || s.name?.toLowerCase().includes(planId));
                 
+                // Fallback to PLAN_OPTIONS from constants if DB service not found
+                if (!planDef && typeof window !== 'undefined') {
+                    // Try to get from imported constants if possible, or we just rely on dynamic matching below
+                }
+
                 let clientCost = 0;
                 let clientIncome = Number(client.price) || 0;
                 totalMRR += clientIncome;
 
-                if (planDef) {
-                    const deliv = planDef.deliverables || {};
+                let deliv = planDef ? planDef.deliverables : null;
+
+                if (!deliv) {
+                    // Hardcoded fallback logic matching lib/constants.js PLAN_OPTIONS
+                    if (planId?.includes('presencia')) deliv = { videos: 0, reels: 4, posts: 8, cm: 1 };
+                    else if (planId?.includes('crecimiento')) deliv = { videos: 1, reels: 6, posts: 12, strategy: 1, cm: 1 };
+                    else if (planId?.includes('autoridad')) deliv = { videos: 2, reels: 8, posts: 16, strategy: 1, cm: 1 };
+                    else if (planId?.includes('elite')) deliv = { videos: 4, reels: 12, posts: 20, strategy: 1, cm: 1 };
+                }
+
+                if (deliv) {
                     // Calculate based on the unit-cost model provided by user
                     clientCost += (Number(deliv.videos) || 0) * (costMap['vid_promo'] || 45);
                     clientCost += (Number(deliv.reels) || 0) * (costMap['reel_prod'] || 25);
@@ -590,7 +608,7 @@ export const agencyService = {
                     if (deliv.cm) clientCost += (costMap['cm_service'] || 25);
                     if (deliv.strategy) clientCost += (costMap['strategy_unit'] || 25);
                 } else {
-                    // Fallback to average if no plan is found
+                    // Fallback to average if no plan is found at all
                     clientCost = clientIncome > 0 ? clientIncome * 0.6 : 0; 
                 }
 
@@ -779,6 +797,8 @@ export const agencyService = {
                 software: softwareCosts,
                 fixed_total: totalFixedCosts,
                 net_profit: netProfit,
+                income: financial?.metrics?.income || 0,
+                estimated_production: financial?.metrics?.variable_costs || 0,
                 itemized_payroll: team.map(m => ({ 
                     id: m.id, 
                     name: m.name, 

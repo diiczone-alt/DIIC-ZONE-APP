@@ -41,8 +41,8 @@ export default function HQClientsPage() {
     const [activeStrategyNodes, setActiveStrategyNodes] = useState([]);
     const [newClient, setNewClient] = useState({
         name: '',
-        plan: 'Basic',
-        price: 0,
+        plan: 'Presencia',
+        price: 250,
         target: 0,
         cm: '',
         email: '',
@@ -178,7 +178,7 @@ export default function HQClientsPage() {
     };
 
     const handleCyclePlan = async (id, currentPlan) => {
-        const plans = ['Basic', 'Agency', 'Premium'];
+        const plans = PLAN_OPTIONS.map(p => p.value);
         const nextIdx = (plans.indexOf(currentPlan) + 1) % plans.length;
         const nextPlan = plans[nextIdx];
         const planDef = PLAN_OPTIONS.find(p => p.value === nextPlan);
@@ -434,7 +434,7 @@ export default function HQClientsPage() {
                                     </td>
                                     <td className="px-6 py-6">
                                         <button onClick={() => handleCyclePlan(client.id, client.plan)} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-gray-300 hover:border-indigo-500/50 hover:text-white transition-all active:scale-95">
-                                            {client?.plan || 'Básico'}
+                                            {client?.plan || 'Presencia'}
                                         </button>
                                     </td>
                                     <td className="px-6 py-6 font-medium">
@@ -494,7 +494,7 @@ export default function HQClientsPage() {
                                             <input type="email" required value={newClient.email} onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all font-mono text-sm" placeholder="cliente@ejemplo.com" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={[{ value: 'Basic', label: 'Basic' }, { value: 'Premium', label: 'Premium' }, { value: 'Enterprise', label: 'Enterprise' }]} />
+                                            <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={PLAN_OPTIONS} />
                                             <PremiumDropdown label="CM" value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
                                         </div>
                                         <PremiumDropdown 
@@ -555,7 +555,7 @@ export default function HQClientsPage() {
                                             onClick={() => {
                                                 setIsModalOpen(false);
                                                 setShowSuccessView(false);
-                                                setNewClient({ name: '', plan: 'Basic', price: 0, target: 0, cm: '', email: '', password_initial: '', whatsapp_number: '', google_drive_folder_id: '', notes: '', onboarding_data: {} });
+                                                setNewClient({ name: '', plan: 'Presencia', price: 250, target: 0, cm: '', email: '', password_initial: '', whatsapp_number: '', google_drive_folder_id: '', notes: '', onboarding_data: {} });
                                             }} 
                                             className="w-full py-4 text-gray-500 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all"
                                         >

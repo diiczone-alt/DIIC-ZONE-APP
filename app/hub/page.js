@@ -8,10 +8,10 @@ import { Shield, User, Video, Edit3, Image, Music, Users, Camera, Globe, Box, La
 import Link from 'next/link';
 
 const WORKSTATIONS = [
-    { id: 'editor', name: 'Editor', icon: Video, color: 'text-indigo-400' },
-    { id: 'filmmaker', name: 'Filmmaker', icon: Clapperboard, color: 'text-rose-400' },
-    { id: 'design', name: 'Diseño', icon: Palette, color: 'text-fuchsia-400' },
-    { id: 'audio', name: 'Audio', icon: Mic, color: 'text-emerald-400' },
+    { id: 'editor', name: 'Editor', icon: Video, color: 'text-indigo-400', specialized: true, path: 'editing' },
+    { id: 'filmmaker', name: 'Filmmaker', icon: Clapperboard, color: 'text-rose-400', specialized: true },
+    { id: 'design', name: 'Diseño', icon: Palette, color: 'text-fuchsia-400', specialized: true },
+    { id: 'audio', name: 'Audio', icon: Mic, color: 'text-emerald-400', specialized: true },
     { id: 'community', name: 'Community Manager', icon: MessageSquare, color: 'text-blue-400', specialized: true },
     { id: 'photo', name: 'Fotografía', icon: Camera, color: 'text-orange-400' },
     { id: 'models', name: 'Modelos', icon: UserCheck, color: 'text-purple-400' },
@@ -27,7 +27,10 @@ export default function HubPage() {
     // AUTO-GUARD: If already logged in, push to the correct dashboard immediately
     useEffect(() => {
         if (!loading && user && getHomeRoute) {
-            router.push(getHomeRoute(user.role));
+            // Permitir que el ADMIN se quede en el hub para explorar los espacios de trabajo
+            if (user.role !== 'ADMIN') {
+                router.push(getHomeRoute(user.role));
+            }
         }
     }, [user, loading, router, getHomeRoute]);
 
@@ -101,7 +104,7 @@ export default function HubPage() {
                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-2">Workstations (Creativos)</h3>
                     <div className="grid grid-cols-2 gap-3">
                         {WORKSTATIONS.map((w) => (
-                            <Link key={w.id} href={w.specialized ? `/dashboard/${w.id}` : `/dashboard/creative-zone/${w.id}`} className="group">
+                            <Link key={w.id} href={w.specialized ? `/dashboard/${w.path || w.id}` : `/dashboard/creative-zone/${w.id}`} className="group">
                                 <motion.div 
                                     whileHover={{ x: 5 }}
                                     className="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 hover:bg-white/10 hover:border-white/20 transition-all aspect-square text-center"

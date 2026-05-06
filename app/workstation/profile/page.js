@@ -3,7 +3,7 @@
 import {
     User, Mail, Phone, MapPin,
     Briefcase, Award, GraduationCap,
-    TrendingUp, DollarSign, Calendar
+    TrendingUp, DollarSign, Calendar, Star
 } from 'lucide-react';
 import { LevelBadge, ReputationStats, LevelProgress } from '@/components/gamification/LevelComponents';
 

@@ -92,25 +92,25 @@ export default function HQFinancePage() {
     const { metrics, scale, clients } = financeData;
     const netProfit = scale?.net_profit || 0;
     const prodCosts = metrics.variable_costs || 0;
-    const payrollCosts = scale?.payroll || 6050; // Use real sum from DB
-    const swCosts = scale?.software || 500;
+    const payrollCosts = scale?.payroll || 0; 
+    const swCosts = scale?.software || 0;
     const totalExpenses = prodCosts + payrollCosts + swCosts;
 
-    // --- CHART DATA (STRICT GROWTH CURVE TO APRIL 13, 2026) ---
     const chartData = useMemo(() => {
-        const months = [
-            { name: 'Ene', income: 720, expenses: 6800 },
-            { name: 'Feb', income: 750, expenses: 6950 },
-            { name: 'Mar', income: 780, expenses: 7010 },
-            { name: 'Abr', income: 800, expenses: 7030 }
-        ];
+        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
         
-        return months.map(m => ({
-            name: m.name,
-            ingresos: m.income,
-            gastos: m.expenses
-        }));
-    }, []);
+        const dailyIncome = (metrics.income || 0) / daysInMonth;
+        const dailyExpense = (totalExpenses || 0) / daysInMonth;
+
+        return Array.from({ length: daysInMonth }, (_, i) => {
+            const day = i + 1;
+            return {
+                name: String(day).padStart(2, '0'),
+                ingresos: Math.round(dailyIncome * day),
+                gastos: Math.round(dailyExpense * day)
+            };
+        });
+    }, [metrics.income, totalExpenses]);
 
     return (
         <div className="min-h-screen bg-[#050511] text-white selection:bg-indigo-500/30">

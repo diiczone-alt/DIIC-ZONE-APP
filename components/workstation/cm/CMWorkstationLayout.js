@@ -360,8 +360,8 @@ export default function CMWorkstationLayout() {
 function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks) {
     if (!selectedClient) {
         if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} />;
-        if (tab === 'academy') return <CMAcademy />;
-        if (tab === 'growth') return <CMGrowth />;
+        if (tab === 'academy') return <CMAcademy user={user} />;
+        if (tab === 'growth') return <CMGrowth user={user} />;
         if (tab === 'tasks') return <GlobalTasksView tasks={globalTasks} loading={loadingTasks} onSelectClient={(c) => { setSelectedClient(c); setActiveTab('dashboard'); }} />;
 
         if (tab === 'notifications') return <NotificationsView notifications={notifications} loading={loadingNotifications} onMarkAsRead={handleMarkAsRead} />;
@@ -392,8 +392,8 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'team': return <TeamView client={selectedClient} tasks={clientTasks} squad={squad} />;
         case 'reports': return <CMReports client={selectedClient} />;
         case 'profile': return <CMProfileView user={user} />;
-        case 'academy': return <CMAcademy />;
-        case 'growth': return <CMGrowth />;
+        case 'academy': return <CMAcademy user={user} />;
+        case 'growth': return <CMGrowth user={user} />;
         default: return <CMDashboard client={selectedClient} />;
     }
 }
@@ -2367,7 +2367,7 @@ function CMSettingsClients({ clients, onSelectClient, loading, userMissingProfil
     );
 }
 
-function CMAcademy() {
+function CMAcademy({ user }) {
     const [selectedModule, setSelectedModule] = useState(null);
     const [activeCategory, setActiveCategory] = useState('all');
 
@@ -2644,7 +2644,7 @@ function GlobalTasksView({ tasks, loading, onSelectClient }) {
 
 
 
-function CMGrowth() {
+function CMGrowth({ user }) {
     return (
         <div className="max-w-7xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">

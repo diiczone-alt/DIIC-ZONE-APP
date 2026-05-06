@@ -34,22 +34,17 @@ export default function DesignerDashboard() {
     const filteredAssets = ASSETS.filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return (
-        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#050511]">
-            {/* Header */}
-            <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-[#050511]/90 backdrop-blur-md shrink-0 z-20">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Palette className="w-5 h-5 text-pink-500" /> Estación de Diseño
-                    </h1>
-                    <div className="flex bg-[#0E0E18] p-1 rounded-lg border border-white/10">
-                        <button onClick={() => setActiveTab('gallery')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'gallery' ? 'bg-pink-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-                            <ImageIcon className="w-3.5 h-3.5" /> Galería
-                        </button>
-                        <button onClick={() => setActiveTab('requests')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all relative ${activeTab === 'requests' ? 'bg-pink-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-                            <Layers className="w-3.5 h-3.5" /> Solicitudes
-                            {REQUESTS.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
-                        </button>
-                    </div>
+        <div className="h-full flex flex-col">
+            {/* Main Content Controls */}
+            <div className="h-16 flex items-center justify-between px-8 bg-[#050511]/50 backdrop-blur-sm border-b border-white/5">
+                <div className="flex bg-[#0E0E18] p-1 rounded-lg border border-white/10">
+                    <button onClick={() => setActiveTab('gallery')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'gallery' ? 'bg-pink-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                        <ImageIcon className="w-3.5 h-3.5" /> Galería
+                    </button>
+                    <button onClick={() => setActiveTab('requests')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all relative ${activeTab === 'requests' ? 'bg-pink-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                        <Layers className="w-3.5 h-3.5" /> Solicitudes
+                        {REQUESTS.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
+                    </button>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -67,9 +62,9 @@ export default function DesignerDashboard() {
                         <UploadCloud className="w-3.5 h-3.5" /> Subir Asset
                     </button>
                 </div>
-            </header>
+            </div>
 
-            {/* Main Content */}
+            {/* Main Content Area */}
             <main className="flex-1 overflow-hidden relative p-8">
                 <AnimatePresence mode="wait">
 

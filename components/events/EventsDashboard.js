@@ -6,6 +6,7 @@ import { Calendar, Network, Map, Share2, Zap, Filter, Search, MoreHorizontal, Se
 import EventsCalendar from './EventsCalendar';
 import StrategyBoard from '../shared/Strategy/StrategyBoard';
 
+import LogisticsCrew from './LogisticsCrew';
 
 export default function EventsDashboard() {
     const [activeTab, setActiveTab] = useState('calendar');
@@ -32,13 +33,7 @@ export default function EventsDashboard() {
                         >
                             {activeTab === 'calendar' && <EventsCalendar />}
                             {activeTab === 'strategy' && <StrategyBoard />}
-                            {activeTab === 'logistics' && (
-                                <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                                    <Map className="w-16 h-16 text-gray-600 mb-4 opacity-50" />
-                                    <h3 className="text-xl font-bold text-white mb-2">Logística & Crew</h3>
-                                    <p className="text-gray-400 max-w-md">Gestiona mapas de locaciones, asignación de equipos y transporte. Próximamente.</p>
-                                </div>
-                            )}
+                            {activeTab === 'logistics' && <LogisticsCrew />}
                         </motion.div>
                     </AnimatePresence>
                 </main>

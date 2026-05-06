@@ -55,13 +55,24 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
         // --- SENSOR DE CAPTURA RELÁMPAGO (BAJO NIVEL) ---
         const scanForToken = () => {
             try {
-                const hash = window.location.hash;
-                if (hash && hash.includes('provider_token')) {
-                    const params = new URLSearchParams(hash.substring(1));
+                const hash = window.location.hash || window.location.search;
+                if (hash && (hash.includes('provider_token') || hash.includes('error'))) {
+                    const params = new URLSearchParams(hash.replace('#', '?'));
+                    
+                    const errorMsg = params.get('error_description') || params.get('error');
+                    if (errorMsg) {
+                        console.error('[DriveSetupStep] Error detectado en URL:', errorMsg);
+                        setError(`Error de Google: ${errorMsg.replace(/\+/g, ' ')}`);
+                        setStatus('error');
+                        localStorage.removeItem('diic_waiting_oauth');
+                        return true;
+                    }
+
                     const token = params.get('provider_token');
                     if (token) {
                         console.log('[DriveSetupStep] ¡Llave detectada en URL! Captura directa exitosa.');
                         localStorage.setItem('diic_google_token', token);
+                        localStorage.removeItem('diic_waiting_oauth');
                         
                         // Limpiar URL para seguridad
                         window.history.replaceState(null, null, window.location.pathname);
@@ -75,18 +86,28 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
             return false;
         };
 
+        // Intentar captura inmediata
+        if (scanForToken()) return;
+
         // --- SENSOR DE CAPTURA AGRESIVA (POLLING) ---
         let pollingInterval;
         if (status === 'connecting' && !providerToken) {
             console.log('[DriveSetupStep] Iniciando búsqueda activa de llave...');
             pollingInterval = setInterval(async () => {
                 try {
+                    // También revisar URL en cada poll por si el hash cambió sin re-montar
+                    if (scanForToken()) {
+                        clearInterval(pollingInterval);
+                        return;
+                    }
+
                     const { data: { session: activeSession } } = await supabase.auth.getSession();
                     const liveToken = activeSession?.provider_token;
                     
                     if (liveToken) {
                         console.log('[DriveSetupStep] ¡Llave encontrada mediante búsqueda activa!');
                         localStorage.setItem('diic_google_token', liveToken);
+                        localStorage.removeItem('diic_waiting_oauth');
                         clearInterval(pollingInterval);
                         onNext();
                     }
@@ -101,6 +122,7 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
         // Si ya tenemos datos de drive o el token, avanzamos al FINAL (Paso 15)
         if (data.driveData || providerToken) {
             console.log('[DriveSetupStep] Conexión verificada por canal estándar.');
+            localStorage.removeItem('diic_waiting_oauth');
             onNext();
             return;
         }

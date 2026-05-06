@@ -97,6 +97,25 @@ export const AuthProvider = ({ children }) => {
         const initializeAuth = async () => {
             try {
                 setLoading(true);
+
+                // 🚀 TEMPORARY BYPASS: God Mode for unrestricted access
+                if (typeof window !== 'undefined') {
+                    const searchParams = new URLSearchParams(window.location.search);
+                    if (searchParams.get('godmode') === 'true' || localStorage.getItem('diic_god_mode') === 'true') {
+                        console.log('🚀 [AuthContext] GOD MODE ACTIVE - Bypassing Authentication');
+                        localStorage.setItem('diic_god_mode', 'true');
+                        setUser({
+                            id: 'god-user',
+                            email: 'admin@diiczone.com',
+                            role: 'ADMIN',
+                            full_name: 'Director General (God Mode)',
+                            user_metadata: { role: 'ADMIN', full_name: 'Director General' }
+                        });
+                        setLoading(false);
+                        return;
+                    }
+                }
+
                 const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
                 
                 if (!active) return;
@@ -304,8 +323,11 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         const { error } = await supabase.auth.signOut();
-        if (error) throw error;
+        if (error) {
+            console.warn('Logout error (might be already signed out):', error.message);
+        }
         localStorage.clear();
+        localStorage.removeItem('diic_god_mode');
         router.push('/');
     };
 
