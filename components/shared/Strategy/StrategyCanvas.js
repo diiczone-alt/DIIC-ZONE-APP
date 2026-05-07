@@ -18,7 +18,7 @@ import {
     Instagram, Facebook, Youtube, Globe, Chrome, Clock, CheckCircle2, PlayCircle, Lightbulb, 
     PenTool, Search, AlertTriangle, Plus, Layers, BrainCircuit, Megaphone, Rocket, ChevronRight, 
     Mic, Printer, Image, Film, Smartphone, Monitor, Maximize2, Box, BarChart3, Filter, Table, List, 
-    RotateCcw, ChevronUp, ChevronLeft, CalendarDays, ShieldCheck, Video, Mail, Workflow, Repeat
+    RotateCcw, ChevronUp, ChevronLeft, CalendarDays, ShieldCheck, Video, Mail, Workflow, Repeat, Bot
 } from 'lucide-react';
 
 
@@ -189,10 +189,9 @@ export default function StrategyCanvas({
 
     const hubHierarchy = {
         'root': ['l2_creativa', 'l2_crm', 'l2_conversion'],
-        'l2_creativa': ['l3_imagen', 'l3_videos', 'l3_audios', 'l3_imprenta'],
-        'l2_crm': ['l3_crm_email', 'l3_crm_scoring', 'l3_crm_retargeting'],
-        'l3_imagen': ['hub_post', 'hub_st_img', 'hub_portada', 'hub_carrucel'],
-        'l3_videos': ['hub_reels', 'hub_st_vid', 'hub_tiktok', 'hub_youtube']
+        'l2_creativa': ['hub_videos', 'hub_posts', 'hub_stories', 'hub_reels', 'hub_tiktok'],
+        'l2_crm': ['hub_crm'],
+        'l2_conversion': ['hub_forms']
     };
 
     // Handle Wheel for Zoom
@@ -208,30 +207,21 @@ export default function StrategyCanvas({
     };
  
      const l2Hubs = [
-         { id: 'l2_creativa', label: 'ZONA CREATIVA', parent: 'root', color: '#10b981', icon: PenTool },
-         { id: 'l2_crm', label: 'AUTOMATIZACIÓN CRM', parent: 'root', color: '#0ea5e9', icon: Workflow },
-         { id: 'l2_conversion', label: 'CONVERSIONES', parent: 'root', color: '#6366f1', icon: Target }
+         { id: 'l2_creativa', label: 'ZONA CREATIVA', parent: 'root', color: '#6366f1', icon: PenTool },
+         { id: 'l2_crm', label: 'AUTOMATIZACIÓN CRM', parent: 'root', color: '#10b981', icon: Workflow },
+         { id: 'l2_conversion', label: 'CONVERSIONES', parent: 'root', color: '#f43f5e', icon: Target }
      ];
  
-     const l3Hubs = [
-         { id: 'l3_imagen', label: 'IMAGENES', parent: 'l2_creativa', color: '#10b981', icon: Image },
-         { id: 'l3_videos', label: 'VIDEOS', parent: 'l2_creativa', color: '#facc15', icon: Video },
-         { id: 'l3_audios', label: 'AUDIOS', parent: 'l2_creativa', color: '#fb923c', icon: Mic },
-         { id: 'l3_imprenta', label: 'IMPRENTA', parent: 'l2_creativa', color: '#f43f5e', icon: Printer },
-         { id: 'l3_crm_email', label: 'FLUJOS CRM', parent: 'l2_crm', color: '#0ea5e9', isFinal: true, lane: 'crm_email', icon: Mail },
-         { id: 'l3_crm_scoring', label: 'LEAD SCORING', parent: 'l2_crm', color: '#0ea5e9', isFinal: true, lane: 'crm_scoring', icon: Target },
-         { id: 'l3_crm_retargeting', label: 'RETARGETING', parent: 'l2_crm', color: '#0ea5e9', isFinal: true, lane: 'crm_retargeting', icon: Repeat }
-     ];
+     const l3Hubs = []; // Flattened into architecture components
  
      const hubs = [
-         { parent: 'l3_imagen', lane: 'i_post', id: 'hub_post', label: 'POSTS', color: '#10b981', icon: Layout },
-         { parent: 'l3_imagen', lane: 'i_historias', id: 'hub_st_img', label: 'STORIES', color: '#facc15', icon: Instagram },
-         { parent: 'l3_imagen', lane: 'i_portadas', id: 'hub_portada', label: 'PORTADAS', color: '#fb923c', icon: Image },
-         { parent: 'l3_imagen', lane: 'i_carrucel', id: 'hub_carrucel', label: 'CARRUSEL', color: '#ef4444', icon: Layers },
-         { parent: 'l3_videos', lane: 'v_reels', id: 'hub_reels', label: 'REELS', color: '#10b981', icon: PlayCircle },
-         { parent: 'l3_videos', lane: 'v_historias', id: 'hub_st_vid', label: 'V. HISTORIAS', color: '#facc15', icon: Film },
-         { parent: 'l3_videos', lane: 'v_tiktok', id: 'hub_tiktok', label: 'TIK TOK', color: '#fb923c', icon: Video },
-         { parent: 'l3_videos', lane: 'v_youtube', id: 'hub_youtube', label: 'YOUTUBE', color: '#ef4444', icon: Youtube },
+         { parent: 'l2_creativa', lane: 'v_youtube', id: 'hub_videos', label: 'VIDEOS', color: '#f43f5e', icon: Video },
+         { parent: 'l2_creativa', lane: 'i_post', id: 'hub_posts', label: 'POSTS', color: '#818cf8', icon: Box },
+         { parent: 'l2_creativa', lane: 'i_historias', id: 'hub_stories', label: 'STORIES', color: '#f97316', icon: Instagram },
+         { parent: 'l2_creativa', lane: 'v_reels', id: 'hub_reels', label: 'REELS', color: '#10b981', icon: PlayCircle },
+         { parent: 'l2_creativa', lane: 'v_tiktok', id: 'hub_tiktok', label: 'TIK TOK', color: '#22d3ee', icon: Video },
+         { parent: 'l2_crm', lane: 'l3_crm_email', id: 'hub_crm', label: 'FLUJOS CRM', color: '#10b981', icon: Bot },
+         { parent: 'l2_conversion', lane: 'r_form', id: 'hub_forms', label: 'FORMS', color: '#22d3ee', icon: Target },
      ];
 
     const DEFAULT_HUB_POSITIONS = {
@@ -239,21 +229,13 @@ export default function StrategyCanvas({
         'l2_creativa': { x: 500, y: 1000 },
         'l2_crm': { x: 500, y: 2400 },
         'l2_conversion': { x: 500, y: 3200 },
-        'l3_imagen': { x: 1000, y: 600 },
-        'l3_videos': { x: 1000, y: 1800 },
-        'l3_audios': { x: 1000, y: 2200 },
-        'l3_imprenta': { x: 1000, y: 2500 },
-        'l3_crm_email': { x: 1000, y: 2700 },
-        'l3_crm_scoring': { x: 1000, y: 2900 },
-        'l3_crm_retargeting': { x: 1000, y: 3100 },
-        'hub_post': { x: 1400, y: 300 },
-        'hub_st_img': { x: 1400, y: 650 },
-        'hub_portada': { x: 1400, y: 1000 },
-        'hub_carrucel': { x: 1400, y: 1350 },
-        'hub_reels': { x: 1400, y: 1700 },
-        'hub_st_vid': { x: 1400, y: 2050 },
-        'hub_tiktok': { x: 1400, y: 2400 },
-        'hub_youtube': { x: 1400, y: 2750 }
+        'hub_videos': { x: 1000, y: 300 },
+        'hub_posts': { x: 1000, y: 650 },
+        'hub_stories': { x: 1000, y: 1000 },
+        'hub_reels': { x: 1000, y: 1350 },
+        'hub_tiktok': { x: 1000, y: 1700 },
+        'hub_crm': { x: 1000, y: 2400 },
+        'hub_forms': { x: 1000, y: 3200 }
     };
 
     // Shared Drag Handler for Neural Hubs
@@ -553,29 +535,30 @@ export default function StrategyCanvas({
         if (activeCampaign?.strategyIngredients) {
             const si = activeCampaign.strategyIngredients;
             const mapping = {
-                'video': 'hub_youtube', // Default to youtube for video
+                'video': 'hub_videos', 
                 'reel': 'hub_reels',
                 'tiktok': 'hub_tiktok',
-                'imagen': 'hub_post',
-                'historia': 'hub_st_img', // hub_st_img is STORIES
-                'carrusel': 'hub_carrucel',
-                'crm': 'l3_crm_email',
-                'form': 'l2_conversion'
+                'imagen': 'hub_posts',
+                'historia': 'hub_stories',
+                'carrusel': 'hub_posts',
+                'crm': 'hub_crm',
+                'form': 'hub_forms'
             };
             Object.entries(si).forEach(([key, val]) => {
-                const laneId = mapping[key];
-                if (laneId) counts[laneId] = val;
+                const hubId = mapping[key];
+                if (hubId) counts[hubId] = val;
             });
         }
 
         // 2. Count actual nodes (Tactical reality)
-        // If we want to show BOTH, we could return an object { target, actual }
-        // For now, as per user request, we reflect the architecture values.
-        // But we must also ensure active hubs are detected if nodes are added manually.
         nodes.forEach(node => {
             const laneId = getNodeLaneId(node);
-            if (laneId && !counts[laneId]) {
-                counts[laneId] = (counts[laneId] || 0) + 1;
+            if (laneId) {
+                // Find which hub handles this lane
+                const hub = hubs.find(h => h.id === laneId || h.lane === laneId);
+                if (hub) {
+                    counts[hub.id] = (counts[hub.id] || 0) + 1;
+                }
             }
         });
 
@@ -588,9 +571,7 @@ export default function StrategyCanvas({
 
         // Helper: Check if a hub ID is considered active based on node count
         const isTacticalActive = (id) => {
-            const hubData = hubs.find(h => h.id === id);
-            const lane = hubData?.lane || id;
-            return hubCounts[lane] > 0;
+            return counts[id] > 0;
         };
 
         // Recursive: A hub is active if it has nodes OR any active child hub

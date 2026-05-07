@@ -574,19 +574,19 @@ export default function EventsCalendar() {
                     <h1 className="text-2xl font-black tracking-tight text-white ml-2 drop-shadow-lg shrink-0">Agenda Global</h1>
                     
                     {/* Filters - Well Divided & Colored */}
-                    <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-1">
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 pt-2 px-1">
                         <button 
                             onClick={() => setActiveFilter('all')}
-                            className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border whitespace-nowrap ${
+                            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all border whitespace-nowrap ${
                                 activeFilter === 'all' 
-                                    ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105' 
-                                    : 'bg-black/40 text-gray-500 border-white/5 hover:bg-white/10 hover:text-white'
+                                    ? 'bg-white/10 text-white border-white/30 shadow-[0_0_15px_rgba(255,255,255,0.2)] scale-105' 
+                                    : 'bg-[#0A0A0F] text-gray-400 border-white/5 opacity-60 hover:opacity-100 hover:border-white/10'
                             }`}
                         >
                             Todos
                         </button>
 
-                        <div className="w-[1px] h-6 bg-white/10 mx-1" />
+                        <div className="w-[1px] h-4 bg-white/10 mx-1" />
                         
                         {[
                             { id: 'historias', style: EVENT_STYLES.historias },
@@ -599,23 +599,18 @@ export default function EventsCalendar() {
                             { id: 'recordatorios', style: EVENT_STYLES.recordatorios },
                         ].map(f => {
                             const isActive = activeFilter === f.id;
-                            const Icon = f.style.icon;
                             return (
                                 <button 
                                     key={f.id}
                                     title={f.style.label}
                                     onClick={() => setActiveFilter(f.id)}
-                                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border group relative ${
+                                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all border whitespace-nowrap ${
                                         isActive 
-                                            ? `${f.style.bg} ${f.style.text} ${f.style.border} shadow-lg scale-110`
-                                            : `bg-black/30 text-gray-500 ${f.style.border.replace('50', '10')} hover:bg-white/10 hover:text-white`
+                                            ? `${f.style.bg} ${f.style.text} ${f.style.border} ${f.style.glow} scale-105`
+                                            : `bg-[#0A0A0F] ${f.style.text} border-white/5 opacity-50 hover:opacity-100 hover:border-white/10 hover:bg-white/5`
                                     }`}
                                 >
-                                    {/* Subtle Glow in background */}
-                                    {!isActive && (
-                                        <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity ${f.style.bg}`} />
-                                    )}
-                                    <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'}`} />
+                                    {f.style.label}
                                 </button>
                             )
                         })}

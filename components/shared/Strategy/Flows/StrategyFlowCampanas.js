@@ -441,23 +441,23 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                         
                         <div className="relative group">
                             <h2 className="text-[120px] font-black leading-[0.8] tracking-[-0.05em] text-white flex flex-col">
-                                <span className={`font-extralight select-none ${theme === 'dark' ? 'text-white/20' : 'text-slate-300'}`}>VISTA DE</span>
+                                <span className={`font-extralight select-none ${theme === 'dark' ? 'text-white/20' : 'text-slate-300'}`}>BÚNKER DE</span>
                                 <motion.span 
                                     animate={{ 
                                         backgroundImage: theme === 'dark' ? [
-                                            'linear-gradient(to right, #fff, #22d3ee, #ff00e5)',
-                                            'linear-gradient(to right, #ff00e5, #fff, #22d3ee)',
-                                            'linear-gradient(to right, #22d3ee, #ff00e5, #fff)'
+                                            'linear-gradient(to right, #BCFF00, #22d3ee, #00f2ff)',
+                                            'linear-gradient(to right, #00f2ff, #BCFF00, #22d3ee)',
+                                            'linear-gradient(to right, #22d3ee, #00f2ff, #BCFF00)'
                                         ] : [
-                                            'linear-gradient(to right, #0f172a, #6366f1, #ec4899)',
-                                            'linear-gradient(to right, #ec4899, #0f172a, #6366f1)',
-                                            'linear-gradient(to right, #6366f1, #ec4899, #0f172a)'
+                                            'linear-gradient(to right, #0f172a, #6366f1, #000)',
+                                            'linear-gradient(to right, #000, #0f172a, #6366f1)',
+                                            'linear-gradient(to right, #6366f1, #000, #0f172a)'
                                         ]
                                     }}
                                     transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
                                     className="bg-clip-text text-transparent italic bg-[length:200%_auto]"
                                 >
-                                    ESTRATEGIA<span className="text-cyan-600 not-italic">S</span>
+                                    CONTENIDO<span className="text-white not-italic">S</span>
                                 </motion.span>
                             </h2>
                             {/* Accent Line: Neon Pulse */}

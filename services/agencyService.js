@@ -126,9 +126,9 @@ export const agencyService = {
 
             toast.info("Iniciando actualización en BD...", { id: 'debug-db' });
             
-            // Apply a strict 15-second timeout to prevent infinite hangs
+            // Apply a strict 30-second timeout to prevent infinite hangs
             const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Supabase timeout after 15s")), 15000)
+                setTimeout(() => reject(new Error("Supabase timeout after 60s")), 60000)
             );
 
             const { data, error } = await Promise.race([
@@ -151,7 +151,7 @@ export const agencyService = {
                 console.log(`🔄 Syncing identity changes to public profile for client ${id}`);
                 toast.info("Sincronizando perfiles públicos...", { id: 'debug-profile' });
                 
-                const profileTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Profile sync timeout after 15s")), 15000));
+                const profileTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Profile sync timeout after 60s")), 60000));
                 
                 try {
                     const { error: profileError } = await Promise.race([
@@ -304,7 +304,7 @@ export const agencyService = {
                 .from('clients')
                 .select('*')
                 .eq('id', id)
-                .single();
+                .maybeSingle();
             
             if (error) throw error;
             return data;

@@ -26,6 +26,7 @@ const CATEGORY_STYLES = {
     'Consulta': { color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', icon: Stethoscope },
     'Cirugía': { color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20', icon: Scissors },
     'Tratamiento': { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: Activity },
+    'Producto': { color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: ShoppingBag },
     'Plan/Programa': { color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20', icon: Sparkles },
     'Otros': { color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: Tag }
 };
@@ -112,10 +113,10 @@ export default function ClientServiceCatalog({ clientId }) {
         }
     };
 
-    const openEdit = (service = null) => {
+    const openEdit = (service = null, defaultCategory = 'Consulta') => {
         setCurrentService(service || {
             name: '',
-            category: 'Consulta',
+            category: defaultCategory,
             price: '',
             description: '',
             aiInstructions: ''
@@ -142,12 +143,20 @@ export default function ClientServiceCatalog({ clientId }) {
                         Define tu oferta de valor para alimentar al Bot de IA y al CRM.
                     </p>
                 </div>
-                <button 
-                    onClick={() => openEdit()}
-                    className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-black rounded-2xl shadow-lg shadow-indigo-600/20 transition-all active:scale-95 uppercase tracking-widest"
-                >
-                    <Plus size={18} /> Agregar Servicio
-                </button>
+                <div className="flex flex-wrap items-center gap-4">
+                    <button 
+                        onClick={() => openEdit(null, 'Producto')}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600/10 border border-blue-500/20 hover:bg-blue-600/20 text-blue-400 text-sm font-black rounded-2xl transition-all active:scale-95 uppercase tracking-widest group shadow-lg shadow-blue-900/10"
+                    >
+                        <Plus size={18} className="text-blue-400 group-hover:scale-110 transition-transform" /> Añadir Producto
+                    </button>
+                    <button 
+                        onClick={() => openEdit(null, 'Consulta')}
+                        className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-black rounded-2xl shadow-lg shadow-indigo-600/20 transition-all active:scale-95 uppercase tracking-widest group"
+                    >
+                        <Plus size={18} className="group-hover:rotate-90 transition-transform" /> Agregar Servicio
+                    </button>
+                </div>
             </div>
 
             {/* Services Grid */}

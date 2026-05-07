@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Search, ChevronDown, ChevronRight, Hash, Globe, Target, Rocket, Zap, MessageSquare, Database, ListTree, FolderTree, Binary, Eye, EyeOff, Folder, Video, Instagram, Type as TypeIcon, Layout, Music, Mic, Youtube } from 'lucide-react';
-import { NODE_TYPES, NODE_CATEGORIES } from './StrategyConstants';
+import { NODE_TYPES, NODE_CATEGORIES, getNodeLaneId } from './StrategyConstants';
 
 export default function StrategicOutliner({ nodes, activeNodeId, onNodeSelect, onUpdateNode, theme = 'dark' }) {
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -22,57 +22,46 @@ export default function StrategicOutliner({ nodes, activeNodeId, onNodeSelect, o
 
   // Detailed Grouping by Type/Format and Sub-type
   const formatGroups = {
-    'recursos': { id: 'recursos', label: 'Recursos Principales', icon: FolderTree, color: '#6366f1', nodes: [] },
-    
-    // IMÁGENES
-    'i_historias': { id: 'i_historias', label: 'Imágenes: Historias', icon: Instagram, color: '#3b82f6', nodes: [], isSub: true },
-    'i_post': { id: 'i_post', label: 'Imágenes: Post', icon: Layout, color: '#3b82f6', nodes: [], isSub: true },
-    'i_portadas': { id: 'i_portadas', label: 'Imágenes: Portadas', icon: Folder, color: '#3b82f6', nodes: [], isSub: true },
-
-    // VIDEOS
-    'v_reels': { id: 'v_reels', label: 'Videos: Reels', icon: Video, color: '#10b981', nodes: [], isSub: true },
-    'v_tiktok': { id: 'v_tiktok', label: 'Videos: TikTok', icon: Music, color: '#10b981', nodes: [], isSub: true },
-    'v_podcast': { id: 'v_podcast', label: 'Videos: Podcast', icon: Mic, color: '#10b981', nodes: [], isSub: true },
-    'v_historias': { id: 'v_historias', label: 'Videos: Historias', icon: Instagram, color: '#10b981', nodes: [], isSub: true },
-    'v_youtube': { id: 'v_youtube', label: 'Videos: YouTube / Horizontal', icon: Youtube, color: '#10b981', nodes: [], isSub: true },
-
-    'sistemas': { id: 'sistemas', label: 'Sistemas & CRM', icon: Database, color: '#f43f5e', nodes: [] },
-    'otros': { id: 'otros', label: 'Otros', icon: Binary, color: '#94a3b8', nodes: [] }
+    'hub_videos': { id: 'hub_videos', label: 'VIDEOS', icon: Video, color: '#f43f5e', nodes: [] },
+    'hub_posts': { id: 'hub_posts', label: 'POSTS', icon: Layout, color: '#818cf8', nodes: [] },
+    'hub_stories': { id: 'hub_stories', label: 'STORIES', icon: Instagram, color: '#f97316', nodes: [] },
+    'hub_reels': { id: 'hub_reels', label: 'REELS', icon: PlayCircle, color: '#10b981', nodes: [] },
+    'hub_tiktok': { id: 'hub_tiktok', label: 'TIK TOK', icon: Music, color: '#22d3ee', nodes: [] },
+    'hub_crm': { id: 'hub_crm', label: 'FLUJOS CRM', icon: Database, color: '#10b981', nodes: [] },
+    'hub_forms': { id: 'hub_forms', label: 'FORMS', icon: Target, color: '#22d3ee', nodes: [] },
+    'otros': { id: 'otros', label: 'OTROS RECURSOS', icon: Binary, color: '#94a3b8', nodes: [] }
   };
 
   nodes.forEach(node => {
     if (searchTerm && !(node.data?.title || '').toLowerCase().includes(searchTerm.toLowerCase())) return;
     
-    const type = (node.type || "").toLowerCase();
-    const subtype = (node.data?.subtype || "").toLowerCase();
-    const title = (node.data?.title || "").toLowerCase();
-    
+    // Use the same logic as the canvas to identify the hub
+    const laneId = getNodeLaneId(node);
     let target = 'otros';
-    
-    // RECURSOS
-    if (type === 'label' || type === 'sticky' || title.includes('objetivo') || title.includes('texto')) {
-        target = 'recursos';
-    } 
-    // IMÁGENES
-    else if (type.includes('imagen') || type.includes('post') || title.includes('carrusel')) {
-        if (title.includes('historia') || subtype.includes('historia')) target = 'i_historias';
-        else if (title.includes('portada') || subtype.includes('portada')) target = 'i_portadas';
-        else target = 'i_post';
-    }
-    // VIDEOS
-    else if (type === 'video' || type.includes('reel') || type.includes('tiktok') || title.includes('youtube')) {
-        if (type.includes('reel') || title.includes('reel') || subtype.includes('reel')) target = 'v_reels';
-        else if (type.includes('tiktok') || title.includes('tiktok') || subtype.includes('tiktok')) target = 'v_tiktok';
-        else if (title.includes('podcast') || subtype.includes('podcast')) target = 'v_podcast';
-        else if (title.includes('historia') || subtype.includes('historia')) target = 'v_historias';
-        else target = 'v_youtube';
-    }
-    // SISTEMAS
-    else if (type.includes('crm') || type.includes('whatsapp') || type.includes('form')) {
-        target = 'sistemas';
+
+    if (laneId) {
+        // Map laneIds to outliner groups
+        const laneToGroup = {
+            'v_youtube': 'hub_videos',
+            'i_post': 'hub_posts',
+            'i_historias': 'hub_stories',
+            'v_historias': 'hub_stories',
+            'v_reels': 'hub_reels',
+            'v_tiktok': 'hub_tiktok',
+            'l3_crm_email': 'hub_crm',
+            'r_form': 'hub_forms'
+        };
+        target = laneToGroup[laneId] || 'otros';
+    } else {
+        const type = (node.type || "").toLowerCase();
+        if (type === 'label' || type === 'sticky') target = 'otros';
     }
 
-    formatGroups[target].nodes.push(node);
+    if (formatGroups[target]) {
+        formatGroups[target].nodes.push(node);
+    } else {
+        formatGroups['otros'].nodes.push(node);
+    }
   });
 
   return (
