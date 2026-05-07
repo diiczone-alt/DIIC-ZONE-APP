@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Search, Plus, MoreHorizontal, Calendar as CalendarIcon, Edit2, Link as LinkIcon, Video, CheckCircle2, Clock, Smartphone, Camera, Star, Users, ChevronDown, CheckSquare, ExternalLink, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Plus, MoreHorizontal, Calendar as CalendarIcon, Edit2, Link as LinkIcon, Video, CheckCircle2, Clock, Smartphone, Camera, Star, Users, ChevronDown, CheckSquare, ExternalLink, X, FileText, Mic, MicOff, MonitorUp, PhoneOff } from 'lucide-react';
 
 export default function EventsCalendar() {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -9,10 +9,34 @@ export default function EventsCalendar() {
     const [isScheduling, setIsScheduling] = useState(false);
     
     // New States for Header Controls
-    const [viewMode, setViewMode] = useState('Week');
+    const [viewMode, setViewMode] = useState('Month');
     const [showViewMenu, setShowViewMenu] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    
+    const [isNotesOpen, setIsNotesOpen] = useState(false);
+    const [isTasksOpen, setIsTasksOpen] = useState(false);
+    const [isTeamOpen, setIsTeamOpen] = useState(false);
+    const [isMeetPanelOpen, setIsMeetPanelOpen] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [hoveredEventId, setHoveredEventId] = useState(null);
+    
+    // Meet States
+    const [isMeetOpen, setIsMeetOpen] = useState(false);
+    const [meetState, setMeetState] = useState('lobby'); // lobby, in-call, post-call
+    
+    // Interactive Meet Data
+    const [meetTasks, setMeetTasks] = useState([
+        { id: 1, text: "Planificación agendada para el viernes", completed: true },
+        { id: 2, text: "Preparar la Guía de Estilos de la marca", completed: false },
+        { id: 3, text: "Compartir feedback de diseño con equipo Creativo", completed: false },
+        { id: 4, text: "Revisar copys de campaña publicitaria", completed: false }
+    ]);
+    const [newTaskText, setNewTaskText] = useState("");
+    
+    const [meetChat, setMeetChat] = useState("Hola equipo, gracias a todos por unirse a esta videoconferencia. Tenemos que rediseñar el sitio web con el objetivo de lograr una mejor Experiencia de Usuario. Haremos una investigación básica y luego prepararemos la guía de estilos.");
+    const [newChatText, setNewChatText] = useState("");
+    const [isTypingChat, setIsTypingChat] = useState(false);
     
     const formatMonthStr = (date) => date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(/^\w/, (c) => c.toUpperCase());
     const [currentMonthStr, setCurrentMonthStr] = useState(formatMonthStr(new Date()));
@@ -104,7 +128,7 @@ export default function EventsCalendar() {
         }
     };
 
-    const events = [
+    const [events, setEvents] = useState([
         { 
             id: 1, 
             title: 'Onboarding Cliente Nuevo', 
@@ -185,7 +209,7 @@ export default function EventsCalendar() {
             duration: 0.5,
             type: 'posts'
         }
-    ];
+    ]);
 
     const upcomingEvents = [
         { title: 'Día del Médico (Ecuador)', time: 'Mié 13', type: 'fechas' },
@@ -203,6 +227,20 @@ export default function EventsCalendar() {
         e.stopPropagation();
         // Here you would normally call an API to send the summary
         alert("¡Resumen enviado al equipo con éxito!");
+    };
+
+    const handleEventDrop = (e, targetDayIndex) => {
+        e.preventDefault();
+        const eventId = parseInt(e.dataTransfer.getData('eventId'));
+        if (!eventId) return;
+
+        setEvents(events.map(ev => {
+            if (ev.id === eventId) {
+                return { ...ev, dayIndex: targetDayIndex };
+            }
+            return ev;
+        }));
+        toast.success("Evento reprogramado", { id: 'drag-drop' });
     };
 
     return (
@@ -424,6 +462,7 @@ export default function EventsCalendar() {
                                 </div>
                             </div>
 
+
                     {/* Grid Area */}
                     <div className="flex-1 flex overflow-y-auto relative p-6 pt-4 custom-scrollbar">
                         
@@ -439,14 +478,27 @@ export default function EventsCalendar() {
                         {/* Event Grid */}
                         <div className="flex-1 relative">
                             {/* Horizontal Lines */}
-                            <div className="absolute inset-0 flex flex-col">
+                            <div className="absolute inset-0 flex flex-col pointer-events-none">
                                 {hours.map(hour => (
                                     <div key={hour} className="h-[90px] border-t border-white/[0.03] w-full" />
                                 ))}
                             </div>
 
+                            {/* Drop Zones for Columns */}
+                            <div className="absolute inset-0 grid grid-cols-7 gap-2 z-0">
+                                {[0, 1, 2, 3, 4, 5, 6].map(dayIndex => (
+                                    <div 
+                                        key={`drop-${dayIndex}`}
+                                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-white/5'); }}
+                                        onDragLeave={(e) => e.currentTarget.classList.remove('bg-white/5')}
+                                        onDrop={(e) => { e.currentTarget.classList.remove('bg-white/5'); handleEventDrop(e, dayIndex); }}
+                                        className="w-full h-full rounded-2xl transition-colors border border-transparent border-dashed"
+                                    />
+                                ))}
+                            </div>
+
                             {/* Events Container */}
-                            <div className="absolute inset-0 grid grid-cols-7 gap-2">
+                            <div className="absolute inset-0 grid grid-cols-7 gap-2 pointer-events-none">
                                 {filteredEvents.map(event => {
                                     const topOffset = (event.startHour - 8) * 90;
                                     const heightPixels = event.duration * 90;
@@ -457,15 +509,20 @@ export default function EventsCalendar() {
                                     return (
                                         <div key={event.id} style={{ gridColumnStart: event.dayIndex + 1 }} className="relative pointer-events-none">
                                             <div 
+                                                draggable
+                                                onDragStart={(e) => {
+                                                    e.dataTransfer.setData('eventId', event.id);
+                                                    e.dataTransfer.effectAllowed = 'move';
+                                                }}
                                                 onClick={() => setSelectedEventId(event.id)}
                                                 className={`absolute left-0 right-0 rounded-2xl p-3 cursor-pointer pointer-events-auto transition-all duration-300 border backdrop-blur-md ${style.bg} ${style.border} ${isSelected ? `scale-[1.03] z-30 ${style.glow}` : 'hover:scale-[1.03] hover:brightness-125 z-10 hover:shadow-lg'}`}
                                                 style={{ top: `${topOffset}px`, height: `${heightPixels - 6}px` }}
                                             >
-                                                <div className="flex items-start justify-between gap-1">
+                                                <div className="flex items-start justify-between gap-1 pointer-events-none">
                                                     <h3 className={`text-xs font-bold leading-snug tracking-wide ${style.text} line-clamp-2`}>{event.title}</h3>
                                                     <Icon className={`w-3.5 h-3.5 shrink-0 opacity-70 ${style.text} ${event.duration <= 0.5 ? 'hidden' : ''}`} />
                                                 </div>
-                                                <div className="flex items-center gap-2 mt-1">
+                                                <div className="flex items-center gap-2 mt-1 pointer-events-none">
                                                     <p className="text-[10px] font-semibold text-white/60">{event.timeStr}</p>
                                                     {event.platform && (
                                                         <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded bg-white/10 ${style.text}`}>{event.platform}</span>
@@ -473,7 +530,7 @@ export default function EventsCalendar() {
                                                 </div>
                                                 
                                                 {event.team && event.duration > 0.5 && (
-                                                    <div className="absolute bottom-2 left-2 flex -space-x-1.5">
+                                                    <div className="absolute bottom-2 left-2 flex -space-x-1.5 pointer-events-none">
                                                         {event.team.map(t => (
                                                             <img key={t} src={`https://i.pravatar.cc/150?u=${t}`} className="w-5 h-5 rounded-full border border-[#232332]" alt="team" />
                                                         ))}
@@ -488,7 +545,7 @@ export default function EventsCalendar() {
                                                         initial={{ opacity: 0, scale: 0.9, y: 10, filter: 'blur(10px)' }}
                                                         animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
                                                         exit={{ opacity: 0, scale: 0.9, y: 10, filter: 'blur(10px)' }}
-                                                        className="absolute z-50 w-[320px] bg-[#1A1A24]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-[0_30px_60px_rgba(0,0,0,0.8)]"
+                                                        className="absolute z-50 w-[320px] bg-[#1A1A24]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-[0_30px_60px_rgba(0,0,0,0.8)] pointer-events-auto"
                                                         style={{ top: `${topOffset + 10}px`, left: '105%' }}
                                                     >
                                                         {/* Header */}
@@ -608,15 +665,51 @@ export default function EventsCalendar() {
                                     
                                     const dayNum = i - startOffset >= 0 && i - startOffset < daysInMonth ? i - startOffset + 1 : null;
                                     const isToday = dayNum === new Date().getDate() && currentDate.getMonth() === new Date().getMonth();
-                                    const hasEvents = dayNum === currentDate.getDate() || dayNum === currentDate.getDate() + 2 || dayNum === currentDate.getDate() + 5;
+                                    
+                                    // Get actual events for this day based on dayIndex and week
+                                    // For simplicity in month view, we map event's dayIndex to matching days of the week
+                                    const currentDayOfWeek = i % 7;
+                                    const dayEvents = dayNum ? events.filter(e => e.dayIndex === currentDayOfWeek) : [];
                                     
                                     return (
-                                        <div key={i} className={`p-2 rounded-2xl border transition-colors cursor-pointer flex flex-col ${dayNum ? 'bg-black/20 border-white/5 hover:border-white/20' : 'opacity-20 border-transparent'} ${isToday ? 'ring-2 ring-violet-500/50 bg-violet-500/10' : ''}`}>
+                                        <div key={i} className={`p-2 rounded-2xl border transition-colors flex flex-col relative ${dayNum ? 'bg-black/20 border-white/5 hover:border-white/20' : 'opacity-20 border-transparent'} ${isToday ? 'ring-2 ring-violet-500/50 bg-violet-500/10' : ''}`}>
                                             {dayNum && <span className={`text-sm font-bold ${isToday ? 'text-violet-400' : 'text-gray-400'}`}>{dayNum}</span>}
-                                            {hasEvents && (
-                                                <div className="flex-1 flex flex-col justify-end gap-1 mt-2">
-                                                    <div className="w-full h-1.5 rounded-full bg-pink-500/50" />
-                                                    <div className="w-3/4 h-1.5 rounded-full bg-emerald-500/50" />
+                                            {dayNum && dayEvents.length > 0 && (
+                                                <div className="flex-1 flex flex-col gap-1 mt-2 overflow-y-auto no-scrollbar">
+                                                    {dayEvents.map(ev => {
+                                                        const style = EVENT_STYLES[ev.type] || EVENT_STYLES.meeting;
+                                                        const isHovered = hoveredEventId === `${dayNum}-${ev.id}`;
+                                                        return (
+                                                            <div 
+                                                                key={ev.id}
+                                                                onMouseEnter={() => setHoveredEventId(`${dayNum}-${ev.id}`)}
+                                                                onMouseLeave={() => setHoveredEventId(null)}
+                                                                className={`w-full p-1 rounded-md cursor-pointer truncate text-[9px] font-bold ${style.bg} ${style.text} ${style.border} border`}
+                                                            >
+                                                                {ev.title}
+                                                                
+                                                                {/* Hover Popover */}
+                                                                <AnimatePresence>
+                                                                    {isHovered && (
+                                                                        <motion.div
+                                                                            initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                                            exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                                            className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-[#1A1A24] border border-white/10 p-3 rounded-xl shadow-2xl"
+                                                                        >
+                                                                            <h4 className="text-white text-xs whitespace-normal leading-tight font-black mb-1">{ev.title}</h4>
+                                                                            <p className="text-gray-400 text-[10px] whitespace-normal">{ev.timeStr}</p>
+                                                                            {ev.team && (
+                                                                                <div className="flex -space-x-1 mt-2">
+                                                                                    {ev.team.map(t => <img key={t} src={`https://i.pravatar.cc/150?u=${t}`} className="w-4 h-4 rounded-full border border-black" alt="t"/>)}
+                                                                                </div>
+                                                                            )}
+                                                                        </motion.div>
+                                                                    )}
+                                                                </AnimatePresence>
+                                                            </div>
+                                                        )
+                                                    })}
                                                 </div>
                                             )}
                                         </div>
@@ -660,6 +753,194 @@ export default function EventsCalendar() {
                             </div>
                         </div>
                     )}
+                </div>
+
+                {/* Floating Side Panel (Google Keep Style) */}
+                <AnimatePresence>
+                    {(isNotesOpen || isTasksOpen || isTeamOpen || isMeetPanelOpen) && (
+                        <motion.div 
+                            initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+                            animate={{ opacity: 1, width: 320, marginLeft: 24 }}
+                            exit={{ opacity: 0, width: 0, marginLeft: 0 }}
+                            className="shrink-0 bg-[#1A1A24] border border-white/10 rounded-[32px] overflow-hidden shadow-[0_10px_50px_rgba(0,0,0,0.6)] flex flex-col h-full"
+                        >
+                            <div className="w-[320px] h-full flex flex-col">
+                                {isNotesOpen && (
+                                    <>
+                                        <div className="p-5 flex items-center justify-between border-b border-white/5">
+                                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                                <FileText className="w-4 h-4 text-blue-400" /> Notas
+                                            </h3>
+                                            <div className="flex items-center gap-1 text-gray-400">
+                                                <button className="p-1.5 hover:text-white rounded-md hover:bg-white/10"><Search className="w-4 h-4" /></button>
+                                                <button className="p-1.5 hover:text-white rounded-md hover:bg-white/10"><ExternalLink className="w-4 h-4" /></button>
+                                                <button onClick={() => setIsNotesOpen(false)} className="p-1.5 hover:text-white rounded-md hover:bg-white/10"><X className="w-4 h-4" /></button>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 flex-1 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+                                            <div className="bg-black/30 border border-white/10 rounded-xl p-3 flex flex-col gap-2">
+                                                <div className="flex items-center gap-2 text-gray-400">
+                                                    <Plus className="w-4 h-4 text-blue-400" />
+                                                    <span className="text-sm font-medium">Toma una nota...</span>
+                                                </div>
+                                                <textarea className="w-full bg-transparent text-white text-sm focus:outline-none resize-none h-20" placeholder="Escribe aquí..."></textarea>
+                                                <div className="flex justify-end">
+                                                    <button className="text-xs bg-blue-500/20 text-blue-400 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-500/30">Guardar</button>
+                                                </div>
+                                            </div>
+                                            
+                                            {[1, 2, 3].map(n => (
+                                                <div key={n} className="bg-black/20 border border-white/5 rounded-xl p-4 hover:border-white/20 transition-colors cursor-pointer group">
+                                                    <h4 className="text-sm font-bold text-white mb-1">Nota Estratégica #{n}</h4>
+                                                    <p className="text-xs text-gray-400 line-clamp-3">Este es el contenido de la nota guardada previamente con detalles importantes sobre la campaña.</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+
+                                {isTasksOpen && (
+                                    <>
+                                        <div className="p-5 flex items-center justify-between border-b border-white/5">
+                                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                                <CheckSquare className="w-4 h-4 text-amber-400" /> Tareas
+                                            </h3>
+                                            <div className="flex items-center gap-1">
+                                                <button onClick={() => setIsTasksOpen(false)} className="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-white/10"><X className="w-4 h-4" /></button>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3">
+                                            <div className="bg-black/30 border border-white/10 rounded-xl p-3 mb-4">
+                                                <div className="flex items-center gap-2 text-gray-400 border-b border-white/5 pb-2 mb-2">
+                                                    <Plus className="w-4 h-4 text-amber-400" />
+                                                    <input type="text" placeholder="Agregar tarea..." className="w-full bg-transparent text-white text-sm focus:outline-none" />
+                                                </div>
+                                            </div>
+                                            {[1, 2, 3].map(n => (
+                                                <div key={n} className="flex items-start gap-3 bg-black/20 border border-white/5 rounded-xl p-3 hover:border-white/20 transition-colors">
+                                                    <div className="w-4 h-4 rounded border border-gray-500 mt-0.5 shrink-0 cursor-pointer hover:border-amber-400"></div>
+                                                    <span className="text-sm text-gray-300">Revisar los copies de la campaña antes del lanzamiento.</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+
+                                {isTeamOpen && (
+                                    <>
+                                        <div className="p-5 flex items-center justify-between border-b border-white/5">
+                                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                                <Users className="w-4 h-4 text-pink-400" /> Equipo
+                                            </h3>
+                                            <div className="flex items-center gap-1">
+                                                <button onClick={() => setIsTeamOpen(false)} className="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-white/10"><X className="w-4 h-4" /></button>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3">
+                                            {[1, 2, 3, 4].map(n => (
+                                                <div key={n} className="flex items-center gap-3 p-3 bg-black/30 border border-white/5 rounded-xl hover:border-pink-500/30 transition-all cursor-pointer">
+                                                    <img src={`https://i.pravatar.cc/150?u=${n}`} className="w-10 h-10 rounded-full border-2 border-[#1A1A24]" alt="team" />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-bold text-white">Miembro #{n}</span>
+                                                        <span className="text-[10px] text-gray-500">Diseñador Senior</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+
+                                {isMeetPanelOpen && (
+                                    <>
+                                        <div className="p-5 flex items-center justify-between border-b border-white/5">
+                                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                                <Video className="w-4 h-4 text-indigo-400" /> DIIC Meet
+                                            </h3>
+                                            <div className="flex items-center gap-1">
+                                                <button onClick={() => setIsMeetPanelOpen(false)} className="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-white/10"><X className="w-4 h-4" /></button>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                                            <div className="text-xs text-gray-400 text-center mb-6 mt-2">
+                                                Conecta con tu equipo y organiza tus proyectos en tiempo real.
+                                            </div>
+
+                                            <button 
+                                                className="w-full bg-[#232332] hover:bg-indigo-500/10 border border-white/5 hover:border-indigo-500/30 rounded-xl p-4 flex flex-col items-center gap-3 transition-all group"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    <Clock className="w-5 h-5" />
+                                                </div>
+                                                <span className="text-sm font-bold text-white text-center">Programar una reunión para más tarde</span>
+                                            </button>
+
+                                            <button 
+                                                onClick={() => {
+                                                    setIsMeetPanelOpen(false);
+                                                    setMeetState('in-call');
+                                                    setIsMeetOpen(true);
+                                                }}
+                                                className="w-full bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/50 rounded-xl p-4 flex flex-col items-center gap-3 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] group transform hover:-translate-y-1"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    <Plus className="w-5 h-5" />
+                                                </div>
+                                                <span className="text-sm font-bold text-white text-center">Iniciar una reunión instantánea</span>
+                                            </button>
+
+                                            <button 
+                                                onClick={() => {
+                                                    setIsSyncing(true);
+                                                    setTimeout(() => {
+                                                        setIsSyncing(false);
+                                                        toast.success("Redirigiendo a Google Calendar...");
+                                                    }, 1500);
+                                                }}
+                                                className="w-full bg-[#232332] hover:bg-white/5 border border-white/5 hover:border-white/20 rounded-xl p-4 flex flex-col items-center gap-3 transition-all group"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    <CalendarIcon className="w-5 h-5 text-blue-400" />
+                                                </div>
+                                                <span className="text-sm font-bold text-white text-center">Programar en Google Calendar</span>
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Sidebar Apps (Right) */}
+                <div className="w-16 shrink-0 bg-black/40 backdrop-blur-2xl rounded-full flex flex-col items-center py-6 gap-6 border border-white/10 shadow-[0_10px_50px_rgba(0,0,0,0.6)] overflow-hidden ml-6">
+                    <button 
+                        onClick={() => {
+                            setIsSyncing(true);
+                            setTimeout(() => {
+                                setIsSyncing(false);
+                                toast.success("Google Calendar Sincronizado Correctamente", { id: 'gcal-sync' });
+                            }, 2000);
+                            toast.loading("Sincronizando con Google Calendar...", { id: 'gcal-sync' });
+                        }} 
+                        className="p-2.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors group relative" 
+                        title="Google Calendar Sync"
+                    >
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" className={`w-6 h-6 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all ${isSyncing ? 'animate-spin' : ''}`} alt="Google Calendar" />
+                    </button>
+                    <div className="w-8 h-px bg-white/10" />
+                    
+                    <button onClick={() => { setIsNotesOpen(!isNotesOpen); setIsTasksOpen(false); setIsTeamOpen(false); setIsMeetPanelOpen(false); }} className={`p-2.5 rounded-full transition-colors group ${isNotesOpen ? 'bg-blue-500/20 text-blue-300' : 'hover:bg-blue-500/20 text-blue-400 hover:text-blue-300'}`} title="Notas">
+                        <FileText className="w-6 h-6 group-hover:scale-110 transition-all" />
+                    </button>
+                    <button onClick={() => { setIsTasksOpen(!isTasksOpen); setIsNotesOpen(false); setIsTeamOpen(false); setIsMeetPanelOpen(false); }} className={`p-2.5 rounded-full transition-colors group ${isTasksOpen ? 'bg-amber-500/20 text-amber-300' : 'hover:bg-amber-500/20 text-amber-400 hover:text-amber-300'}`} title="Tareas">
+                        <CheckSquare className="w-6 h-6 group-hover:scale-110 transition-all" />
+                    </button>
+                    <button onClick={() => { setIsTeamOpen(!isTeamOpen); setIsNotesOpen(false); setIsTasksOpen(false); setIsMeetPanelOpen(false); }} className={`p-2.5 rounded-full transition-colors group ${isTeamOpen ? 'bg-pink-500/20 text-pink-300' : 'hover:bg-pink-500/20 text-pink-400 hover:text-pink-300'}`} title="Equipo Designado">
+                        <Users className="w-6 h-6 group-hover:scale-110 transition-all" />
+                    </button>
+                    <button onClick={() => { setIsMeetPanelOpen(!isMeetPanelOpen); setIsNotesOpen(false); setIsTasksOpen(false); setIsTeamOpen(false); }} className={`p-2.5 rounded-full transition-colors group ${isMeetPanelOpen ? 'bg-indigo-500/20 text-indigo-300' : 'hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300'}`} title="Reuniones">
+                        <Video className="w-6 h-6 group-hover:scale-110 transition-all" />
+                    </button>
                 </div>
             </div>
 
@@ -725,18 +1006,284 @@ export default function EventsCalendar() {
                                 </div>
                             </div>
 
-                            <div className="p-6 bg-black/20 border-t border-white/5 flex gap-3">
-                                <button onClick={() => setIsScheduling(false)} className="flex-1 py-3 px-4 rounded-xl font-bold text-sm text-gray-400 hover:bg-white/5 transition-colors">
-                                    Cancelar
+                            <div className="p-6 bg-black/20 border-t border-white/5 flex flex-col gap-3">
+                                <button onClick={() => {
+                                    toast.success("Enviando partes importantes por WhatsApp...");
+                                }} className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                                    Enviar partes importantes de la reunión por WhatsApp
                                 </button>
-                                <button onClick={() => setIsScheduling(false)} className="flex-1 py-3 px-4 rounded-xl font-bold text-sm bg-violet-600 hover:bg-violet-500 text-white shadow-[0_0_15px_rgba(139,92,246,0.5)] transition-all">
-                                    Guardar Evento
-                                </button>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setIsScheduling(false)} className="flex-1 py-3 px-4 rounded-xl font-bold text-sm text-gray-400 hover:bg-white/5 transition-colors">
+                                        Cancelar
+                                    </button>
+                                    <button onClick={() => setIsScheduling(false)} className="flex-1 py-3 px-4 rounded-xl font-bold text-sm bg-violet-600 hover:bg-violet-500 text-white shadow-[0_0_15px_rgba(139,92,246,0.5)] transition-all">
+                                        Guardar Evento
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+
+
+            {/* Meet Modal */}
+            <AnimatePresence>
+                {isMeetOpen && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4">
+                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#1A1A24] border border-white/10 rounded-[32px] w-full max-w-4xl h-[80vh] min-h-[600px] flex flex-col shadow-[0_0_80px_rgba(0,0,0,0.8)] overflow-hidden relative">
+                            
+                            {/* Header (hidden in-call) */}
+                            {meetState !== 'in-call' && (
+                                <div className="p-6 flex items-center justify-between">
+                                    <h2 className="text-xl font-black text-white flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/50">
+                                            <Video className="w-4 h-4 text-indigo-400" />
+                                        </div>
+                                        DIIC Meet
+                                    </h2>
+                                    <button onClick={() => { setIsMeetOpen(false); setMeetState('lobby'); }} className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400">
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* State: Lobby */}
+                            {meetState === 'lobby' && (
+                                <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in zoom-in duration-500">
+                                    <Video className="w-20 h-20 text-indigo-400 mb-8 opacity-80" />
+                                    <h2 className="text-4xl font-black text-white mb-6 tracking-tight">Videollamadas y reuniones<br/>para el equipo</h2>
+                                    <p className="text-gray-400 mb-12 max-w-md mx-auto text-lg leading-relaxed">Conecta, colabora y crea desde cualquier lugar de forma segura con DIIC Meet.</p>
+                                    
+                                    <div className="flex items-center justify-center gap-4 w-full max-w-lg mx-auto">
+                                        <button onClick={() => setMeetState('in-call')} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-[0_0_30px_rgba(79,70,229,0.4)] hover:shadow-[0_0_40px_rgba(79,70,229,0.6)] transform hover:scale-105">
+                                            <Video className="w-5 h-5" /> Nueva reunión
+                                        </button>
+                                        <div className="flex-1 relative">
+                                            <input type="text" placeholder="Ingresa un código o enlace" className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-4 text-white text-sm font-semibold focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-gray-600" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* State: In Call */}
+                            {meetState === 'in-call' && (
+                                <div className="flex-1 bg-black/60 relative overflow-hidden flex p-4 gap-4 animate-in fade-in duration-300 rounded-[32px]">
+                                    {/* Left Column */}
+                                    <div className="w-1/3 flex flex-col gap-4">
+                                        {/* Top 2 feeds */}
+                                        <div className="grid grid-cols-2 gap-4 h-40 shrink-0">
+                                            <div className="bg-[#1A1A24] rounded-[24px] overflow-hidden relative border border-white/10 shadow-lg">
+                                                <img src="https://i.pravatar.cc/300?u=q" className="w-full h-full object-cover opacity-80" alt="participant" />
+                                                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                                                    <span className="text-[10px] font-bold text-white drop-shadow-md">Jacqueline Ho</span>
+                                                    <MicOff className="w-3 h-3 text-red-400 drop-shadow-md" />
+                                                </div>
+                                            </div>
+                                            <div className="bg-[#1A1A24] rounded-[24px] overflow-hidden relative border border-white/10 shadow-lg">
+                                                <img src="https://i.pravatar.cc/300?u=a" className="w-full h-full object-cover opacity-80" alt="participant" />
+                                                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                                                    <span className="text-[10px] font-bold text-white drop-shadow-md">Jan Cook</span>
+                                                    <Mic className="w-3 h-3 text-white drop-shadow-md" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Middle 2 widgets */}
+                                        <div className="grid grid-cols-2 gap-4 h-40 shrink-0">
+                                            <div className="bg-[#1A1A24] rounded-[24px] overflow-hidden relative border border-white/10 shadow-lg">
+                                                <img src="https://i.pravatar.cc/300?u=b" className="w-full h-full object-cover opacity-80" alt="participant" />
+                                                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                                                    <span className="text-[10px] font-bold text-white drop-shadow-md">Alberto Brooks</span>
+                                                    <MicOff className="w-3 h-3 text-red-400 drop-shadow-md" />
+                                                </div>
+                                            </div>
+                                            <div className="bg-white/[0.03] backdrop-blur-2xl rounded-[24px] border border-white/10 shadow-lg flex flex-col items-center justify-center p-4">
+                                                <div className="flex -space-x-3 mb-3">
+                                                    <img src="https://i.pravatar.cc/150?u=1" className="w-10 h-10 rounded-full border-2 border-[#1A1A24] shadow-md" alt="team" />
+                                                    <img src="https://i.pravatar.cc/150?u=2" className="w-10 h-10 rounded-full border-2 border-[#1A1A24] shadow-md" alt="team" />
+                                                    <div className="w-10 h-10 rounded-full bg-white/10 border-2 border-[#1A1A24] flex items-center justify-center text-xs font-bold text-white shadow-md">+24</div>
+                                                </div>
+                                                <span className="text-xs font-bold text-white">Equipo conectado</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Daily Task Widget */}
+                                        <div className="flex-1 bg-white/[0.03] backdrop-blur-2xl rounded-[24px] border border-white/10 p-5 shadow-lg flex flex-col overflow-hidden">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tareas de Hoy</h3>
+                                                <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                                    {meetTasks.filter(t => t.completed).length}/{meetTasks.length}
+                                                </span>
+                                            </div>
+                                            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3 mb-3">
+                                                {meetTasks.map(task => (
+                                                    <div key={task.id} className={`flex items-start gap-3 transition-opacity ${task.completed ? 'opacity-50' : 'opacity-100'}`}>
+                                                        <button 
+                                                            onClick={() => setMeetTasks(tasks => tasks.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t))}
+                                                            className={`w-4 h-4 shrink-0 rounded flex items-center justify-center mt-0.5 transition-colors ${task.completed ? 'bg-emerald-500/20 border border-emerald-500' : 'border border-gray-500 hover:border-emerald-400'}`}
+                                                        >
+                                                            {task.completed && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
+                                                        </button>
+                                                        <span className={`text-[11px] font-medium leading-tight ${task.completed ? 'text-emerald-400 line-through' : 'text-white'}`}>
+                                                            {task.text}
+                                                        </span>
+                                                        <button 
+                                                            onClick={() => setMeetTasks(tasks => tasks.filter(t => t.id !== task.id))}
+                                                            className="ml-auto opacity-0 hover:opacity-100 group-hover:opacity-100 text-red-400/50 hover:text-red-400 transition-opacity"
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="mt-auto relative">
+                                                <input 
+                                                    type="text" 
+                                                    value={newTaskText}
+                                                    onChange={(e) => setNewTaskText(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && newTaskText.trim()) {
+                                                            setMeetTasks([...meetTasks, { id: Date.now(), text: newTaskText.trim(), completed: false }]);
+                                                            setNewTaskText("");
+                                                        }
+                                                    }}
+                                                    placeholder="Agregar nueva tarea..." 
+                                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[11px] text-white focus:outline-none focus:border-emerald-500/50 transition-colors placeholder:text-gray-500"
+                                                />
+                                                <button 
+                                                    onClick={() => {
+                                                        if (newTaskText.trim()) {
+                                                            setMeetTasks([...meetTasks, { id: Date.now(), text: newTaskText.trim(), completed: false }]);
+                                                            setNewTaskText("");
+                                                        }
+                                                    }}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-400 hover:text-emerald-300"
+                                                >
+                                                    <Plus className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Right Column (Main View) */}
+                                    <div className="w-2/3 flex flex-col gap-4">
+                                        {/* Main Video */}
+                                        <div className="flex-1 bg-[#1A1A24] rounded-[24px] overflow-hidden relative border border-white/10 shadow-2xl group">
+                                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1200&auto=format&fit=crop" className="w-full h-full object-cover opacity-90" alt="main view" />
+                                            
+                                            <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-xl px-3 py-1.5 rounded-lg text-xs font-bold text-white border border-white/10">DIIC Meet Interno</div>
+                                            
+                                            <div className="absolute bottom-6 left-6 text-white font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Tú (Organizador)</div>
+                                            
+                                            {/* Hovering Controls */}
+                                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur-2xl p-2.5 rounded-2xl border border-white/10 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                <button title="Micrófono" className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"><Mic className="w-4 h-4 text-white" /></button>
+                                                <button title="Cámara" className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"><Video className="w-4 h-4 text-white" /></button>
+                                                <button title="Compartir Pantalla" className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"><MonitorUp className="w-4 h-4 text-white" /></button>
+                                                <button title="Activar Subtítulos" className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"><FileText className="w-4 h-4 text-white" /></button>
+                                                <button title="Finalizar Llamada" onClick={() => setMeetState('post-call')} className="w-14 h-10 rounded-xl bg-red-500 hover:bg-red-400 flex items-center justify-center transition-colors shadow-lg shadow-red-500/20"><PhoneOff className="w-4 h-4 text-white" /></button>
+                                            </div>
+                                            
+                                            {/* Side tools */}
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 bg-black/60 backdrop-blur-2xl p-2 rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+                                                <button title="Compartir Link de Invitación" onClick={() => toast.success("¡Enlace de reunión copiado al portapapeles!")} className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"><LinkIcon className="w-4 h-4 text-white" /></button>
+                                                <button title="Enviar Reacción" className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"><Star className="w-4 h-4 text-white" /></button>
+                                                <button title="Participantes" className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"><Users className="w-4 h-4 text-white" /></button>
+                                                <button title="Más Opciones" className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"><MoreHorizontal className="w-4 h-4 text-white" /></button>
+                                            </div>
+                                        </div>
+
+                                        {/* Transcription/Chat Widget */}
+                                        <div className="h-32 shrink-0 bg-white/[0.03] backdrop-blur-2xl rounded-[24px] border border-white/10 p-5 shadow-lg flex flex-col relative overflow-hidden group">
+                                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent pointer-events-none"></div>
+                                            
+                                            {!isTypingChat ? (
+                                                <div className="flex items-center gap-5 h-full cursor-pointer" onClick={() => setIsTypingChat(true)}>
+                                                    <div className="w-14 h-14 shrink-0 rounded-2xl bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center relative z-10 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                                                        {/* Audio Waveform Simulation */}
+                                                        <div className="flex items-center gap-1">
+                                                            <div className="w-1 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
+                                                            <div className="w-1 h-5 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                                                            <div className="w-1 h-8 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                                                            <div className="w-1 h-4 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+                                                            <div className="w-1 h-6 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex-1 relative z-10">
+                                                        <p className="text-xs text-gray-300 font-medium leading-relaxed group-hover:text-white transition-colors">
+                                                            "{meetChat}"
+                                                        </p>
+                                                        <div className="absolute -bottom-4 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <span className="text-[10px] text-emerald-400 flex items-center gap-1"><Edit2 className="w-3 h-3" /> Clic para editar</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col h-full gap-2 relative z-10">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Anotar transcripción/comentario</span>
+                                                        <button onClick={() => setIsTypingChat(false)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
+                                                    </div>
+                                                    <textarea 
+                                                        value={newChatText || meetChat}
+                                                        onChange={(e) => setNewChatText(e.target.value)}
+                                                        autoFocus
+                                                        className="flex-1 bg-black/40 border border-emerald-500/30 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500 resize-none custom-scrollbar"
+                                                    />
+                                                    <div className="flex justify-end">
+                                                        <button 
+                                                            onClick={() => {
+                                                                if (newChatText.trim()) setMeetChat(newChatText.trim());
+                                                                setIsTypingChat(false);
+                                                            }}
+                                                            className="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                                                        >
+                                                            Guardar Nota
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* State: Post Call */}
+                            {meetState === 'post-call' && (
+                                <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in slide-in-from-bottom-8 fade-in duration-500">
+                                    <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mb-8 border border-emerald-500/30">
+                                        <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+                                    </div>
+                                    <h2 className="text-4xl font-black text-white mb-6">Reunión finalizada</h2>
+                                    <p className="text-gray-400 mb-12 max-w-md mx-auto text-lg">La videollamada ha concluido. Para asegurar la retención, envía un resumen de lo acordado a los participantes.</p>
+                                    
+                                    <div className="flex flex-col gap-4 w-full max-w-md mx-auto">
+                                        <button onClick={() => {
+                                            toast.success("¡Resumen enviado por WhatsApp al equipo exitosamente!");
+                                            setMeetState('lobby');
+                                            setIsMeetOpen(false);
+                                        }} className="w-full py-4 px-6 rounded-2xl font-bold text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-3 transform hover:scale-105">
+                                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                                            Enviar partes importantes por WhatsApp
+                                        </button>
+                                        <button onClick={() => {
+                                            setMeetState('lobby');
+                                            setIsMeetOpen(false);
+                                        }} className="w-full py-4 px-6 rounded-2xl font-bold text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-all">
+                                            Volver al inicio
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 }

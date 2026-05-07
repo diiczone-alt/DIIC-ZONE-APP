@@ -11,7 +11,7 @@ import {
     ChevronDown, Trash2, Edit, MessageSquare, Globe, ListTodo,
     MapPin, DollarSign, FileText,
     Video, Clapperboard, Palette, Mic, Camera, User, Printer, Ticket, Monitor,
-    Copy
+    Copy, ArrowLeft, ExternalLink, ArrowRight
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
@@ -733,6 +733,7 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                                         <div className="space-y-4">
                                             <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-4">Marcas Designadas</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {assignedBrands.map(b => (
                                                     <div key={b.id} className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem] flex items-center justify-between group hover:border-emerald-500/20 transition-all">
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center font-black text-emerald-400 border border-emerald-500/20">{b.name[0]}</div>
@@ -751,6 +752,7 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                                                             <button onClick={() => toggleBrand(b.id, true)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"><X className="w-4 h-4" /></button>
                                                         </div>
                                                     </div>
+                                                ))}
                                             </div>
                                             {assignedBrands.length === 0 && <p className="text-center py-10 text-gray-600 font-bold uppercase text-[9px] tracking-widest italic border border-dashed border-white/5 rounded-3xl">Sin marcas asignadas</p>}
                                         </div>
@@ -915,19 +917,26 @@ function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitti
                         <input className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none text-sm" placeholder="WhatsApp" value={newMember.whatsapp} onChange={(e) => setNewMember({ ...newMember, whatsapp: e.target.value })} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                        <select className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none appearance-none text-sm cursor-pointer" value={newMember.role} onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}>
-                            <option value="Editor de Video">Editor de Video</option>
-                            <option value="Community Manager">Community Manager</option>
-                            <option value="Diseñador">Diseñador</option>
-                            <option value="Filmmaker">Filmmaker</option>
-                            <option value="Estratega">Estratega</option>
-                            <option value="Ingeniería de Audio">Ingeniería de Audio</option>
-                            <option value="Fotografía">Fotografía</option>
-                            <option value="Modelos">Modelos</option>
-                            <option value="Desarrollo Web">Desarrollo Web</option>
-                            <option value="Imprenta / Merch">Imprenta / Merch</option>
-                            <option value="Eventos / Prod">Eventos / Prod</option>
-                        </select>
+                        <PremiumDropdown 
+                            label="Especialidad / Cargo"
+                            value={newMember.role} 
+                            onChange={(val) => setNewMember({ ...newMember, role: val })}
+                            options={[
+                                { value: 'Editor de Video', label: 'Editor de Video' },
+                                { value: 'Community Manager', label: 'Community Manager' },
+                                { value: 'Diseñador', label: 'Diseñador' },
+                                { value: 'Filmmaker', label: 'Filmmaker' },
+                                { value: 'Estratega', label: 'Estratega' },
+                                { value: 'Ingeniería de Audio', label: 'Ingeniería de Audio' },
+                                { value: 'Fotografía', label: 'Fotografía' },
+                                { value: 'Modelos', label: 'Modelos' },
+                                { value: 'Desarrollo Web', label: 'Desarrollo Web' },
+                                { value: 'Imprenta / Merch', label: 'Imprenta / Merch' },
+                                { value: 'Eventos / Prod', label: 'Eventos / Prod' }
+                            ]}
+                            searchable={true}
+                            icon={Briefcase}
+                        />
                         <PremiumDropdown 
                             label="Ciudad / Ubicación"
                             value={newMember.city} 

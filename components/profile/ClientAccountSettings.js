@@ -112,39 +112,74 @@ export default function ClientAccountSettings() {
                 .eq('id', user.id)
                 .single();
 
-            if (profile?.client_id) {
-                // Perform Bidirectional Sync
-                await agencyService.syncClientProfile(profile.client_id, {
-                    full_name: profileData.brand_name, // Mapping Brand Name to Profile Full Name for aesthetic parity
-                    location: profileData.location,
-                    whatsapp: profileData.phone,
-                    marketing_type: profileData.marketing_type,
-                    specialty: profileData.specialty,
-                    plan: profileData.plan,
-                    primary_color: profileData.primary_color,
-                    secondary_color: profileData.secondary_color,
-                    accent_color: profileData.accent_color,
-                    logo_url: profileData.logo_url
+            let targetClientId = profile?.client_id;
+
+            // Auto-create HQ Client if not linked
+            if (!targetClientId) {
+                console.log("No client_id found. Auto-creating HQ client record...");
+                const newClientRes = await agencyService.createClient({
+                    name: profileData.brand_name || profileData.full_name || 'Nuevo Cliente',
+                    city: profileData.location,
+                    whatsapp_number: profileData.phone,
+                    industry: profileData.marketing_type,
+                    email: user.email,
+                    plan: profileData.plan
                 });
                 
-                // Update specific personal profile fields
-                await supabase
+                if (!newClientRes || !newClientRes.id) {
+                    throw new Error("Failed to auto-create HQ Client record. Received empty response.");
+                }
+
+                targetClientId = newClientRes.id;
+                
+                // Link it to the user profile
+                const { error: linkError } = await supabase
                     .from('profiles')
-                    .update({ 
-                        full_name: profileData.full_name,
-                        location: profileData.location,
-                        whatsapp: profileData.phone,
-                        industry: profileData.marketing_type,
-                        specialty: profileData.specialty,
-                        plan: profileData.plan
-                    })
+                    .update({ client_id: targetClientId })
                     .eq('id', user.id);
+                
+                if (linkError) {
+                    throw new Error("Failed to link HQ Client ID to profile: " + linkError.message);
+                }
+            }
+
+            // Perform Bidirectional Sync
+            await agencyService.syncClientProfile(targetClientId, {
+                full_name: profileData.full_name,
+                brand_name: profileData.brand_name,
+                bio: profileData.bio,
+                location: profileData.location,
+                whatsapp: profileData.phone,
+                marketing_type: profileData.marketing_type,
+                specialty: profileData.specialty,
+                plan: profileData.plan,
+                primary_color: profileData.primary_color,
+                secondary_color: profileData.secondary_color,
+                accent_color: profileData.accent_color,
+                logo_url: profileData.logo_url
+            });
+
+            // Update specific personal profile fields
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .update({ 
+                    full_name: profileData.full_name,
+                    location: profileData.location,
+                    whatsapp: profileData.phone,
+                    industry: profileData.marketing_type,
+                    specialty: profileData.specialty,
+                    plan: profileData.plan
+                })
+                .eq('id', user.id);
+            
+            if (profileError) {
+                throw new Error("Failed to update profile: " + profileError.message);
             }
 
             toast.success('Perfil y Hub de Datos sincronizados');
         } catch (error) {
             console.error("Sync error:", error);
-            toast.error('Error al sincronizar datos');
+            toast.error('Error al sincronizar: ' + (error.message || 'Desconocido'));
         } finally {
             setIsLoading(false);
         }

@@ -600,7 +600,11 @@ export default function HQClientsPage() {
                                             <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-[40px] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
                                             <div className="relative w-32 h-32 rounded-[32px] bg-[#0A0A1F] border border-white/10 flex items-center justify-center text-5xl font-black text-white shadow-2xl overflow-hidden">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
-                                                <span className="relative z-10">{editingClient?.name?.[0] || 'D'}</span>
+                                                {editingClient?.onboarding_data?.brand?.logo ? (
+                                                    <img src={editingClient.onboarding_data.brand.logo} alt="Brand Logo" className="w-full h-full object-contain p-2 relative z-10" />
+                                                ) : (
+                                                    <span className="relative z-10">{editingClient?.name?.[0] || 'D'}</span>
+                                                )}
                                             </div>
                                         </div>
                                         <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter text-center leading-tight">
@@ -787,6 +791,19 @@ export default function HQClientsPage() {
                                                             />
                                                         </div>
                                                     </div>
+
+                                                    {/* Notas / Biografía (Synced from Client Profile) */}
+                                                    <div className="space-y-2 mt-8">
+                                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                                            <BookOpen className="w-3.5 h-3.5" /> Biografía / Notas de la Marca
+                                                        </label>
+                                                        <textarea
+                                                            value={newClient.notes || ''}
+                                                            onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
+                                                            placeholder="Biografía corta ingresada por el cliente..."
+                                                            className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all min-h-[100px] resize-none text-sm"
+                                                        />
+                                                    </div>
                                                 </motion.div>
                                             )}
 
@@ -848,47 +865,40 @@ export default function HQClientsPage() {
 
                                             {activeEditTab === 'strategy' && (
                                                 <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-10">
-                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                                        <div className="space-y-6">
-                                                            <div className="flex items-center gap-3 text-[10px] font-black text-white px-2">
-                                                                <div className="w-4 h-[1px] bg-indigo-500" /> ONBOARDING DATA
+                                                    
+                                                    <div className="flex items-center gap-3 text-[10px] font-black text-indigo-400 uppercase tracking-widest px-2 mb-6">
+                                                        <Sparkles className="w-4 h-4" /> Perfil Estratégico Sincronizado
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        {[
+                                                            { title: 'Liderazgo / Fundadores', key: 'leadership' },
+                                                            { title: '¿Qué Hace?', key: 'whatItDoes' },
+                                                            { title: 'Público Objetivo', key: 'targetAudience' },
+                                                            { title: 'Problema que Resuelve', key: 'problemSolved' },
+                                                            { title: '¿Qué Ofrece?', key: 'whatItOffers' },
+                                                            { title: 'Contexto del Mercado', key: 'marketContext' }
+                                                        ].map((item, i) => (
+                                                            <div key={i} className="p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 space-y-3 relative overflow-hidden group hover:border-indigo-500/30 transition-colors">
+                                                                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-indigo-500/10 transition-colors" />
+                                                                <p className="text-[9px] font-black text-indigo-400/80 uppercase tracking-widest relative z-10">{item.title}</p>
+                                                                <p className="text-gray-300 text-xs font-medium italic leading-relaxed relative z-10 line-clamp-4 group-hover:line-clamp-none transition-all">
+                                                                    {newClient.onboarding_data?.strategic?.[item.key] ? `"${newClient.onboarding_data.strategic[item.key]}"` : <span className="text-gray-600">Pendiente de infiltración...</span>}
+                                                                </p>
                                                             </div>
-                                                            <div className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 space-y-8 relative overflow-hidden group">
-                                                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-500/10 transition-colors" />
-                                                                <div>
-                                                                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-3">Core Purpose</p>
-                                                                    <p className="text-white text-sm font-bold italic leading-relaxed">"{newClient.onboarding_data?.whatTheyDo || 'Sin definir'}"</p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest mb-3">Unique Differentiation</p>
-                                                                    <p className="text-indigo-300 text-sm font-bold italic leading-relaxed">"{newClient.onboarding_data?.differentiation || 'Sin definir'}"</p>
-                                                                </div>
-                                                                <div className="pt-4 flex items-center justify-between border-t border-white/5">
-                                                                    <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Target Niche</span>
-                                                                    <span className="px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-black text-[9px] uppercase tracking-widest">
-                                                                        {newClient.onboarding_data?.niche || 'General'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="p-8 rounded-[2rem] bg-emerald-500/[0.03] border border-emerald-500/10 flex justify-between items-center mt-6">
+                                                        <div>
+                                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Meta Estratégica (Target)</span>
+                                                            <span className="text-emerald-400 font-black text-2xl italic tracking-tighter leading-none">{newClient.onboarding_data?.strategic?.target || newClient.target || 0} Seguidores / Leads</span>
                                                         </div>
-                                                        <div className="space-y-6">
-                                                            <div className="flex items-center gap-3 text-[10px] font-black text-emerald-400 px-2 uppercase tracking-widest">
-                                                                <div className="w-4 h-[1px] bg-emerald-500" /> Growth Objectives
-                                                            </div>
-                                                            <div className="p-8 rounded-[2.5rem] bg-emerald-500/[0.03] border border-emerald-500/10 space-y-8">
-                                                                <div className="flex justify-between items-center">
-                                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Monthly Goal</span>
-                                                                    <div className="flex items-end gap-2">
-                                                                        <span className="text-emerald-400 font-black text-4xl italic tracking-tighter leading-none">{newClient.onboarding_data?.monthlyGoal || 0}</span>
-                                                                        <span className="text-[10px] font-black text-emerald-600/60 uppercase tracking-widest pb-1">Conversions</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="p-4 rounded-2xl bg-black/20 border border-white/5">
-                                                                    <p className="text-[10px] text-emerald-500/60 font-medium italic leading-relaxed uppercase tracking-tight">"El cliente prioriza la generación de leads calificados sobre el alcance masivo en esta etapa."</p>
-                                                                </div>
-                                                            </div>
+                                                        <div className="p-3 rounded-xl bg-black/20 border border-white/5">
+                                                            <p className="text-[10px] text-emerald-500/60 font-medium italic uppercase tracking-tight">"Sincronizado en tiempo real"</p>
                                                         </div>
                                                     </div>
+
                                                 </motion.div>
                                             )}
 

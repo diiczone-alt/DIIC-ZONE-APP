@@ -301,7 +301,7 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
                 </p>
             </div>
 
-            <div className="relative flex-1 bg-[#0A0A14]/40 rounded-[3rem] border border-white/5 overflow-hidden group shadow-2xl">
+            <div className="relative w-full h-full bg-[#0A0A14]/40 rounded-[3rem] border border-white/5 overflow-hidden group shadow-2xl">
                 <ReactFlow
                 key={`flow-${activeSede}`}
                 nodes={nodes}

@@ -39,6 +39,26 @@ export const agencyService = {
         }
     },
 
+    getClientById: async (id) => {
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`🚀 [${timestamp}] Service: Fetching Client ${id}...`);
+        try {
+            const { data, error } = await supabase
+                .from('clients')
+                .select('*')
+                .eq('id', id)
+                .single();
+            if (error) {
+                console.error(`❌ [${timestamp}] Supabase Error:`, error.message);
+                throw error;
+            }
+            return data;
+        } catch (error) {
+            console.error(`❌ [${timestamp}] Error in getClientById:`, error);
+            throw error;
+        }
+    },
+
     createClient: async (clientData) => {
         const timestamp = new Date().toLocaleTimeString();
         console.log(`🚀 [${timestamp}] Service: Creating New Client...`);
@@ -106,11 +126,19 @@ export const agencyService = {
 
             toast.info("Iniciando actualización en BD...", { id: 'debug-db' });
             
-            const { data, error } = await supabase
-                .from('clients')
-                .update(sanitizedUpdates)
-                .eq('id', id)
-                .select();
+            // Apply a strict 15-second timeout to prevent infinite hangs
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Supabase timeout after 15s")), 15000)
+            );
+
+            const { data, error } = await Promise.race([
+                supabase
+                    .from('clients')
+                    .update(sanitizedUpdates)
+                    .eq('id', id)
+                    .select(),
+                timeoutPromise
+            ]);
 
             if (error) {
                 toast.error("Error BD Clients: " + error.message, { id: 'debug-db' });
@@ -122,22 +150,34 @@ export const agencyService = {
             if (updates.name || updates.city || updates.whatsapp_number || updates.industry || updates.plan || updates.business_type || updates.specialty) {
                 console.log(`🔄 Syncing identity changes to public profile for client ${id}`);
                 toast.info("Sincronizando perfiles públicos...", { id: 'debug-profile' });
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .update({
-                        full_name: updates.name,
-                        location: updates.city,
-                        whatsapp: updates.whatsapp_number,
-                        industry: updates.industry,
-                        plan: updates.plan,
-                        business_type: updates.business_type,
-                        specialty: updates.specialty
-                    })
-                    .eq('client_id', id);
-                if (profileError) {
-                    console.warn("⚠️ Profile sync warning:", profileError.message);
-                } else {
-                    toast.success("Perfiles sincronizados", { id: 'debug-profile' });
+                
+                const profileTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Profile sync timeout after 15s")), 15000));
+                
+                try {
+                    const { error: profileError } = await Promise.race([
+                        supabase
+                            .from('profiles')
+                            .update({
+                                full_name: updates.name,
+                                location: updates.city,
+                                whatsapp: updates.whatsapp_number,
+                                industry: updates.industry,
+                                plan: updates.plan,
+                                business_type: updates.business_type,
+                                specialty: updates.specialty
+                            })
+                            .eq('client_id', id),
+                        profileTimeout
+                    ]);
+
+                    if (profileError) {
+                        console.warn("⚠️ Profile sync warning:", profileError.message);
+                    } else {
+                        toast.success("Perfiles sincronizados", { id: 'debug-profile' });
+                    }
+                } catch (err) {
+                    console.warn("⚠️ Profile sync failed due to error or timeout:", err.message);
+                    toast.error("Error sincronizando perfiles", { id: 'debug-profile' });
                 }
             }
 
@@ -169,6 +209,14 @@ export const agencyService = {
         const timestamp = new Date().toLocaleTimeString();
         console.log(`🚀 [${timestamp}] Service: Bidirectional Sync for ${clientId}...`);
         try {
+            // 0. Fetch existing client first to preserve onboarding_data
+            const { data: existingClient } = await supabase
+                .from('clients')
+                .select('onboarding_data')
+                .eq('id', clientId)
+                .single();
+            const existingOnboarding = existingClient?.onboarding_data || {};
+
             // 1. Update Profile (Personal side)
             const profileUpdates = {
                 full_name: updates.full_name,
@@ -188,15 +236,18 @@ export const agencyService = {
 
             // 2. Update Client (Admin side)
             const clientUpdates = {
-                name: updates.full_name,
+                name: updates.brand_name || updates.full_name, // Prefer brand name for admin view
                 city: updates.location,
                 whatsapp_number: updates.whatsapp,
                 industry: updates.marketing_type, // Mapping marketing type to industry
                 specialty: updates.specialty,
                 plan: updates.plan,
+                notes: updates.bio, // Mapping bio to notes
                 // Preserving existing onboarding_data and updating brand section
                 onboarding_data: {
+                    ...existingOnboarding,
                     brand: {
+                        ...(existingOnboarding.brand || {}),
                         primaryColor: updates.primary_color,
                         secondaryColor: updates.secondary_color,
                         accentColor: updates.accent_color,
