@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Search, Plus, MoreHorizontal, Calendar as CalendarIcon, Edit2, Link as LinkIcon, Video, CheckCircle2, Clock, Smartphone, Camera, Star, Users, ChevronDown, CheckSquare, ExternalLink, X, FileText, Mic, MicOff, MonitorUp, PhoneOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Plus, MoreHorizontal, Calendar as CalendarIcon, Edit2, Link as LinkIcon, Video, CheckCircle2, Clock, Smartphone, Camera, Star, Users, ChevronDown, CheckSquare, ExternalLink, X, FileText, Mic, MicOff, MonitorUp, PhoneOff, Paperclip } from 'lucide-react';
 
 export default function EventsCalendar() {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -18,6 +18,257 @@ export default function EventsCalendar() {
     const [isTasksOpen, setIsTasksOpen] = useState(false);
     const [isTeamOpen, setIsTeamOpen] = useState(false);
     const [isMeetPanelOpen, setIsMeetPanelOpen] = useState(false);
+    const [isRecordingNote, setIsRecordingNote] = useState(false);
+    const [recordedAudioUrl, setRecordedAudioUrl] = useState(null);
+    const [noteText, setNoteText] = useState("");
+    const [noteImage, setNoteImage] = useState(null);
+    const [notesList, setNotesList] = useState([
+        { id: 1, title: "Nota Estratégica #1", content: "Este es el contenido de la nota guardada previamente con detalles importantes sobre la campaña.", type: 'text' },
+        { id: 2, title: "Nota Estratégica #2", content: "Este es el contenido de la nota guardada previamente con detalles importantes sobre la campaña.", type: 'text' },
+        { id: 3, title: "Nota Estratégica #3", content: "Este es el contenido de la nota guardada previamente con detalles importantes sobre la campaña.", type: 'text' }
+    ]);
+    
+    // Task & Reminder States
+    const [tasksList, setTasksList] = useState([
+        { id: 1, text: "Revisar los copies de la campaña antes del lanzamiento.", completed: false },
+        { id: 2, text: "Preparar presentación para el cliente Elite.", completed: true }
+    ]);
+    const [remindersList, setRemindersList] = useState([
+        { id: 1, text: "Tomar pastillas", time: "Lunes 14:00", active: true },
+        { id: 2, text: "Reunión con cirujano", time: "Jueves 16:30", active: true }
+    ]);
+    const [isAITasking, setIsAITasking] = useState(false);
+    const [isProcessingAI, setIsProcessingAI] = useState(false);
+    const [currentTranscript, setCurrentTranscript] = useState("");
+    
+    const recognitionRef = useRef(null);
+    const transcriptRef = useRef("");
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
+    const imageInputRef = useRef(null);
+
+    const handleAITaskVoice = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            toast.error("Tu navegador no soporta Reconocimiento de Voz. Intenta con Chrome o Edge.");
+            return;
+        }
+
+        if (isAITasking) {
+            recognitionRef.current?.stop();
+            setIsAITasking(false);
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        recognition.lang = 'es-ES';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onstart = () => {
+            setIsAITasking(true);
+            setCurrentTranscript("");
+            transcriptRef.current = "";
+            toast.info("Asistente escuchando... Cuéntame tus pendientes.", { id: 'ai-voice' });
+        };
+
+        recognition.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            if (finalTranscript) {
+                transcriptRef.current += finalTranscript;
+            }
+            setCurrentTranscript(transcriptRef.current + interimTranscript);
+        };
+
+        recognition.onend = () => {
+            setIsAITasking(false);
+            const finalPuntuation = transcriptRef.current.trim();
+            if (finalPuntuation) {
+                processAITranscript(finalPuntuation);
+            } else {
+                toast.dismiss('ai-voice');
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error", event.error);
+            setIsAITasking(false);
+            toast.error("Error en el reconocimiento de voz: " + event.error);
+        };
+
+        recognition.start();
+    };
+
+    const processAITranscript = (text) => {
+        setIsProcessingAI(true);
+        toast.loading("DIIC IA está analizando tu solicitud...", { id: 'ai-voice' });
+
+        // Advanced Simulated AI Logic
+        setTimeout(() => {
+            const lowercaseText = text.toLowerCase();
+            const words = lowercaseText.split(' ');
+            
+            // Extract multiple potential entities
+            const newTasks = [];
+            const newReminders = [];
+            const newCalendarEvents = [];
+
+            // Keywords for categorization
+            const dayKeywords = {
+                'lunes': 0, 'martes': 1, 'miércoles': 2, 'miercoles': 2, 
+                'jueves': 3, 'viernes': 4, 'sábado': 5, 'sabado': 5, 'domingo': 6
+            };
+            const timeKeywords = ['am', 'pm', 'hora', 'horas', 'punto', 'tarde', 'mañana', 'noche'];
+            const taskKeywords = ['hacer', 'comprar', 'revisar', 'enviar', 'preparar', 'llamar'];
+
+            // Simple "Smart" parsing
+            const sections = lowercaseText.split(/ y | además | también |, /);
+            
+            sections.forEach(section => {
+                let detectedDay = null;
+                let detectedHour = 10;
+                let isReminder = false;
+
+                Object.entries(dayKeywords).forEach(([day, index]) => {
+                    if (section.includes(day)) {
+                        detectedDay = index;
+                        isReminder = true;
+                    }
+                });
+
+                if (timeKeywords.some(tk => section.includes(tk))) isReminder = true;
+
+                // Time extraction
+                const timeMatch = section.match(/(\d{1,2})(:(\d{2}))?\s*(pm|am)?/i);
+                if (timeMatch) {
+                    let h = parseInt(timeMatch[1]);
+                    const m = timeMatch[3] ? parseInt(timeMatch[3]) / 60 : 0;
+                    const ampm = timeMatch[4]?.toLowerCase();
+                    if (ampm === 'pm' && h < 12) h += 12;
+                    detectedHour = h + m;
+                }
+
+                if (isReminder) {
+                    const reminderId = Date.now() + Math.random();
+                    const cleanText = section.replace(/lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo|a las|alas/g, '').trim();
+                    
+                    newReminders.push({
+                        id: reminderId,
+                        text: cleanText.charAt(0).toUpperCase() + cleanText.slice(1),
+                        time: detectedDay !== null ? `${Object.keys(dayKeywords).find(k => dayKeywords[k] === detectedDay).toUpperCase()} ${detectedHour}:00` : "PENDIENTE",
+                        active: true
+                    });
+
+                    if (detectedDay !== null) {
+                        newCalendarEvents.push({
+                            id: reminderId,
+                            title: `IA: ${cleanText}`,
+                            timeStr: `${detectedHour}:00`,
+                            dayIndex: detectedDay,
+                            startHour: detectedHour,
+                            duration: 1,
+                            type: 'meeting',
+                            description: `Procesado por DIIC IA: "${text}"`
+                        });
+                    }
+                } else if (section.trim().length > 3) {
+                    newTasks.push({
+                        id: Date.now() + Math.random(),
+                        text: section.trim().charAt(0).toUpperCase() + section.trim().slice(1),
+                        completed: false
+                    });
+                }
+            });
+
+            if (newTasks.length > 0) setTasksList(prev => [...newTasks, ...prev]);
+            if (newReminders.length > 0) setRemindersList(prev => [...newReminders, ...prev]);
+            if (newCalendarEvents.length > 0) setEvents(prev => [...prev, ...newCalendarEvents]);
+
+            setIsProcessingAI(false);
+            setCurrentTranscript("");
+            toast.success("IA: He organizado tus solicitudes en el sistema.", { id: 'ai-voice' });
+        }, 2000);
+    };
+
+    const handleSaveNote = () => {
+        if (!noteText && !recordedAudioUrl && !noteImage) return;
+        
+        const newNote = {
+            id: Date.now(),
+            title: `Nota ${new Date().toLocaleTimeString()}`,
+            content: noteText,
+            audio: recordedAudioUrl,
+            image: noteImage,
+            date: new Date().toLocaleDateString()
+        };
+        
+        setNotesList([newNote, ...notesList]);
+        setNoteText("");
+        setRecordedAudioUrl(null);
+        setNoteImage(null);
+        toast.success("Nota guardada correctamente");
+    };
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setNoteImage(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const startVoiceNote = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            audioChunksRef.current = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+                const url = URL.createObjectURL(audioBlob);
+                setRecordedAudioUrl(url);
+                setIsRecordingNote(false);
+                toast.success("Grabación finalizada y adjuntada", { id: 'voice-note' });
+                
+                // Stop all tracks to release the microphone
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorder.start();
+            setIsRecordingNote(true);
+            toast.success("Grabando nota de voz...", { id: 'voice-note' });
+        } catch (err) {
+            console.error("Error accessing microphone:", err);
+            toast.error("No se pudo acceder al micrófono. Por favor, verifica los permisos.");
+        }
+    };
+
+    const stopVoiceNote = () => {
+        if (mediaRecorderRef.current && isRecordingNote) {
+            mediaRecorderRef.current.stop();
+        }
+    };
+
     const [isSyncing, setIsSyncing] = useState(false);
     const [hoveredEventId, setHoveredEventId] = useState(null);
     
@@ -125,6 +376,30 @@ export default function EventsCalendar() {
             glow: 'shadow-[0_0_15px_rgba(99,102,241,0.2)]',
             icon: Users,
             label: 'Reunión'
+        },
+        citas: {
+            border: 'border-rose-500/50',
+            bg: 'bg-rose-500/10',
+            text: 'text-rose-400',
+            glow: 'shadow-[0_0_15px_rgba(244,63,94,0.2)]',
+            icon: FileText,
+            label: 'Citas'
+        },
+        consultas: {
+            border: 'border-blue-500/50',
+            bg: 'bg-blue-500/10',
+            text: 'text-blue-400',
+            glow: 'shadow-[0_0_15px_rgba(59,130,246,0.2)]',
+            icon: MonitorUp,
+            label: 'Consultas'
+        },
+        recordatorios: {
+            border: 'border-orange-500/50',
+            bg: 'bg-orange-500/10',
+            text: 'text-orange-400',
+            glow: 'shadow-[0_0_15px_rgba(249,115,22,0.2)]',
+            icon: Clock,
+            label: 'Recordatorios'
         }
     };
 
@@ -247,32 +522,45 @@ export default function EventsCalendar() {
         <div className="h-full flex flex-col bg-transparent text-white p-6 font-sans relative z-10">
             
             {/* Controls Header (Inner) */}
-            <div className="flex items-center justify-between mb-6 relative z-[100]">
-                <div className="flex items-center gap-6">
+            <div className="flex items-center justify-between mb-8 relative z-[100]">
+                <div className="flex items-center gap-10">
                     <h1 className="text-2xl font-black tracking-tight text-white ml-2 drop-shadow-lg shrink-0">Agenda Global</h1>
                     
-                    {/* Filters */}
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                    {/* Filters - Icons Only */}
+                    <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1">
+                        <button 
+                            onClick={() => setActiveFilter('all')}
+                            className={`px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-black transition-all border whitespace-nowrap ${
+                                activeFilter === 'all' ? 'bg-white text-black border-white' : 'bg-black/20 text-gray-400 border-white/5 hover:bg-white/10'
+                            }`}
+                        >
+                            Todos
+                        </button>
+                        
                         {[
-                            { id: 'all', label: 'Todos' },
-                            { id: 'historias', label: 'Historias', style: EVENT_STYLES.historias },
-                            { id: 'posts', label: 'Imágenes / Post', style: EVENT_STYLES.posts },
-                            { id: 'videos', label: 'Videos', style: EVENT_STYLES.videos },
-                            { id: 'fechas', label: 'Fechas Importantes', style: EVENT_STYLES.fechas },
-                            { id: 'meeting', label: 'Reuniones', style: EVENT_STYLES.meeting },
+                            { id: 'historias', style: EVENT_STYLES.historias },
+                            { id: 'posts', style: EVENT_STYLES.posts },
+                            { id: 'videos', style: EVENT_STYLES.videos },
+                            { id: 'fechas', style: EVENT_STYLES.fechas },
+                            { id: 'meeting', style: EVENT_STYLES.meeting },
+                            { id: 'citas', style: EVENT_STYLES.citas },
+                            { id: 'consultas', style: EVENT_STYLES.consultas },
+                            { id: 'recordatorios', style: EVENT_STYLES.recordatorios },
                         ].map(f => {
                             const isActive = activeFilter === f.id;
+                            const Icon = f.style.icon;
                             return (
                                 <button 
                                     key={f.id}
+                                    title={f.style.label}
                                     onClick={() => setActiveFilter(f.id)}
-                                    className={`px-4 py-1.5 rounded-full text-[11px] uppercase tracking-wider font-bold transition-all border whitespace-nowrap ${
+                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${
                                         isActive 
-                                            ? f.id === 'all' ? 'bg-white text-black border-white' : `${f.style.bg} ${f.style.text} ${f.style.border} shadow-[0_0_15px_rgba(255,255,255,0.1)]`
-                                            : 'bg-black/20 text-gray-400 border-white/5 hover:bg-white/10'
+                                            ? `${f.style.bg} ${f.style.text} ${f.style.border} shadow-lg scale-110`
+                                            : 'bg-black/20 text-gray-500 border-white/5 hover:bg-white/10'
                                     }`}
                                 >
-                                    {f.label}
+                                    <Icon className="w-5 h-5" />
                                 </button>
                             )
                         })}
@@ -280,27 +568,19 @@ export default function EventsCalendar() {
                 </div>
 
                 <div className="flex items-center gap-4 shrink-0">
-                    <button 
-                        onClick={() => setIsScheduling(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-full shadow-[0_0_20px_rgba(139,92,246,0.6)] transition-all transform hover:scale-105 active:scale-95 mr-2 border border-violet-400/30"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Agendar Reunión
-                    </button>
-                    <div className="flex items-center gap-1 bg-black/40 backdrop-blur-xl p-1.5 rounded-full border border-white/10 shadow-xl relative">
-                        {/* Search Input (Expands) */}
+                    <div className="flex items-center gap-1 bg-black/40 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-xl relative">
                         <AnimatePresence>
                             {showSearch && (
                                 <motion.div 
                                     initial={{ width: 0, opacity: 0 }}
-                                    animate={{ width: 160, opacity: 1 }}
+                                    animate={{ width: 200, opacity: 1 }}
                                     exit={{ width: 0, opacity: 0 }}
                                     className="overflow-hidden flex items-center"
                                 >
                                     <input 
                                         autoFocus
                                         type="text" 
-                                        placeholder="Buscar evento..."
+                                        placeholder="Buscar..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className="w-full bg-transparent border-none text-sm font-semibold text-white focus:outline-none pl-3"
@@ -311,9 +591,9 @@ export default function EventsCalendar() {
                         
                         <button 
                             onClick={() => setShowSearch(!showSearch)}
-                            className={`p-2 rounded-full transition-colors ${showSearch ? 'bg-white/10 text-white' : 'hover:bg-white/10 text-gray-400'}`}
+                            className={`p-2 rounded-xl transition-colors ${showSearch ? 'bg-white/10 text-white' : 'hover:bg-white/10 text-gray-400'}`}
                         >
-                            <Search className="w-4 h-4" />
+                            <Search className="w-5 h-5" />
                         </button>
                         
                         <div className="w-px h-4 bg-white/10 mx-1" />
@@ -365,6 +645,19 @@ export default function EventsCalendar() {
                 {/* Left Panel */}
                 <div className="w-[280px] shrink-0 flex flex-col gap-6 overflow-y-auto no-scrollbar pb-12">
                     
+                    {/* Add Meeting (+) Button in Sidebar */}
+                    <div className="bg-gradient-to-br from-violet-600 to-indigo-600 p-1 rounded-2xl shadow-[0_10px_25px_rgba(139,92,246,0.3)]">
+                        <button 
+                            onClick={() => setIsScheduling(true)}
+                            className="w-full py-4 flex items-center justify-center bg-[#0D0D12] rounded-xl hover:bg-transparent transition-all group"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                <Plus className="w-6 h-6 text-white" />
+                            </div>
+                            <span className="ml-3 font-black text-xs uppercase tracking-widest text-violet-400 group-hover:text-white transition-colors">Agendar</span>
+                        </button>
+                    </div>
+
                     {/* Mini Calendar */}
                     <div className="bg-black/40 backdrop-blur-2xl p-6 rounded-[24px] border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
                         <div className="flex items-center justify-between mb-6">
@@ -779,20 +1072,98 @@ export default function EventsCalendar() {
                                         </div>
                                         <div className="p-4 flex-1 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
                                             <div className="bg-black/30 border border-white/10 rounded-xl p-3 flex flex-col gap-2">
+                                                <input 
+                                                    type="file" 
+                                                    ref={imageInputRef} 
+                                                    className="hidden" 
+                                                    accept="image/*" 
+                                                    onChange={handleImageUpload} 
+                                                />
                                                 <div className="flex items-center gap-2 text-gray-400">
                                                     <Plus className="w-4 h-4 text-blue-400" />
                                                     <span className="text-sm font-medium">Toma una nota...</span>
                                                 </div>
-                                                <textarea className="w-full bg-transparent text-white text-sm focus:outline-none resize-none h-20" placeholder="Escribe aquí..."></textarea>
-                                                <div className="flex justify-end">
-                                                    <button className="text-xs bg-blue-500/20 text-blue-400 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-500/30">Guardar</button>
+                                                <textarea 
+                                                    value={noteText}
+                                                    onChange={(e) => setNoteText(e.target.value)}
+                                                    className="w-full bg-transparent text-white text-sm focus:outline-none resize-none h-20" 
+                                                    placeholder="Escribe aquí..."
+                                                ></textarea>
+                                                
+                                                {noteImage && (
+                                                    <div className="relative rounded-lg overflow-hidden border border-white/10 mb-2 group">
+                                                        <img src={noteImage} alt="Uploaded" className="w-full h-auto max-h-40 object-cover" />
+                                                        <button 
+                                                            onClick={() => setNoteImage(null)}
+                                                            className="absolute top-2 right-2 p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {recordedAudioUrl && (
+                                                    <div className="flex items-center gap-3 bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-2 mb-2 animate-in fade-in slide-in-from-bottom-2">
+                                                        <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                                                            <Mic className="w-4 h-4 text-indigo-400" />
+                                                        </div>
+                                                        <audio src={recordedAudioUrl} controls className="h-6 flex-1 filter invert hue-rotate-180 opacity-70" />
+                                                        <button 
+                                                            onClick={() => setRecordedAudioUrl(null)}
+                                                            className="p-1 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center justify-between border-t border-white/5 pt-2">
+                                                    <div className="flex items-center gap-1">
+                                                        <button 
+                                                            onClick={() => imageInputRef.current?.click()}
+                                                            className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                                                            title="Adjuntar Imagen"
+                                                        >
+                                                            <Paperclip className="w-4 h-4" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={isRecordingNote ? stopVoiceNote : startVoiceNote}
+                                                            className={`p-1.5 rounded-lg transition-all ${isRecordingNote ? 'bg-red-500/20 text-red-400 animate-pulse' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                                                            title="Grabar Nota de Audio"
+                                                        >
+                                                            <Mic className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                    <button 
+                                                        onClick={handleSaveNote}
+                                                        className="text-xs bg-blue-500/20 text-blue-400 px-4 py-1.5 rounded-lg font-bold hover:bg-blue-500/30 transition-colors"
+                                                    >
+                                                        Guardar
+                                                    </button>
                                                 </div>
                                             </div>
                                             
-                                            {[1, 2, 3].map(n => (
-                                                <div key={n} className="bg-black/20 border border-white/5 rounded-xl p-4 hover:border-white/20 transition-colors cursor-pointer group">
-                                                    <h4 className="text-sm font-bold text-white mb-1">Nota Estratégica #{n}</h4>
-                                                    <p className="text-xs text-gray-400 line-clamp-3">Este es el contenido de la nota guardada previamente con detalles importantes sobre la campaña.</p>
+                                            {notesList.map(note => (
+                                                <div key={note.id} className="bg-black/20 border border-white/5 rounded-xl p-4 hover:border-white/20 transition-colors cursor-pointer group flex flex-col gap-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="text-sm font-bold text-white mb-1">{note.title}</h4>
+                                                        <span className="text-[10px] text-gray-600">{note.date}</span>
+                                                    </div>
+                                                    
+                                                    {note.image && (
+                                                        <img src={note.image} alt="Note content" className="w-full h-auto rounded-lg border border-white/10" />
+                                                    )}
+
+                                                    {note.audio && (
+                                                        <div className="flex items-center gap-2 bg-white/5 rounded-lg p-2">
+                                                            <Mic className="w-3 h-3 text-indigo-400" />
+                                                            <audio src={note.audio} controls className="h-4 flex-1 filter invert hue-rotate-180 opacity-50" />
+                                                        </div>
+                                                    )}
+
+                                                    {note.content && (
+                                                        <p className="text-xs text-gray-400 line-clamp-3">{note.content}</p>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -803,25 +1174,86 @@ export default function EventsCalendar() {
                                     <>
                                         <div className="p-5 flex items-center justify-between border-b border-white/5">
                                             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                                <CheckSquare className="w-4 h-4 text-amber-400" /> Tareas
+                                                <CheckSquare className="w-4 h-4 text-amber-400" /> Tareas e IA
                                             </h3>
                                             <div className="flex items-center gap-1">
                                                 <button onClick={() => setIsTasksOpen(false)} className="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-white/10"><X className="w-4 h-4" /></button>
                                             </div>
                                         </div>
-                                        <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3">
-                                            <div className="bg-black/30 border border-white/10 rounded-xl p-3 mb-4">
-                                                <div className="flex items-center gap-2 text-gray-400 border-b border-white/5 pb-2 mb-2">
-                                                    <Plus className="w-4 h-4 text-amber-400" />
-                                                    <input type="text" placeholder="Agregar tarea..." className="w-full bg-transparent text-white text-sm focus:outline-none" />
+                                        <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-6">
+                                            {/* AI Assistant Button */}
+                                            <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-4 flex flex-col items-center gap-3 relative overflow-hidden">
+                                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Asistente DIIC IA</span>
+                                                </div>
+                                                
+                                                <button 
+                                                    onClick={handleAITaskVoice}
+                                                    disabled={isProcessingAI}
+                                                    className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${isAITasking ? 'bg-red-500 shadow-[0_0_30px_rgba(239,68,68,0.5)] scale-110' : 'bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20'} ${isProcessingAI ? 'opacity-50' : ''}`}
+                                                >
+                                                    {isProcessingAI ? (
+                                                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                    ) : (
+                                                        <Mic className={`w-8 h-8 text-white ${isAITasking ? 'animate-bounce' : ''}`} />
+                                                    )}
+                                                </button>
+                                                
+                                                <div className="text-center">
+                                                    <p className="text-[11px] text-white font-bold">
+                                                        {isAITasking ? "Escuchando..." : isProcessingAI ? "IA Procesando..." : "Cuéntame tus tareas"}
+                                                    </p>
+                                                    {currentTranscript && (
+                                                        <p className="text-[10px] text-indigo-200 mt-2 italic line-clamp-2 px-2 animate-in fade-in">
+                                                            "{currentTranscript}"
+                                                        </p>
+                                                    )}
+                                                    {!currentTranscript && (
+                                                        <p className="text-[9px] text-gray-500 mt-1 px-4">
+                                                            "El lunes a las 2 pm recuérdame..."
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
-                                            {[1, 2, 3].map(n => (
-                                                <div key={n} className="flex items-start gap-3 bg-black/20 border border-white/5 rounded-xl p-3 hover:border-white/20 transition-colors">
-                                                    <div className="w-4 h-4 rounded border border-gray-500 mt-0.5 shrink-0 cursor-pointer hover:border-amber-400"></div>
-                                                    <span className="text-sm text-gray-300">Revisar los copies de la campaña antes del lanzamiento.</span>
-                                                </div>
-                                            ))}
+
+                                            {/* Tareas List */}
+                                            <div className="space-y-3">
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Tareas Pendientes</h4>
+                                                {tasksList.map(task => (
+                                                    <div key={task.id} className="flex items-start gap-3 bg-white/[0.02] border border-white/5 rounded-xl p-3 hover:border-white/10 transition-colors group">
+                                                        <button 
+                                                            onClick={() => setTasksList(prev => prev.map(t => t.id === task.id ? {...t, completed: !t.completed} : t))}
+                                                            className={`w-4 h-4 rounded border mt-0.5 shrink-0 transition-colors flex items-center justify-center ${task.completed ? 'bg-emerald-500 border-emerald-500' : 'border-gray-500 hover:border-emerald-400'}`}
+                                                        >
+                                                            {task.completed && <CheckSquare className="w-3 h-3 text-white" />}
+                                                        </button>
+                                                        <span className={`text-xs font-medium transition-all ${task.completed ? 'text-gray-600 line-through' : 'text-gray-300'}`}>
+                                                            {task.text}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Recordatorios List */}
+                                            <div className="space-y-3">
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Recordatorios</h4>
+                                                {remindersList.map(reminder => (
+                                                    <div key={reminder.id} className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-3 hover:border-amber-500/20 transition-all group flex flex-col gap-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <Clock className="w-3 h-3 text-amber-400" />
+                                                                <span className="text-[10px] font-black text-amber-500/70 uppercase">{reminder.time}</span>
+                                                            </div>
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${reminder.active ? 'bg-emerald-500 animate-pulse' : 'bg-gray-700'}`}></div>
+                                                        </div>
+                                                        <span className="text-xs font-bold text-white leading-tight">
+                                                            {reminder.text}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </>
                                 )}
