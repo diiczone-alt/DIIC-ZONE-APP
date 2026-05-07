@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { 
     Save, Copy, Undo2, Redo2, Sparkles, Download, 
     Send, LayoutTemplate, MoreHorizontal, ChevronDown, Plus, RefreshCw, Folder, Filter, ShieldCheck, AlertTriangle, CheckCircle2, XCircle, Calendar,
-    Minus, RotateCcw, ChevronUp, ChevronLeft, ChevronRight, LogOut, Sun, Moon
+    Minus, RotateCcw, ChevronUp, ChevronLeft, ChevronRight, LogOut, Sun, Moon, Box, Cloud
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -42,7 +42,9 @@ export default function StrategyTopBar({
     theme,
     onToggleTheme,
     onClose,
-    onApplyTemplate
+    onApplyTemplate,
+    onAddProduct,
+    onExportPDF
 }) {
     const activeCampaign = campaigns.find(c => c.id === activeCampaignId);
     const [isCampaignMenuOpen, setIsCampaignMenuOpen] = useState(false);
@@ -137,8 +139,54 @@ export default function StrategyTopBar({
                     </AnimatePresence>
                 </div>
 
+                {/* Left Section: Status & Manual Sync */}
+                <div className="flex items-center gap-4 relative z-10">
+                    <button 
+                        onClick={onSave}
+                        className={`px-4 py-3 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 group/save ${
+                            !isStrategySaved 
+                            ? 'bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500 hover:text-white pulse-glow' 
+                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                        }`}
+                        title={isStrategySaved ? "Sincronización Completa" : "Hay cambios sin guardar"}
+                    >
+                        <Cloud className={`w-5 h-5 ${!isStrategySaved ? 'animate-bounce' : ''}`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">
+                            {isStrategySaved ? 'Bunker Sincronizado' : 'Guardar Bunker'}
+                        </span>
+                    </button>
+                </div>
+
                 {/* Right Section: Navigation & Actions */}
                 <div className="flex items-center gap-4 relative z-10">
+                    {/* Añadir Producto Button */}
+                    <button 
+                        onClick={onAddProduct}
+                        className={`px-4 py-3 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 group/prod ${
+                            theme === 'dark' 
+                            ? 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white' 
+                            : 'bg-blue-500/5 border-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
+                        }`}
+                        title="Añadir Producto a la Estrategia"
+                    >
+                        <Box className="w-5 h-5 group-hover/prod:scale-110 transition-transform" />
+                        <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Añadir Producto</span>
+                    </button>
+
+                    {/* Exportar PDF Button */}
+                    <button 
+                        onClick={onExportPDF}
+                        className={`px-4 py-3 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 group/pdf ${
+                            theme === 'dark' 
+                            ? 'bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white' 
+                            : 'bg-rose-500/5 border-rose-500/10 text-rose-600 hover:bg-rose-500 hover:text-white'
+                        }`}
+                        title="Exportar Estrategia a PDF"
+                    >
+                        <Download className="w-5 h-5 group-hover/pdf:-translate-y-0.5 transition-transform" />
+                        <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Exportar PDF</span>
+                    </button>
+
                     {/* Plantillas Button */}
                     <button 
                         onClick={() => onApplyTemplate('authority')}

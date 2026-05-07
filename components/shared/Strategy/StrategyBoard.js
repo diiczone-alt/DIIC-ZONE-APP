@@ -76,43 +76,77 @@ const initialStrategyData = {
 
 export default function StrategyBoard({ role, onClose, isSubcomponent = false, clientId: propClientId }) {
     // --- STATE ---
-    const [strategyData, setStrategyData] = useState({
-        ...initialStrategyData,
-        name: 'Mi Estrategia de Negocio',
-        status: 'En Planificación',
-        projectName: 'Marca Personal - Usuario',
-        campaigns: [
-            {
-                id: 'camp_default',
-                name: 'Estrategia Inicial',
-                objective: 'Atraer primeros leads',
-                type: 'Lanzamiento',
-                duration: '4 Semanas',
-                status: 'planificacion',
-                nodes: [
-                    { id: '1', type: 'educativo', x: 56, y: 300, data: { title: 'Contenido Educativo', objective: 'Atraer audiencia cualificada', status: 'Listo', funnelLevel: 'conciencia' } },
-                    { id: '2', type: 'caso_exito', x: 856, y: 300, data: { title: 'Caso de Éxito', objective: 'Validar autoridad real', status: 'En construcción', funnelLevel: 'decision' } }
-                ],
-                edges: [
-                    { id: 'e1-2', source: '1', target: '2' }
-                ]
-            }
-        ],
-        activeCampaignId: 'camp_default'
-    });
+    const searchParams = useSearchParams();
+    const clientId = searchParams.get('client');
+    const [strategyData, setStrategyData] = useState(initialStrategyData);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-    // --- GLOBAL SYNC FOR PIPELINE ---
+    // --- RECOVERY ON MOUNT (DEATH TO DATA LOSS) ---
     useEffect(() => {
-        if (!strategyData.activeCampaignId) return;
-        const activeCampaign = strategyData.campaigns.find(c => c.id === strategyData.activeCampaignId);
-        if (activeCampaign && activeCampaign.nodes) {
-            try {
-                localStorage.setItem('diiczone_global_pipeline', JSON.stringify(activeCampaign.nodes));
-            } catch (e) {
-                console.error("Failed to sync pipeline to localStorage", e);
-            }
+        const finalClientId = propClientId || clientId;
+        if (!finalClientId) {
+            setIsInitialLoad(false);
+            return;
         }
-    }, [strategyData]);
+
+        const fetchPersistentData = async () => {
+            try {
+                // 1. Try DB
+                const dbStrategy = await agencyService.loadStrategy(finalClientId);
+                if (dbStrategy && dbStrategy.data) {
+                    setStrategyData(dbStrategy.data);
+                    toast.success("Estrategia recuperada del Búnker Cloud.");
+                    // Delay setting isInitialLoad to false to allow state to settle
+                    setTimeout(() => setIsInitialLoad(false), 500);
+                    return;
+                }
+
+                // 2. Try LocalStorage fallback
+                const localData = localStorage.getItem(`diic_strategy_${finalClientId}`);
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    if (parsed && (parsed.campaigns?.length > 0)) {
+                        setStrategyData(parsed);
+                        toast.info("Recuperado de sesión local.");
+                    }
+                }
+            } catch (e) {
+                console.error("Critical: Recovery failure", e);
+            } finally {
+                setTimeout(() => setIsInitialLoad(false), 500);
+            }
+        };
+
+        fetchPersistentData();
+    }, [propClientId, clientId]);
+
+    // --- GLOBAL SYNC & PERSISTENCE (BUNKER GUARD) ---
+    useEffect(() => {
+        // NEVER sync if we are still loading or if the data is suspiciously empty
+        if (isInitialLoad || !strategyData.activeCampaignId) return;
+        
+        const activeCampaign = strategyData.campaigns.find(c => c.id === strategyData.activeCampaignId);
+        if (!activeCampaign) return;
+
+        const syncToStorage = () => {
+            try {
+                const finalClientId = propClientId || clientId;
+                
+                // Backup to LocalStorage (Immediate)
+                localStorage.setItem('diiczone_global_pipeline', JSON.stringify(activeCampaign.nodes));
+                if (finalClientId) {
+                    localStorage.setItem(`diic_strategy_${finalClientId}`, JSON.stringify(strategyData));
+                }
+                
+                // Track that we have unsaved changes for the Cloud Heartbeat
+                setIsStrategySaved(false);
+            } catch (e) {
+                console.error("Bunker Guard: Sync failure", e);
+            }
+        };
+
+        syncToStorage();
+    }, [strategyData, isInitialLoad, propClientId, clientId]);
 
     // --- AUTO-LAYOUT LOGIC: INTELLIGENT STRATEGIC MAPPING ---
     const layoutRef = useRef({}); // Track which campaigns have been auto-laid out
@@ -215,8 +249,6 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
 
     // Strategy Navigation State
     const [activeFlow, setActiveFlow] = useState('campañas'); // 'campañas', 'pizarra', 'planner', 'nodos', 'analitica'
-    const searchParams = useSearchParams();
-    const clientId = searchParams.get('client');
 
     // Sync Strategy Data with HQ Client Record & Load Persistent Strategy
     useEffect(() => {
@@ -380,16 +412,6 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleZoomIn, handleZoomOut, handleZoomReset, handlePan]);
 
-    // Auto-save/Sync Heartbeat Simulation
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setIsStrategySaved(false);
-            setTimeout(() => {
-                setIsStrategySaved(true);
-            }, 2000);
-        }, 30000);
-        return () => clearInterval(interval);
-    }, []);
 
     const menuItems = [
         { id: 'campañas', icon: Layers, label: 'Mis Estrategias' },
@@ -520,6 +542,39 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
             console.error(err);
         }
     }, [strategyData, clientId, propClientId]);
+
+    // Auto-save/Sync Heartbeat (Saves every 5 seconds if changes detected)
+    useEffect(() => {
+        if (!isStrategySaved && !isInitialLoad && (clientId || propClientId)) {
+            const timer = setTimeout(() => {
+                handleSaveStrategy();
+            }, 5000); // Increased frequency to 5 seconds
+            return () => clearTimeout(timer);
+        }
+    }, [strategyData, isStrategySaved, isInitialLoad, clientId, propClientId, handleSaveStrategy]);
+
+    // Exit Guard: Warn user if leaving with unsaved changes
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (!isStrategySaved) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isStrategySaved]);
+
+    const handleAddProduct = useCallback(() => {
+        const productName = prompt('Ingrese el nombre del nuevo producto:');
+        if (productName) {
+            updateActiveCampaign(c => ({
+                ...c,
+                products: [...(c.products || []), { id: `p_${Date.now()}`, name: productName }]
+            }));
+            toast.success(`Producto "${productName}" añadido.`);
+        }
+    }, [updateActiveCampaign]);
 
     const handleGeneratePlanner = useCallback(async () => {
         if (!activeCampaign || isProcessingPlanner) return;
@@ -948,6 +1003,8 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                 onToggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
                 onClose={onClose}
                 onApplyTemplate={handleApplyTemplate}
+                onAddProduct={handleAddProduct}
+                onExportPDF={handleExport}
             />
 
             <div className="flex-1 flex overflow-hidden relative">

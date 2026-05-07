@@ -386,37 +386,30 @@ export const STRATEGIC_FORMATS = [
 // Utility: Maps any node to its Strategic Hub/Lane ID
 export const getNodeLaneId = (n) => {
     if (!n) return null;
+    // --- 1. PRIORITY: EXPLICIT MAPPING ---
     if (n.data?.laneId) return n.data.laneId;
+    if (n.data?.subtype === 'v_reels') return 'v_reels';
+    if (n.data?.subtype === 'v_tiktok') return 'v_tiktok';
+    if (n.data?.subtype === 'v_youtube') return 'v_youtube';
+    if (n.data?.subtype === 'i_post') return 'v_post';
+    if (n.data?.subtype === 'i_historias' || n.data?.subtype === 'v_historias') return 'v_historias';
+    if (n.data?.subtype === 'l3_crm_email') return 'l3_crm_email';
+    if (n.data?.subtype === 'r_form') return 'r_form';
+
+    // --- 2. SECONDARY: SEARCH STRING ---
     const t = (n.type || '').toLowerCase();
     const sub = (n.data?.subtype || '').toLowerCase();
     const title = (n.data?.title || '').toLowerCase();
-    
-    if (t.includes('reel') || sub.includes('reel') || title.includes('reel')) return 'v_reels';
-    if (t.includes('tiktok') || sub.includes('tiktok') || title.includes('tiktok')) return 'v_tiktok';
-    if (title.includes('youtube') || title.includes('horizontal')) return 'v_youtube';
-    if ((t.includes('video') || t.includes('historia')) && (title.includes('historia') || sub.includes('historia'))) return 'v_historias';
-    if (title.includes('portada') || sub.includes('portada')) return 'i_portadas';
-    if (title.includes('carrucel') || sub.includes('carrucel')) return 'i_carrucel';
-    
-    // CRM
-    if (title.includes('email') || sub.includes('email')) return 'l3_crm_email';
-    if (title.includes('scoring') || sub.includes('scoring')) return 'l3_crm_scoring';
-    if (title.includes('retargeting') || sub.includes('retargeting')) return 'l3_crm_retargeting';
-    
-    // New mappings
-    if (t.includes('audio') || t.includes('podcast') || sub.includes('audio') || sub.includes('podcast')) return 'v_podcast';
-    if (t.includes('masterclass') || sub.includes('masterclass') || title.includes('masterclass')) return 'v_masterclass';
-    if (t.includes('deck') || sub.includes('deck') || title.includes('presentación')) return 'i_deck';
-    if (t.includes('community') || sub.includes('community')) return 'r_community';
-    if (t.includes('audit') || sub.includes('audit')) return 'r_audit';
-    if (t.includes('affiliate') || sub.includes('affiliate')) return 'r_affiliate';
-    if (t.includes('imprenta') || t.includes('impresion') || sub.includes('imprenta')) return 'l3_imprenta';
-    if (t.includes('form') || t.includes('recurso') || t.includes('landing') || sub.includes('form')) return 'r_form';
+    const searchStr = `${t} ${sub} ${title}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    // Default mappings for common types
-    if (t.includes('post') || t.includes('imagen')) {
-        if (title.includes('historia')) return 'i_historias';
-        return 'i_post';
-    }
+    if (searchStr.includes('reels') || searchStr.includes('reel') || t === 'reel_viral') return 'v_reels';
+    if (searchStr.includes('tiktok') || t === 'tiktok') return 'v_tiktok';
+    if (searchStr.includes('youtube') || searchStr.includes('video educ')) return 'v_youtube';
+    if (searchStr.includes('post') || searchStr.includes('imagen')) return 'v_post';
+    if (searchStr.includes('historia') || searchStr.includes('story')) return 'v_historias';
+    if (searchStr.includes('crm') || searchStr.includes('email')) return 'l3_crm_email';
+    if (searchStr.includes('form') || searchStr.includes('registro')) return 'r_form';
+    if (searchStr.includes('producto') || searchStr.includes('vault')) return 'hub_products';
+    
     return null;
 };

@@ -82,25 +82,18 @@ export default function StrategyCanvas({
             if (saved) return JSON.parse(saved);
         }
         return {
-            'root': { x: 100, y: 1500 },
-            'l2_creativa': { x: 500, y: 1000 },
-            'l2_crm': { x: 500, y: 2400 },
-            'l2_conversion': { x: 500, y: 3200 },
-            'l3_imagen': { x: 1000, y: 600 },
-            'l3_videos': { x: 1000, y: 1800 },
-            'l3_audios': { x: 1000, y: 2200 },
-            'l3_imprenta': { x: 1000, y: 2500 },
-            'l3_crm_email': { x: 1000, y: 2700 },
-            'l3_crm_scoring': { x: 1000, y: 2900 },
-            'l3_crm_retargeting': { x: 1000, y: 3100 },
-            'hub_post': { x: 1400, y: 300 },
-            'hub_st_img': { x: 1400, y: 650 },
-            'hub_portada': { x: 1400, y: 1000 },
-            'hub_carrucel': { x: 1400, y: 1350 },
-            'hub_reels': { x: 1400, y: 1700 },
-            'hub_st_vid': { x: 1400, y: 2050 },
-            'hub_tiktok': { x: 1400, y: 2400 },
-            'hub_youtube': { x: 1400, y: 2750 }
+            'root': { x: 50, y: 1500 },
+            'l2_creativa': { x: 450, y: 1000 },
+            'l2_crm': { x: 450, y: 2400 },
+            'l2_conversion': { x: 450, y: 3200 },
+            'hub_videos': { x: 850, y: 300 },
+            'hub_posts': { x: 850, y: 650 },
+            'hub_stories': { x: 850, y: 1000 },
+            'hub_reels': { x: 850, y: 1350 },
+            'hub_tiktok': { x: 850, y: 1700 },
+            'hub_crm': { x: 850, y: 2050 },
+            'hub_forms': { x: 850, y: 2400 },
+            'hub_products': { x: 850, y: 2750 }
         };
     });
 
@@ -215,27 +208,29 @@ export default function StrategyCanvas({
      const l3Hubs = []; // Flattened into architecture components
  
      const hubs = [
-         { parent: 'l2_creativa', lane: 'v_youtube', id: 'hub_videos', label: 'VIDEOS', color: '#f43f5e', icon: Video },
-         { parent: 'l2_creativa', lane: 'i_post', id: 'hub_posts', label: 'POSTS', color: '#818cf8', icon: Box },
-         { parent: 'l2_creativa', lane: 'i_historias', id: 'hub_stories', label: 'STORIES', color: '#f97316', icon: Instagram },
-         { parent: 'l2_creativa', lane: 'v_reels', id: 'hub_reels', label: 'REELS', color: '#10b981', icon: PlayCircle },
-         { parent: 'l2_creativa', lane: 'v_tiktok', id: 'hub_tiktok', label: 'TIK TOK', color: '#22d3ee', icon: Video },
-         { parent: 'l2_crm', lane: 'l3_crm_email', id: 'hub_crm', label: 'FLUJOS CRM', color: '#10b981', icon: Bot },
-         { parent: 'l2_conversion', lane: 'r_form', id: 'hub_forms', label: 'FORMS', color: '#22d3ee', icon: Target },
-     ];
+          { parent: 'l2_creativa', lane: 'v_youtube', id: 'hub_videos', label: 'VIDEOS', color: '#f43f5e', icon: Video },
+          { parent: 'l2_creativa', lane: 'i_post', id: 'hub_posts', label: 'POSTS', color: '#818cf8', icon: Box },
+          { parent: 'l2_creativa', lane: 'v_historias', id: 'hub_stories', label: 'STORIES', color: '#f97316', icon: Instagram },
+          { parent: 'l2_creativa', lane: 'v_reels', id: 'hub_reels', label: 'REELS', color: '#10b981', icon: PlayCircle },
+          { parent: 'l2_creativa', lane: 'v_tiktok', id: 'hub_tiktok', label: 'TIK TOK', color: '#22d3ee', icon: Video },
+          { parent: 'l2_crm', lane: 'l3_crm_email', id: 'hub_crm', label: 'FLUJOS CRM', color: '#10b981', icon: Bot },
+          { parent: 'l2_conversion', lane: 'r_form', id: 'hub_forms', label: 'FORMS', color: '#22d3ee', icon: Target },
+          { parent: 'root', lane: 'product', id: 'hub_products', label: 'PRODUCT VAULT', color: '#BCFF00', icon: Box },
+      ];
 
     const DEFAULT_HUB_POSITIONS = {
-        'root': { x: 100, y: 1500 },
-        'l2_creativa': { x: 500, y: 1000 },
-        'l2_crm': { x: 500, y: 2400 },
-        'l2_conversion': { x: 500, y: 3200 },
-        'hub_videos': { x: 1000, y: 300 },
-        'hub_posts': { x: 1000, y: 650 },
-        'hub_stories': { x: 1000, y: 1000 },
-        'hub_reels': { x: 1000, y: 1350 },
-        'hub_tiktok': { x: 1000, y: 1700 },
-        'hub_crm': { x: 1000, y: 2400 },
-        'hub_forms': { x: 1000, y: 3200 }
+        'root': { x: 50, y: 1500 },
+        'l2_creativa': { x: 450, y: 1000 },
+        'l2_crm': { x: 450, y: 2400 },
+        'l2_conversion': { x: 450, y: 3200 },
+        'hub_videos': { x: 850, y: 300 },
+        'hub_posts': { x: 850, y: 650 },
+        'hub_stories': { x: 850, y: 1000 },
+        'hub_reels': { x: 850, y: 1350 },
+        'hub_tiktok': { x: 850, y: 1700 },
+        'hub_crm': { x: 850, y: 2050 },
+        'hub_forms': { x: 850, y: 2400 },
+        'hub_products': { x: 850, y: 2750 }
     };
 
     // Shared Drag Handler for Neural Hubs
@@ -532,21 +527,29 @@ export default function StrategyCanvas({
         const counts = {};
         
         // 1. Initialize with Strategic Targets (from Architecture Wizard)
-        if (activeCampaign?.strategyIngredients) {
-            const si = activeCampaign.strategyIngredients;
+        const si = activeCampaign?.ingredients || activeCampaign?.strategyIngredients;
+        
+        if (si) {
             const mapping = {
+                'videos': 'hub_videos',
                 'video': 'hub_videos', 
+                'reels': 'hub_reels',
                 'reel': 'hub_reels',
                 'tiktok': 'hub_tiktok',
+                'posts': 'hub_posts',
+                'post': 'hub_posts',
                 'imagen': 'hub_posts',
+                'stories': 'hub_stories',
+                'story': 'hub_stories',
                 'historia': 'hub_stories',
                 'carrusel': 'hub_posts',
                 'crm': 'hub_crm',
+                'forms': 'hub_forms',
                 'form': 'hub_forms'
             };
             Object.entries(si).forEach(([key, val]) => {
-                const hubId = mapping[key];
-                if (hubId) counts[hubId] = val;
+                const hubId = mapping[key.toLowerCase()];
+                if (hubId) counts[hubId] = (counts[hubId] || 0) + val;
             });
         }
 
@@ -563,15 +566,21 @@ export default function StrategyCanvas({
         });
 
         return counts;
-    }, [nodes, activeCampaign?.strategyIngredients]);
+    }, [nodes, activeCampaign?.ingredients, activeCampaign?.strategyIngredients]);
 
     // --- NEURAL AUTO-PRUNING LOGIC ---
     const activeHubs = React.useMemo(() => {
-        const activeSet = new Set(['root']); // Master Root is always active
+        const activeSet = new Set(['root', 'hub_products']); // Master Root and Products always active
 
-        // Helper: Check if a hub ID is considered active based on node count
+        // Helper: Check if a hub ID is considered active based on node count OR if it was selected in the wizard
         const isTacticalActive = (id) => {
-            return counts[id] > 0;
+            const hasNodes = hubCounts[id] > 0;
+            const hubData = hubs.find(h => h.id === id);
+            // If the outliner (wizard) has counts for this type, keep it active
+            const si = activeCampaign?.ingredients || activeCampaign?.strategyIngredients;
+            const wizardActive = si && Object.entries(si).some(([k, v]) => v > 0 && id.includes(k.toLowerCase()));
+            
+            return hasNodes || wizardActive;
         };
 
         // Recursive: A hub is active if it has nodes OR any active child hub
@@ -715,10 +724,6 @@ export default function StrategyCanvas({
                 const endX = node.x;
                 const endY = node.y + 38;
 
-                // POSITION GUARD: Only render if the hub is reasonably to the left 
-                // of the node to avoid "backwards" messy lines in same-column overlaps.
-                if (startX > endX - 100) return;
-
                 const path = getBezier(startX, startY, endX, endY);
                 const color = hub?.color || l3Hub?.color || '#6366f1';
                 
@@ -727,13 +732,21 @@ export default function StrategyCanvas({
                         <path 
                             d={path} 
                             stroke={color} 
-                            strokeWidth="1.2" 
-                            strokeOpacity="0.08" 
+                            strokeWidth="3.5" 
+                            strokeOpacity="0.6" 
                             fill="none" 
+                            filter="url(#glow)"
                             className="transition-all duration-1000"
                         />
-                         <motion.circle r="1.5" fill={color} opacity="0.4">
-                              <animateMotion dur={`${3 + (nodeIdx % 2)}s`} repeatCount="indefinite" path={path} />
+                        <path 
+                            d={path} 
+                            stroke="white" 
+                            strokeWidth="1.2" 
+                            strokeOpacity="0.8" 
+                            fill="none" 
+                        />
+                         <motion.circle r="3" fill="white" filter="url(#glow)">
+                              <animateMotion dur={`${1.5 + (nodeIdx % 2)}s`} repeatCount="indefinite" path={path} />
                          </motion.circle>
                     </g>
                 );
@@ -745,17 +758,16 @@ export default function StrategyCanvas({
     const renderIngredientCard = (id, pos, hubData) => {
         const isRoot = id === 'root';
         const color = hubData?.color || (isRoot ? '#818cf8' : '#6366f1');
-        const label = isRoot ? 'ESTRATEGIA MAESTRA' : hubData?.label;
-        const count = hubCounts[hubData?.lane || id] || 0;
+        const label = isRoot ? 'ESTRATEGIA MAESTRA' : (hubData?.label || 'COMPONENT');
+        const count = hubCounts[id] || 0;
         const Icon = hubData?.icon || (isRoot ? BrainCircuit : Box);
 
-        // Adjust position to center the card on the hub point
         const cardWidth = 160;
         const cardHeight = 100;
 
         return (
             <motion.g 
-                key={`hub-point-${id}`} 
+                key={`hub-ingredient-${id}`} 
                 initial={false}
                 animate={{ x: pos.x - cardWidth/2, y: pos.y - cardHeight/2 }}
                 drag
@@ -763,59 +775,76 @@ export default function StrategyCanvas({
                 onDrag={(e, info) => handleHubDrag(id, info.delta)}
                 className="cursor-grab active:cursor-grabbing group/hub pointer-events-auto"
             >
-                {/* Glass Background with Glow */}
-                    <rect 
-                        width={cardWidth} 
-                        height={cardHeight} 
-                        rx="12" 
-                        fill={theme === 'dark' ? "rgba(10, 10, 15, 0.95)" : "rgba(255, 255, 255, 0.98)"} 
-                        stroke={color} 
-                        strokeWidth="1.5" 
-                        strokeOpacity={theme === 'dark' ? "0.4" : "0.6"}
-                        filter={theme === 'dark' ? "url(#glow)" : "none"}
-                        className={theme === 'light' ? 'shadow-lg' : ''}
-                    />
-                    
-                    {/* Header Section */}
-                    <g transform="translate(15, 15)">
-                        <Icon size={14} style={{ color: theme === 'dark' ? color : color }} />
-                        <text x="20" y="11" fill={theme === 'dark' ? "white" : "black"} className="text-[9px] font-black uppercase tracking-[0.2em] opacity-80" style={{ fill: theme === 'dark' ? 'white' : '#1e293b' }}>
-                            {label}
-                        </text>
-                    </g>
+                {/* Neon Glow Outer */}
+                <rect 
+                    width={cardWidth + 20} 
+                    height={cardHeight + 20} 
+                    x="-10" y="-10"
+                    rx="20" 
+                    fill={color} 
+                    fillOpacity="0.05"
+                    filter="url(#glow)"
+                />
 
-                    {/* Sub-container for the Number */}
+                {/* Glass Background with Glow */}
+                <rect 
+                    width={cardWidth} 
+                    height={cardHeight} 
+                    rx="16" 
+                    fill={theme === 'dark' ? "rgba(5, 5, 10, 0.9)" : "rgba(255, 255, 255, 0.98)"} 
+                    stroke={color} 
+                    strokeWidth="2" 
+                    strokeOpacity={theme === 'dark' ? "0.6" : "0.8"}
+                    filter={theme === 'dark' ? "url(#glow)" : "none"}
+                    className={theme === 'light' ? 'shadow-2xl' : ''}
+                />
+
+                {/* Header Section - Component Name */}
+                <g transform="translate(15, 18)">
+                    <rect width="24" height="24" rx="6" fill={color} fillOpacity="0.1" stroke={color} strokeWidth="1" strokeOpacity="0.3" />
+                    <Icon x="5" y="5" size={14} style={{ color: color }} />
+                    <text x="32" y="15" fill={theme === 'dark' ? "white" : "black"} className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ fill: theme === 'dark' ? 'white' : '#1e293b' }}>
+                        {label}
+                    </text>
+                </g>
+
+                {/* Counter Area */}
+                <g transform="translate(15, 50)">
                     <rect 
-                        x="15" 
-                        y="40" 
                         width={cardWidth - 30} 
-                        height="45" 
-                        rx="8" 
-                        fill={theme === 'dark' ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.03)"} 
-                        stroke={color} 
-                        strokeWidth="1" 
-                        strokeOpacity="0.1" 
+                        height="35" 
+                        rx="10" 
+                        fill={theme === 'dark' ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.03)"} 
                     />
-                    
-                    {/* Central Value (Count) */}
                     <text 
-                        x={cardWidth / 2} 
-                        y="72" 
+                        x={(cardWidth - 30) / 2} 
+                        y="24" 
                         textAnchor="middle" 
                         fill={theme === 'dark' ? "white" : "#0f172a"} 
-                        className="text-2xl font-black tracking-tighter"
+                        className="text-xl font-black tracking-tighter"
                     >
                         {count}
                     </text>
+                </g>
 
-                {/* Status Indicator / Connection point glow */}
+                {/* Connection Port (Right side) */}
                 <circle 
-                    cx={cardWidth - 5} 
+                    cx={cardWidth} 
                     cy={cardHeight / 2} 
-                    r="3" 
-                    fill={color} 
+                    r="4" 
+                    fill="white" 
+                    stroke={color}
+                    strokeWidth="2"
                     filter="url(#glow)" 
                 />
+
+                {/* Special Action for Product Vault */}
+                {id === 'hub_products' && (
+                    <g transform={`translate(${cardWidth - 40}, 15)`} onClick={(e) => { e.stopPropagation(); onAddProduct?.(); }} className="cursor-pointer">
+                        <circle r="10" fill={color} fillOpacity="0.2" />
+                        <Plus size={12} style={{ color: color }} x="-6" y="-6" />
+                    </g>
+                )}
             </motion.g>
         );
     };
