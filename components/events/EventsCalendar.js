@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Search, Plus, MoreHorizontal, Calendar as CalendarIcon, Edit2, Link as LinkIcon, Video, CheckCircle2, Clock, Smartphone, Camera, Star, Users, ChevronDown, CheckSquare, ExternalLink, X, FileText, Mic, MicOff, MonitorUp, PhoneOff, Paperclip } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Plus, MoreHorizontal, Calendar as CalendarIcon, Edit2, Link as LinkIcon, Video, CheckCircle2, Clock, Smartphone, Camera, Star, Users, ChevronDown, CheckSquare, ExternalLink, X, FileText, Mic, MicOff, MonitorUp, PhoneOff, Paperclip, MessageCircle, MessageSquare } from 'lucide-react';
 
 export default function EventsCalendar() {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -18,6 +18,9 @@ export default function EventsCalendar() {
     const [isTasksOpen, setIsTasksOpen] = useState(false);
     const [isTeamOpen, setIsTeamOpen] = useState(false);
     const [isMeetPanelOpen, setIsMeetPanelOpen] = useState(false);
+    const [chattingWith, setChattingWith] = useState(null);
+    const [chatMessages, setChatMessages] = useState([]);
+    const [currentChatMessage, setCurrentChatMessage] = useState("");
     const [isRecordingNote, setIsRecordingNote] = useState(false);
     const [recordedAudioUrl, setRecordedAudioUrl] = useState(null);
     const [noteText, setNoteText] = useState("");
@@ -38,6 +41,8 @@ export default function EventsCalendar() {
         { id: 2, text: "Reunión con cirujano", time: "Jueves 16:30", active: true }
     ]);
     const [isAITasking, setIsAITasking] = useState(false);
+    const [isAddingTeam, setIsAddingTeam] = useState(false);
+    const [teamCode, setTeamCode] = useState("");
     const [isProcessingAI, setIsProcessingAI] = useState(false);
     const [currentTranscript, setCurrentTranscript] = useState("");
     
@@ -46,6 +51,33 @@ export default function EventsCalendar() {
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const imageInputRef = useRef(null);
+
+    const handleSendMessage = () => {
+        if (!currentChatMessage.trim() || !chattingWith) return;
+        
+        const newMessage = {
+            id: Date.now(),
+            sender: 'Me',
+            text: currentChatMessage,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        setChatMessages(prev => [...prev, newMessage]);
+        setCurrentChatMessage("");
+        
+        // Simulated Response from Leslie
+        if (chattingWith.name === 'Leslie') {
+            setTimeout(() => {
+                const response = {
+                    id: Date.now() + 1,
+                    sender: 'Leslie',
+                    text: "¡Hola! Recibido. Ya estoy trabajando en eso. ¿Necesitas algo más para el post de hoy?",
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+                setChatMessages(prev => [...prev, response]);
+            }, 1000);
+        }
+    };
 
     const handleAITaskVoice = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -161,15 +193,18 @@ export default function EventsCalendar() {
                 if (isReminder) {
                     const reminderId = Date.now() + Math.random();
                     const cleanText = section.replace(/lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo|a las|alas/g, '').trim();
-                    
+                    const hasDate = detectedDay !== null;
+
                     newReminders.push({
                         id: reminderId,
                         text: cleanText.charAt(0).toUpperCase() + cleanText.slice(1),
-                        time: detectedDay !== null ? `${Object.keys(dayKeywords).find(k => dayKeywords[k] === detectedDay).toUpperCase()} ${detectedHour}:00` : "PENDIENTE",
-                        active: true
+                        time: hasDate ? `${Object.keys(dayKeywords).find(k => dayKeywords[k] === detectedDay).toUpperCase()} ${detectedHour}:00` : "FECHA PENDIENTE",
+                        active: true,
+                        status: hasDate ? 'ready' : 'pending',
+                        note: hasDate ? null : "¿Para qué fecha quieres agendar esto? Di 'El lunes' o similar."
                     });
 
-                    if (detectedDay !== null) {
+                    if (hasDate) {
                         newCalendarEvents.push({
                             id: reminderId,
                             title: `IA: ${cleanText}`,
@@ -177,9 +212,21 @@ export default function EventsCalendar() {
                             dayIndex: detectedDay,
                             startHour: detectedHour,
                             duration: 1,
-                            type: 'meeting',
+                            type: 'recordatorios',
                             description: `Procesado por DIIC IA: "${text}"`
                         });
+                    } else {
+                        // Prompt user for date if missing
+                        setTimeout(() => {
+                            toast("IA: Detecté un recordatorio pero no la fecha. ¿Cuándo lo agendamos?", {
+                                icon: "📅",
+                                duration: 5000,
+                                action: {
+                                    label: "Dictar Fecha",
+                                    onClick: () => handleAITaskVoice()
+                                }
+                            });
+                        }, 1000);
                     }
                 } else if (section.trim().length > 3) {
                     newTasks.push({
@@ -526,16 +573,20 @@ export default function EventsCalendar() {
                 <div className="flex items-center gap-10">
                     <h1 className="text-2xl font-black tracking-tight text-white ml-2 drop-shadow-lg shrink-0">Agenda Global</h1>
                     
-                    {/* Filters - Icons Only */}
-                    <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1">
+                    {/* Filters - Well Divided & Colored */}
+                    <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-1">
                         <button 
                             onClick={() => setActiveFilter('all')}
-                            className={`px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-black transition-all border whitespace-nowrap ${
-                                activeFilter === 'all' ? 'bg-white text-black border-white' : 'bg-black/20 text-gray-400 border-white/5 hover:bg-white/10'
+                            className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border whitespace-nowrap ${
+                                activeFilter === 'all' 
+                                    ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105' 
+                                    : 'bg-black/40 text-gray-500 border-white/5 hover:bg-white/10 hover:text-white'
                             }`}
                         >
                             Todos
                         </button>
+
+                        <div className="w-[1px] h-6 bg-white/10 mx-1" />
                         
                         {[
                             { id: 'historias', style: EVENT_STYLES.historias },
@@ -554,13 +605,17 @@ export default function EventsCalendar() {
                                     key={f.id}
                                     title={f.style.label}
                                     onClick={() => setActiveFilter(f.id)}
-                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${
+                                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border group relative ${
                                         isActive 
                                             ? `${f.style.bg} ${f.style.text} ${f.style.border} shadow-lg scale-110`
-                                            : 'bg-black/20 text-gray-500 border-white/5 hover:bg-white/10'
+                                            : `bg-black/30 text-gray-500 ${f.style.border.replace('50', '10')} hover:bg-white/10 hover:text-white`
                                     }`}
                                 >
-                                    <Icon className="w-5 h-5" />
+                                    {/* Subtle Glow in background */}
+                                    {!isActive && (
+                                        <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity ${f.style.bg}`} />
+                                    )}
+                                    <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'}`} />
                                 </button>
                             )
                         })}
@@ -962,7 +1017,7 @@ export default function EventsCalendar() {
                                     // Get actual events for this day based on dayIndex and week
                                     // For simplicity in month view, we map event's dayIndex to matching days of the week
                                     const currentDayOfWeek = i % 7;
-                                    const dayEvents = dayNum ? events.filter(e => e.dayIndex === currentDayOfWeek) : [];
+                                    const dayEvents = dayNum ? filteredEvents.filter(e => e.dayIndex === currentDayOfWeek) : [];
                                     
                                     return (
                                         <div key={i} className={`p-2 rounded-2xl border transition-colors flex flex-col relative ${dayNum ? 'bg-black/20 border-white/5 hover:border-white/20' : 'opacity-20 border-transparent'} ${isToday ? 'ring-2 ring-violet-500/50 bg-violet-500/10' : ''}`}>
@@ -1258,29 +1313,181 @@ export default function EventsCalendar() {
                                     </>
                                 )}
 
-                                {isTeamOpen && (
-                                    <>
-                                        <div className="p-5 flex items-center justify-between border-b border-white/5">
-                                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                                <Users className="w-4 h-4 text-pink-400" /> Equipo
-                                            </h3>
-                                            <div className="flex items-center gap-1">
-                                                <button onClick={() => setIsTeamOpen(false)} className="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-white/10"><X className="w-4 h-4" /></button>
-                                            </div>
-                                        </div>
-                                        <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3">
-                                            {[1, 2, 3, 4].map(n => (
-                                                <div key={n} className="flex items-center gap-3 p-3 bg-black/30 border border-white/5 rounded-xl hover:border-pink-500/30 transition-all cursor-pointer">
-                                                    <img src={`https://i.pravatar.cc/150?u=${n}`} className="w-10 h-10 rounded-full border-2 border-[#1A1A24]" alt="team" />
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold text-white">Miembro #{n}</span>
-                                                        <span className="text-[10px] text-gray-500">Diseñador Senior</span>
-                                                    </div>
+                                        {isTeamOpen && (
+                                            <div className="flex flex-col h-full overflow-hidden">
+                                                {!chattingWith && !isAddingTeam ? (
+                                                    <>
+                                                        <div className="p-5 flex items-center justify-between border-b border-white/5 bg-gradient-to-r from-indigo-500/10 to-transparent">
+                                                            <div className="flex flex-col">
+                                                                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                                                    <Users className="w-4 h-4 text-indigo-400" /> Zona Creativa
+                                                                </h3>
+                                                                <span className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">Centro de Comunicación Estratégica</span>
+                                                            </div>
+                                                            <button onClick={() => setIsTeamOpen(false)} className="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-white/10 transition-colors">
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                        
+                                                        <div className="p-6 flex-1 flex flex-col items-center justify-center text-center space-y-6">
+                                                            <div className="relative">
+                                                                <div className="w-24 h-24 rounded-[2rem] bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center group overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.1)]">
+                                                                    <img src="https://i.pravatar.cc/150?u=Leslie" className="w-20 h-20 rounded-2xl object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="Leslie" />
+                                                                </div>
+                                                                <div className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-emerald-500 border-4 border-[#0D0D12] shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                                                            </div>
+
+                                                            <div className="space-y-2">
+                                                                <h4 className="text-lg font-black text-white uppercase italic tracking-tight">Leslie</h4>
+                                                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Community Manager • Head of Production</p>
+                                                            </div>
+
+                                                            <div className="w-full space-y-3 pt-4">
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        setChattingWith({ name: 'Leslie', role: 'Community Manager' });
+                                                                        setChatMessages([{ id: 1, sender: 'Leslie', text: "¡Hola! Bienvenido a la Zona Creativa. Soy Leslie, tu punto de contacto central. ¿En qué puedo ayudarte hoy?", time: '10:00 AM' }]);
+                                                                    }}
+                                                                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/50 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-[0_10px_30px_rgba(79,70,229,0.3)] group transform hover:-translate-y-1"
+                                                                >
+                                                                    <MessageCircle className="w-5 h-5 text-white group-hover:animate-bounce" />
+                                                                    <span className="text-xs font-black text-white uppercase tracking-widest">Chat Zona Creativa</span>
+                                                                </button>
+
+                                                                <button 
+                                                                    onClick={() => setIsAddingTeam(true)}
+                                                                    className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center gap-3 transition-all group"
+                                                                >
+                                                                    <Plus className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+                                                                    <span className="text-xs font-black text-gray-400 group-hover:text-white uppercase tracking-widest transition-colors">Añadir Equipo Propio</span>
+                                                                </button>
+                                                                
+                                                                <p className="text-[9px] text-gray-600 font-medium px-6">
+                                                                    Coordina con tu CM o vincula a tu propio equipo de producción para maximizar resultados.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                ) : isAddingTeam ? (
+                                                    <>
+                                                        {/* Add Team View */}
+                                                        <div className="p-5 flex items-center justify-between border-b border-white/5 bg-gradient-to-r from-emerald-500/10 to-transparent">
+                                                            <div className="flex items-center gap-3">
+                                                                <button onClick={() => setIsAddingTeam(false)} className="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                                                                    <ChevronLeft className="w-4 h-4" />
+                                                                </button>
+                                                                <div className="flex flex-col">
+                                                                    <h3 className="text-sm font-bold text-white uppercase italic">Vincular Equipo</h3>
+                                                                    <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mt-1">Conexión de Talento</span>
+                                                                </div>
+                                                            </div>
+                                                            <button onClick={() => setIsTeamOpen(false)} className="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-white/10 transition-colors">
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="p-8 flex-1 flex flex-col items-center justify-center text-center space-y-8">
+                                                            <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                                                                <Users className="w-10 h-10 text-emerald-500" />
+                                                            </div>
+                                                            
+                                                            <div className="space-y-3">
+                                                                <h4 className="text-xl font-black text-white uppercase tracking-tight">Activar Nodo de Talento</h4>
+                                                                <p className="text-xs text-gray-500 leading-relaxed px-4">
+                                                                    Ingresa el código único para conectar a tu Filmmaker, Editor y Diseñador a la plataforma DIIC ZONE.
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="w-full space-y-4 pt-4">
+                                                                <div className="relative group">
+                                                                    <div className="absolute inset-0 bg-emerald-500/10 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
+                                                                    <input 
+                                                                        type="text"
+                                                                        value={teamCode}
+                                                                        onChange={(e) => setTeamCode(e.target.value.toUpperCase())}
+                                                                        placeholder="INGRESA TU CÓDIGO"
+                                                                        className="relative w-full bg-black/40 border-2 border-white/5 focus:border-emerald-500/50 rounded-2xl px-6 py-5 text-center text-xl font-black tracking-[0.5em] text-emerald-400 placeholder:text-gray-800 transition-all focus:outline-none"
+                                                                    />
+                                                                </div>
+
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        if (teamCode.length > 4) {
+                                                                            toast.success("Sincronizando equipo de producción...", { icon: '⚡' });
+                                                                            setTimeout(() => {
+                                                                                toast.success("¡Equipo vinculado correctamente!");
+                                                                                setIsAddingTeam(false);
+                                                                            }, 2000);
+                                                                        } else {
+                                                                            toast.error("Código inválido o incompleto");
+                                                                        }
+                                                                    }}
+                                                                    className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 border border-emerald-400/50 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-[0_10px_30px_rgba(16,185,129,0.3)] group"
+                                                                >
+                                                                    <CheckCircle2 className="w-5 h-5 text-white" />
+                                                                    <span className="text-xs font-black text-white uppercase tracking-widest">Sincronizar Talento</span>
+                                                                </button>
+
+                                                                <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">DIIC SECURITY PROTOCOL 2.4</p>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {/* Chat Interface (Simplified) */}
+                                                        <div className="p-5 flex items-center justify-between border-b border-white/5 bg-gradient-to-r from-indigo-500/10 to-transparent">
+                                                            <div className="flex items-center gap-3">
+                                                                <button onClick={() => setChattingWith(null)} className="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                                                                    <ChevronLeft className="w-4 h-4" />
+                                                                </button>
+                                                                <div className="flex items-center gap-2">
+                                                                    <img src={`https://i.pravatar.cc/150?u=Leslie`} className="w-8 h-8 rounded-xl border border-white/10" alt="Leslie" />
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-xs font-black text-white leading-none uppercase italic">Leslie</span>
+                                                                        <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mt-1">Chat Activo</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <button onClick={() => setIsTeamOpen(false)} className="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-white/10 transition-colors">
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-4">
+                                                            {chatMessages.map(msg => (
+                                                                <div key={msg.id} className={`flex flex-col ${msg.sender === 'Me' ? 'items-end' : 'items-start'}`}>
+                                                                    <div className={`max-w-[85%] p-3 rounded-2xl text-xs font-medium leading-relaxed ${
+                                                                        msg.sender === 'Me' ? 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-500/10' : 'bg-white/5 text-gray-300 rounded-tl-none border border-white/5'
+                                                                    }`}>
+                                                                        {msg.text}
+                                                                    </div>
+                                                                    <span className="text-[9px] text-gray-600 font-bold mt-1 uppercase tracking-widest">{msg.time}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        <div className="p-4 border-t border-white/5 bg-black/20">
+                                                            <div className="relative flex items-center gap-2">
+                                                                    <input 
+                                                                        type="text"
+                                                                        value={currentChatMessage}
+                                                                        onChange={(e) => setCurrentChatMessage(e.target.value)}
+                                                                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                                                        placeholder="Escribe un mensaje para Leslie..."
+                                                                        className="flex-1 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50 transition-all"
+                                                                    />
+                                                                    <button onClick={handleSendMessage} className="p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95">
+                                                                        <ChevronRight className="w-4 h-4" />
+                                                                    </button>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                <div className="p-3 border-t border-white/5 bg-black/40 mt-auto">
+                                                    <p className="text-[8px] text-center text-gray-700 font-black uppercase tracking-[0.3em]">DIIC ZONE • ZONA CREATIVA V3.0</p>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
+                                            </div>
+                                        )}
 
                                 {isMeetPanelOpen && (
                                     <>
@@ -1343,8 +1550,8 @@ export default function EventsCalendar() {
                     )}
                 </AnimatePresence>
 
-                {/* Sidebar Apps (Right) */}
-                <div className="w-16 shrink-0 bg-black/40 backdrop-blur-2xl rounded-full flex flex-col items-center py-6 gap-6 border border-white/10 shadow-[0_10px_50px_rgba(0,0,0,0.6)] overflow-hidden ml-6">
+                {/* Sidebar Apps (Right) - Centered & Aligned */}
+                <div className="w-16 shrink-0 bg-black/40 backdrop-blur-2xl rounded-[32px] flex flex-col items-center justify-center py-8 gap-6 border border-white/10 shadow-[0_10px_50px_rgba(0,0,0,0.6)] overflow-hidden ml-6 self-start mt-10">
                     <button 
                         onClick={() => {
                             setIsSyncing(true);

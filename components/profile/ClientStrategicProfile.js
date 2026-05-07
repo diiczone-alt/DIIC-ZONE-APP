@@ -539,6 +539,19 @@ export default function ClientStrategicProfile() {
         }
     };
 
+    const handleDownloadReport = () => {
+        const toastId = toast.loading("Compilando Reporte Estratégico Omni-Nivel...");
+        
+        // Gather full intelligence context
+        const reportTitle = profile.brandName || 'Marca No Identificada';
+        console.log(`[DIIC EXPORT] Generando reporte para: ${reportTitle}`);
+
+        setTimeout(() => {
+            toast.success("Reporte compilado. Preparando vista de impresión...", { id: toastId });
+            window.print();
+        }, 1500);
+    };
+
     const handleResearchChat = async (e) => {
         e.preventDefault();
         if ((!chatInput.trim() && !selectedFile) || isChatting) return;
@@ -714,10 +727,10 @@ export default function ClientStrategicProfile() {
                 </p>
                 <div className="flex justify-center gap-4 mt-6 print:hidden">
                     <button 
-                        onClick={() => window.print()}
-                        className="px-6 py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest text-gray-400 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2"
+                        onClick={handleDownloadReport}
+                        className="px-6 py-2.5 bg-indigo-600 border border-indigo-400/50 rounded-xl text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all flex items-center gap-2 transform active:scale-95"
                     >
-                        <FileUp size={14} /> Descargar Reporte (PDF)
+                        <FileUp size={14} className="animate-bounce" /> Descargar Reporte (PDF)
                     </button>
                 </div>
             </div>

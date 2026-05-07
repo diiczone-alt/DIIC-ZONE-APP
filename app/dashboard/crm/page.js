@@ -280,78 +280,87 @@ const handleCreateLead = async (e) => {
                             )}
                         </div>
 
-                        <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
-                                <Sparkles className="w-3 h-3 text-indigo-500" />
-                                {labels.sectionTitle}
-                            </span>
-                            <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase leading-[0.8]">
+                        <div className="flex flex-col gap-0">
+                            <div className="flex items-center gap-3">
+                                <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.3em] text-indigo-400">
+                                    {labels.unitName === 'Lead' ? 'CRM HUB' : 'SISTEMA DE GESTIÓN'}
+                                </span>
+                                <div className="h-[1px] w-12 bg-gradient-to-r from-indigo-500/50 to-transparent" />
+                            </div>
+                            
+                            <h1 className="text-6xl md:text-[9rem] font-black text-white tracking-tighter uppercase leading-[0.75] -ml-1 mt-2">
                                 {activeClient ? (
-                                    <>
-                                        {labels.unitName} <br/>
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-6xl md:text-7xl">
+                                    <div className="flex flex-col">
+                                        <span className="opacity-40 text-4xl md:text-6xl -mb-2">{labels.unitName}</span>
+                                        <span className="text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-200 to-purple-400 drop-shadow-[0_0_30px_rgba(99,102,241,0.3)]">
                                             {activeClient.name}
                                         </span>
-                                    </>
-                                ) : 'PROYECTO CRM'}
+                                    </div>
+                                ) : 'CENTRAL CRM'}
                             </h1>
                         </div>
                                            
-                        {/* Context-Aware Selector Control */}
                         {(!activeClient || (user?.role !== 'CLIENT')) ? (
-                            <div className="flex items-center gap-4 mt-2">
+                            <div className="flex items-center gap-4 mt-6">
                                 <div className="relative">
-                                    <button 
-                                        onClick={() => setIsClientSelectorOpen(!isClientSelectorOpen)}
-                                        className="flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all shadow-xl group"
-                                    >
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-emerald-400 transition-colors">
-                                            Elegir marca para gestionar
-                                        </span>
-                                        <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform ${isClientSelectorOpen ? 'rotate-180' : ''}`} />
-                                    </button>
+                                     <button 
+                                         onClick={() => setIsClientSelectorOpen(!isClientSelectorOpen)}
+                                         className="flex items-center gap-4 px-8 py-4 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.08] transition-all shadow-2xl group overflow-hidden relative"
+                                     >
+                                         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 group-hover:text-white transition-colors relative z-10">
+                                             Desplegar Nodo de Marca
+                                         </span>
+                                         <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform relative z-10 ${isClientSelectorOpen ? 'rotate-180 text-white' : ''}`} />
+                                     </button>
 
-                                    <AnimatePresence>
-                                        {isClientSelectorOpen && (
-                                            <motion.div 
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: 10 }}
-                                                className="absolute top-full left-0 mt-2 w-64 bg-[#0a0a1a] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
-                                            >
-                                                <div className="p-2 space-y-1">
-                                                    <button 
-                                                        onClick={() => handleSelectClient(null)}
-                                                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${!activeClient ? 'bg-emerald-500/10 text-emerald-400' : 'text-gray-500 hover:bg-white/5'}`}
-                                                    >
-                                                        Ver Todo (Global)
-                                                        {!activeClient && <Check className="w-3 h-3" />}
-                                                    </button>
-                                                    <div className="h-[1px] bg-white/5 my-1" />
-                                                    {clients.map(client => (
-                                                        <button 
-                                                            key={client.id}
-                                                            onClick={() => handleSelectClient(client)}
-                                                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeClient?.id === client.id ? 'bg-emerald-500/10 text-emerald-400' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
-                                                        >
-                                                            {client.name}
-                                                            {activeClient?.id === client.id && <Check className="w-3 h-3" />}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                                     <AnimatePresence>
+                                         {isClientSelectorOpen && (
+                                             <motion.div 
+                                                 initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                 exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                                                 className="absolute top-full left-0 mt-4 w-72 bg-[#050510]/95 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 overflow-hidden p-3"
+                                             >
+                                                 <div className="space-y-1">
+                                                     <button 
+                                                         onClick={() => handleSelectClient(null)}
+                                                         className={`w-full flex items-center justify-between px-5 py-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${!activeClient ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'text-gray-500 hover:bg-white/5'}`}
+                                                     >
+                                                         Vista Operativa Global
+                                                         {!activeClient && <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,1)]" />}
+                                                     </button>
+                                                     <div className="h-[1px] bg-white/5 my-2 mx-4" />
+                                                     {clients.map(client => (
+                                                         <button 
+                                                             key={client.id}
+                                                             onClick={() => handleSelectClient(client)}
+                                                             className={`w-full flex items-center justify-between px-5 py-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeClient?.id === client.id ? 'bg-white/10 text-white border border-white/10' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
+                                                         >
+                                                             {client.name}
+                                                             {activeClient?.id === client.id && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]" />}
+                                                         </button>
+                                                     ))}
+                                                 </div>
+                                             </motion.div>
+                                         )}
+                                     </AnimatePresence>
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2 flex items-center gap-2">
-                                <Zap className="w-3 h-3 text-emerald-500" />
-                                Terminal de Control Exclusiva
-                            </p>
+                            <div className="flex items-center gap-4 mt-8">
+                                <div className="flex items-center gap-3 px-4 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded-full">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,1)]" />
+                                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.3em]">Nodo Operativo Live</span>
+                                </div>
+                                <div className="h-4 w-[1px] bg-white/10" />
+                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em]">Terminal de Control Exclusiva</span>
+                            </div>
                         )}
-                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] mt-4 italic">
-                        {activeClient ? `Inteligencia Avanzada para ${activeClient.name}` : 'Protocolo de Seguridad DIIC v3.2'}
+                    <p className="text-[10px] font-black text-gray-500/40 uppercase tracking-[0.5em] mt-8 flex items-center gap-4">
+                        <span className="h-[1px] w-8 bg-gray-800" />
+                        {activeClient ? `Engine Insight: ${activeClient.name}` : 'Security Protocol DIIC v3.2'}
+                        <span className="h-[1px] w-8 bg-gray-800" />
                     </p>
                 </div>
 
