@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, ChevronDown, ChevronRight, Hash, Globe, Target, Rocket, Zap, MessageSquare, Database, ListTree, FolderTree, Binary, Eye, EyeOff, Folder, Video, Instagram, Type as TypeIcon, Layout, Music, Mic, Youtube } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, Hash, Globe, Target, Rocket, Zap, MessageSquare, Database, ListTree, FolderTree, Binary, Eye, EyeOff, Folder, Video, Instagram, Type as TypeIcon, Layout, Music, Mic, Youtube, PlayCircle } from 'lucide-react';
 import { NODE_TYPES, NODE_CATEGORIES, getNodeLaneId } from './StrategyConstants';
 
 export default function StrategicOutliner({ nodes, activeNodeId, onNodeSelect, onUpdateNode, theme = 'dark' }) {
