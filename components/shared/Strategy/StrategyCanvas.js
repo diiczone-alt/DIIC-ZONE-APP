@@ -82,18 +82,18 @@ export default function StrategyCanvas({
             if (saved) return JSON.parse(saved);
         }
         return {
-            'root': { x: 50, y: 1500 },
-            'l2_creativa': { x: 450, y: 1000 },
-            'l2_crm': { x: 450, y: 2400 },
-            'l2_conversion': { x: 450, y: 3200 },
-            'hub_videos': { x: 850, y: 300 },
-            'hub_posts': { x: 850, y: 650 },
-            'hub_stories': { x: 850, y: 1000 },
-            'hub_reels': { x: 850, y: 1350 },
-            'hub_tiktok': { x: 850, y: 1700 },
-            'hub_crm': { x: 850, y: 2050 },
-            'hub_forms': { x: 850, y: 2400 },
-            'hub_products': { x: 850, y: 2750 }
+            'root': { x: 100, y: 1500 },
+            'l2_creativa': { x: 500, y: 1000 },
+            'l2_crm': { x: 500, y: 2400 },
+            'l2_conversion': { x: 500, y: 3200 },
+            'hub_videos': { x: 950, y: 300 },
+            'hub_posts': { x: 950, y: 650 },
+            'hub_stories': { x: 950, y: 1000 },
+            'hub_reels': { x: 950, y: 1350 },
+            'hub_tiktok': { x: 950, y: 1700 },
+            'hub_crm': { x: 950, y: 2050 },
+            'hub_forms': { x: 950, y: 2400 },
+            'hub_products': { x: 500, y: 1800 }
         };
     });
 
@@ -1297,8 +1297,10 @@ export default function StrategyCanvas({
                     }
 
                     // --- HIGH FIDELITY NEON PILL NODE ---
+                    const laneId = getNodeLaneId(node);
+                    const laneHub = hubs.find(h => h.id === laneId || h.lane === laneId);
                     const nodeCategory = NODE_CATEGORIES[typeConfig?.category] || NODE_CATEGORIES.conciencia;
-                    const nodeColor = node.data?.color || nodeCategory.color;
+                    const nodeColor = node.data?.color || laneHub?.color || nodeCategory.color;
                     const nodeGlow = nodeCategory.glow || nodeColor;
                     const nodeShape = nodeCategory.shape || 'pill';
                     

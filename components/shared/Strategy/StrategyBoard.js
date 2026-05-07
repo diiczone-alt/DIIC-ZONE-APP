@@ -83,20 +83,32 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
 
     // --- RECOVERY ON MOUNT (DEATH TO DATA LOSS) ---
     useEffect(() => {
-        const finalClientId = propClientId || clientId;
-        if (!finalClientId) {
-            setIsInitialLoad(false);
-            return;
-        }
-
         const fetchPersistentData = async () => {
+            let finalClientId = propClientId || clientId;
+            
+            // SECURITY GUARD: If no ID found, try to auto-discover first client
+            if (!finalClientId) {
+                try {
+                    const clients = await agencyService.getClients();
+                    if (clients && clients.length > 0) {
+                        finalClientId = clients[0].id;
+                    }
+                } catch (e) {
+                    console.error("Discovery error:", e);
+                }
+            }
+
+            if (!finalClientId) {
+                setIsInitialLoad(false);
+                return;
+            }
+
             try {
                 // 1. Try DB
                 const dbStrategy = await agencyService.loadStrategy(finalClientId);
                 if (dbStrategy && dbStrategy.data) {
                     setStrategyData(dbStrategy.data);
                     toast.success("Estrategia recuperada del Búnker Cloud.");
-                    // Delay setting isInitialLoad to false to allow state to settle
                     setTimeout(() => setIsInitialLoad(false), 500);
                     return;
                 }
@@ -630,20 +642,20 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
         
         // Distribution Rules (Enriquecido con Áreas y Categorías)
         const SUBTYPE_MAP = {
-            video: { id: 'v_youtube', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'autoridad'] },
-            reel: { id: 'v_reels', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'] },
-            tiktok: { id: 'v_tiktok', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'] },
-            podcast: { id: 'v_podcast', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'] },
-            masterclass: { id: 'v_masterclass', areaId: 'creativa', categoryId: 'video', levels: ['consideración', 'autoridad'] },
-            imagen: { id: 'i_post', areaId: 'creativa', categoryId: 'imagen', levels: ['consideración', 'conversión'] },
-            carrusel: { id: 'i_carrucel', areaId: 'creativa', categoryId: 'imagen', levels: ['conexión', 'autoridad'] },
-            deck: { id: 'i_deck', areaId: 'creativa', categoryId: 'imagen', levels: ['consideración', 'conversión'] },
-            historia: { id: 'i_historias', areaId: 'creativa', categoryId: 'imagen', levels: ['conexión', 'retención'] },
-            community: { id: 'r_community', areaId: 'conversiones', categoryId: 'recurso', levels: ['interés', 'retención'] },
-            audit: { id: 'r_audit', areaId: 'conversiones', categoryId: 'recurso', levels: ['consideración'] },
-            affiliate: { id: 'r_affiliate', areaId: 'conversiones', categoryId: 'recurso', levels: ['retención'] },
-            crm: { id: 'l3_crm_email', areaId: 'crm', categoryId: 'crm', levels: ['conversión'] },
-            form: { id: 'r_form', areaId: 'conversiones', categoryId: 'recurso', levels: ['conversión'] }
+            video: { id: 'v_youtube', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'autoridad'], color: '#f43f5e' },
+            reel: { id: 'v_reels', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'], color: '#10b981' },
+            tiktok: { id: 'v_tiktok', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'], color: '#22d3ee' },
+            podcast: { id: 'v_podcast', areaId: 'creativa', categoryId: 'video', levels: ['conciencia', 'interés'], color: '#8b5cf6' },
+            masterclass: { id: 'v_masterclass', areaId: 'creativa', categoryId: 'video', levels: ['consideración', 'autoridad'], color: '#f59e0b' },
+            imagen: { id: 'i_post', areaId: 'creativa', categoryId: 'imagen', levels: ['consideración', 'conversión'], color: '#818cf8' },
+            carrusel: { id: 'i_carrucel', areaId: 'creativa', categoryId: 'imagen', levels: ['conexión', 'autoridad'], color: '#ec4899' },
+            deck: { id: 'i_deck', areaId: 'creativa', categoryId: 'imagen', levels: ['consideración', 'conversión'], color: '#6366f1' },
+            historia: { id: 'i_historias', areaId: 'creativa', categoryId: 'imagen', levels: ['conexión', 'retención'], color: '#f97316' },
+            community: { id: 'r_community', areaId: 'conversiones', categoryId: 'recurso', levels: ['interés', 'retención'], color: '#22d3ee' },
+            audit: { id: 'r_audit', areaId: 'conversiones', categoryId: 'recurso', levels: ['consideración'], color: '#10b981' },
+            affiliate: { id: 'r_affiliate', areaId: 'conversiones', categoryId: 'recurso', levels: ['retención'], color: '#f43f5e' },
+            crm: { id: 'l3_crm_email', areaId: 'crm', categoryId: 'crm', levels: ['conversión'], color: '#10b981' },
+            form: { id: 'r_form', areaId: 'conversiones', categoryId: 'recurso', levels: ['conversión'], color: '#22d3ee' }
         };
 
         const stageCounts = {
@@ -662,13 +674,16 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
             
             const possibleLevels = mapping.levels || ['conciencia'];
             
+            const hubIdx = Object.keys(volume).indexOf(type);
+            const hubYOffset = hubIdx * 1200; // Separation per strategic hub
+
             for (let i = 0; i < count; i++) {
                 const levelId = possibleLevels[i % possibleLevels.length];
                 const stageIdx = STRATEGIC_COLUMNS.findIndex(col => col.id === levelId);
                 const actualIdx = stageIdx === -1 ? 0 : stageIdx;
                 
                 const targetX = STRATEGIC_RAILS.COLUMNS[actualIdx] + 25;
-                const targetY = 320 + (stageCounts[levelId] * STRATEGIC_RAILS.VERTICAL_PADDING);
+                const targetY = 320 + hubYOffset + (stageCounts[levelId] * 450);
                 stageCounts[levelId]++;
 
                 const nodeId = `node_${type}_${Date.now()}_${i}`;
@@ -685,6 +700,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                         areaId: mapping.areaId,
                         categoryId: mapping.categoryId,
                         subtype: mapping.id,
+                        color: mapping.color,
                         objective: 'Arquitectura Estratégica',
                         linkedTools: { guion: false, diseño: false, filmacion: false, edicion: false }
                     }

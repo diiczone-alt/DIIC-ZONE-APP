@@ -159,34 +159,6 @@ export default function StrategyTopBar({
 
                 {/* Right Section: Navigation & Actions */}
                 <div className="flex items-center gap-4 relative z-10">
-                    {/* Añadir Producto Button */}
-                    <button 
-                        onClick={onAddProduct}
-                        className={`px-4 py-3 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 group/prod ${
-                            theme === 'dark' 
-                            ? 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white' 
-                            : 'bg-blue-500/5 border-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
-                        }`}
-                        title="Añadir Producto a la Estrategia"
-                    >
-                        <Box className="w-5 h-5 group-hover/prod:scale-110 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Añadir Producto</span>
-                    </button>
-
-                    {/* Exportar PDF Button */}
-                    <button 
-                        onClick={onExportPDF}
-                        className={`px-4 py-3 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 group/pdf ${
-                            theme === 'dark' 
-                            ? 'bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white' 
-                            : 'bg-rose-500/5 border-rose-500/10 text-rose-600 hover:bg-rose-500 hover:text-white'
-                        }`}
-                        title="Exportar Estrategia a PDF"
-                    >
-                        <Download className="w-5 h-5 group-hover/pdf:-translate-y-0.5 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Exportar PDF</span>
-                    </button>
-
                     {/* Plantillas Button */}
                     <button 
                         onClick={() => onApplyTemplate('authority')}
@@ -197,7 +169,7 @@ export default function StrategyTopBar({
                         }`}
                         title="Aplicar Plantilla Plan Autoridad"
                     >
-                        <LayoutTemplate className="w-5 h-5 group-hover/template:rotate-3 transition-transform" />
+                        <LayoutTemplate className="w-5 h-5 group-hover/template:rotate-12 transition-transform" />
                         <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Plan Autoridad</span>
                     </button>
 

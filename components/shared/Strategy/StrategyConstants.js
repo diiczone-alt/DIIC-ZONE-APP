@@ -159,7 +159,7 @@ export const NODE_TYPES = {
 
 export const NODE_PLATFORMS = [
     { id: 'instagram', label: 'Instagram', icon: Instagram, color: '#E1306C' },
-    { id: 'tiktok', label: 'TikTok', icon: Chrome, color: '#000000' }, // Custom icon handle later
+    { id: 'tiktok', label: 'TikTok', icon: Chrome, color: '#000000' }, 
     { id: 'facebook', label: 'Facebook', icon: Facebook, color: '#1877F2' },
     { id: 'youtube', label: 'YouTube', icon: Youtube, color: '#FF0000' },
     { id: 'web', label: 'Web/Blog', icon: Globe, color: '#4F46E5' }
@@ -183,8 +183,8 @@ export const NODE_STAGES = [
 export const STRATEGIC_RAILS = {
     HUBS_X: 1400,
     PARTITION_X: 1900,
-    COLUMNS: [2000, 2750, 3500, 4250, 5000], // Reverted to original wide spacing
-    VERTICAL_PADDING: 110, // Extreme vertical compression
+    COLUMNS: [2000, 2750, 3500, 4250, 5000],
+    VERTICAL_PADDING: 110,
     COLUMN_WIDTH: 700
 };
 
@@ -384,31 +384,43 @@ export const STRATEGIC_FORMATS = [
 ];
 
 // Utility: Maps any node to its Strategic Hub/Lane ID
-export const getNodeLaneId = (n) => {
-    if (!n) return null;
-    // --- 1. PRIORITY: EXPLICIT MAPPING ---
-    if (n.data?.laneId) return n.data.laneId;
-    if (n.data?.subtype === 'v_reels') return 'v_reels';
-    if (n.data?.subtype === 'v_tiktok') return 'v_tiktok';
-    if (n.data?.subtype === 'v_youtube') return 'v_youtube';
-    if (n.data?.subtype === 'i_post') return 'v_post';
-    if (n.data?.subtype === 'i_historias' || n.data?.subtype === 'v_historias') return 'v_historias';
-    if (n.data?.subtype === 'l3_crm_email') return 'l3_crm_email';
-    if (n.data?.subtype === 'r_form') return 'r_form';
+export const getNodeLaneId = (node) => {
+    if (!node) return null;
 
-    // --- 2. SECONDARY: SEARCH STRING ---
-    const t = (n.type || '').toLowerCase();
-    const sub = (n.data?.subtype || '').toLowerCase();
-    const title = (n.data?.title || '').toLowerCase();
-    const searchStr = `${t} ${sub} ${title}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    // 1. Direct Subtype Override (MOST RELIABLE)
+    if (node.data?.subtype) {
+        const sub = node.data.subtype.toLowerCase();
+        // Specific formats FIRST to avoid category clashing
+        if (sub === 'v_tiktok' || sub === 'tiktok') return 'hub_tiktok';
+        if (sub === 'v_reels' || sub === 'reel') return 'hub_reels';
+        if (sub === 'v_youtube' || sub === 'video') return 'hub_videos';
+        if (sub === 'i_post' || sub === 'post') return 'hub_posts';
+        if (sub === 'v_historias' || sub === 'i_historias' || sub === 'story') return 'hub_stories';
+        if (sub === 'l3_crm_email' || sub === 'crm') return 'hub_crm';
+        if (sub === 'r_form' || sub === 'form') return 'hub_forms';
+        if (sub === 'hub_products' || sub === 'product') return 'hub_products';
+        
+        // Fallback for includes
+        if (sub.includes('tiktok')) return 'hub_tiktok';
+        if (sub.includes('reel')) return 'hub_reels';
+        if (sub.includes('video')) return 'hub_videos';
+        return sub;
+    }
 
-    if (searchStr.includes('reels') || searchStr.includes('reel') || t === 'reel_viral') return 'v_reels';
-    if (searchStr.includes('tiktok') || t === 'tiktok') return 'v_tiktok';
-    if (searchStr.includes('youtube') || searchStr.includes('video educ')) return 'v_youtube';
-    if (searchStr.includes('post') || searchStr.includes('imagen')) return 'v_post';
-    if (searchStr.includes('historia') || searchStr.includes('story')) return 'v_historias';
-    if (searchStr.includes('crm') || searchStr.includes('email')) return 'l3_crm_email';
-    if (searchStr.includes('form') || searchStr.includes('registro')) return 'r_form';
+    // 2. Keyword Analysis Fallback
+    const title = (node.data?.title || '').toLowerCase();
+    const type = (node.data?.type || '').toLowerCase();
+    const t = (node.type || '').toLowerCase();
+    const searchStr = `${title} ${type} ${t}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    // Priority Check: Specifics over Generics
+    if (searchStr.includes('tiktok')) return 'hub_tiktok';
+    if (searchStr.includes('reel')) return 'hub_reels';
+    if (searchStr.includes('historia') || searchStr.includes('story')) return 'hub_stories';
+    if (searchStr.includes('video') || t === 'educativo' || t === 'video') return 'hub_videos';
+    if (searchStr.includes('post') || searchStr.includes('imagen')) return 'hub_posts';
+    if (searchStr.includes('crm') || searchStr.includes('email')) return 'hub_crm';
+    if (searchStr.includes('form') || searchStr.includes('registro')) return 'hub_forms';
     if (searchStr.includes('producto') || searchStr.includes('vault')) return 'hub_products';
     
     return null;
