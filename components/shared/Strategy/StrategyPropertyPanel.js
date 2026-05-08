@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { 
     X, Trash2, Copy, Send, Layout, Target, 
     Share2, Clock, BarChart, ExternalLink, Info,
@@ -6,11 +8,24 @@ import {
     Calendar, Users, Type, Video, Link, MessageSquare,
     CheckCircle2, AlertCircle, TrendingUp, Sparkles, Pencil, Search, Box,
     Zap, Globe, Database, Cpu, Flame, Snowflake, Thermometer, Palette,
-    Layers, Mic, Film
+    Layers, Mic, Film, Camera, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NODE_TYPES, NODE_CATEGORIES, STRATEGIC_COLUMNS, CONTENT_STATUS, STRATEGIC_FORMATS } from './StrategyConstants';
 
+
+const CREATIVE_ZONES = [
+    { id: 'community', label: 'COMMUNITY MANAGER', color: '#818cf8', icon: Users },
+    { id: 'diseno', label: 'DISEÑO GRÁFICO', color: '#2dd4bf', icon: Palette },
+    { id: 'audio', label: 'AUDITION PRO', color: '#6366f1', icon: Mic },
+    { id: 'video', label: 'EDICIÓN DE VIDEO', color: '#818cf8', icon: Video },
+    { id: 'foto', label: 'FOTOGRAFÍA & ESTUDIO', color: '#fb7185', icon: Camera },
+    { id: 'filmmaker', label: 'FILMMAKER PRO', color: '#a855f7', icon: Film },
+    { id: 'talento', label: 'MODELOS & TALENTO', color: '#fbbf24', icon: Star },
+    { id: 'web', label: 'DESARROLLO WEB', color: '#22d3ee', icon: Globe },
+    { id: 'imprenta', label: 'IMPRENTA & MERCH', color: '#f59e0b', icon: Box },
+    { id: 'eventos', label: 'COBERTURA EVENTOS', color: '#10b981', icon: Calendar }
+];
 
 export default function StrategyPropertyPanel({ 
     selectedNode, 
@@ -27,7 +42,9 @@ export default function StrategyPropertyPanel({
     theme = 'dark'
 }) {
     const [isGeneratingAI, setIsGeneratingAI] = useState(null); // 'script', 'objective', etc.
+    const [showZonePicker, setShowZonePicker] = useState(false);
     const [isConnectingCloud, setIsConnectingCloud] = useState(false);
+    const router = useRouter();
     
     if (!selectedNode && !selectedEdge) return null;
 
@@ -127,7 +144,7 @@ export default function StrategyPropertyPanel({
     };
 
     return (
-        <aside className={`w-[400px] border-l flex flex-col h-full z-[100] overflow-hidden ring-1 group/panel transition-all duration-700 ${
+        <aside className={`w-[400px] border-r flex flex-col h-full z-[100] overflow-hidden ring-1 group/panel transition-all duration-700 ${
             theme === 'dark' 
             ? 'bg-[#050511]/95 backdrop-blur-3xl border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.8)] ring-white/5' 
             : 'bg-white/95 backdrop-blur-3xl border-slate-200 shadow-xl shadow-slate-200/50 ring-slate-100'
@@ -188,6 +205,17 @@ export default function StrategyPropertyPanel({
                     {[
                         { id: 'estratégica', label: 'Estratégica', icon: Target, color: 'text-indigo-400' },
                         { id: 'producción', label: 'Producción', icon: Video, color: 'text-purple-400' },
+                        // DYNAMIC ROLE TABS
+                        ...(selectedNode.data?.responsibleZones || []).map(zoneId => {
+                            const zone = CREATIVE_ZONES.find(z => z.id === zoneId);
+                            if (!zone) return null;
+                            return {
+                                id: `role_${zoneId}`,
+                                label: zone.label.split(' ')[0], // Short label
+                                icon: zone.icon,
+                                color: zone.color
+                            };
+                        }).filter(Boolean),
                         { id: 'output', label: 'Output', icon: Layout, color: 'text-amber-400' },
                         { id: 'estilo', label: 'Estilo', icon: Palette, color: 'text-sky-400' },
                         { id: 'distribución', label: 'Distribución', icon: Globe, color: 'text-emerald-400' },
@@ -201,7 +229,10 @@ export default function StrategyPropertyPanel({
                             }`}
                         >
                             <div className="transition-all duration-300">
-                                <tab.icon className={`w-3.5 h-3.5 ${activeTab === tab.id ? tab.color : ''}`} />
+                                <tab.icon 
+                                    className={`w-3.5 h-3.5 ${activeTab === tab.id ? (tab.id.startsWith('role_') ? '' : tab.color) : ''}`} 
+                                    style={activeTab === tab.id && tab.id.startsWith('role_') ? { color: tab.color } : {}}
+                                />
                             </div>
                             <span className="text-[7px] font-black uppercase tracking-[0.1em]">{tab.label}</span>
                              {activeTab === tab.id && (
@@ -284,43 +315,120 @@ export default function StrategyPropertyPanel({
                                             onChange={(val) => onUpdateNode(selectedNode.id, { ...selectedNode.data, customerTemp: val })}
                                             icon={Thermometer}
                                         />
-                                                  <div className="space-y-2">
-                                        <label className={`text-[8px] font-black uppercase tracking-[0.2em] pl-1 transition-colors duration-500 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>OBJETIVO CENTRAL</label>
-                                        <textarea 
-                                            value={selectedNode?.data?.strategicInfo?.objective || ''}
-                                            onChange={(e) => onUpdateNode(selectedNode.id, { 
-                                                ...selectedNode.data, 
-                                                strategicInfo: { ...(selectedNode.data?.strategicInfo || {}), objective: e.target.value } 
-                                            })}
-                                            placeholder="¿Qué quieres lograr con este contenido?"
-                                            className={`w-full border rounded-xl px-4 py-3 text-xs font-bold h-20 resize-none transition-all ${
-                                                theme === 'dark' 
-                                                ? 'bg-white/[0.02] border-white/5 text-white focus:border-indigo-500/20' 
-                                                : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-indigo-300 placeholder:text-slate-300 shadow-inner'
-                                            }`}
-                                        />
                                     </div>
-                                      <div className="space-y-2">
-                                        <label className={`text-[8px] font-black uppercase tracking-[0.2em] pl-1 transition-colors duration-500 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>DOLOR / DESEO A TOCAR</label>
-                                        <input 
-                                            type="text"
-                                            value={selectedNode?.data?.strategicInfo?.painPoint || ''}
-                                            onChange={(e) => onUpdateNode(selectedNode.id, { 
-                                                ...selectedNode.data, 
-                                                strategicInfo: { ...(selectedNode.data?.strategicInfo || {}), painPoint: e.target.value } 
-                                            })}
-                                            className={`w-full border rounded-xl px-4 py-3 text-xs font-bold transition-all placeholder:text-gray-800 ${
-                                                theme === 'dark' 
-                                                ? 'bg-white/[0.02] border-white/5 text-white placeholder:text-gray-800' 
-                                                : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-300'
-                                            }`}
-                                            placeholder="Ej: Miedo a perder dinero..."
-                                        />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {/* 1. BOTÓN RESPONSABLE (MULTI-SELECT) */}
+                                            <div className="space-y-2">
+                                                <label className={`text-[8px] font-black uppercase tracking-[0.2em] pl-1 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>RESPONSABLE(S)</label>
+                                                <div className="relative group/zone">
+                                                    <button 
+                                                        onClick={() => setShowZonePicker(!showZonePicker)}
+                                                        className={`w-full flex items-center justify-between border rounded-xl px-4 py-3 transition-all active:scale-95 min-h-[50px] ${
+                                                            theme === 'dark' 
+                                                            ? 'bg-white/[0.02] border-white/5 text-white hover:bg-white/5' 
+                                                            : 'bg-white border-slate-200 text-slate-900 shadow-sm'
+                                                        }`}
+                                                    >
+                                                        <div className="flex flex-wrap gap-1.5 max-w-[120px]">
+                                                            {(() => {
+                                                                const zones = selectedNode.data?.responsibleZones || (selectedNode.data?.responsibleZone ? [selectedNode.data.responsibleZone] : []);
+                                                                if (zones.length === 0) return <span className="text-[9px] font-black tracking-widest text-gray-500">SIN ASIGNAR</span>;
+                                                                
+                                                                return zones.map(zoneId => {
+                                                                    const zone = CREATIVE_ZONES.find(z => z.id === zoneId);
+                                                                    if (!zone) return null;
+                                                                    return (
+                                                                        <div key={zone.id} className="flex items-center gap-1.5 bg-white/5 px-1.5 py-0.5 rounded-md border border-white/5">
+                                                                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: zone.color }} />
+                                                                            <span className="text-[7px] font-black uppercase tracking-tighter text-gray-300">{zone.label}</span>
+                                                                        </div>
+                                                                    );
+                                                                });
+                                                            })()}
+                                                        </div>
+                                                        <Users className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                                                    </button>
+
+                                                    {/* Dropdown Picker Multi-Select */}
+                                                    <AnimatePresence>
+                                                        {showZonePicker && (
+                                                            <>
+                                                                <div className="fixed inset-0 z-[90]" onClick={() => setShowZonePicker(false)} />
+                                                                <motion.div 
+                                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                                    className="absolute left-0 right-0 top-full mt-2 bg-[#0A0A1F] border border-white/10 rounded-2xl shadow-2xl z-[100] p-2 overflow-hidden w-[360px]"
+                                                                >
+                                                                    <div className="grid grid-cols-2 gap-1">
+                                                                        {CREATIVE_ZONES.map(z => {
+                                                                            const currentZones = selectedNode.data?.responsibleZones || (selectedNode.data?.responsibleZone ? [selectedNode.data.responsibleZone] : []);
+                                                                            const isSelected = currentZones.includes(z.id);
+                                                                            
+                                                                            return (
+                                                                                <button 
+                                                                                    key={z.id}
+                                                                                    onClick={() => {
+                                                                                        const newZones = isSelected 
+                                                                                            ? currentZones.filter(id => id !== z.id)
+                                                                                            : [...currentZones, z.id];
+                                                                                        onUpdateNode(selectedNode.id, { 
+                                                                                            ...selectedNode.data, 
+                                                                                            responsibleZones: newZones,
+                                                                                            responsibleZone: newZones[0] || null // Maintain legacy
+                                                                                        });
+                                                                                    }}
+                                                                                    className={`flex items-center justify-between w-full p-3 rounded-xl transition-all hover:bg-white/5 group ${isSelected ? 'bg-indigo-600/10' : ''}`}
+                                                                                >
+                                                                                    <div className="flex items-center gap-3">
+                                                                                        <z.icon className={`w-3.5 h-3.5 ${isSelected ? 'text-indigo-400' : 'text-gray-500'}`} />
+                                                                                        <span className={`text-[9px] font-black tracking-widest uppercase ${isSelected ? 'text-white' : 'text-gray-400'}`}>{z.label}</span>
+                                                                                    </div>
+                                                                                    {isSelected && <CheckCircle2 className="w-3 h-3 text-indigo-400" />}
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </motion.div>
+                                                            </>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            </div>
+
+                                            {/* 2. BOTÓN GUÍAS / GUIONES */}
+                                            <div className="space-y-2">
+                                                <label className={`text-[8px] font-black uppercase tracking-[0.2em] pl-1 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>GUÍA / GUIONES</label>
+                                                <button 
+                                                    onClick={() => {
+                                                        toast.success('Abriendo Estudio Creativo 3D...');
+                                                        router.push(`/dashboard/creative-3d?nodeId=${selectedNode.id}`);
+                                                    }}
+                                                    className={`w-full flex flex-col justify-center gap-1 border rounded-xl px-4 py-3 transition-all group overflow-hidden relative min-h-[50px] ${
+                                                        theme === 'dark' 
+                                                        ? 'bg-indigo-600/10 border-indigo-500/20 text-white hover:bg-indigo-600/20' 
+                                                        : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                                                    }`}
+                                                >
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-white/5 to-indigo-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                                    <div className="flex items-center justify-between w-full">
+                                                        <div className="flex items-center gap-2">
+                                                            <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                                                            <span className="text-[10px] font-black tracking-widest">VER GUIÓN</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 bg-indigo-500/20 px-1.5 py-0.5 rounded-full border border-indigo-500/10">
+                                                            <div className="w-1 h-1 rounded-full bg-indigo-400 animate-pulse" />
+                                                            <span className="text-[6px] font-black text-indigo-300">LINK</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-[7px] font-bold text-gray-500 uppercase tracking-tighter text-left">ESTUDIO CREATIVO 3D</div>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                          </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[8px] font-black text-gray-700 uppercase tracking-[0.2em] pl-1">MENSAJE CLAVE (HOOK)</label>
+                                        <label className={`text-[8px] font-black uppercase tracking-[0.2em] pl-1 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>MENSAJE CLAVE (HOOK)</label>
                                         <textarea 
                                             value={selectedNode?.data?.strategicInfo?.keyMessage || ''}
                                             onChange={(e) => onUpdateNode(selectedNode.id, { 
@@ -332,7 +440,6 @@ export default function StrategyPropertyPanel({
                                         />
                                     </div>
                                 </div>
-                            </div>
                         </motion.div>
                     )}
                     
@@ -473,9 +580,296 @@ export default function StrategyPropertyPanel({
                                             placeholder={selectedNode.data?.masterType === 'video' ? "Pega aquí el guion o usa IA..." : "Describe la composición visual o prompt..."}
                                             className={`w-full bg-transparent border-none p-0 text-[10px] font-bold h-32 resize-none focus:outline-none placeholder:text-gray-800 leading-relaxed transition-colors relative z-10 ${isGeneratingAI === 'script' ? 'text-indigo-300' : 'text-gray-300'}`}
                                         />
-                                    </div>                                </div>
+                                    </div>
+                                    
+                                    {/* 🔄 FLUJOS ESPECÍFICOS POR ROL (INYECTADOS EN PRODUCCIÓN) */}
+                                    {(selectedNode.data?.responsibleZones || []).includes('filmmaker') && (
+                                        <div className="space-y-6 pt-4 border-t border-white/5">
+                                            <div className="flex items-center gap-3">
+                                                <Film className="w-3.5 h-3.5 text-purple-400" />
+                                                <h4 className="text-[9px] font-black text-purple-400 uppercase tracking-widest">FLUJO: FILMMAKER PRO</h4>
+                                            </div>
+                                            <div className="p-5 rounded-2xl bg-purple-500/[0.02] border border-purple-500/10 space-y-6">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <span className="text-[7px] font-bold text-gray-600 uppercase tracking-widest ml-1">CÁMARA</span>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {['Sony', 'Canon', 'iPhone', 'Android'].map(cam => {
+                                                                const isSelected = selectedNode.data?.filmmakerInfo?.equipment?.camera === cam;
+                                                                return (
+                                                                    <button key={cam} onClick={() => onUpdateNode(selectedNode.id, { ...selectedNode.data, filmmakerInfo: { ...(selectedNode.data?.filmmakerInfo || {}), equipment: { ...(selectedNode.data?.filmmakerInfo?.equipment || {}), camera: isSelected ? null : cam } } })} className={`px-2 py-1 rounded-md text-[7px] font-black transition-all border ${isSelected ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300' : 'bg-white/[0.02] border-white/5 text-gray-600'}`}>{cam}</button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <span className="text-[7px] font-bold text-gray-600 uppercase tracking-widest ml-1">LUCES</span>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {['Softbox', 'RGB', 'Reflector'].map(light => {
+                                                                const isSelected = (selectedNode.data?.filmmakerInfo?.equipment?.lights || []).includes(light);
+                                                                return (
+                                                                    <button key={light} onClick={() => { const current = selectedNode.data?.filmmakerInfo?.equipment?.lights || []; const next = isSelected ? current.filter(l => l !== light) : [...current, light]; onUpdateNode(selectedNode.id, { ...selectedNode.data, filmmakerInfo: { ...(selectedNode.data?.filmmakerInfo || {}), equipment: { ...(selectedNode.data?.filmmakerInfo?.equipment || {}), lights: next } } }); }} className={`px-2 py-1 rounded-md text-[7px] font-black transition-all border ${isSelected ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-white/[0.02] border-white/5 text-gray-600'}`}>{light}</button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[8px] font-black text-purple-400 uppercase tracking-widest pl-1">GUÍA DE GRABACIÓN</label>
+                                                    <textarea value={selectedNode.data?.filmmakerInfo?.guide || ''} onChange={(e) => onUpdateNode(selectedNode.id, { ...selectedNode.data, filmmakerInfo: { ...(selectedNode.data?.filmmakerInfo || {}), guide: e.target.value } })} placeholder="Detalles técnicos..." className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-4 text-[10px] font-bold text-gray-300 h-24 resize-none focus:border-purple-500/20 leading-relaxed" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(selectedNode.data?.responsibleZones || []).includes('diseno') && (
+                                        <div className="space-y-6 pt-4 border-t border-white/5">
+                                            <div className="flex items-center gap-3">
+                                                <Palette className="w-3.5 h-3.5 text-teal-400" />
+                                                <h4 className="text-[9px] font-black text-teal-400 uppercase tracking-widest">FLUJO: DISEÑO GRÁFICO</h4>
+                                            </div>
+                                            <div className="p-5 rounded-2xl bg-teal-500/[0.02] border border-teal-500/10 space-y-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[8px] font-black text-gray-700 uppercase tracking-widest pl-1">CONCEPTO DE PORTADA</label>
+                                                    <input type="text" value={selectedNode.data?.designInfo?.cover || ''} onChange={(e) => onUpdateNode(selectedNode.id, { ...selectedNode.data, designInfo: { ...(selectedNode.data?.designInfo || {}), cover: e.target.value } })} placeholder="Título..." className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-xs font-bold text-white placeholder:text-gray-800" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[8px] font-black text-teal-400 uppercase tracking-widest pl-1">GUÍA DE DISEÑO</label>
+                                                    <textarea value={selectedNode.data?.designInfo?.guide || ''} onChange={(e) => onUpdateNode(selectedNode.id, { ...selectedNode.data, designInfo: { ...(selectedNode.data?.designInfo || {}), guide: e.target.value } })} placeholder="Instrucciones visuales..." className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-4 text-[10px] font-bold text-gray-300 h-24 resize-none focus:border-teal-500/20 leading-relaxed" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                                 </div>
                              </div>
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'role_filmmaker' && (
+                        <motion.div 
+                            key="role_filmmaker"
+                            initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
+                            className="space-y-8 pb-10"
+                        >
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                                        <Film className="w-4 h-4 text-purple-400" />
+                                    </div>
+                                    <h4 className="text-[10px] font-black text-white uppercase tracking-[0.3em]">WORKFLOW: FILMMAKER PRO</h4>
+                                </div>
+
+                                <div className="p-6 rounded-[32px] bg-white/[0.02] border border-white/5 space-y-8">
+                                    {/* 🎬 ESTADOS DE FILMAKER */}
+                                    <div className="space-y-3">
+                                        <label className="text-[8px] font-black text-gray-700 uppercase tracking-widest pl-1 flex items-center gap-2">
+                                            <div className="w-1 h-1 rounded-full bg-purple-500" />
+                                            ESTADO DE PRODUCCIÓN
+                                        </label>
+                                        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                                            {[
+                                                { id: 'grabacion', label: 'GRABACIÓN', color: 'bg-rose-500' },
+                                                { id: 'grabado', label: 'GRABADO', color: 'bg-amber-500' },
+                                                { id: 'entregado', label: 'ENTREGADO', color: 'bg-emerald-500' },
+                                                { id: 'almacenado', label: 'ALMACENADO', color: 'bg-blue-500' }
+                                            ].map(s => {
+                                                const isSelected = selectedNode.data?.filmmakerInfo?.status === s.id;
+                                                return (
+                                                    <button 
+                                                        key={s.id}
+                                                        onClick={() => onUpdateNode(selectedNode.id, { ...selectedNode.data, filmmakerInfo: { ...(selectedNode.data?.filmmakerInfo || {}), status: s.id } })}
+                                                        className={`px-4 py-2.5 rounded-xl border transition-all text-[8px] font-black uppercase tracking-tighter shrink-0 flex items-center gap-2 ${isSelected ? `${s.color} border-transparent text-white shadow-lg` : 'bg-white/[0.02] border-white/5 text-gray-500 hover:text-gray-300'}`}
+                                                    >
+                                                        {isSelected && <div className="w-1 h-1 rounded-full bg-white animate-pulse" />}
+                                                        {s.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 📸 EQUIPO DE GRABACIÓN */}
+                                    <div className="space-y-6">
+                                        <label className="text-[8px] font-black text-gray-700 uppercase tracking-widest pl-1 flex items-center gap-2">
+                                            <div className="w-1 h-1 rounded-full bg-indigo-500" />
+                                            EQUIPO DE GRABACIÓN
+                                        </label>
+                                        
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {/* CÁMARA */}
+                                            <div className="space-y-2">
+                                                <span className="text-[7px] font-bold text-gray-600 uppercase tracking-widest ml-1">CÁMARA</span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {['Sony', 'Canon', 'iPhone', 'Android'].map(cam => {
+                                                        const isSelected = selectedNode.data?.filmmakerInfo?.equipment?.camera === cam;
+                                                        return (
+                                                            <button 
+                                                                key={cam}
+                                                                onClick={() => onUpdateNode(selectedNode.id, { ...selectedNode.data, filmmakerInfo: { ...(selectedNode.data?.filmmakerInfo || {}), equipment: { ...(selectedNode.data?.filmmakerInfo?.equipment || {}), camera: isSelected ? null : cam } } })}
+                                                                className={`px-2 py-1 rounded-md text-[7px] font-black transition-all border ${isSelected ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300' : 'bg-white/[0.02] border-white/5 text-gray-600'}`}
+                                                            >
+                                                                {cam}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* ILUMINACIÓN */}
+                                            <div className="space-y-2">
+                                                <span className="text-[7px] font-bold text-gray-600 uppercase tracking-widest ml-1">LUCES</span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {['Softbox', 'RGB', 'Reflector'].map(light => {
+                                                        const isSelected = (selectedNode.data?.filmmakerInfo?.equipment?.lights || []).includes(light);
+                                                        return (
+                                                            <button 
+                                                                key={light}
+                                                                onClick={() => {
+                                                                    const current = selectedNode.data?.filmmakerInfo?.equipment?.lights || [];
+                                                                    const next = isSelected ? current.filter(l => l !== light) : [...current, light];
+                                                                    onUpdateNode(selectedNode.id, { ...selectedNode.data, filmmakerInfo: { ...(selectedNode.data?.filmmakerInfo || {}), equipment: { ...(selectedNode.data?.filmmakerInfo?.equipment || {}), lights: next } } });
+                                                                }}
+                                                                className={`px-2 py-1 rounded-md text-[7px] font-black transition-all border ${isSelected ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-white/[0.02] border-white/5 text-gray-600'}`}
+                                                            >
+                                                                {light}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* AUDIO */}
+                                            <div className="space-y-2">
+                                                <span className="text-[7px] font-bold text-gray-600 uppercase tracking-widest ml-1">AUDIO</span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {['DJI Mic', 'Rhode', 'Lavalier'].map(audio => {
+                                                        const isSelected = (selectedNode.data?.filmmakerInfo?.equipment?.audio || []).includes(audio);
+                                                        return (
+                                                            <button 
+                                                                key={audio}
+                                                                onClick={() => {
+                                                                    const current = selectedNode.data?.filmmakerInfo?.equipment?.audio || [];
+                                                                    const next = isSelected ? current.filter(a => a !== audio) : [...current, audio];
+                                                                    onUpdateNode(selectedNode.id, { ...selectedNode.data, filmmakerInfo: { ...(selectedNode.data?.filmmakerInfo || {}), equipment: { ...(selectedNode.data?.filmmakerInfo?.equipment || {}), audio: next } } });
+                                                                }}
+                                                                className={`px-2 py-1 rounded-md text-[7px] font-black transition-all border ${isSelected ? 'bg-purple-500/20 border-purple-500/40 text-purple-300' : 'bg-white/[0.02] border-white/5 text-gray-600'}`}
+                                                            >
+                                                                {audio}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* ACCESORIOS */}
+                                            <div className="space-y-2">
+                                                <span className="text-[7px] font-bold text-gray-600 uppercase tracking-widest ml-1">EXTRAS</span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {['Trípode', 'Gimbal', 'Cables'].map(extra => {
+                                                        const isSelected = (selectedNode.data?.filmmakerInfo?.equipment?.extras || []).includes(extra);
+                                                        return (
+                                                            <button 
+                                                                key={extra}
+                                                                onClick={() => {
+                                                                    const current = selectedNode.data?.filmmakerInfo?.equipment?.extras || [];
+                                                                    const next = isSelected ? current.filter(e => e !== extra) : [...current, extra];
+                                                                    onUpdateNode(selectedNode.id, { ...selectedNode.data, filmmakerInfo: { ...(selectedNode.data?.filmmakerInfo || {}), equipment: { ...(selectedNode.data?.filmmakerInfo?.equipment || {}), extras: next } } });
+                                                                }}
+                                                                className={`px-2 py-1 rounded-md text-[7px] font-black transition-all border ${isSelected ? 'bg-teal-500/20 border-teal-500/40 text-teal-300' : 'bg-white/[0.02] border-white/5 text-gray-600'}`}
+                                                            >
+                                                                {extra}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 📋 GUÍA DE PRODUCCIÓN */}
+                                    <div className="space-y-3">
+                                        <label className="text-[8px] font-black text-purple-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                                            <FileText className="w-3 h-3" />
+                                            GUÍA DE PRODUCCIÓN / GRABACIÓN
+                                        </label>
+                                        <textarea 
+                                            value={selectedNode.data?.filmmakerInfo?.guide || ''}
+                                            onChange={(e) => onUpdateNode(selectedNode.id, { ...selectedNode.data, filmmakerInfo: { ...(selectedNode.data?.filmmakerInfo || {}), guide: e.target.value } })}
+                                            placeholder="Detalles técnicos de la toma, ángulos, movimientos..."
+                                            className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-5 text-[10px] font-bold text-gray-300 h-44 resize-none focus:border-purple-500/20 leading-relaxed shadow-inner"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'role_diseno' && (
+                        <motion.div 
+                            key="role_diseno"
+                            initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
+                            className="space-y-8 pb-10"
+                        >
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
+                                        <Palette className="w-4 h-4 text-teal-400" />
+                                    </div>
+                                    <h4 className="text-[10px] font-black text-white uppercase tracking-[0.3em]">WORKFLOW: DISEÑO GRÁFICO</h4>
+                                </div>
+
+                                <div className="p-6 rounded-[32px] bg-white/[0.02] border border-white/5 space-y-8">
+                                    {/* 🎨 ESTADOS DE DISEÑO */}
+                                    <div className="space-y-3">
+                                        <label className="text-[8px] font-black text-gray-700 uppercase tracking-widest pl-1 flex items-center gap-2">
+                                            <div className="w-1 h-1 rounded-full bg-teal-500" />
+                                            ESTADO DEL DISEÑO
+                                        </label>
+                                        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                                            {[
+                                                { id: 'disenando', label: 'DISEÑANDO', color: 'bg-indigo-500' },
+                                                { id: 'revision', label: 'REVISIÓN', color: 'bg-amber-500' },
+                                                { id: 'aprobado', label: 'APROBADO', color: 'bg-emerald-500' },
+                                                { id: 'entregado', label: 'ENTREGADO', color: 'bg-blue-500' }
+                                            ].map(s => {
+                                                const isSelected = selectedNode.data?.designInfo?.status === s.id;
+                                                return (
+                                                    <button 
+                                                        key={s.id}
+                                                        onClick={() => onUpdateNode(selectedNode.id, { ...selectedNode.data, designInfo: { ...(selectedNode.data?.designInfo || {}), status: s.id } })}
+                                                        className={`px-4 py-2.5 rounded-xl border transition-all text-[8px] font-black uppercase tracking-tighter shrink-0 flex items-center gap-2 ${isSelected ? `${s.color} border-transparent text-white shadow-lg` : 'bg-white/[0.02] border-white/5 text-gray-500 hover:text-gray-300'}`}
+                                                    >
+                                                        {isSelected && <div className="w-1 h-1 rounded-full bg-white animate-pulse" />}
+                                                        {s.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[8px] font-black text-gray-700 uppercase tracking-widest pl-1">PORTADA / MINIATURA (CONCEPTO)</label>
+                                        <input 
+                                            type="text"
+                                            value={selectedNode.data?.designInfo?.cover || ''}
+                                            onChange={(e) => onUpdateNode(selectedNode.id, { ...selectedNode.data, designInfo: { ...(selectedNode.data?.designInfo || {}), cover: e.target.value } })}
+                                            placeholder="Título de la portada, elementos clave..."
+                                            className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-xs font-bold text-white placeholder:text-gray-800"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[8px] font-black text-teal-400 uppercase tracking-widest pl-1">GUÍA DE DISEÑO / ESTILO</label>
+                                        <textarea 
+                                            value={selectedNode.data?.designInfo?.guide || ''}
+                                            onChange={(e) => onUpdateNode(selectedNode.id, { ...selectedNode.data, designInfo: { ...(selectedNode.data?.designInfo || {}), guide: e.target.value } })}
+                                            placeholder="Instrucciones para la portada, fuentes, colores específicos..."
+                                            className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-5 text-[10px] font-bold text-gray-300 h-44 resize-none focus:border-teal-500/20 leading-relaxed shadow-inner"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </motion.div>
                     )}
 

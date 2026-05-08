@@ -42,14 +42,13 @@ export default function StrategicOutliner({ nodes, activeNodeId, onNodeSelect, o
     if (laneId) {
         // Map laneIds to outliner groups
         const laneToGroup = {
-            'v_youtube': 'hub_videos',
-            'i_post': 'hub_posts',
-            'i_historias': 'hub_stories',
-            'v_historias': 'hub_stories',
-            'v_reels': 'hub_reels',
-            'v_tiktok': 'hub_tiktok',
-            'l3_crm_email': 'hub_crm',
-            'r_form': 'hub_forms'
+            'hub_videos': 'hub_videos',
+            'hub_posts': 'hub_posts',
+            'hub_stories': 'hub_stories',
+            'hub_reels': 'hub_reels',
+            'hub_tiktok': 'hub_tiktok',
+            'hub_crm': 'hub_crm',
+            'hub_forms': 'hub_forms'
         };
         target = laneToGroup[laneId] || 'otros';
     } else {

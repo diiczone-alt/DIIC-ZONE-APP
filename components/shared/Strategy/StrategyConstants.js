@@ -181,11 +181,11 @@ export const NODE_STAGES = [
 
 // Layout & Workspace Partitioning Constants
 export const STRATEGIC_RAILS = {
-    HUBS_X: 950,
-    PARTITION_X: 1200,
-    COLUMNS: [1400, 2000, 2600, 3200, 3800],
+    HUBS_X: 650,
+    PARTITION_X: 900,
+    COLUMNS: [1000, 1500, 2000, 2500, 3000],
     VERTICAL_PADDING: 110,
-    COLUMN_WIDTH: 500
+    COLUMN_WIDTH: 450
 };
 
 export const NODE_STATUS = {
@@ -403,10 +403,10 @@ export const getNodeLaneId = (node) => {
     // 2. Visual Title Analysis (Emergency Fallback)
     const title = (node.data?.title || '').toLowerCase();
     if (title.includes('tiktok')) return 'hub_tiktok';
-    if (title.includes('reel')) return 'hub_reels';
+    if (title.includes('reel') || title.includes('captacion')) return 'hub_reels';
     if (title.includes('story') || title.includes('historia')) return 'hub_stories';
-    if (title.includes('video')) return 'hub_videos';
-    if (title.includes('post')) return 'hub_posts';
+    if (title.includes('video') || title.includes('youtube') || title.includes('ad:')) return 'hub_videos';
+    if (title.includes('post') || title.includes('autoridad')) return 'hub_posts';
     if (title.includes('crm') || title.includes('email')) return 'hub_crm';
     if (title.includes('form') || title.includes('registro')) return 'hub_forms';
     if (title.includes('producto')) return 'hub_products';

@@ -82,18 +82,18 @@ export default function StrategyCanvas({
             if (saved) return JSON.parse(saved);
         }
         return {
-            'root': { x: 100, y: 1500 },
-            'l2_creativa': { x: 500, y: 1000 },
-            'l2_crm': { x: 500, y: 2400 },
-            'l2_conversion': { x: 500, y: 3200 },
-            'hub_videos': { x: 950, y: 300 },
-            'hub_posts': { x: 950, y: 650 },
-            'hub_stories': { x: 950, y: 1000 },
-            'hub_reels': { x: 950, y: 1350 },
-            'hub_tiktok': { x: 950, y: 1700 },
-            'hub_crm': { x: 950, y: 2050 },
-            'hub_forms': { x: 950, y: 2400 },
-            'hub_products': { x: 500, y: 1800 }
+            'root': { x: 50, y: 1500 },
+            'l2_creativa': { x: 300, y: 1000 },
+            'l2_crm': { x: 300, y: 2400 },
+            'l2_conversion': { x: 300, y: 3200 },
+            'hub_videos': { x: 650, y: 300 },
+            'hub_posts': { x: 650, y: 650 },
+            'hub_stories': { x: 650, y: 1000 },
+            'hub_reels': { x: 650, y: 1350 },
+            'hub_tiktok': { x: 650, y: 1700 },
+            'hub_crm': { x: 650, y: 2050 },
+            'hub_forms': { x: 650, y: 2400 },
+            'hub_products': { x: 650, y: 2750 }
         };
     });
 
@@ -676,30 +676,30 @@ export default function StrategyCanvas({
 
                 edges.push(
                     <g key={`root-edge-${parent}-${child}`}>
-                        {/* Glow Layer */}
                         <motion.path 
-                            initial={{ pathLength: 0, opacity: 0 }}
-                            animate={{ pathLength: 1, opacity: isLight ? 0.35 : 0.15 }}
                             d={path} 
                             stroke={color} 
-                            strokeWidth={isLight ? "4" : "8"} 
+                            strokeWidth="1" 
                             fill="none" 
-                            filter={isLight ? "" : "url(#glow)"}
+                            strokeOpacity={isLight ? "0.2" : "0.3"}
+                            strokeDasharray="4, 12"
+                            strokeLinecap="round"
+                            filter="url(#neonGlow)"
+                            animate={{ strokeDashoffset: [-100, 0] }}
+                            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
                         />
-                        {/* Solid Core */}
+                        {/* High-speed data pulse (Dashed) */}
                         <motion.path 
-                            initial={{ pathLength: 0, opacity: 0 }}
-                            animate={{ pathLength: 1, opacity: isLight ? 0.7 : 0.4 }}
                             d={path} 
                             stroke={color} 
-                            strokeWidth={isLight ? "2.5" : "2"} 
+                            strokeWidth="1" 
                             fill="none" 
+                            strokeOpacity="0.8"
+                            strokeDasharray="2, 40"
+                            strokeLinecap="round"
+                            animate={{ strokeDashoffset: [-100, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                         />
-                        {/* Energy Pulse */}
-                        <motion.circle r={isLight ? "4" : "3"} fill={color} filter={isLight ? "" : "url(#glow)"}>
-                             <animateMotion dur="3s" repeatCount="indefinite" path={path} />
-                             <animate attributeName="opacity" values="0;1;1;0" dur="3s" repeatCount="indefinite" />
-                        </motion.circle>
                     </g>
                 );
             });
@@ -745,26 +745,27 @@ export default function StrategyCanvas({
                 
                 connections.push(
                     <g key={`node-hub-edge-${node.id}`} className="neural-fiber">
-                        <path 
-                            d={path} 
-                            stroke={color} 
-                            strokeWidth="5" 
-                            strokeOpacity="0.7" 
-                            fill="none" 
-                            filter="url(#glow)"
-                            className="transition-all duration-500 animate-pulse"
-                        />
-                        <path 
-                            d={path} 
-                            stroke="white" 
-                            strokeWidth="2" 
-                            strokeOpacity="0.9" 
-                            fill="none" 
-                            className="neural-core"
-                        />
-                         <motion.circle r="3" fill="white" filter="url(#glow)">
-                              <animateMotion dur={`${1.5 + (nodeIdx % 2)}s`} repeatCount="indefinite" path={path} />
-                         </motion.circle>
+                         <motion.path 
+                             d={path} 
+                             stroke={color} 
+                             strokeWidth="1" 
+                             fill="none" 
+                             strokeOpacity="0.2"
+                             strokeDasharray="2, 10"
+                             strokeLinecap="round"
+                             filter="url(#neonGlow)"
+                             animate={{ strokeDashoffset: [-100, 0] }}
+                             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                         />
+                         {/* Minimalist Interactive Layer */}
+                         <path 
+                             d={path} 
+                             stroke={color} 
+                             strokeWidth="6" 
+                             fill="none" 
+                             strokeOpacity="0"
+                             className="hover:stroke-opacity-10 cursor-pointer transition-all"
+                         />
                     </g>
                 );
             }
@@ -1156,6 +1157,15 @@ export default function StrategyCanvas({
                             <feGaussianBlur stdDeviation="15" result="blur" />
                             <feComposite in="SourceGraphic" in2="blur" operator="over" />
                         </filter>
+                        <filter id="neonGlow" x="-100%" y="-100%" width="300%" height="300%">
+                            <feGaussianBlur stdDeviation="4" result="blur4" />
+                            <feGaussianBlur stdDeviation="12" result="blur12" />
+                            <feMerge>
+                                <feMergeNode in="blur12" />
+                                <feMergeNode in="blur4" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
                         <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
                             <feDropShadow dx="0" dy="8" stdDeviation="12" floodOpacity={theme === 'dark' ? '0.4' : '0.1'} />
                         </filter>
@@ -1341,11 +1351,11 @@ export default function StrategyCanvas({
                             <motion.div
                                 key={node.id}
                                 initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ 
-                                    scale: 1, 
-                                    opacity: 1,
-                                    top: node.y,
-                                    left: node.x
+                                animate={{ scale: 1, opacity: 1 }}
+                                style={{ 
+                                    top: node.y, 
+                                    left: node.x,
+                                    zIndex: 100 
                                 }}
                                 onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, node.id); }}
                                 className={`absolute w-64 p-6 border transition-all cursor-grab group/sticky rounded-sm rotate-[-1deg] hover:rotate-0 ${
@@ -1388,7 +1398,12 @@ export default function StrategyCanvas({
                         return (
                             <motion.div
                                 key={node.id}
-                                animate={{ scale: 1, opacity: 1, x: node.x, y: node.y }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                style={{ 
+                                    left: node.x, 
+                                    top: node.y,
+                                    zIndex: 1000
+                                }}
                                 whileHover={{ scale: 1.02, boxShadow: `0 0 60px ${nodeColor}40` }}
                                 exit={{ scale: 0.8, opacity: 0 }}
                                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -1404,8 +1419,8 @@ export default function StrategyCanvas({
                                     />
                                 )}
 
-                                <div className={`relative w-[360px] h-[460px] rounded-[46px] flex flex-col p-10 transition-all duration-500 border-2 ${
-                                    theme === 'dark' ? 'bg-[#0A0A0F]/90 backdrop-blur-3xl border-white/10' : 'bg-white shadow-2xl border-indigo-200'
+                                <div className={`relative w-[360px] h-[460px] rounded-[46px] flex flex-col p-10 transition-all duration-500 border-4 ${
+                                    theme === 'dark' ? 'bg-[#0A0A0F] border-indigo-500/50 shadow-[0_0_100px_rgba(79,70,229,0.2)]' : 'bg-white shadow-2xl border-indigo-400'
                                 }`}>
                                     {/* Glass Grain Texture */}
                                     <div className="absolute inset-0 opacity-[0.04] pointer-events-none mix-blend-overlay rounded-[46px]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
@@ -1420,7 +1435,7 @@ export default function StrategyCanvas({
                                         </div>
 
                                         <h2 className={`text-4xl font-extrabold text-center mb-3 tracking-tighter leading-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                                            {node.data?.title || 'System Update'}
+                                            {node.data?.title || 'ACTIVO ESTRATÉGICO'}
                                         </h2>
                                         
                                         <p className={`text-xl font-medium text-center opacity-60 mb-14 px-4 ${theme === 'dark' ? 'text-white/70' : 'text-slate-600'}`}>
@@ -1505,7 +1520,12 @@ export default function StrategyCanvas({
                     return (
                         <motion.div
                             key={node.id}
-                            animate={{ scale: 1, opacity: 1, x: node.x, y: node.y }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            style={{ 
+                                left: isNaN(node.x) ? 0 : node.x, 
+                                top: isNaN(node.y) ? 0 : node.y,
+                                zIndex: 1000
+                            }}
                             whileHover={{ scale: 1.04, boxShadow: `0 0 50px ${nodeColor}40` }}
                             transition={{ type: "spring", stiffness: 350, damping: 25 }}
                             onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, node.id); }}

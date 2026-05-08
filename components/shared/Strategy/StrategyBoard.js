@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import StrategyTopBar from './StrategyTopBar';
 import StrategyNodeLibrary from './StrategyNodeLibrary';
@@ -225,9 +225,11 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                 return 0; // Default to Awareness
             };
 
+            const stageIdx = getStageIdx(node);
             const stageId = node.data?.funnelLevel || STRATEGIC_COLUMNS[stageIdx]?.id || 'conciencia';
             const finalStageIdx = STRATEGIC_COLUMNS.findIndex(c => c.id === stageId);
-            const targetX = STRATEGIC_RAILS.COLUMNS[finalStageIdx] + 25; 
+            const validStageIdx = finalStageIdx === -1 ? 0 : finalStageIdx;
+            const targetX = (STRATEGIC_RAILS.COLUMNS[validStageIdx] || 1000) + 25; 
             
             const tacticalNodes = activeCampaign.nodes.filter(n => !(n.id.startsWith('hu_') || n.type === 'estrategia'));
             const nodesInThisStage = tacticalNodes.filter(n => (n.data?.funnelLevel || 'conciencia') === stageId);
@@ -731,6 +733,9 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
             edges: [] 
         }));
         
+        // Force immediate reorganization to align with Rails architecture
+        layoutRef.current[activeCampaign.id] = "FORCE_REORG_" + Date.now();
+        
         setIsConfiguring(false);
         setActiveFlow('tablero');
         toast.success(`Estructura jerárquica de ${newNodes.length} nodos desplegada.`, {
@@ -841,6 +846,9 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
 
         updateActiveCampaign(c => ({ ...c, nodes: [...c.nodes, newNode] }));
         setSelectedNodeId(newNode.id);
+        
+        // Force layout for new single node
+        layoutRef.current[activeCampaign.id] = "FORCE_REORG_" + Date.now();
 
         // --- AUTOMATION: Strategy-to-Workstation ---
         const roleMapping = {
@@ -899,6 +907,9 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
             }));
             return { ...c, nodes: newNodes, edges: [] };
         });
+        
+        // Force layout for the new template
+        layoutRef.current[activeCampaign.id] = "FORCE_REORG_" + Date.now();
         
         toast.success(`Plantilla '${templateName}' aplicada con éxito.`);
     }, [updateActiveCampaign]);
@@ -1165,6 +1176,34 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                         onUpdateNode={handleUpdateNode}
                                         theme={theme}
                                     />
+                                    
+                                    <AnimatePresence>
+                                        {(selectedNodeId || selectedEdgeId) && (
+                                            <motion.div
+                                                initial={{ x: -400, opacity: 0 }}
+                                                animate={{ x: 0, opacity: 1 }}
+                                                exit={{ x: -400, opacity: 0 }}
+                                                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                                                className="z-[90]"
+                                            >
+                                                <StrategyPropertyPanel
+                                                    selectedNode={selectedNode}
+                                                    selectedEdge={selectedEdge}
+                                                    activeTab={activePropertyTab}
+                                                    onTabChange={setActivePropertyTab}
+                                                    onClose={() => { setSelectedNodeId(null); setSelectedEdgeId(null); }}
+                                                    onUpdateNode={handleUpdateNode}
+                                                    onDeleteNode={handleDeleteNode}
+                                                    onDeleteEdge={handleDeleteEdge}
+                                                    onDuplicateNode={handleDuplicateNode}
+                                                    onSendToPlanner={handleGeneratePlanner}
+                                                    onOpenMemoryPicker={handleOpenMemoryPicker}
+                                                    theme={theme}
+                                                />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
                                     <div className={`flex-1 relative flex flex-col min-h-0 overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-white'}`}>
                                         {activeTool === 'create' && (
                                             <StrategyNodeLibrary  
@@ -1231,22 +1270,6 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                             theme={theme}
                                         />
                                     </div>
-                                    {(selectedNodeId || selectedEdgeId) && (
-                                        <StrategyPropertyPanel
-                                            selectedNode={selectedNode}
-                                            selectedEdge={selectedEdge}
-                                            activeTab={activePropertyTab}
-                                            onTabChange={setActivePropertyTab}
-                                            onClose={() => { setSelectedNodeId(null); setSelectedEdgeId(null); }}
-                                            onUpdateNode={handleUpdateNode}
-                                            onDeleteNode={handleDeleteNode}
-                                            onDeleteEdge={handleDeleteEdge}
-                                            onDuplicateNode={handleDuplicateNode}
-                                            onSendToPlanner={handleGeneratePlanner}
-                                            onOpenMemoryPicker={handleOpenMemoryPicker}
-                                            theme={theme}
-                                        />
-                                    )}
                                 </div>
                             )
                         )}
