@@ -80,18 +80,20 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     const clientId = searchParams.get('client');
     const [strategyData, setStrategyData] = useState(initialStrategyData);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [discoveredClientId, setDiscoveredClientId] = useState(null);
 
     // --- RECOVERY ON MOUNT (DEATH TO DATA LOSS) ---
     useEffect(() => {
         const fetchPersistentData = async () => {
             let finalClientId = propClientId || clientId;
             
-            // SECURITY GUARD: If no ID found, try to auto-discover first client
             if (!finalClientId) {
                 try {
                     const clients = await agencyService.getClients();
                     if (clients && clients.length > 0) {
-                        finalClientId = clients[0].id;
+                        // CONTEXTUAL DISCOVERY: Prefer Jessica Rey if no ID provided (Session Recovery)
+                        const jessica = clients.find(c => c.name?.toLowerCase().includes('jessica'));
+                        finalClientId = jessica ? jessica.id : clients[0].id;
                     }
                 } catch (e) {
                     console.error("Discovery error:", e);
@@ -102,6 +104,9 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                 setIsInitialLoad(false);
                 return;
             }
+
+            // PERSIST DISCOVERED ID: Ensure save actions know which client they belong to
+            setDiscoveredClientId(finalClientId);
 
             try {
                 // 1. Try DB
@@ -136,8 +141,10 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     useEffect(() => {
         // NEVER sync if we are still loading or if the data is suspiciously empty
         if (isInitialLoad || !strategyData.activeCampaignId) return;
-        
+
+        // DATA INTEGRITY GUARD: If we have zero nodes but the DB might have some, don't overwrite yet
         const activeCampaign = strategyData.campaigns.find(c => c.id === strategyData.activeCampaignId);
+        if (!activeCampaign || (activeCampaign.nodes.length === 0 && !isStrategySaved)) return;
         if (!activeCampaign) return;
 
         const syncToStorage = () => {
@@ -171,10 +178,10 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
         const activeCampaign = strategyData.campaigns.find(c => c.id === campaignId);
         if (!activeCampaign || activeCampaign.nodes.length === 0) return;
 
-        // Only auto-layout if something meaningful changed (IDs, Phases, or Length)
-        // We include funnelLevel in the hash to make it reactive to property changes
+        // We only re-layout if IDs or Subtypes change (Generation/Deletions)
+        // Manual property changes (like funnelLevel) should trigger a move but NOT a re-calculation of the level itself
         const nodeHash = activeCampaign.nodes.length + "_" + 
-            activeCampaign.nodes.map(n => `${n.id}:${n.data?.funnelLevel}:${n.data?.subtype}`).join("_");
+            activeCampaign.nodes.map(n => `${n.id}:${n.data?.subtype}`).join("_");
             
         if (layoutRef.current[campaignId] === nodeHash) return;
 
@@ -208,27 +215,27 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                 const title = (n.data?.title || '').toLowerCase();
                 const searchStr = `${intent} ${typeCat} ${subCat} ${title}`.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
 
-                // Smart Mapping Priorities
-                if (searchStr.includes('conciencia') || searchStr.includes('atraccion') || searchStr.includes('ads')) return 0;
-                if (searchStr.includes('interes') || searchStr.includes('conexion')) return 1;
-                if (searchStr.includes('consideracion') || searchStr.includes('autoridad') || searchStr.includes('educacion')) return 2;
+                // Smart Mapping Priorities (Aligned with Wizard Terminology)
+                if (searchStr.includes('conciencia') || searchStr.includes('atraccion') || searchStr.includes('ads') || searchStr.includes('viral')) return 0;
+                if (searchStr.includes('interes') || searchStr.includes('conexion') || searchStr.includes('captacion')) return 1;
+                if (searchStr.includes('consideracion') || searchStr.includes('educacion') || searchStr.includes('valor') || searchStr.includes('autoridad')) return 2;
                 if (searchStr.includes('conversion') || searchStr.includes('venta') || searchStr.includes('cierre') || searchStr.includes('crm') || searchStr.includes('form')) return 3;
                 if (searchStr.includes('retencion') || searchStr.includes('fidelizacion') || searchStr.includes('escala')) return 4;
                 
                 return 0; // Default to Awareness
             };
 
-            const stageIdx = getStageIdx(node);
-            const targetX = STRATEGIC_RAILS.COLUMNS[stageIdx] + 25; 
+            const stageId = node.data?.funnelLevel || STRATEGIC_COLUMNS[stageIdx]?.id || 'conciencia';
+            const finalStageIdx = STRATEGIC_COLUMNS.findIndex(c => c.id === stageId);
+            const targetX = STRATEGIC_RAILS.COLUMNS[finalStageIdx] + 25; 
             
             const tacticalNodes = activeCampaign.nodes.filter(n => !(n.id.startsWith('hu_') || n.type === 'estrategia'));
-            const nodesInThisStage = tacticalNodes.filter(n => getStageIdx(n) === stageIdx);
+            const nodesInThisStage = tacticalNodes.filter(n => (n.data?.funnelLevel || 'conciencia') === stageId);
 
             const nodeIdxInStage = nodesInThisStage.findIndex(n => n.id === node.id);
             const targetY = 320 + (nodeIdxInStage >= 0 ? nodeIdxInStage : 0) * STRATEGIC_RAILS.VERTICAL_PADDING;
 
             const shouldMove = Math.abs(node.x - targetX) > 10 || Math.abs(node.y - targetY) > 10;
-            const stageId = STRATEGIC_COLUMNS[stageIdx]?.id || 'conciencia';
             const needsPhaseUpdate = node.data?.funnelLevel !== stageId;
 
             if (shouldMove || needsPhaseUpdate) {
@@ -306,13 +313,13 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     const [contextMenu, setContextMenu] = useState(null);
 
     // Canvas interaction State
-    const [view, setView] = useState({ x: 0, y: 0, scale: 0.95 });
+    const [view, setView] = useState({ x: 100, y: 100, scale: 0.85 });
     const [selectedNodeId, setSelectedNodeId] = useState(null);
     const [selectedEdgeId, setSelectedEdgeId] = useState(null);
     const [isMemoryPickerOpen, setIsMemoryPickerOpen] = useState(false);
     const [memoryTargetNodeId, setMemoryTargetNodeId] = useState(null);
     const [isCompactMode, setIsCompactMode] = useState(false);
-    const [viewMode, setViewMode] = useState('tactical'); // 'tactical' | 'standard'
+    const [viewMode, setViewMode] = useState('tactical'); 
     const [theme, setTheme] = useState('dark'); // 'dark' | 'light'
 
     // AI Analysis & Reports
@@ -537,9 +544,15 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
 
     // --- TOP BAR ACTIONS ---
     const handleSaveStrategy = useCallback(async () => {
-        const finalClientId = propClientId || clientId;
+        const finalClientId = propClientId || clientId || discoveredClientId;
         if (!finalClientId) {
             toast.error("No se puede guardar: No hay un ID de cliente vinculado.");
+            return;
+        }
+
+        // PREVENT ACCIDENTAL DELETION: Don't save if the canvas is totally empty after a fresh load
+        if (activeCampaign && activeCampaign.nodes.length === 0 && isInitialLoad) {
+            console.warn("Save blocked: Preventing empty state overwrite.");
             return;
         }
 
@@ -553,17 +566,17 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
             toast.error("Error al guardar la estrategia.");
             console.error(err);
         }
-    }, [strategyData, clientId, propClientId]);
+    }, [strategyData, clientId, propClientId, discoveredClientId]);
 
     // Auto-save/Sync Heartbeat (Saves every 5 seconds if changes detected)
     useEffect(() => {
-        if (!isStrategySaved && !isInitialLoad && (clientId || propClientId)) {
+        if (!isStrategySaved && !isInitialLoad && (clientId || propClientId || discoveredClientId)) {
             const timer = setTimeout(() => {
                 handleSaveStrategy();
-            }, 5000); // Increased frequency to 5 seconds
+            }, 5000); 
             return () => clearTimeout(timer);
         }
-    }, [strategyData, isStrategySaved, isInitialLoad, clientId, propClientId, handleSaveStrategy]);
+    }, [strategyData, isStrategySaved, isInitialLoad, clientId, propClientId, discoveredClientId, handleSaveStrategy]);
 
     // Exit Guard: Warn user if leaving with unsaved changes
     useEffect(() => {
@@ -758,12 +771,18 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
         if (activeTool === 'view-standard') {
             setViewMode(prev => {
                 const next = prev === 'standard' ? 'tactical' : 'standard';
-                toast.success(next === 'standard' ? 'Activando Vista de Control Estándar' : 'Regresando a Vista Táctica Compacta');
+                const message = next === 'standard' 
+                    ? 'Activando Vista de Arquitectura (MindMap)' 
+                    : 'Regresando a Pizarra Táctica (Fases Estratégicas)';
+                toast.success(message);
+                
+                // Auto-center when switching views to prevent "lost nodes"
+                handleZoomReset();
                 return next;
             });
             setActiveTool('select');
         }
-    }, [activeTool, handleOrganizeBoard]);
+    }, [activeTool, handleOrganizeBoard, handleZoomReset]);
 
 
     const handleOpenMemoryPicker = useCallback((nodeId) => {
@@ -888,9 +907,16 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
         updateActiveCampaign(c => {
             const node = c.nodes.find(n => n.id === id);
             if (!node) return c;
+
+            // ENFORCE COLUMN LOCK: Nodes must stay in their designated strategic phase
+            const stageId = node.data?.funnelLevel || 'conciencia';
+            const stageIdx = STRATEGIC_COLUMNS.findIndex(col => col.id === stageId);
+            const actualIdx = stageIdx === -1 ? 0 : stageIdx;
+            const lockedX = STRATEGIC_RAILS.COLUMNS[actualIdx] + 25;
+
             return {
                 ...c,
-                nodes: c.nodes.map(n => n.id === id ? { ...n, x, y } : n)
+                nodes: c.nodes.map(n => n.id === id ? { ...n, x: lockedX, y } : n)
             };
         });
     }, [updateActiveCampaign]);
@@ -902,7 +928,8 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
             let newX = oldNode.x;
             if (data.funnelLevel !== oldNode.data?.funnelLevel) {
                 const columnIndex = STRATEGIC_COLUMNS.findIndex(col => col.id === data.funnelLevel);
-                newX = 256 + (columnIndex * 600) + 100; 
+                const actualIdx = columnIndex === -1 ? 0 : columnIndex;
+                newX = STRATEGIC_RAILS.COLUMNS[actualIdx] + 25; 
             }
 
             const updatedNodes = c.nodes.map(n => n.id === id ? { ...n, x: newX, data } : n);
@@ -1173,7 +1200,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                             onNodeMove={handleNodeMove}
                                             onUpdateNode={handleUpdateNode}
                                             onUpdateEdge={handleUpdateEdge}
-                                            onNodeSelect={(id, tab = 'general') => { 
+                                            onNodeSelect={(id, tab = 'estratégica') => { 
                                                 setSelectedNodeId(id); 
                                                 setSelectedEdgeId(null); 
                                                 setActivePropertyTab(tab); 

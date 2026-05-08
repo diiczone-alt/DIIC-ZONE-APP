@@ -175,10 +175,26 @@ export default function StrategyCanvas({
             }
             
             setTimeout(() => {
+                // NEURAL RE-ANCHORING: Center view on the bulk of the strategy
+                if (allPositions.length > 0) {
+                    const minX = Math.min(...allPositions.map(p => p.x));
+                    const maxX = Math.max(...allPositions.map(p => p.x));
+                    const minY = Math.min(...allPositions.map(p => p.y));
+                    const maxY = Math.max(...allPositions.map(p => p.y));
+
+                    const centerX = (minX + maxX) / 2;
+                    const centerY = (minY + maxY) / 2;
+                    
+                    onViewChange({
+                        x: (window.innerWidth / 2) - (centerX * 0.4), // Use a safe scale for overview
+                        y: (window.innerHeight / 2) - (centerY * 0.4),
+                        scale: 0.4
+                    });
+                }
                 if (onToolChange) onToolChange('select');
             }, 1000);
         }
-    }, [activeTool, onToolChange, nodes, onNodeMove]);
+    }, [activeTool, onToolChange, nodes, onViewChange]);
 
     const hubHierarchy = {
         'root': ['l2_creativa', 'l2_crm', 'l2_conversion'],
@@ -715,10 +731,10 @@ export default function StrategyCanvas({
                 // This creates a "Neural Fanning" effect where each fiber has its own origin
                 const verticalFanOffset = (nodeIdx * 8) - 20; 
 
-                // Offset to the right side of the hub
+                // Offset to the exact right edge of the hub card (width 160, center is 0, so right is +80)
                 const isCard = hubs.some(h => h.id === targetId);
                 const startX = isCard ? targetPos.x + 80 : targetPos.x;
-                const startY = targetPos.y + verticalFanOffset;
+                const startY = targetPos.y; // Center vertically (pos is already center)
                 
                 // End exactly at the tactical card left edge (x) and vertical center (y+38)
                 const endX = node.x;
@@ -732,18 +748,19 @@ export default function StrategyCanvas({
                         <path 
                             d={path} 
                             stroke={color} 
-                            strokeWidth="3.5" 
-                            strokeOpacity="0.6" 
+                            strokeWidth="5" 
+                            strokeOpacity="0.7" 
                             fill="none" 
                             filter="url(#glow)"
-                            className="transition-all duration-1000"
+                            className="transition-all duration-500 animate-pulse"
                         />
                         <path 
                             d={path} 
                             stroke="white" 
-                            strokeWidth="1.2" 
-                            strokeOpacity="0.8" 
+                            strokeWidth="2" 
+                            strokeOpacity="0.9" 
                             fill="none" 
+                            className="neural-core"
                         />
                          <motion.circle r="3" fill="white" filter="url(#glow)">
                               <animateMotion dur={`${1.5 + (nodeIdx % 2)}s`} repeatCount="indefinite" path={path} />
@@ -1124,9 +1141,8 @@ export default function StrategyCanvas({
                 }} 
             />
 
-            {/* Main Movable Layer */}
             <div 
-                className="absolute top-0 left-0 w-full h-full origin-top-left" 
+                className="absolute top-0 left-0 w-[10000px] h-[5000px] origin-top-left" 
                 style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
             >
                 {/* SVG Content Layer */}
@@ -1145,24 +1161,80 @@ export default function StrategyCanvas({
                         </filter>
                     </defs>
 
-                    <rect width="10000" height="5000" fill={theme === 'dark' ? '#05050B' : '#F8FAFC'} />
+                    {/* PREMIUM NEURAL DIMENSION BACKGROUND (Transparent/3D Aesthetic) */}
+                    <rect width="10000" height="5000" fill={theme === 'dark' ? '#020208' : '#F8FAFC'} />
+                    
+                    {/* Perspective Grid Line Layer */}
+                    <defs>
+                        <pattern id="neural-grid" width="100" height="100" patternUnits="userSpaceOnUse">
+                            <circle cx="1" cy="1" r="1" fill={theme === 'dark' ? "rgba(99, 102, 241, 0.15)" : "rgba(99, 102, 241, 0.1)"} />
+                        </pattern>
+                        <linearGradient id="grid-fade" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="transparent" />
+                            <stop offset="10%" stopColor="white" stopOpacity="0.1" />
+                            <stop offset="90%" stopColor="white" stopOpacity="0.1" />
+                            <stop offset="100%" stopColor="transparent" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <rect width="10000" height="5000" fill="url(#neural-grid)" />
 
-                    {/* NEURAL TREE ROOT ARCHITECTURE LAYER */}
-                    {renderRootArchitecture()}
+                    {/* Subtle Neural Depth Markers (The "3D" effect) */}
+                    {[...Array(50)].map((_, i) => (
+                        <circle 
+                            key={i}
+                            cx={Math.random() * 10000} 
+                            cy={Math.random() * 5000} 
+                            r={Math.random() * 2} 
+                            fill={theme === 'dark' ? "#6366f1" : "#4f46e5"} 
+                            opacity={Math.random() * 0.2} 
+                        />
+                    ))}
 
-                    {/* Architectural Columns - Clean Modern Labels */}
+                    {/* Architectural Columns - High-Fidelity Neural Labels */}
                     {STRATEGIC_COLUMNS.map((col, idx) => (
                         <g key={col.id} transform={`translate(${STRATEGIC_RAILS.COLUMNS[idx]}, 0)`}>
-                            {/* Simplified Header - Minimalist Style */}
+                            {/* Ultra-subtle Phase Indicator (Light Ray) */}
+                            <linearGradient id={`grad-${col.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor={col.color} stopOpacity="0.05" />
+                                <stop offset="50%" stopColor={col.color} stopOpacity="0.01" />
+                                <stop offset="100%" stopColor={col.color} stopOpacity="0" />
+                            </linearGradient>
+                            <rect 
+                                x="0" y="80" 
+                                width={STRATEGIC_RAILS.COLUMN_WIDTH} 
+                                height="4000" 
+                                fill={`url(#grad-${col.id})`}
+                                rx="40"
+                            />
+
+                            {/* Neon Vertical Separator (Subtle) */}
+                            <line 
+                                x1="0" y1="100" x2="0" y2="3500" 
+                                stroke={col.color} 
+                                strokeWidth="1" 
+                                strokeOpacity="0.08" 
+                                strokeDasharray="10,20"
+                            />
+
+                            {/* Floating Strategic Label */}
                             <text 
-                                x="350" y="58" 
+                                x={STRATEGIC_RAILS.COLUMN_WIDTH / 2} y="58" 
                                 textAnchor="middle" 
-                                className={`text-[16px] font-black tracking-[0.4em] uppercase fill-current transition-colors duration-500 ${theme === 'dark' ? 'text-indigo-300' : 'text-indigo-700'}`}
+                                className={`text-[18px] font-black tracking-[0.5em] uppercase fill-current transition-all duration-700`}
+                                style={{ 
+                                    fill: col.color, 
+                                    opacity: 0.6,
+                                    filter: 'drop-shadow(0 0 10px ' + col.color + '40)'
+                                }}
                             >
                                 {col.label}
                             </text>
                         </g>
                     ))}
+
+                    {/* NEURAL TREE ROOT ARCHITECTURE LAYER - MOVED TO TOP FOR ABSOLUTE VISIBILITY */}
+                    {renderRootArchitecture()}
 
                     {/* Freehand Drawings */}
                     {drawings.map(draw => (

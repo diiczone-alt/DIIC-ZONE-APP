@@ -181,11 +181,11 @@ export const NODE_STAGES = [
 
 // Layout & Workspace Partitioning Constants
 export const STRATEGIC_RAILS = {
-    HUBS_X: 1400,
-    PARTITION_X: 1900,
-    COLUMNS: [2000, 2750, 3500, 4250, 5000],
+    HUBS_X: 950,
+    PARTITION_X: 1200,
+    COLUMNS: [1400, 2000, 2600, 3200, 3800],
     VERTICAL_PADDING: 110,
-    COLUMN_WIDTH: 700
+    COLUMN_WIDTH: 500
 };
 
 export const NODE_STATUS = {
@@ -387,38 +387,40 @@ export const STRATEGIC_FORMATS = [
 export const getNodeLaneId = (node) => {
     if (!node) return null;
 
-    // 1. Direct Subtype Override (MOST RELIABLE)
+    // 1. Precise Identifier Check (Wizard Standard)
     if (node.data?.subtype) {
         const sub = node.data.subtype.toLowerCase();
-        // Specific formats FIRST to avoid category clashing
-        if (sub === 'v_tiktok' || sub === 'tiktok') return 'hub_tiktok';
-        if (sub === 'v_reels' || sub === 'reel') return 'hub_reels';
-        if (sub === 'v_youtube' || sub === 'video') return 'hub_videos';
-        if (sub === 'i_post' || sub === 'post') return 'hub_posts';
-        if (sub === 'v_historias' || sub === 'i_historias' || sub === 'story') return 'hub_stories';
-        if (sub === 'l3_crm_email' || sub === 'crm') return 'hub_crm';
-        if (sub === 'r_form' || sub === 'form') return 'hub_forms';
-        if (sub === 'hub_products' || sub === 'product') return 'hub_products';
-        
-        // Fallback for includes
         if (sub.includes('tiktok')) return 'hub_tiktok';
         if (sub.includes('reel')) return 'hub_reels';
-        if (sub.includes('video')) return 'hub_videos';
-        return sub;
+        if (sub.includes('story') || sub.includes('historia')) return 'hub_stories';
+        if (sub.includes('video') || sub.includes('youtube')) return 'hub_videos';
+        if (sub.includes('post')) return 'hub_posts';
+        if (sub.includes('crm') || sub.includes('email')) return 'hub_crm';
+        if (sub.includes('form')) return 'hub_forms';
+        if (sub.includes('product')) return 'hub_products';
     }
 
-    // 2. Keyword Analysis Fallback
+    // 2. Visual Title Analysis (Emergency Fallback)
     const title = (node.data?.title || '').toLowerCase();
+    if (title.includes('tiktok')) return 'hub_tiktok';
+    if (title.includes('reel')) return 'hub_reels';
+    if (title.includes('story') || title.includes('historia')) return 'hub_stories';
+    if (title.includes('video')) return 'hub_videos';
+    if (title.includes('post')) return 'hub_posts';
+    if (title.includes('crm') || title.includes('email')) return 'hub_crm';
+    if (title.includes('form') || title.includes('registro')) return 'hub_forms';
+    if (title.includes('producto')) return 'hub_products';
+
+    // 3. Deep Context Discovery
     const type = (node.data?.type || '').toLowerCase();
     const t = (node.type || '').toLowerCase();
     const searchStr = `${title} ${type} ${t}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    // Priority Check: Specifics over Generics
     if (searchStr.includes('tiktok')) return 'hub_tiktok';
     if (searchStr.includes('reel')) return 'hub_reels';
-    if (searchStr.includes('historia') || searchStr.includes('story')) return 'hub_stories';
     if (searchStr.includes('video') || t === 'educativo' || t === 'video') return 'hub_videos';
     if (searchStr.includes('post') || searchStr.includes('imagen')) return 'hub_posts';
+    if (searchStr.includes('historia') || searchStr.includes('story')) return 'hub_stories';
     if (searchStr.includes('crm') || searchStr.includes('email')) return 'hub_crm';
     if (searchStr.includes('form') || searchStr.includes('registro')) return 'hub_forms';
     if (searchStr.includes('producto') || searchStr.includes('vault')) return 'hub_products';
