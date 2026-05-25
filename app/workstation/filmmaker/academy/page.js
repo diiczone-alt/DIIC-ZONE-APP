@@ -2,6 +2,6 @@
 
 import UnifiedAcademyPage from '@/components/academy/UnifiedAcademyPage';
 
-export default function EditorAcademyPage() {
+export default function FilmmakerAcademyPage() {
     return <UnifiedAcademyPage />;
 }

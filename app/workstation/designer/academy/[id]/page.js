@@ -2,6 +2,6 @@
 
 import UnifiedCoursePlayer from '@/components/academy/UnifiedCoursePlayer';
 
-export default function EditorCoursePlayerPage({ params }) {
+export default function DesignerCoursePlayerPage({ params }) {
     return <UnifiedCoursePlayer params={params} />;
 }
