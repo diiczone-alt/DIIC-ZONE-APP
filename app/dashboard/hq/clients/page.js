@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ArrowLeft, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe, Activity, Mail, Stethoscope } from 'lucide-react';
+import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ArrowLeft, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe, Activity, Mail, Stethoscope, Briefcase, HeartPulse, Sprout, GraduationCap, Video } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { agencyService } from '@/services/agencyService';
 import VisionEcosystem from '@/components/VisionEcosystem';
@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { isCloudConnected, supabase } from '@/lib/supabase';
 import StrategicOutliner from '@/components/shared/Strategy/StrategicOutliner';
 import StrategyCreationWizard from '@/components/shared/Strategy/StrategyCreationWizard';
-import { ECUADOR_CITIES, MEDICAL_SPECIALTIES, AGRO_SPECIALTIES, INDUSTRY_OPTIONS, MARKETING_TYPES, PLAN_OPTIONS, CREATIVE_RATES } from '@/lib/constants';
+import { ECUADOR_CITIES, MEDICAL_SPECIALTIES, AGRO_SPECIALTIES, EDUCATION_SPECIALTIES, INDUSTRY_OPTIONS, MARKETING_TYPES, PLAN_OPTIONS, CREATIVE_RATES } from '@/lib/constants';
 import PremiumDropdown from '@/components/shared/PremiumDropdown';
 import GlassInput from '@/components/shared/GlassInput';
 import AdminClientAIHub from '@/components/admin/AdminClientAIHub';
@@ -50,6 +50,9 @@ export default function HQClientsPage() {
         whatsapp_number: '',
         google_drive_folder_id: '',
         notes: '',
+        industry: 'Otro',
+        specialty: '',
+        business_type: 'Servicios',
         onboarding_data: {}
     });
 
@@ -80,6 +83,13 @@ export default function HQClientsPage() {
             setTimeout(() => setSyncStep(''), 2000);
         }
     };
+
+    // Diagnostic Toast to help the user verify data loading
+    useEffect(() => {
+        if (!loading && team.length > 0) {
+            console.log(`📊 [Data Check] ${clients.length} clients and ${team.length} team members loaded.`);
+        }
+    }, [loading, team, clients]);
 
     useEffect(() => {
         // 1. Instant Load from Cache
@@ -147,16 +157,39 @@ export default function HQClientsPage() {
 
         setIsSubmitting(true);
         const tempId = `C-${Math.floor(Math.random() * 9000) + 1000}`;
-        const clientWithId = { ...newClient, id: tempId, status: 'active', created_at: new Date().toISOString() };
+        
+        // Ensure price is synced with plan if not explicitly changed
+        const selectedPlan = PLAN_OPTIONS.find(p => p.value === newClient.plan);
+        const finalPrice = newClient.price || (selectedPlan ? selectedPlan.price : 0);
+
+        const clientWithId = { 
+            ...newClient, 
+            id: tempId, 
+            price: finalPrice,
+            status: 'active', 
+            created_at: new Date().toISOString() 
+        };
+        
+        console.log("🚀 [Flow] Starting client registration for:", clientWithId.name);
         
         try {
+            console.log("📡 [Flow] Calling agencyService.createClient...");
             const created = await agencyService.createClient(clientWithId);
+            console.log("✅ [Flow] Client created successfully:", created.id);
+            
+            // Add to local state
             setClients(prev => [created, ...prev]);
+            
+            // Show success view
             setShowSuccessView(true);
             toast.success("Socio registrado exitosamente");
         } catch (error) {
             console.error("❌ [Flow] Creation Error:", error);
-            toast.error("Error al registrar cliente");
+            if (error.message?.includes("Timeout")) {
+                toast.error("La base de datos está tardando demasiado. Revisa la conexión o intenta de nuevo.");
+            } else {
+                toast.error(`Error al registrar: ${error.message || 'Error desconocido'}`);
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -186,10 +219,17 @@ export default function HQClientsPage() {
     };
 
     const cmOptions = useMemo(() => {
-        const staff = team.filter(m => 
-            m.role?.toLowerCase().includes('community manager') || 
-            m.role?.toLowerCase().includes('estratega')
-        );
+        const staff = team.filter(m => {
+            const role = m.role?.toLowerCase() || '';
+            return role.includes('community manager') || 
+                   role.includes('estratega') ||
+                   role.includes('cm') ||
+                   role.includes('account') ||
+                   role.includes('líder')
+        });
+        
+        console.log("👥 [CM Options] Filtered:", staff.length, "from", team.length);
+        
         return [
             ...staff.map(m => ({ value: m.name, label: m.name })),
             { value: 'Sin asignar', label: 'Sin asignar' }
@@ -490,21 +530,82 @@ export default function HQClientsPage() {
                                             <input type="text" required value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all" placeholder="Ej: Spiga de Oro" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Email de Contacto (Para invitación)</label>
-                                            <input type="email" required value={newClient.email} onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all font-mono text-sm" placeholder="cliente@ejemplo.com" />
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Email de Contacto (Opcional)</label>
+                                            <input type="email" value={newClient.email} onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all font-mono text-sm" placeholder="cliente@ejemplo.com" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => setNewClient({ ...newClient, plan: val })} options={PLAN_OPTIONS} />
+                                            <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => {
+                                                const plan = PLAN_OPTIONS.find(p => p.value === val);
+                                                setNewClient({ ...newClient, plan: val, price: plan ? plan.price : newClient.price });
+                                            }} options={PLAN_OPTIONS} />
                                             <PremiumDropdown label="CM" value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
                                         </div>
-                                        <PremiumDropdown 
-                                            label="Ciudad Base" 
-                                            value={newClient.city} 
-                                            onChange={(val) => setNewClient({ ...newClient, city: val })} 
-                                            options={ECUADOR_CITIES} 
-                                            searchable={true}
-                                            icon={Globe}
-                                        />
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex justify-between">
+                                                <span>Presupuesto / Precio del Proyecto</span>
+                                                <span className="text-indigo-400 font-mono font-black">${newClient.price}</span>
+                                            </label>
+                                            <div className="relative group">
+                                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-400 transition-colors">
+                                                    <DollarSign className="w-5 h-5" />
+                                                </div>
+                                                <input 
+                                                    type="number" 
+                                                    value={newClient.price} 
+                                                    onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })} 
+                                                    className="w-full bg-white/5 border border-white/5 rounded-2xl py-5 px-16 text-white outline-none focus:border-indigo-500/50 transition-all font-black text-xl placeholder:text-gray-700" 
+                                                    placeholder="Ej: 500" 
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <PremiumDropdown 
+                                                label="Sector / Industria" 
+                                                value={newClient.industry} 
+                                                onChange={(val) => setNewClient({ ...newClient, industry: val, specialty: '' })} 
+                                                options={INDUSTRY_OPTIONS} 
+                                                icon={Briefcase}
+                                            />
+                                            <PremiumDropdown 
+                                                label="Ciudad Base" 
+                                                value={newClient.city} 
+                                                onChange={(val) => setNewClient({ ...newClient, city: val })} 
+                                                options={ECUADOR_CITIES} 
+                                                searchable={true}
+                                                icon={Globe}
+                                            />
+                                        </div>
+
+                                        {/* Specialty Logic for Unified Management */}
+                                        {newClient.industry === 'medico' && (
+                                            <PremiumDropdown 
+                                                label="Especialidad Médica" 
+                                                value={newClient.specialty} 
+                                                onChange={(val) => setNewClient({ ...newClient, specialty: val })} 
+                                                options={MEDICAL_SPECIALTIES} 
+                                                icon={HeartPulse}
+                                            />
+                                        )}
+                                        {newClient.industry === 'agropecuario' && (
+                                            <PremiumDropdown 
+                                                label="Rama Agropecuaria" 
+                                                value={newClient.specialty} 
+                                                onChange={(val) => setNewClient({ ...newClient, specialty: val })} 
+                                                options={AGRO_SPECIALTIES} 
+                                                icon={Sprout}
+                                            />
+                                        )}
+                                        {newClient.industry === 'educativo' && (
+                                            <PremiumDropdown 
+                                                label="Rama Educativa" 
+                                                value={newClient.specialty} 
+                                                onChange={(val) => setNewClient({ ...newClient, specialty: val })} 
+                                                options={EDUCATION_SPECIALTIES} 
+                                                icon={GraduationCap}
+                                            />
+                                        )}
                                         <div className="flex gap-4 pt-4">
                                             <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-gray-500 font-black uppercase tracking-widest text-xs">Cancelar</button>
                                             <button type="submit" disabled={isSubmitting} className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-xl shadow-indigo-600/20 active:scale-95 transition-all">{isSubmitting ? 'Registrando...' : 'Confirmar Registro'}</button>
@@ -533,9 +634,22 @@ export default function HQClientsPage() {
                                                     navigator.clipboard.writeText(url);
                                                     toast.success("Link copiado al portapapeles");
                                                 }}
-                                                className="p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-all active:scale-95"
+                                                className="p-3 bg-indigo-600/20 text-indigo-400 rounded-xl hover:bg-indigo-600 hover:text-white transition-all active:scale-95 border border-indigo-500/30"
+                                                title="Copiar Link"
                                             >
-                                                <Copy className="w-4 h-4" />
+                                                <Copy className="w-5 h-5" />
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    const url = `${window.location.origin}/onboarding?type=client`;
+                                                    const subject = encodeURIComponent(`Bienvenido a DIIC ZONE - Invitación para ${newClient.name}`);
+                                                    const body = encodeURIComponent(`Hola,\n\nTe damos la bienvenida a DIIC ZONE. Para completar tu registro y comenzar con tu estrategia, por favor ingresa al siguiente enlace:\n\n${url}\n\n¡Estamos emocionados de trabajar contigo!`);
+                                                    window.location.href = `mailto:${newClient.email}?subject=${subject}&body=${body}`;
+                                                }}
+                                                className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-500 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <Mail className="w-4 h-4" />
+                                                Enviar Invitación por Email
                                             </button>
                                         </div>
                                     </div>

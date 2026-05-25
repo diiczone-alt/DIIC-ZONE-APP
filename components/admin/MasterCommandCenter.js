@@ -314,7 +314,7 @@ export default function MasterCommandCenter() {
                                         <ClientRow key={client.id} data={{
                                             ...client,
                                             niche: client.type || 'Socio Estratégico',
-                                            level: client.plan?.toLowerCase() === 'elite' ? 'Gold' : (client.plan?.toLowerCase() === 'pro' ? 'Active' : 'Basic'),
+                                            level: client.plan?.toLowerCase() === 'control' ? 'Gold' : (client.plan?.toLowerCase() === 'pro' ? 'Active' : 'Basic'),
                                             health: client.status === 'active' ? 'excellent' : 'warning',
                                             income: `$${Number(client.price || 0).toLocaleString()}`
                                         }} />

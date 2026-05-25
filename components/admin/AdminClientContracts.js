@@ -47,7 +47,7 @@ export default function AdminClientContracts() {
                 date: new Date().toLocaleDateString(),
                 client: selectedClient.name,
                 plan: selectedPlan,
-                amount: selectedPlan === 'ELITE' ? 900 : selectedPlan === 'AUTORIDAD' ? 500 : selectedPlan === 'CRECIMIENTO' ? 350 : 250,
+                amount: selectedPlan === 'CONTROL' ? 999 : selectedPlan === 'AUTORIDAD' ? 700 : selectedPlan === 'CRECIMIENTO' ? 500 : 300,
                 hash: 'DIIC_SECURE_' + Math.random().toString(36).substring(7).toUpperCase(),
                 status: 'SIGNED'
             };
@@ -58,10 +58,10 @@ export default function AdminClientContracts() {
     };
 
     const PLANS = [
-        { id: 'PRESENCIA', name: 'Plan Presencia', price: 250, desc: 'Ideal para marca personal inicial.' },
-        { id: 'CRECIMIENTO', name: 'Plan Crecimiento', price: 350, desc: 'Enfoque en captar clientes 24/7.' },
-        { id: 'AUTORIDAD', name: 'Plan Autoridad', price: 500, desc: 'Domina tu nicho con autoridad.' },
-        { id: 'ELITE', name: 'Plan Élite', price: 900, desc: 'Todo el mercado y viralidad agresiva.' }
+        { id: 'PRESENCIA', name: 'Nivel Presencia', price: 300, desc: 'Ideal para empezar. Construye tu autoridad.' },
+        { id: 'CRECIMIENTO', name: 'Nivel Crecimiento', price: 500, desc: 'Enfoque en posicionamiento y captación.' },
+        { id: 'AUTORIDAD', name: 'Nivel Autoridad', price: 700, desc: 'Premium. Domina tu nicho con narrativa.' },
+        { id: 'CONTROL', name: 'Nivel Control', price: 999, desc: 'Dominio total del mercado y viralidad agresiva.' }
     ];
 
     return (
@@ -105,7 +105,7 @@ export default function AdminClientContracts() {
 
                         <div className="space-y-4">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2 flex items-center gap-2">
-                                <Briefcase className="w-3 h-3" /> 2. Plan Estratégico
+                                <Briefcase className="w-3 h-3" /> 2. Nivel Estratégico
                             </label>
                             <div className="grid grid-cols-1 gap-3">
                                 {PLANS.map(plan => (
@@ -178,7 +178,7 @@ export default function AdminClientContracts() {
                                     <div className="space-y-6">
                                         <h4 className="text-xs font-black uppercase border-b border-gray-100 pb-2">Cláusulas de Rendimiento</h4>
                                         <div className="space-y-4 text-[11px] leading-relaxed font-medium text-gray-600 italic">
-                                            <p><strong>1. OBJETO DEL CONTRATO:</strong> DIIC ZONE se compromete a ejecutar la estrategia del <strong>{contractData.plan}</strong>, enfocada en la creación de autoridad digital y captación de leads mediante contenido de alto impacto.</p>
+                                            <p><strong>1. OBJETO DEL CONTRATO:</strong> DIIC ZONE se compromete a ejecutar la estrategia del <strong>Nivel {contractData.plan}</strong>, enfocada en la creación de autoridad digital y captación de leads mediante contenido de alto impacto.</p>
                                             <p><strong>2. INVERSIÓN MENSUAL:</strong> El cliente acuerda un pago de <strong>${contractData.amount} USD</strong> mensuales por el servicio de representación y producción.</p>
                                             <p><strong>3. PROPIEDAD INTELECTUAL:</strong> Todo el material producido es propiedad de DIIC ZONE hasta la finalización del pago mensual correspondiente.</p>
                                         </div>
@@ -215,7 +215,7 @@ export default function AdminClientContracts() {
                                 <FileText className="w-16 h-16 text-white/10" />
                                 <div className="text-center space-y-2">
                                     <p className="text-gray-500 font-bold text-sm uppercase tracking-widest">Esperando Parámetros IQ...</p>
-                                    <p className="text-[10px] text-gray-600 italic">Configura el cliente y el plan para desplegar el blindaje legal.</p>
+                                    <p className="text-[10px] text-gray-600 italic">Configura el cliente y el nivel para desplegar el blindaje legal.</p>
                                 </div>
                             </div>
                         )}

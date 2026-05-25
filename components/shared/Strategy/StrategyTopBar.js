@@ -167,10 +167,10 @@ export default function StrategyTopBar({
                             ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white' 
                             : 'bg-emerald-500/5 border-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
                         }`}
-                        title="Aplicar Plantilla Plan Autoridad"
+                        title="Aplicar Plantilla Nivel Autoridad"
                     >
                         <LayoutTemplate className="w-5 h-5 group-hover/template:rotate-12 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Plan Autoridad</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Nivel Autoridad</span>
                     </button>
 
                     {/* Proactive Theme Toggle */}

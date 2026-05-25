@@ -55,13 +55,13 @@ export const AuthProvider = ({ children }) => {
             // Lookup team_id for CMs - WRAPPED IN SUB-TRY-CATCH to prevent hang
             if ((role === 'COMMUNITY' || role === 'CM') && fullName) {
                 try {
-                    console.log(`[AuthContext] Looking up team ID for CM: ${fullName}`);
+                    console.log(`[AuthContext] Looking up team ID for CM/Estratega: ${fullName}`);
                     const { data: teamData, error: teamError } = await supabase
                         .from('team')
                         .select('id')
                         .eq('name', fullName)
-                        .eq('role', 'Community Manager')
-                        .single();
+                        .limit(1)
+                        .maybeSingle();
                     
                     if (teamError) {
                         console.warn('[AuthContext] Team lookup non-fatal error:', teamError.message);
@@ -124,6 +124,10 @@ export const AuthProvider = ({ children }) => {
                 if (initialSession) {
                     setSession(initialSession);
                     setUser(initialSession.user);
+                    if (initialSession.provider_token) {
+                        console.log('🗝️ [AuthContext] Captured provider_token on init:', initialSession.provider_token);
+                        localStorage.setItem('diic_google_token', initialSession.provider_token);
+                    }
                     
                     const profileData = await fetchProfile(initialSession.user.id, initialSession.user.email, initialSession.user.user_metadata);
                     if (active) {
@@ -175,6 +179,10 @@ export const AuthProvider = ({ children }) => {
                 const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
                     if (!active) return;
                     setSession(session);
+                    if (session?.provider_token) {
+                        console.log('🗝️ [AuthContext] Captured provider_token on state change:', session.provider_token);
+                        localStorage.setItem('diic_google_token', session.provider_token);
+                    }
                     if (session?.user) {
                         const profile = await fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
                         if (active) {
@@ -369,8 +377,10 @@ export const AuthProvider = ({ children }) => {
         const roleRoutes = {
             COMMUNITY: '/workstation/community-manager',
             CM: '/workstation/community-manager',
-            EDITOR: '/dashboard/editing',
-            DESIGN: '/dashboard/design',
+            EDITOR: '/workstation/editor',
+            DESIGN: '/workstation/designer',
+            DESIGNER: '/workstation/designer',
+            FILMMAKER: '/workstation/filmmaker',
             CREATOR: '/dashboard/creative-zone',
         };
         return roleRoutes[safeRole] || '/dashboard';

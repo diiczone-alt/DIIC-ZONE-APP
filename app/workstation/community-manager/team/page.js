@@ -8,10 +8,12 @@ import {
     Phone, MessageSquare, ExternalLink, Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 
 export default function TeamPage() {
+    const router = useRouter();
     const { user } = useAuth();
     const [teamMembers, setTeamMembers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -35,21 +37,17 @@ export default function TeamPage() {
 
             try {
                 // Fetch members belonging to this CM's squad
+                const queryId = user.team_id || user.id; // Fallback to user.id if team_id is missing
                 const { data, error } = await supabase
                     .from('team')
                     .select('*')
-                    .eq('squad_lead_id', user.team_id);
+                    .eq('squad_lead_id', queryId);
 
                 clearTimeout(timeoutId);
                 if (error) throw error;
 
-                // Filter to exclude other CMs and Admins (unless they are specifically part of the creative team)
-                // We'll show members whose roles are related to production/creative
+                // En el caso de los estrategas, pueden tener CMs, editores, etc., así que no filtramos estrictamente.
                 const filtered = (data || [])
-                    .filter(m => {
-                        const role = (m.role || '').toLowerCase();
-                        return !role.includes('community manager') && !role.includes('admin');
-                    })
                     .map(m => {
                         // Safe extraction for names and roles
                         const fullName = m.name || 'Sin Nombre';
@@ -212,13 +210,16 @@ export default function TeamPage() {
                                 {/* Actions */}
                                 <div className="flex gap-2 w-full">
                                     <button 
-                                        onClick={() => setSelectedMember({ ...member, action: 'message' })}
+                                        onClick={() => router.push(`/workstation/community-manager?tab=chat&chatWith=${member.id}`)}
                                         className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors flex items-center justify-center gap-2 text-xs font-bold"
                                     >
                                         <Mail className="w-3.5 h-3.5" /> Mensaje
                                     </button>
                                     <button 
-                                        onClick={() => setSelectedMember(member)}
+                                        onClick={() => {
+                                            setSelectedMember(member);
+                                            setActiveTab('performance');
+                                        }}
                                         className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors flex items-center justify-center gap-2 text-xs font-bold shadow-lg shadow-indigo-900/20"
                                     >
                                         Ver Perfil
@@ -343,7 +344,10 @@ export default function TeamPage() {
 
                                 {activeTab === 'contact' && (
                                     <div className="space-y-4">
-                                        <button className="w-full p-4 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-white font-bold flex items-center justify-between group transition-all">
+                                        <button 
+                                            onClick={() => router.push(`/workstation/community-manager?tab=chat&chatWith=${selectedMember.id}`)}
+                                            className="w-full p-4 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-white font-bold flex items-center justify-between group transition-all"
+                                        >
                                             <div className="flex items-center gap-4">
                                                 <MessageSquare className="w-5 h-5" />
                                                 <span>Enviar Mensaje Interno</span>

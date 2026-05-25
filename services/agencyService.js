@@ -61,15 +61,18 @@ export const agencyService = {
 
     createClient: async (clientData) => {
         const timestamp = new Date().toLocaleTimeString();
-        console.log(`🚀 [${timestamp}] Service: Creating New Client...`);
+        console.log(`🚀 [${timestamp}] Service: Creating New Client...`, clientData.name);
+        const startTime = Date.now();
+        
         try {
             const validFields = [
                 'id', 'name', 'city', 'type', 'status', 'cm', 'priority', 'plan', 
                 'projects', 'nextpost', 'price', 'target', 'email', 
                 'password_initial', 'whatsapp_number', 'google_drive_folder_id',
                 'onboarding_data', 'notes', 'created_at',
-                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry'
+                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty'
             ];
+            
             const sanitizedData = {};
             validFields.forEach(field => {
                 if (clientData[field] !== undefined) sanitizedData[field] = clientData[field];
@@ -82,26 +85,38 @@ export const agencyService = {
                 created_at: new Date().toISOString()
             };
 
-            const { data, error } = await supabase
-                .from('clients')
-                .insert([newClient])
-                .select();
+            // Safer timeout pattern using Promise.race
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Supabase Creation Timeout (45s)")), 45000)
+            );
 
-            if (error) throw error;
+            const insertPromise = (async () => {
+                console.log(`📡 [Supabase] Sending insert for ${newClient.id}...`);
+                const { data, error } = await supabase
+                    .from('clients')
+                    .insert([newClient])
+                    .select();
+                
+                if (error) throw error;
+                if (!data || data.length === 0) throw new Error("No data returned from insert");
+                return data[0];
+            })();
+
+            const createdRecord = await Promise.race([insertPromise, timeoutPromise]);
             
             // OPTIMISTIC LOCAL CACHE RECOVERY
             if (typeof window !== 'undefined') {
                 try {
                     const stored = localStorage.getItem('diic_clients');
                     const curr = stored ? JSON.parse(stored) : [];
-                    localStorage.setItem('diic_clients', JSON.stringify([data[0], ...curr]));
+                    localStorage.setItem('diic_clients', JSON.stringify([createdRecord, ...curr]));
                 } catch (e) {
-                    console.warn("⚠️ LocalStorage update skipped during creation");
+                    console.warn("⚠️ LocalStorage update skipped");
                 }
             }
 
-            console.log(`✅ [${timestamp}] Success: Client Created (ID: ${data[0].id})`);
-            return data[0];
+            console.log(`✅ [${timestamp}] Success: Client Created in ${Date.now() - startTime}ms (ID: ${createdRecord.id})`);
+            return createdRecord;
         } catch (error) {
             console.error(`❌ [${timestamp}] Error in createClient:`, error);
             throw error;
@@ -126,7 +141,6 @@ export const agencyService = {
 
             toast.info("Iniciando actualización en BD...", { id: 'debug-db' });
             
-            // Apply a strict 30-second timeout to prevent infinite hangs
             const timeoutPromise = new Promise((_, reject) => 
                 setTimeout(() => reject(new Error("Supabase timeout after 60s")), 60000)
             );
@@ -146,43 +160,12 @@ export const agencyService = {
             }
             toast.success("BD Clients actualizada", { id: 'debug-db' });
 
-            // SYNC TO PROFILE (Propagate Brand Identity)
+            // 🔄 SYNC TO PROFILE (Propagate Brand Identity)
             if (updates.name || updates.city || updates.whatsapp_number || updates.industry || updates.plan || updates.business_type || updates.specialty) {
-                console.log(`🔄 Syncing identity changes to public profile for client ${id}`);
-                toast.info("Sincronizando perfiles públicos...", { id: 'debug-profile' });
-                
-                const profileTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Profile sync timeout after 60s")), 60000));
-                
-                try {
-                    const { error: profileError } = await Promise.race([
-                        supabase
-                            .from('profiles')
-                            .update({
-                                full_name: updates.name,
-                                location: updates.city,
-                                whatsapp: updates.whatsapp_number,
-                                industry: updates.industry,
-                                plan: updates.plan,
-                                business_type: updates.business_type,
-                                specialty: updates.specialty
-                            })
-                            .eq('client_id', id),
-                        profileTimeout
-                    ]);
-
-                    if (profileError) {
-                        console.warn("⚠️ Profile sync warning:", profileError.message);
-                    } else {
-                        toast.success("Perfiles sincronizados", { id: 'debug-profile' });
-                    }
-                } catch (err) {
-                    console.warn("⚠️ Profile sync failed due to error or timeout:", err.message);
-                    toast.error("Error sincronizando perfiles", { id: 'debug-profile' });
-                }
+                await agencyService.syncClientProfile(id, updates);
             }
 
             // OPTIMISTIC LOCAL CACHE SYNC
-            toast.info("Actualizando caché local...", { id: 'debug-cache' });
             if (typeof window !== 'undefined') {
                 try {
                     const stored = localStorage.getItem('diic_clients');
@@ -195,79 +178,103 @@ export const agencyService = {
                     console.warn("⚠️ LocalStorage sync skipped during update");
                 }
             }
-            toast.success("Caché local listo", { id: 'debug-cache' });
 
-            console.log(`✅ [${timestamp}] Success: Client ${id} updated.`);
             return data[0];
         } catch (error) {
-            console.error(`❌ [${timestamp}] Error updating client:`, error);
+            console.error(`❌ [${timestamp}] Error in updateClient:`, error);
             throw error;
         }
     },
 
+    /**
+     * Dedicated method to ensure Profile matches Client data
+     */
+    /**
+     * Dedicated method to ensure Profile matches Client data (The "Double Mirror" core logic)
+     */
     syncClientProfile: async (clientId, updates) => {
         const timestamp = new Date().toLocaleTimeString();
-        console.log(`🚀 [${timestamp}] Service: Bidirectional Sync for ${clientId}...`);
+        console.log(`🚀 [${timestamp}] Service: Syncing Client-Profile Mirror for ${clientId}...`);
+        
         try {
-            // 0. Fetch existing client first to preserve onboarding_data
+            // 0. Fetch existing client first to preserve/merge onboarding_data if needed
             const { data: existingClient } = await supabase
                 .from('clients')
-                .select('onboarding_data')
+                .select('*')
                 .eq('id', clientId)
                 .single();
-            const existingOnboarding = existingClient?.onboarding_data || {};
+            
+            if (!existingClient) throw new Error("Client not found for sync");
 
-            // 1. Update Profile (Personal side)
+            // 1. Update Profile (User-facing side)
             const profileUpdates = {
-                full_name: updates.full_name,
-                location: updates.location,
-                whatsapp: updates.whatsapp,
-                industry: updates.marketing_type,
-                specialty: updates.specialty,
-                plan: updates.plan
+                full_name: updates.name || existingClient.name,
+                location: updates.city || existingClient.city,
+                whatsapp: updates.whatsapp_number || existingClient.whatsapp_number,
+                industry: updates.industry || existingClient.industry,
+                specialty: updates.specialty || existingClient.specialty,
+                plan: updates.plan || existingClient.plan,
+                business_type: updates.business_type || existingClient.business_type
             };
             
+            // Clean undefined fields
+            Object.keys(profileUpdates).forEach(key => 
+                profileUpdates[key] === undefined && delete profileUpdates[key]
+            );
+
             const { error: pError } = await supabase
                 .from('profiles')
                 .update(profileUpdates)
                 .eq('client_id', clientId);
 
-            if (pError) console.warn("Profile sync warning:", pError.message);
+            if (pError) console.warn("⚠️ Profile sync warning:", pError.message);
 
-            // 2. Update Client (Admin side)
-            const clientUpdates = {
-                name: updates.brand_name || updates.full_name, // Prefer brand name for admin view
-                city: updates.location,
-                whatsapp_number: updates.whatsapp,
-                industry: updates.marketing_type, // Mapping marketing type to industry
-                specialty: updates.specialty,
-                plan: updates.plan,
-                notes: updates.bio, // Mapping bio to notes
-                // Preserving existing onboarding_data and updating brand section
-                onboarding_data: {
-                    ...existingOnboarding,
-                    brand: {
-                        ...(existingOnboarding.brand || {}),
-                        primaryColor: updates.primary_color,
-                        secondaryColor: updates.secondary_color,
-                        accentColor: updates.accent_color,
-                        logo: updates.logo_url
+            // 2. Update Client Brand Data (merge color/logo updates if provided)
+            if (updates.primary_color || updates.secondary_color || updates.accent_color || updates.logo_url) {
+                const existingOnboarding = existingClient.onboarding_data || {};
+                const clientUpdates = {
+                    onboarding_data: {
+                        ...existingOnboarding,
+                        brand: {
+                            ...(existingOnboarding.brand || {}),
+                            primaryColor: updates.primary_color || existingOnboarding.brand?.primaryColor,
+                            secondaryColor: updates.secondary_color || existingOnboarding.brand?.secondaryColor,
+                            accentColor: updates.accent_color || existingOnboarding.brand?.accentColor,
+                            logo: updates.logo_url || existingOnboarding.brand?.logo
+                        }
                     }
-                }
-            };
+                };
 
-            const { data: cData, error: cError } = await supabase
-                .from('clients')
-                .update(clientUpdates)
-                .eq('id', clientId)
-                .select();
+                await supabase.from('clients').update(clientUpdates).eq('id', clientId);
+            }
 
-            if (cError) throw cError;
-
-            return cData[0];
+            toast.success("Perfiles sincronizados", { id: 'debug-profile' });
+            return { success: true };
         } catch (error) {
             console.error("❌ Sync Failure:", error);
-            throw error;
+            return { success: false, error };
+        }
+    },
+
+    /**
+     * Bulk Repairs all profiles based on current clients table
+     */
+    syncAllProfiles: async () => {
+        console.log("🛠️ [Service] Starting Global Profile Sync...");
+        toast.info("Sincronizando base de datos global...");
+        try {
+            const { data: clients, error } = await supabase.from('clients').select('*');
+            if (error) throw error;
+            let successCount = 0;
+            for (const client of clients) {
+                const res = await agencyService.syncClientProfile(client.id, client);
+                if (res.success) successCount++;
+            }
+            toast.success(`Sincronización global finalizada: ${successCount}/${clients.length}`);
+            return { success: true };
+        } catch (err) {
+            toast.error("Fallo en sincronización global");
+            throw err;
         }
     },
 
@@ -643,10 +650,10 @@ export const agencyService = {
 
                 if (!deliv) {
                     // Hardcoded fallback logic matching lib/constants.js PLAN_OPTIONS
-                    if (planId?.includes('presencia')) deliv = { videos: 0, reels: 4, posts: 8, cm: 1 };
-                    else if (planId?.includes('crecimiento')) deliv = { videos: 1, reels: 6, posts: 12, strategy: 1, cm: 1 };
-                    else if (planId?.includes('autoridad')) deliv = { videos: 2, reels: 8, posts: 16, strategy: 1, cm: 1 };
-                    else if (planId?.includes('elite')) deliv = { videos: 4, reels: 12, posts: 20, strategy: 1, cm: 1 };
+                    if (planId?.includes('presencia')) deliv = { videos: 3, posts: 6, strategy: 1, cm: 1 };
+                    else if (planId?.includes('crecimiento')) deliv = { videos: 5, posts: 8, strategy: 1, cm: 1 };
+                    else if (planId?.includes('autoridad')) deliv = { videos: 7, posts: 11, strategy: 1, cm: 1 };
+                    else if (planId?.includes('control')) deliv = { videos: 10, posts: 16, strategy: 1, cm: 1 };
                 }
 
                 if (deliv) {

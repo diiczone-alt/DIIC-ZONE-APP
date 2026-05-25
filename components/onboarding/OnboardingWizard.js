@@ -62,6 +62,22 @@ export default function OnboardingWizard({ initialType = 'client' }) {
 
     // 1. Persistence: Load state from localStorage on mount
     useEffect(() => {
+        // Scan for provider_token in URL immediately on mount
+        try {
+            const hash = window.location.hash || window.location.search;
+            if (hash && hash.includes('provider_token')) {
+                const params = new URLSearchParams(hash.replace('#', '?'));
+                const token = params.get('provider_token');
+                if (token) {
+                    console.log('[OnboardingWizard] Captured provider_token from URL on wizard mount:', token);
+                    localStorage.setItem('diic_google_token', token);
+                    localStorage.removeItem('diic_waiting_oauth');
+                }
+            }
+        } catch (e) {
+            console.warn('[OnboardingWizard] URL token scan error:', e);
+        }
+
         const savedState = localStorage.getItem('diic_onboarding_progress');
         if (savedState) {
             try {

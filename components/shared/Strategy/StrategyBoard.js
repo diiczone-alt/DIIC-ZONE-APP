@@ -297,8 +297,8 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                     setStrategyData(savedStrategy.data);
                     setIsStrategySaved(true);
                 } else if (client && client.plan?.toLowerCase() === 'authority') {
-                    // Fallback: Si no hay estrategia pero es Plan Autoridad, sugerimos la plantilla
-                    console.log("Sugerencia: Aplicar plantilla Plan Autoridad para nuevo cliente.");
+                    // Fallback: Si no hay estrategia pero es Nivel Autoridad, sugerimos la plantilla
+                    console.log("Sugerencia: Aplicar plantilla Nivel Autoridad para nuevo cliente.");
                 }
             }
         };

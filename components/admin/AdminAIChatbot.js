@@ -67,7 +67,7 @@ export default function AdminAIChatbot({ clientMode = false, clientContext = nul
 
     const generateAIResponse = (input) => {
         const query = input.toLowerCase();
-        if (query.includes('contrato')) return 'He analizado la boveda legal. El contrato para el Plan Élite de Dental Pro está listo para firma. ¿Quieres que lo envíe por WhatsApp ahora?';
+        if (query.includes('contrato')) return 'He analizado la boveda legal. El contrato para el Nivel Control de Dental Pro está listo para firma. ¿Quieres que lo envíe por WhatsApp ahora?';
         if (query.includes('vender') || query.includes('venta')) return 'Mi motor predictivo sugiere atacar el nicho de Real Estate este mes. He detectado una tasa de conversión 24% más alta en campañas de Reels para ese sector.';
         if (query.includes('hola')) return '¡Hola de nuevo! Mis redes neuronales están optimizadas al 100%. ¿Necesitas un análisis de sentimientos de los últimos leads o prefieres que redacte una propuesta de cierre?';
         return 'Entendido. Estoy procesando esa información con el contexto del cliente. Mi sistema de aprendizaje está ajustando la respuesta comercial para maximizar el ROI. ¿Deseas que conecte con un consultor humano para este punto específico?';
@@ -254,7 +254,7 @@ export default function AdminAIChatbot({ clientMode = false, clientContext = nul
                             <h4 className="text-xs font-black uppercase tracking-widest">Predicción IA</h4>
                             </div>
                             <p className="text-[11px] text-indigo-200 leading-relaxed italic">
-                                "El cliente muestra patrones de readiness para un upsell a Plan Élite. Se recomienda mencionar el ahorro anual en la próxima respuesta."
+                                "El cliente muestra patrones de readiness para un upsell a Nivel Control. Se recomienda mencionar el ahorro anual en la próxima respuesta."
                             </p>
                         </div>
 

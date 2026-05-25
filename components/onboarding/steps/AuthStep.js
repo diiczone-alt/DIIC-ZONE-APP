@@ -19,9 +19,45 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
     });
     const [loading, setLoading] = useState(false);
     const [isCityOpen, setIsCityOpen] = useState(false);
+    const [isSpecialtyOpen, setIsSpecialtyOpen] = useState(false);
     const [verificationSent, setVerificationSent] = useState(false);
     const [bypassActive, setBypassActive] = useState(false);
     const [isDev, setIsDev] = useState(false);
+
+    const specialtyOptions = [
+        "Community Manager",
+        "Diseñador",
+        "Filmmaker",
+        "Editor de Video",
+        "Filmmaker / Editor",
+        "Estratega",
+        "Ingeniería de Audio",
+        "Desarrollo Web"
+    ];
+
+    const mapSpecialtyToRole = (specialty) => {
+        if (!specialty) return 'CREATOR';
+        const lower = specialty.toLowerCase();
+        if (lower.includes('community manager') || lower.includes('estratega')) {
+            return 'COMMUNITY';
+        }
+        if (lower.includes('diseñad')) {
+            return 'DESIGNER';
+        }
+        if (lower.includes('filmmaker')) {
+            return 'FILMMAKER';
+        }
+        if (lower.includes('editor')) {
+            return 'EDITOR';
+        }
+        if (lower.includes('audio')) {
+            return 'AUDIO';
+        }
+        if (lower.includes('programador') || lower.includes('desarrollo web') || lower.includes('web')) {
+            return 'WEB';
+        }
+        return 'CREATOR';
+    };
 
     useEffect(() => {
         if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
@@ -55,7 +91,7 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
             });
 
             const finalRole = type === 'creative' 
-                ? (formData.role === 'community' ? 'COMMUNITY' : 'CREATOR') 
+                ? mapSpecialtyToRole(formData.brand) 
                 : 'CLIENT';
 
             await signInWithGoogle({
@@ -80,7 +116,7 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
         try {
             // Determinar role final: si es creative y eligió 'community', usar 'COMMUNITY'
             const finalRole = type === 'creative' 
-                ? (formData.role === 'community' ? 'COMMUNITY' : 'CREATOR') 
+                ? mapSpecialtyToRole(formData.brand) 
                 : 'CLIENT';
 
             const result = await register(formData.email, formData.password, { 
@@ -199,19 +235,58 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                             className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
                         />
                     </div>
-                    <div className="space-y-1 text-left">
+                    <div className="space-y-1 text-left relative z-[105]">
                         <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
                             <Briefcase className="w-2.5 h-2.5" /> {isCreative ? 'Specialty' : 'Brand'}
                         </label>
-                        <input 
-                            required
-                            autoComplete="off"
-                            name={`diic_brand_${Math.random()}`}
-                            placeholder={isCreative ? "Ej: Editor Pro / Filmmaker" : "Tu Marca"}
-                            value={formData.brand}
-                            onChange={e => setFormData({...formData, brand: e.target.value})}
-                            className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
-                        />
+                        {isCreative ? (
+                            <>
+                                <div 
+                                    onClick={() => setIsSpecialtyOpen(!isSpecialtyOpen)}
+                                    className={`w-full bg-black/20 border ${isSpecialtyOpen ? 'border-indigo-500' : 'border-white/5'} rounded-2xl p-4 text-xs text-white transition-all font-bold flex items-center justify-between cursor-pointer`}
+                                >
+                                    <span className={formData.brand ? 'text-white' : 'text-gray-700'}>
+                                        {formData.brand || "Seleccionar Especialidad"}
+                                    </span>
+                                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isSpecialtyOpen ? 'rotate-180' : ''}`} />
+                                </div>
+
+                                <AnimatePresence>
+                                    {isSpecialtyOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 5 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="absolute left-0 w-full bg-[#0A0A1F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-40 overflow-y-auto z-[106] backdrop-blur-3xl scrollbar-hide"
+                                        >
+                                            {specialtyOptions.map((item) => (
+                                                <div 
+                                                    key={item}
+                                                    onClick={() => {
+                                                        setFormData({...formData, brand: item});
+                                                        setIsSpecialtyOpen(false);
+                                                    }}
+                                                    className="px-6 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all flex items-center justify-between"
+                                                >
+                                                    {item}
+                                                    {formData.brand === item && <div className="w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(79,70,229,1)]" />}
+                                                </div>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </>
+                        ) : (
+                            <input 
+                                required
+                                autoComplete="off"
+                                name={`diic_brand_${Math.random()}`}
+                                placeholder="Tu Marca"
+                                value={formData.brand}
+                                onChange={e => setFormData({...formData, brand: e.target.value})}
+                                className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                            />
+                        )}
                     </div>
                 </div>
 

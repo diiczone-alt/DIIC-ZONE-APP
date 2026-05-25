@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Type, Video, Activity, Play, Pause, Save, Upload, MonitorPlay, Maximize2, Settings2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, Type, Video, Activity, Play, Pause, Save, Upload, MonitorPlay, Maximize2, Settings2, Sparkles, CheckCircle2, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function EditorWorkspace({ task, onClose }) {

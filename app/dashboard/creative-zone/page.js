@@ -45,10 +45,10 @@ export default function CreativeZonePage() {
     const filteredTasks = tasks.filter(t => filter === 'Todos' || t.status === filter);
 
     return (
-        <div className="min-h-screen bg-[#050511] text-white font-sans selection:bg-indigo-500/30">
+        <div className="flex min-h-screen bg-[#050511] text-white font-sans selection:bg-indigo-500/30 overflow-x-hidden">
             <DynamicSidebar />
 
-            <div className="pl-64 transition-all duration-300">
+            <div className="flex-1 transition-all duration-300 min-w-0">
                 <main className="p-8 max-w-[1600px] mx-auto space-y-8">
                     
                     {/* Header */}

@@ -58,12 +58,7 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
 
             // Direct recovery attempt
             if (!activeUser) {
-                try {
-                    const { data: { session: directSession } } = await supabase.auth.getSession();
-                    activeUser = directSession?.user;
-                } catch (e) {
-                    console.warn('Silent session recovery failed:', e);
-                }
+                activeUser = session?.user;
             }
 
             // Fallback for missing user
@@ -126,14 +121,7 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                 // 2. Google Drive Ecosystem Setup (Final Phase)
                 if (isMounted.current) setLogs(prev => [...prev, 'Buscando llave de ecosistema en bóveda...']);
                 
-                let backupToken = localStorage.getItem('diic_google_token');
-                
-                // Ultimo intento de recuperación silenciosa si el backup falló
-                if (!backupToken) {
-                    const { data: { session: lastChance } } = await supabase.auth.getSession();
-                    backupToken = lastChance?.provider_token;
-                }
-
+                const backupToken = typeof window !== 'undefined' ? localStorage.getItem('diic_google_token') : null;
                 const providerToken = session?.provider_token || backupToken;
 
                 if (providerToken && isMounted.current) {

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, Reorder } from 'framer-motion'; // Assuming Reorder is available or we simulate list
 import { Plus, Trash2, Upload, FileVideo, GripVertical, AlignLeft } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function SceneEditor({ scenes, setScenes }) {
 
@@ -84,12 +85,40 @@ export default function SceneEditor({ scenes, setScenes }) {
                                         <label className="text-[10px] text-gray-500 uppercase flex items-center gap-1">
                                             <Upload className="w-3 h-3" /> Material
                                         </label>
-                                        <button className="text-[10px] text-blue-400 hover:text-blue-300">
+                                        <button 
+                                            onClick={() => document.getElementById(`file-upload-${scene.id}`).click()}
+                                            className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
+                                        >
                                             + Subir
                                         </button>
                                     </div>
-                                    <div className="border border-dashed border-white/10 rounded-lg p-3 flex flex-col items-center justify-center text-gray-500 hover:bg-white/5 transition-colors cursor-pointer">
-                                        <span className="text-xs">Arrastra archivos aquí</span>
+                                    <input 
+                                        type="file" 
+                                        id={`file-upload-${scene.id}`} 
+                                        className="hidden" 
+                                        multiple 
+                                        onChange={(e) => {
+                                            if (e.target.files.length > 0) {
+                                                toast.success(`Archivos adjuntados a ${scene.name}`);
+                                                // Simulamos guardar el nombre de los archivos en el estado
+                                                const fileNames = Array.from(e.target.files).map(f => f.name);
+                                                updateScene(scene.id, 'files', [...scene.files, ...fileNames]);
+                                            }
+                                        }}
+                                    />
+                                    <div 
+                                        onClick={() => document.getElementById(`file-upload-${scene.id}`).click()}
+                                        className="border border-dashed border-white/10 rounded-lg p-3 flex flex-col items-center justify-center text-gray-500 hover:bg-white/5 hover:border-primary/50 hover:text-primary transition-all cursor-pointer group"
+                                    >
+                                        {scene.files && scene.files.length > 0 ? (
+                                            <div className="text-xs text-primary flex flex-col items-center text-center">
+                                                <FileVideo className="w-5 h-5 mb-1" />
+                                                <span>{scene.files.length} archivo(s) subido(s)</span>
+                                                <span className="text-[9px] text-gray-500 mt-1 truncate max-w-[150px]">{scene.files.join(', ')}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs group-hover:scale-105 transition-transform">Arrastra archivos aquí o haz clic para subir</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>

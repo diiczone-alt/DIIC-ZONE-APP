@@ -30,6 +30,33 @@ export const messagingService = {
         return newChat;
     },
 
+    getOrCreateSquadChat: async (clientId, groupType = 'general') => {
+        const chatName = `squad_${clientId}_${groupType}`;
+
+        const { data, error } = await supabase
+            .from('chats')
+            .select('*')
+            .eq('name', chatName)
+            .eq('type', 'squad')
+            .single();
+
+        if (data) return data;
+
+        const { data: newChat, error: createError } = await supabase
+            .from('chats')
+            .insert([{
+                client_id: clientId,
+                name: chatName,
+                type: 'squad',
+                status: 'active'
+            }])
+            .select()
+            .single();
+
+        if (createError) throw createError;
+        return newChat;
+    },
+
     /**
      * Get or create a direct chat between two staff members (CM <-> Creative)
      */

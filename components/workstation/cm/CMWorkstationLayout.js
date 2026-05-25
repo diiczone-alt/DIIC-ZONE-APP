@@ -24,6 +24,7 @@ import CreativeStudio from '../../events/CreativeBoard';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
 import { aiService } from '@/services/aiService';
+import NewProjectWizard from '../../projects/NewProjectWizard';
 
 export default function CMWorkstationLayout() {
     const searchParams = useSearchParams();
@@ -348,7 +349,7 @@ export default function CMWorkstationLayout() {
                             transition={{ duration: 0.2 }}
                             className="h-full"
                         >
-                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead)}
+                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead, searchParams)}
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -357,7 +358,7 @@ export default function CMWorkstationLayout() {
     );
 }
 
-function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead) {
+function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead, searchParams) {
     if (!selectedClient) {
         if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} />;
         if (tab === 'academy') return <CMAcademy user={user} />;
@@ -382,9 +383,9 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
 
     switch (tab) {
         case 'dashboard': return <CMDashboard client={selectedClient} user={user} tasks={clientTasks} />;
-        case 'projects': return <CMProjects client={selectedClient} tasks={clientTasks} loading={loadingTasks} />;
+        case 'projects': return <CMProjects client={selectedClient} tasks={clientTasks} loading={loadingTasks} squad={squad} />;
         case 'contents': return <ContentKanban role="cm" client={selectedClient} />;
-        case 'chat': return <CommunicationCenter client={selectedClient} squad={squad} tasks={clientTasks} />;
+        case 'chat': return <CommunicationCenter client={selectedClient} user={user} squad={squad} tasks={clientTasks} initialChatWith={searchParams.get('chatWith')} />;
         case 'meta': return <MetaAdsModule client={selectedClient} />;
         case 'calendar': return <UnifiedCalendar role="cm" />;
         case 'strategy': return <StrategyBoard role="cm" isSubcomponent={true} clientId={selectedClient?.id} onClose={() => setActiveTab('dashboard')} />;
@@ -483,8 +484,9 @@ function CMDashboard({ client, user, tasks = [] }) {
     );
 }
 
-function CMProjects({ client, tasks, loading }) {
+function CMProjects({ client, tasks, loading, squad }) {
     const [selectedProject, setSelectedProject] = useState(null);
+    const [isWizardOpen, setIsWizardOpen] = useState(false);
 
     if (loading) return <div className="h-full flex items-center justify-center text-cyan-400 italic font-bold">Cargando proyectos reales de Supabase...</div>;
 
@@ -532,12 +534,14 @@ function CMProjects({ client, tasks, loading }) {
             <div className="flex justify-between items-center">
                 <h3 className="text-2xl font-bold text-white">Proyectos Asignados</h3>
                 <button 
-                    onClick={() => alert('Abriendo asistente de creación de proyectos...') }
+                    onClick={() => setIsWizardOpen(true)}
                     className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-cyan-600/20"
                 >
                     <Plus className="w-4 h-4" /> Nuevo Proyecto
                 </button>
             </div>
+
+            <NewProjectWizard isOpen={isWizardOpen} onClose={() => setIsWizardOpen(false)} squad={squad} client={client} />
 
             <div className="bg-[#0E0E18] border border-white/5 rounded-3xl overflow-hidden">
                 {tasks.length === 0 ? (
@@ -761,10 +765,13 @@ function RoleTaskCard({ role, staff, tasks, color }) {
     );
 }
 
-function CommunicationCenter({ client, squad, tasks = [] }) {
-    const [subTab, setSubTab] = useState('ia');
+function CommunicationCenter({ client, user, squad, tasks = [], initialChatWith }) {
+    const [subTab, setSubTab] = useState(initialChatWith ? 'team' : 'ia');
     const [showPopover, setShowPopover] = useState(false);
-    const [activeChat, setActiveChat] = useState({ id: 'ia', type: 'ia', name: 'Asistente IA' });
+    
+    // Find initial member if provided
+    const initialMember = initialChatWith && squad ? squad.find(m => m.id === initialChatWith) : null;
+    const [activeChat, setActiveChat] = useState(initialMember ? { id: initialMember.id, type: 'team', name: initialMember.name } : { id: 'ia', type: 'ia', name: 'Asistente IA' });
     const [inputValue, setInputValue] = useState('');
     const [messages, setMessages] = useState([
         { id: 1, chatId: 'ia', text: '¡Hola Leslie! Soy tu Estratega IA. Estoy listo para optimizar tu flujo de trabajo de hoy.', sender: 'ai', time: '10:00 AM' },
@@ -774,56 +781,105 @@ function CommunicationCenter({ client, squad, tasks = [] }) {
     const [isTyping, setIsTyping] = useState(false);
     const [realMessages, setRealMessages] = useState([]);
     const [activeThread, setActiveThread] = useState(null);
-    const [activeMemberId, setActiveMemberId] = useState(null);
+    const [activeMemberId, setActiveMemberId] = useState(initialChatWith || null);
 
     useEffect(() => {
         if (subTab === 'empresa' && client) {
             const syncThread = async () => {
-                const thread = await messagingService.getOrCreateClientChat(client.id);
-                setActiveThread(thread);
-                const historical = await messagingService.getMessages(thread.id);
-                setRealMessages(historical);
+                try {
+                    const thread = await messagingService.getOrCreateClientChat(client.id);
+                    setActiveThread(thread);
+                    const historical = await messagingService.getMessages(thread.id);
+                    setRealMessages(historical);
 
-                const channel = messagingService.subscribeToMessages(thread.id, (newMsg) => {
-                    setRealMessages(prev => {
-                        if (prev.find(m => m.id === newMsg.id)) return prev;
-                        return [...prev, newMsg];
+                    const channel = messagingService.subscribeToMessages(thread.id, (newMsg) => {
+                        setRealMessages(prev => {
+                            if (prev.find(m => m.id === newMsg.id)) return prev;
+                            return [...prev, newMsg];
+                        });
                     });
-                });
 
-                return () => supabase.removeChannel(channel);
+                    return () => supabase.removeChannel(channel);
+                } catch (err) {
+                    console.error("Error syncing client thread:", err);
+                }
             };
             syncThread();
         }
 
-        if (subTab === 'team' && activeMemberId) {
-            const syncDirect = async () => {
-                const thread = await messagingService.getOrCreateDirectChat(user.id, activeMemberId);
-                setActiveThread(thread);
-                const historical = await messagingService.getMessages(thread.id);
-                setRealMessages(historical);
+        if (subTab === 'team' && activeChat.id !== 'ia' && user) {
+            // Only sync if it's a specific member, general chat, or dept chat
+            if (activeChat.type === 'member' || activeChat.type === 'general' || activeChat.type === 'dept') {
+                const syncTeamChat = async () => {
+                    try {
+                        let thread;
+                        if (activeChat.type === 'member' && activeMemberId) {
+                            thread = await messagingService.getOrCreateDirectChat(user.id, activeMemberId);
+                        } else if (activeChat.type === 'general' || activeChat.type === 'dept') {
+                            thread = await messagingService.getOrCreateSquadChat(client?.id || 'global', activeChat.type);
+                        }
+                        
+                        if (!thread) return;
 
-                const channel = messagingService.subscribeToMessages(thread.id, (newMsg) => {
-                    setRealMessages(prev => {
-                        if (prev.find(m => m.id === newMsg.id)) return prev;
-                        return [...prev, newMsg];
-                    });
-                });
+                        setActiveThread(thread);
+                        const historical = await messagingService.getMessages(thread.id);
+                        setRealMessages(historical);
 
-                return () => supabase.removeChannel(channel);
-            };
-            syncDirect();
+                        const channel = messagingService.subscribeToMessages(thread.id, (newMsg) => {
+                            setRealMessages(prev => {
+                                if (prev.find(m => m.id === newMsg.id)) return prev;
+                                return [...prev, newMsg];
+                            });
+                        });
+
+                        return () => supabase.removeChannel(channel);
+                    } catch (err) {
+                        console.error("Error syncing team thread:", err);
+                    }
+                };
+                syncTeamChat();
+            }
         }
-    }, [subTab, client, activeMemberId]);
+    }, [subTab, client, activeMemberId, user, activeChat.id, activeChat.type]);
 
     const handleSend = async () => {
         if (!inputValue.trim() || isTyping) return;
         
         const userMsg = inputValue.trim();
 
-        if ((subTab === 'empresa' || subTab === 'team') && activeThread) {
+        if (subTab === 'empresa' || subTab === 'team') {
+            if (subTab === 'team' && activeChat.type !== 'member' && activeChat.type !== 'general' && activeChat.type !== 'dept') {
+                toast.error("Selecciona un chat", { description: "Elige un miembro de equipo, departamento o chat general antes de enviar un mensaje." });
+                return;
+            }
+
+            if (!activeThread || !user) {
+                toast.error("Conexión en progreso", { description: "Espera un momento mientras sincronizamos el canal." });
+                return;
+            }
+
             setInputValue('');
-            await messagingService.sendMessage(activeThread.id, user.id, userMsg);
+            
+            // Optimistic update
+            const tempId = 'temp-' + Date.now();
+            const optimisticMsg = {
+                id: tempId,
+                content: userMsg,
+                sender_id: user.id,
+                created_at: new Date().toISOString(),
+                chat_id: activeThread.id
+            };
+            
+            setRealMessages(prev => [...prev, optimisticMsg]);
+            
+            try {
+                await messagingService.sendMessage(activeThread.id, user.id, userMsg);
+            } catch (err) {
+                console.error("Failed to send message:", err);
+                toast.error("Error al enviar mensaje");
+                // Remove optimistic message if failed
+                setRealMessages(prev => prev.filter(m => m.id !== tempId));
+            }
             return;
         }
 
@@ -920,7 +976,7 @@ function CommunicationCenter({ client, squad, tasks = [] }) {
                         className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4"
                     >
                         {/* If in 'team' tab but no specific member selected yet, show the team list */}
-                        {subTab === 'team' && activeChat.type !== 'member' && activeChat.id !== 'general' ? (
+                        {subTab === 'team' && activeChat.type !== 'member' && activeChat.id !== 'general' && activeChat.type !== 'dept' ? (
                             <TeamChatView 
                                 client={client} 
                                 squad={squad} 
@@ -928,6 +984,10 @@ function CommunicationCenter({ client, squad, tasks = [] }) {
                                 onSelectMember={(m) => selectChat({ id: m.id, type: 'member', name: m.name })}
                                 onSendMember={(m) => selectChat({ id: m.id, type: 'member', name: m.name })}
                                 onViewKPIs={() => {}}
+                                onSetCommMode={(mode) => {
+                                    if (mode === 'general') selectChat({ id: 'general', type: 'general', name: 'Chat General' });
+                                    if (mode === 'dept') selectChat({ id: 'dept', type: 'dept', name: 'Departamentos' });
+                                }}
                             />
                         ) : (
                             /* Else show the message history for the active chat */
@@ -3023,20 +3083,199 @@ function NotificationsView({ notifications, loading, onMarkAsRead }) {
     );
 }
 function CMProfileView({ user }) {
+    const { logout } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [profileData, setProfileData] = useState(null);
+    const [teamData, setTeamData] = useState(null);
+
+    // Form inputs
+    const [whatsapp, setWhatsapp] = useState('');
+    const [city, setCity] = useState('');
+    const [cvUrl, setCvUrl] = useState('');
+    const [cvSummary, setCvSummary] = useState('');
+    const [skills, setSkills] = useState('');
+
+    // Delete flow
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [confirmEmail, setConfirmEmail] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    useEffect(() => {
+        const fetchProfileDetails = async () => {
+            if (!user?.email) return;
+            setLoading(true);
+            try {
+                // Fetch public.team details
+                let { data: team, error: teamErr } = await supabase
+                    .from('team')
+                    .select('*')
+                    .eq('email', user.email)
+                    .maybeSingle();
+
+                if (!team && user.full_name) {
+                    const { data: teamByName } = await supabase
+                        .from('team')
+                        .select('*')
+                        .eq('name', user.full_name)
+                        .maybeSingle();
+                    team = teamByName;
+                }
+
+                // Fetch public.profiles details
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                if (team) {
+                    setTeamData(team);
+                    setWhatsapp(team.whatsapp || '');
+                    setCity(team.city || '');
+                    setCvUrl(team.cv_url || '');
+                    setCvSummary(team.cv_summary || '');
+                    setSkills(Array.isArray(team.skills) ? team.skills.join(', ') : '');
+                } else if (profile) {
+                    setWhatsapp(profile.whatsapp || '');
+                    setCity(profile.location || '');
+                    setCvUrl(profile.cv_url || '');
+                    setCvSummary(profile.cv_summary || '');
+                    setSkills(Array.isArray(profile.skills) ? profile.skills.join(', ') : '');
+                }
+
+                if (profile) {
+                    setProfileData(profile);
+                }
+            } catch (err) {
+                console.error("Error fetching profiles:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfileDetails();
+    }, [user]);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const formattedSkills = skills
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            // Update public.team if exists
+            if (teamData?.id) {
+                const { error: teamUpdateErr } = await supabase
+                    .from('team')
+                    .update({
+                        whatsapp,
+                        city,
+                        cv_url: cvUrl,
+                        cv_summary: cvSummary,
+                        skills: formattedSkills
+                    })
+                    .eq('id', teamData.id);
+
+                if (teamUpdateErr) throw teamUpdateErr;
+            }
+
+            // Update public.profiles if exists
+            if (user?.id) {
+                const { error: profileUpdateErr } = await supabase
+                    .from('profiles')
+                    .update({
+                        whatsapp,
+                        location: city,
+                        cv_url: cvUrl,
+                        cv_summary: cvSummary,
+                        skills: formattedSkills
+                    })
+                    .eq('id', user.id);
+
+                if (profileUpdateErr) throw profileUpdateErr;
+            }
+
+            toast.success("Expediente Sincronizado", {
+                description: "Los cambios han sido guardados correctamente en la base de datos."
+            });
+        } catch (err) {
+            console.error("Error saving profile details:", err);
+            toast.error("Error al guardar cambios");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (confirmEmail.toLowerCase() !== user?.email?.toLowerCase()) {
+            toast.error("El correo no coincide");
+            return;
+        }
+
+        setIsDeleting(true);
+        console.log("[DeleteAccount] Initiating deletion flow for user:", user?.id, user?.email);
+        try {
+            console.log("[DeleteAccount] Calling RPC 'delete_own_user'...");
+            const { data, error } = await supabase.rpc('delete_own_user');
+            
+            console.log("[DeleteAccount] RPC Response - Data:", data, "Error:", error);
+            if (error) {
+                console.error("[DeleteAccount] RPC error object:", JSON.stringify(error, null, 2));
+                throw error;
+            }
+
+            console.log("[DeleteAccount] RPC successful. Clearing local storage and session...");
+            toast.success("Cuenta eliminada con éxito");
+            
+            // Clear local session storage manually to prevent signOut() hangs on deleted session
+            if (typeof window !== 'undefined') {
+                localStorage.clear();
+                // Clear GoTrue session in memory/cookies locally without calling GoTrue API
+                try {
+                    await supabase.auth.signOut({ scope: 'local' });
+                } catch (signOutErr) {
+                    console.warn("[DeleteAccount] Local signout warning:", signOutErr);
+                }
+            }
+
+            console.log("[DeleteAccount] Redirecting to /login...");
+            window.location.href = '/login';
+        } catch (err) {
+            console.error("[DeleteAccount] Exception caught:", err);
+            toast.error(`No se pudo eliminar la cuenta: ${err.message || 'Error desconocido'}. Contacte al soporte.`);
+        } finally {
+            console.log("[DeleteAccount] Deletion flow finally block executed.");
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="h-[60vh] flex flex-col items-center justify-center gap-6">
+                <div className="w-16 h-16 rounded-full border-t-2 border-cyan-500 animate-spin" />
+                <p className="text-cyan-400 italic font-bold text-sm tracking-widest uppercase animate-pulse">Cargando expediente...</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 pb-20">
+            {/* Header/Info Card */}
             <div className="bg-gradient-to-br from-[#0E0E18] to-[#050511] border border-white/5 rounded-[3rem] p-12 relative overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-600/10 blur-[100px] rounded-full" />
                 
                 <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
-                    <div className="w-32 h-32 rounded-[2.5rem] bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white text-5xl font-black shadow-2xl shadow-cyan-500/20">
-                        {user?.full_name?.charAt(0) || "R"}
+                    <div className="w-32 h-32 rounded-[2.5rem] bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white text-5xl font-black shadow-2xl shadow-cyan-500/20 uppercase">
+                        {user?.full_name?.charAt(0) || "U"}
                     </div>
                     <div className="text-center md:text-left">
-                        <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-2">{user?.full_name || "Reyshell"}</h2>
+                        <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-2">{user?.full_name || "Usuario"}</h2>
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                            <span className="px-4 py-1 bg-cyan-600/10 border border-cyan-500/20 text-cyan-400 rounded-full text-[10px] font-black uppercase tracking-widest">Lead Estratega</span>
-                            <span className="px-4 py-1 bg-white/5 border border-white/5 text-gray-500 rounded-full text-[10px] font-black uppercase tracking-widest">DIIC Zone HQ</span>
+                            <span className="px-4 py-1 bg-cyan-600/10 border border-cyan-500/20 text-cyan-400 rounded-full text-[10px] font-black uppercase tracking-widest">{teamData?.role || 'Lead Estratega'}</span>
+                            <span className="px-4 py-1 bg-white/5 border border-white/5 text-gray-500 rounded-full text-[10px] font-black uppercase tracking-widest">{city || 'Sede Remota'}</span>
                         </div>
                     </div>
                 </div>
@@ -3044,28 +3283,203 @@ function CMProfileView({ user }) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
                     <div className="bg-white/5 border border-white/5 p-6 rounded-3xl">
                         <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Ecosistemas</p>
-                        <h4 className="text-2xl font-black text-white italic tracking-tighter">14 ACTIVOS</h4>
+                        <h4 className="text-2xl font-black text-white italic tracking-tighter">{teamData?.activetasks || 0} ASIGNADOS</h4>
                     </div>
                     <div className="bg-white/5 border border-white/5 p-6 rounded-3xl">
-                        <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Rendimiento</p>
-                        <h4 className="text-2xl font-black text-emerald-400 italic tracking-tighter">98.4% SCORE</h4>
+                        <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">XP Acumulada</p>
+                        <h4 className="text-2xl font-black text-emerald-400 italic tracking-tighter">{profileData?.xp || 0} XP</h4>
                     </div>
                     <div className="bg-white/5 border border-white/5 p-6 rounded-3xl">
-                        <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Sincronización</p>
-                        <h4 className="text-2xl font-black text-cyan-400 italic tracking-tighter">NIVEL ÉLITE</h4>
+                        <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Nivel Operativo</p>
+                        <h4 className="text-2xl font-black text-cyan-400 italic tracking-tighter">{profileData?.rank || 'Estratega Junior'}</h4>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-[#0E0E18] border border-white/5 rounded-[3rem] p-10">
+            {/* Profile Editing Form */}
+            <div className="bg-[#0E0E18] border border-white/5 rounded-[3rem] p-10 space-y-8">
                 <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-8 flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
-                    Configuración de Operaciones
+                    Expediente & Logística del CM
                 </h3>
-                <div className="space-y-4">
-                    <p className="text-gray-500 text-sm font-medium italic">Próximamente: Personalización de notificaciones y temas de workstation.</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* WhatsApp */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Número de WhatsApp</label>
+                        <div className="relative flex items-center">
+                            <MessageSquare className="w-4 h-4 text-gray-500 absolute left-4" />
+                            <input 
+                                type="text"
+                                value={whatsapp}
+                                onChange={(e) => setWhatsapp(e.target.value)}
+                                className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 transition-all font-medium"
+                                placeholder="Ej: +593999999999"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Ciudad */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Ciudad / Sede</label>
+                        <div className="relative flex items-center">
+                            <MapPin className="w-4 h-4 text-gray-500 absolute left-4" />
+                            <input 
+                                type="text"
+                                value={city}
+                                onChange={(e) => setCity(e.target.value)}
+                                className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 transition-all font-medium"
+                                placeholder="Ej: Guayaquil"
+                            />
+                        </div>
+                    </div>
+
+                    {/* CV URL */}
+                    <div className="space-y-2 md:col-span-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2 flex justify-between">
+                            <span>Vínculo de Currículum (URL)</span>
+                            {cvUrl && <a href={cvUrl} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline flex items-center gap-1 normal-case tracking-normal">Ver Curriculum <ExternalLink className="w-3 h-3" /></a>}
+                        </label>
+                        <div className="relative flex items-center">
+                            <Globe className="w-4 h-4 text-gray-500 absolute left-4" />
+                            <input 
+                                type="text"
+                                value={cvUrl}
+                                onChange={(e) => setCvUrl(e.target.value)}
+                                className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 transition-all font-medium"
+                                placeholder="Ej: https://drive.google.com/... o linkedin"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Skills */}
+                    <div className="space-y-2 md:col-span-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Habilidades (Separadas por comas)</label>
+                        <div className="relative flex items-center">
+                            <Award className="w-4 h-4 text-gray-500 absolute left-4" />
+                            <input 
+                                type="text"
+                                value={skills}
+                                onChange={(e) => setSkills(e.target.value)}
+                                className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 transition-all font-medium"
+                                placeholder="Ej: Copywriting, Reels, Meta Ads, TikTok Strategy"
+                            />
+                        </div>
+                    </div>
+
+                    {/* CV Summary / Trayectoria */}
+                    <div className="space-y-2 md:col-span-2">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Trayectoria / Perfil Profesional</label>
+                        <textarea 
+                            value={cvSummary}
+                            onChange={(e) => setCvSummary(e.target.value)}
+                            className="w-full min-h-[150px] p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] text-gray-300 text-sm leading-relaxed outline-none focus:border-cyan-500/50 transition-all font-medium resize-none"
+                            placeholder="Describe tu experiencia, logros clave y estilo de trabajo como Estratega o CM..."
+                        />
+                    </div>
+                </div>
+
+                <div className="pt-6 border-t border-white/5 flex justify-end">
+                    <button 
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="px-8 py-4 bg-white text-black font-black uppercase text-xs tracking-widest rounded-2xl hover:scale-105 transition-all shadow-xl shadow-white/5 flex items-center gap-2"
+                    >
+                        {saving ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                Guardando...
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircle2 className="w-4 h-4" />
+                                Actualizar Expediente
+                            </>
+                        )}
+                    </button>
                 </div>
             </div>
+
+            {/* Danger Zone */}
+            <div className="bg-red-950/10 border border-red-900/30 rounded-[3rem] p-10 space-y-6">
+                <h3 className="text-xl font-black text-red-500 uppercase italic tracking-tighter flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-500" />
+                    Zona de Peligro
+                </h3>
+                <p className="text-sm text-gray-400 font-medium">
+                    Si decides eliminar tu cuenta, todos tus registros de autenticación, tu expediente de talento y tu vinculación con la agencia DIIC ZONE serán destruidos permanentemente de forma irreversible.
+                </p>
+                <div className="flex">
+                    <button 
+                        onClick={() => setShowDeleteModal(true)}
+                        className="px-6 py-3.5 bg-red-600/10 border border-red-500/20 text-red-500 font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-red-600 hover:text-white transition-all"
+                    >
+                        Eliminar Cuenta Permanentemente
+                    </button>
+                </div>
+            </div>
+
+            {/* Delete Account Modal */}
+            <AnimatePresence>
+                {showDeleteModal && (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            onClick={() => setShowDeleteModal(false)} 
+                            className="absolute inset-0 bg-black/85 backdrop-blur-md" 
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+                            animate={{ scale: 1, opacity: 1, y: 0 }} 
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }} 
+                            className="relative w-full max-w-lg bg-[#0E0E18] border border-red-500/20 rounded-[2.5rem] p-10 shadow-2xl z-10 text-center space-y-8"
+                        >
+                            <div className="w-20 h-20 rounded-[2rem] bg-red-500/10 flex items-center justify-center text-red-500 mx-auto">
+                                <AlertTriangle className="w-10 h-10" />
+                            </div>
+
+                            <div className="space-y-3">
+                                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">¿CONFIRMAR ELIMINACIÓN?</h3>
+                                <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                                    Esta acción eliminará permanentemente tu acceso de autenticación y todos tus expedientes. Escribe tu correo electrónico para proceder:
+                                    <br />
+                                    <strong className="text-red-400 font-bold block mt-2 select-all">{user?.email}</strong>
+                                </p>
+                            </div>
+
+                            <input 
+                                type="text"
+                                value={confirmEmail}
+                                onChange={(e) => setConfirmEmail(e.target.value)}
+                                className="w-full px-6 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-center text-sm outline-none focus:border-red-500/50 transition-all font-mono"
+                                placeholder="Escribe tu correo aquí..."
+                            />
+
+                            <div className="flex gap-4">
+                                <button 
+                                    onClick={() => setShowDeleteModal(false)}
+                                    className="flex-1 py-4 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    onClick={handleDeleteAccount}
+                                    disabled={confirmEmail.toLowerCase() !== user?.email?.toLowerCase() || isDeleting}
+                                    className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                        confirmEmail.toLowerCase() === user?.email?.toLowerCase() && !isDeleting
+                                        ? 'bg-red-600 text-white hover:scale-105 shadow-lg shadow-red-600/20'
+                                        : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
+                                    }`}
+                                >
+                                    {isDeleting ? 'Eliminando...' : 'Eliminar Permanentemente'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

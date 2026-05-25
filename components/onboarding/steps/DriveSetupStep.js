@@ -49,7 +49,7 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
         }
     ];
 
-    const providerToken = session?.provider_token;
+    const providerToken = session?.provider_token || (typeof window !== 'undefined' ? localStorage.getItem('diic_google_token') : null);
 
     useEffect(() => {
         // --- SENSOR DE CAPTURA RELÁMPAGO (BAJO NIVEL) ---
@@ -101,12 +101,10 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
                         return;
                     }
 
-                    const { data: { session: activeSession } } = await supabase.auth.getSession();
-                    const liveToken = activeSession?.provider_token;
+                    const liveToken = localStorage.getItem('diic_google_token');
                     
                     if (liveToken) {
-                        console.log('[DriveSetupStep] ¡Llave encontrada mediante búsqueda activa!');
-                        localStorage.setItem('diic_google_token', liveToken);
+                        console.log('[DriveSetupStep] ¡Llave encontrada en almacenamiento local!');
                         localStorage.removeItem('diic_waiting_oauth');
                         clearInterval(pollingInterval);
                         onNext();

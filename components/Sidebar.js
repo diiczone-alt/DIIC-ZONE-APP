@@ -55,9 +55,9 @@ export default function Sidebar() {
 
     const workstations = [
         { label: 'Community M.', href: '/workstation/community-manager', icon: Users, color: 'text-indigo-400' },
-        { label: 'Filmmaker', href: '/dashboard/filmmaker', icon: Clapperboard, color: 'text-orange-400' },
-        { label: 'Designer', href: '/dashboard/design', icon: MonitorPlay, color: 'text-fuchsia-400' },
-        { label: 'Audio Studio', href: '/dashboard/audio', icon: BarChart2, color: 'text-blue-400' },
+        { label: 'Filmmaker', href: '/workstation/filmmaker', icon: Clapperboard, color: 'text-orange-400' },
+        { label: 'Designer', href: '/workstation/designer', icon: MonitorPlay, color: 'text-fuchsia-400' },
+        { label: 'Audio Studio', href: '/workstation/audio', icon: BarChart2, color: 'text-blue-400' },
     ];
 
     return (
