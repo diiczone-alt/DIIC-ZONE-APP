@@ -169,22 +169,24 @@ export default function ProfilePage() {
 
                 // 2. Fetch from team (linked by team_id or email or name fallback)
                 try {
-                    let res = await promiseTimeout(
-                        supabase
-                            .from('team')
-                            .select('*')
-                            .eq('email', user.email)
-                            .maybeSingle(),
-                        2500
-                    );
-                    team = res.data;
-
-                    if (!team && activeProfile?.full_name) {
-                        res = await promiseTimeout(
+                    if (user.email) {
+                        const res = await promiseTimeout(
                             supabase
                                 .from('team')
                                 .select('*')
-                                .eq('name', activeProfile.full_name)
+                                .ilike('email', user.email)
+                                .maybeSingle(),
+                            2500
+                        );
+                        team = res.data;
+                    }
+
+                    if (!team && activeProfile?.full_name) {
+                        const res = await promiseTimeout(
+                            supabase
+                                .from('team')
+                                .select('*')
+                                .ilike('name', activeProfile.full_name)
                                 .maybeSingle(),
                             2500
                         );
@@ -195,17 +197,53 @@ export default function ProfilePage() {
                             console.log(`[Profile] Auto-linking email ${user.email} to team card ${team.id}`);
                             supabase
                                 .from('team')
-                                .update({ email: user.email })
+                                .update({ email: user.email.toLowerCase() })
                                 .eq('id', team.id)
                                 .then(() => {
-                                    team.email = user.email;
+                                    team.email = user.email.toLowerCase();
                                     console.log('[Profile] Auto-linked email successfully.');
                                 })
                                 .catch(err => console.warn('[Profile] Auto-link email failed:', err));
                         }
                     }
+
+                    // Auto-provision team card if still not found
+                    if (!team && user.email) {
+                        console.log('[Profile] Team record not found. Auto-provisioning team card...');
+                        const newId = `TEAM-${Math.floor(1000 + Math.random() * 9000)}`;
+                        const newTeamMember = {
+                            id: newId,
+                            email: user.email.toLowerCase(),
+                            name: activeProfile.full_name || 'Nuevo Talento',
+                            city: activeProfile.location || '',
+                            whatsapp: activeProfile.whatsapp || '',
+                            cv_url: activeProfile.cv_url || '',
+                            cv_summary: activeProfile.cv_summary || '',
+                            skills: activeProfile.skills || [],
+                            birth_date: activeProfile.birth_date || null,
+                            availability: 'full-time',
+                            role: activeProfile.role || 'CREATIVE',
+                            status: 'activo',
+                            activetasks: 0,
+                            salary: 0
+                        };
+                        const { data: insertedData, error: insertErr } = await promiseTimeout(
+                            supabase
+                                .from('team')
+                                .insert(newTeamMember)
+                                .select(),
+                            3000
+                        );
+                        if (!insertErr && insertedData && insertedData.length > 0) {
+                            team = insertedData[0];
+                            console.log('[Profile] Auto-provisioned team card successfully:', team.id);
+                        } else {
+                            console.warn('[Profile] Auto-provision failed, using local model:', insertErr);
+                            team = newTeamMember;
+                        }
+                    }
                 } catch (teamErr) {
-                    console.warn('[Profile] Team fetch timeout/exception skipped:', teamErr);
+                    console.warn('[Profile] Team fetch/provision timeout/exception skipped:', teamErr);
                 }
 
                 setProfileData(activeProfile);
@@ -315,7 +353,7 @@ export default function ProfilePage() {
                             supabase
                                 .from('team')
                                 .select('*')
-                                .eq('email', user.email)
+                                .ilike('email', user.email)
                                 .maybeSingle(),
                             2000
                         );
@@ -326,7 +364,7 @@ export default function ProfilePage() {
                                 supabase
                                     .from('team')
                                     .select('*')
-                                    .eq('name', formData.full_name)
+                                    .ilike('name', formData.full_name)
                                     .maybeSingle(),
                                 2000
                             );
@@ -337,7 +375,7 @@ export default function ProfilePage() {
                     }
 
                     const teamUpdateData = {
-                        email: user.email,
+                        email: user.email.toLowerCase(),
                         name: formData.full_name,
                         city: formData.location,
                         whatsapp: formData.whatsapp,
@@ -567,7 +605,7 @@ export default function ProfilePage() {
                                             }`}
                                             title={teamData?.id ? "Haz clic para copiar tu ID" : "Pide al administrador vincular tu correo en el Panel HQ"}
                                         >
-                                            <span>ID: {teamData?.id || 'NO VINCULADO (Pide al administrador vincular tu correo en el Panel HQ)'}</span>
+                                            <span>ID: {teamData?.id || 'Cargando identificador...'}</span>
                                             {teamData?.id && (
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 shrink-0"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                                             )}
