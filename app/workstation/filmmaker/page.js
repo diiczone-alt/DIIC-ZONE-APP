@@ -423,6 +423,75 @@ export default function FilmmakerDashboard() {
         }
     };
 
+    const onAddEquipment = async (projectId, equipmentName) => {
+        try {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            const assetsData = parseAssets(project.assets);
+            const currentEquipment = assetsData.equipment;
+            
+            if (currentEquipment.includes(equipmentName)) return;
+            const updatedEquipment = [...currentEquipment, equipmentName];
+            
+            const updatedAssets = {
+                ...assetsData,
+                equipment: updatedEquipment
+            };
+            
+            // Update locally
+            setProjects(prev => prev.map(p => p.id === projectId ? { ...p, assets: updatedAssets } : p));
+            setSelectedProject(prev => prev && prev.id === projectId ? { ...prev, assets: updatedAssets } : prev);
+            
+            // Update Supabase
+            const { error } = await supabase
+                .from('tasks')
+                .update({ assets: updatedAssets })
+                .eq('id', parseInt(projectId));
+                
+            if (error) throw error;
+            toast.success('Equipo añadido al rodaje.');
+        } catch (err) {
+            console.error('[Dashboard] Error adding equipment:', err);
+            toast.error('No se pudo añadir el equipo.');
+            fetchTasks();
+        }
+    };
+
+    const onRemoveEquipment = async (projectId, equipmentName) => {
+        try {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            const assetsData = parseAssets(project.assets);
+            const currentEquipment = assetsData.equipment;
+            
+            const updatedEquipment = currentEquipment.filter(item => item !== equipmentName);
+            
+            const updatedAssets = {
+                ...assetsData,
+                equipment: updatedEquipment
+            };
+            
+            // Update locally
+            setProjects(prev => prev.map(p => p.id === projectId ? { ...p, assets: updatedAssets } : p));
+            setSelectedProject(prev => prev && prev.id === projectId ? { ...prev, assets: updatedAssets } : prev);
+            
+            // Update Supabase
+            const { error } = await supabase
+                .from('tasks')
+                .update({ assets: updatedAssets })
+                .eq('id', parseInt(projectId));
+                
+            if (error) throw error;
+            toast.error('Equipo removido del rodaje.');
+        } catch (err) {
+            console.error('[Dashboard] Error removing equipment:', err);
+            toast.error('No se pudo remover el equipo.');
+            fetchTasks();
+        }
+    };
+
     const onOpenScript = (project) => {
         setSelectedScriptEvent(project);
         setShowScriptModal(true);
@@ -657,6 +726,8 @@ export default function FilmmakerDashboard() {
                         onRemoveTeamMember={onRemoveTeamMember}
                         onToggleChecklist={toggleChecklistItem}
                         onOpenScript={onOpenScript}
+                        onAddEquipment={onAddEquipment}
+                        onRemoveEquipment={onRemoveEquipment}
                     />
                 )}
             </AnimatePresence>
@@ -826,12 +897,17 @@ function ProjectCard({ project }) {
     );
 }
 
-function ProjectDetailModal({ project, onClose, onUpdateStatus, teamMembers, onAddTeamMember, onRemoveTeamMember, onToggleChecklist, onOpenScript }) {
+function ProjectDetailModal({ 
+    project, onClose, onUpdateStatus, teamMembers, 
+    onAddTeamMember, onRemoveTeamMember, onToggleChecklist, onOpenScript,
+    onAddEquipment, onRemoveEquipment 
+}) {
     const [showAssignDropdown, setShowAssignDropdown] = useState(false);
 
     // Extract real assigned team members from state
     const assetsData = parseAssets(project.assets);
     const assignedIds = assetsData.assigned_team || [];
+    const equipmentList = assetsData.equipment || [];
     const assignedMembers = assignedIds.map(id => {
         return teamMembers.find(t => t.id === id) || { 
             id, 
@@ -906,6 +982,81 @@ function ProjectDetailModal({ project, onClose, onUpdateStatus, teamMembers, onA
                                         </button>
                                     );
                                 })}
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                                <Camera className="w-5 h-5 text-gray-500" /> Equipo Requerido
+                            </h3>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                {equipmentList.length > 0 ? (
+                                    equipmentList.map((item, idx) => (
+                                        <div 
+                                            key={idx} 
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-lg text-xs font-bold"
+                                        >
+                                            <span>{item}</span>
+                                            <button 
+                                                onClick={() => onRemoveEquipment(project.id, item)}
+                                                className="hover:text-red-400 transition-colors cursor-pointer"
+                                                title="Remover equipo"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-xs text-gray-500 py-1">No hay equipos asignados para esta producción.</div>
+                                )}
+                            </div>
+                            
+                            {/* Quick Add Professional Equipments */}
+                            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
+                                <div className="text-[10px] font-bold text-gray-500 uppercase mb-2">Sugerencias de Equipos</div>
+                                <div className="flex flex-wrap gap-1.5 mb-3">
+                                    {['Sony FX3', 'GoPro', 'Insta 360', 'Teléfono / Mobile', 'Luz LED Aputure', 'Iluminación RGB', 'Micrófonos Inalámbricos', 'Trípode Sachtler', 'Pantalla Verde', 'Telas de Difusión', 'Drone DJI Mavic 3 Pro', 'Lentes Cine', 'Filtros ND'].map((suggested) => {
+                                        const isAlreadyAdded = equipmentList.some(item => item.toLowerCase().includes(suggested.toLowerCase()));
+                                        if (isAlreadyAdded) return null;
+                                        return (
+                                            <button
+                                                key={suggested}
+                                                type="button"
+                                                onClick={() => onAddEquipment(project.id, suggested)}
+                                                className="px-2 py-1 bg-white/5 hover:bg-cyan-500/10 border border-white/5 hover:border-cyan-500/20 rounded-md text-[10px] text-gray-400 hover:text-cyan-400 transition-all font-semibold flex items-center gap-1 cursor-pointer"
+                                            >
+                                                <Plus className="w-2.5 h-2.5" /> {suggested}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                
+                                {/* Custom input add */}
+                                <form 
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const form = e.currentTarget;
+                                        const input = form.elements.namedItem('customEquip');
+                                        if (input.value.trim()) {
+                                            onAddEquipment(project.id, input.value.trim());
+                                            input.value = '';
+                                        }
+                                    }}
+                                    className="flex gap-2"
+                                >
+                                    <input 
+                                        type="text" 
+                                        name="customEquip"
+                                        placeholder="Agregar otro equipo personalizado..." 
+                                        className="flex-1 bg-black/40 border border-white/5 focus:border-cyan-500/50 rounded-lg px-3 py-1.5 text-xs text-white outline-none placeholder-gray-600 transition-colors"
+                                    />
+                                    <button 
+                                        type="submit"
+                                        className="px-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                    >
+                                        Agregar
+                                    </button>
+                                </form>
                             </div>
                         </div>
 
