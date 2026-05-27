@@ -63,6 +63,24 @@ const promiseTimeout = (promise, ms) => {
     });
 };
 
+const getAgeAndBirthday = (birthday) => {
+    if (!birthday) return { age: '--', formatted: 'No definido' };
+    try {
+        const [year, month, day] = birthday.split('-');
+        const birthDate = new Date(year, month - 1, day);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        const formatted = birthDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+        return { age: `${age}`, formatted };
+    } catch (e) {
+        return { age: '--', formatted: birthday };
+    }
+};
+
 export default function ProfilePage() {
     const { user } = useAuth();
     const router = useRouter();
@@ -86,7 +104,10 @@ export default function ProfilePage() {
         whatsapp: '',
         cv_url: '',
         cv_summary: '',
-        skills: []
+        skills: [],
+        birth_date: '',
+        availability: 'full-time',
+        specialty: ''
     });
 
     useEffect(() => {
@@ -198,7 +219,10 @@ export default function ProfilePage() {
                     whatsapp: activeProfile.whatsapp || team?.whatsapp || '',
                     cv_url: activeProfile.cv_url || team?.cv_url || '',
                     cv_summary: activeProfile.cv_summary || team?.cv_summary || '',
-                    skills: activeProfile.skills || team?.skills || []
+                    skills: activeProfile.skills || team?.skills || [],
+                    birth_date: activeProfile.birth_date || team?.birth_date || '',
+                    availability: team?.availability || 'full-time',
+                    specialty: activeProfile.specialty || ''
                 });
 
             } catch (err) {
@@ -241,7 +265,9 @@ export default function ProfilePage() {
                             whatsapp: formData.whatsapp,
                             cv_url: formData.cv_url,
                             cv_summary: formData.cv_summary,
-                            skills: formData.skills
+                            skills: formData.skills,
+                            birth_date: formData.birth_date || null,
+                            specialty: formData.specialty
                         })
                         .eq('id', user.id),
                     3000
@@ -263,6 +289,8 @@ export default function ProfilePage() {
                         cv_url: formData.cv_url,
                         cv_summary: formData.cv_summary,
                         skills: formData.skills,
+                        birth_date: formData.birth_date,
+                        specialty: formData.specialty,
                         xp: profileData?.xp || 0,
                         level: profileData?.level || 1,
                         rank: profileData?.rank || 'Talento en Ascenso'
@@ -315,7 +343,9 @@ export default function ProfilePage() {
                         whatsapp: formData.whatsapp,
                         cv_url: formData.cv_url,
                         cv_summary: formData.cv_summary,
-                        skills: formData.skills
+                        skills: formData.skills,
+                        birth_date: formData.birth_date || null,
+                        availability: formData.availability
                     };
 
                     if (existingTeam?.id) {
@@ -339,7 +369,6 @@ export default function ProfilePage() {
                             id: newId,
                             ...teamUpdateData,
                             status: 'activo',
-                            availability: 'full-time',
                             activetasks: 0,
                             salary: 0
                         };
@@ -522,13 +551,27 @@ export default function ProfilePage() {
                                         <p className="text-indigo-400 font-black text-xs uppercase tracking-[0.3em]">
                                             {formData.role} • {profileData?.rank || 'Talento en Ascenso'}
                                         </p>
-                                        <span className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-xl border ${
-                                            teamData?.id 
-                                                ? 'text-gray-400 bg-white/5 border-white/5' 
-                                                : 'text-rose-400 bg-rose-500/10 border-rose-500/20 animate-pulse'
-                                        }`}>
-                                            ID: {teamData?.id || 'NO VINCULADO (Pide al administrador vincular tu correo en el Panel HQ)'}
-                                        </span>
+                                        <button 
+                                            onClick={() => {
+                                                if (teamData?.id) {
+                                                    navigator.clipboard.writeText(teamData.id);
+                                                    toast.success("¡Identificador copiado al portapapeles!");
+                                                } else {
+                                                    toast.error("No hay un identificador vinculado para copiar.");
+                                                }
+                                            }}
+                                            className={`text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 text-left ${
+                                                teamData?.id 
+                                                    ? 'text-gray-400 bg-white/5 border-white/5 hover:bg-white/10 hover:text-white hover:border-white/10' 
+                                                    : 'text-rose-400 bg-rose-500/10 border-rose-500/20 animate-pulse'
+                                            }`}
+                                            title={teamData?.id ? "Haz clic para copiar tu ID" : "Pide al administrador vincular tu correo en el Panel HQ"}
+                                        >
+                                            <span>ID: {teamData?.id || 'NO VINCULADO (Pide al administrador vincular tu correo en el Panel HQ)'}</span>
+                                            {teamData?.id && (
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 shrink-0"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -585,8 +628,113 @@ export default function ProfilePage() {
                                 />
                             </div>
 
-                            <div className="flex gap-4 items-center pt-4 border-t border-white/5">
-                                <ReputationStats score={profileData?.xp || 0} rating={4.9} onTime={98} compact />
+                            <div className="flex flex-col xl:flex-row gap-6 items-stretch justify-between pt-4 border-t border-white/5 w-full">
+                                {/* Left: ReputationStats */}
+                                <div className="shrink-0 flex items-center">
+                                    <ReputationStats score={profileData?.xp || 0} rating={4.9} onTime={98} compact />
+                                </div>
+
+                                {/* Right: Key Info Grid */}
+                                <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    {/* Fecha de Nacimiento / Edad Card */}
+                                    <div className="bg-[#0E0E18] p-2 rounded-lg border border-white/5 flex flex-col justify-between text-center min-h-[64px]">
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold flex items-center justify-center gap-1">
+                                            <Calendar className="w-3 h-3 text-indigo-400" /> Nacimiento
+                                        </p>
+                                        {isEditing ? (
+                                            <div className="mt-1">
+                                                <input 
+                                                    type="date"
+                                                    value={formData.birth_date}
+                                                    onChange={(e) => setFormData({...formData, birth_date: e.target.value})}
+                                                    className="bg-black/40 border border-white/10 rounded-md px-2 py-0.5 text-[10px] text-white focus:border-indigo-500 outline-none font-mono w-full text-center"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="mt-0.5">
+                                                <div className="text-white font-black text-sm tracking-tight flex items-center justify-center gap-1.5">
+                                                    🎂 {getAgeAndBirthday(formData.birth_date).age !== '--' ? `${getAgeAndBirthday(formData.birth_date).age} años` : '--'}
+                                                </div>
+                                                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-tighter mt-0.5">
+                                                    {getAgeAndBirthday(formData.birth_date).formatted}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Especialidad Card */}
+                                    <div className="bg-[#0E0E18] p-2 rounded-lg border border-white/5 flex flex-col justify-between text-center min-h-[64px]">
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold flex items-center justify-center gap-1">
+                                            <Award className="w-3 h-3 text-purple-400" /> Especialidad
+                                        </p>
+                                        {isEditing ? (
+                                            <div className="mt-1">
+                                                <input 
+                                                    type="text"
+                                                    value={formData.specialty}
+                                                    onChange={(e) => setFormData({...formData, specialty: e.target.value})}
+                                                    className="bg-black/40 border border-white/10 rounded-md px-2 py-0.5 text-[10px] text-white focus:border-indigo-500 outline-none font-bold w-full text-center"
+                                                    placeholder="Ej. Editor Senior"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="mt-0.5">
+                                                <div className="text-white font-black text-xs tracking-tight truncate max-w-full px-1 py-0.5">
+                                                    {formData.specialty || 'Generalista Creativo'}
+                                                </div>
+                                                <p className="text-[9px] text-purple-400 font-black uppercase tracking-[0.2em] mt-0.5">
+                                                    Enfoque Principal
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Disponibilidad Card */}
+                                    <div className="bg-[#0E0E18] p-2 rounded-lg border border-white/5 flex flex-col justify-between text-center min-h-[64px]">
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold flex items-center justify-center gap-1">
+                                            <Briefcase className="w-3 h-3 text-emerald-400" /> Disponibilidad
+                                        </p>
+                                        {isEditing ? (
+                                            <div className="mt-1">
+                                                <select 
+                                                    value={formData.availability}
+                                                    onChange={(e) => setFormData({...formData, availability: e.target.value})}
+                                                    className="bg-black/40 border border-white/10 rounded-md px-1.5 py-0.5 text-[10px] text-white focus:border-indigo-500 outline-none font-bold w-full text-center cursor-pointer"
+                                                >
+                                                    <option value="full-time">Tiempo Completo</option>
+                                                    <option value="part-time">Media Jornada</option>
+                                                    <option value="freelance">Freelance</option>
+                                                </select>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-0.5 flex flex-col items-center justify-center">
+                                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider mt-0.5 bg-white/5">
+                                                    {formData.availability === 'full-time' && (
+                                                        <>
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                            <span className="text-emerald-400">Jornada Completa</span>
+                                                        </>
+                                                    )}
+                                                    {formData.availability === 'part-time' && (
+                                                        <>
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                                            <span className="text-amber-400">Media Jornada</span>
+                                                        </>
+                                                    )}
+                                                    {formData.availability === 'freelance' && (
+                                                        <>
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                                            <span className="text-blue-400">Freelance</span>
+                                                        </>
+                                                    )}
+                                                    {!formData.availability && (
+                                                        <span className="text-gray-500">No especificada</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
