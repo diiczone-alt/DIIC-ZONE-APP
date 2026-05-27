@@ -14,6 +14,34 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 // --- HELPERS ---
+const parseAssets = (assets) => {
+    const defaultVal = {
+        equipment: [],
+        script_url: '',
+        materials_url: '',
+        description: '',
+        script_blocks: [],
+        assigned_team: [],
+        checklist: {}
+    };
+    if (!assets) return defaultVal;
+    if (Array.isArray(assets)) {
+        return { ...defaultVal, equipment: assets };
+    }
+    if (typeof assets === 'object') {
+        return {
+            equipment: Array.isArray(assets.equipment) ? assets.equipment : [],
+            script_url: assets.script_url || '',
+            materials_url: assets.materials_url || '',
+            description: assets.description || '',
+            script_blocks: Array.isArray(assets.script_blocks) ? assets.script_blocks : [],
+            assigned_team: Array.isArray(assets.assigned_team) ? assets.assigned_team : [],
+            checklist: assets.checklist || {}
+        };
+    }
+    return defaultVal;
+};
+
 const getThumbForClient = (clientName) => {
     if (!clientName) return 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800&auto=format&fit=crop&q=60';
     const lower = clientName.toLowerCase();
@@ -64,12 +92,17 @@ export default function FilmmakerDashboard() {
     const [activeTab, setActiveTab] = useState('board');
     const [projects, setProjects] = useState([]);
     const [inbox, setInbox] = useState([]);
+    const [teamMembers, setTeamMembers] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Calendar State
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState(null);
     const [selectedProject, setSelectedProject] = useState(null);
+
+    // Script Modal State
+    const [selectedScriptEvent, setSelectedScriptEvent] = useState(null);
+    const [showScriptModal, setShowScriptModal] = useState(false);
 
     const fetchTasks = async () => {
         try {
@@ -81,6 +114,15 @@ export default function FilmmakerDashboard() {
                 
             if (error) throw error;
             
+            // Also fetch the real team list from database
+            const { data: teamData } = await supabase
+                .from('team')
+                .select('*')
+                .order('name', { ascending: true });
+            if (teamData) {
+                setTeamMembers(teamData);
+            }
+
             const loadedTasks = data || [];
             
             // Map requests (pending status)
@@ -98,6 +140,9 @@ export default function FilmmakerDashboard() {
                         date: getRelativeDayName(t.deadline),
                         deadline: t.deadline,
                         assets: t.assets?.equipment?.length || 0,
+                        rawAssets: t.assets || {},
+                        duration: t.duration || 'Hora no definida',
+                        notes: t.notes,
                         type: t.title.toLowerCase().includes('reel') ? 'Redes' : t.title.toLowerCase().includes('corporativo') ? 'Corporativo' : 'Producción',
                         priority: t.priority || 'medium'
                     };
@@ -129,7 +174,8 @@ export default function FilmmakerDashboard() {
                         thumb: getThumbForClient(t.client),
                         progress: progress,
                         notes: t.notes,
-                        assets: t.assets
+                        assets: t.assets,
+                        duration: t.duration || 'Hora no definida'
                     };
                 });
                 
@@ -172,7 +218,10 @@ export default function FilmmakerDashboard() {
                 status: 'pre-pro',
                 priority: task.priority || 'medium',
                 thumb: getThumbForClient(task.client),
-                progress: 20
+                progress: 20,
+                duration: task.duration || 'Hora no definida',
+                notes: task.notes || '',
+                assets: task.rawAssets || {}
             };
             setProjects(prev => [...prev.filter(p => p.id !== task.id), newProject]);
             setInbox(prev => prev.filter(t => t.id !== taskId));
@@ -206,7 +255,7 @@ export default function FilmmakerDashboard() {
     const handleDrop = async (e, status) => {
         const projectId = e.dataTransfer.getData('projectId');
         if (projectId) {
-            // Update locally first for immediate responsiveness
+            // Update locally first for immediate feedback
             setProjects(prev => prev.map(p => {
                 if (p.id === projectId) {
                     let progress = 20;
@@ -272,6 +321,113 @@ export default function FilmmakerDashboard() {
         }
     };
 
+    const toggleChecklistItem = async (projectId, itemLabel) => {
+        try {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            const assetsData = parseAssets(project.assets);
+            const currentChecklist = assetsData.checklist;
+            
+            const updatedChecklist = {
+                ...currentChecklist,
+                [itemLabel]: !currentChecklist[itemLabel]
+            };
+            
+            const updatedAssets = {
+                ...assetsData,
+                checklist: updatedChecklist
+            };
+            
+            // Update locally
+            setProjects(prev => prev.map(p => p.id === projectId ? { ...p, assets: updatedAssets } : p));
+            setSelectedProject(prev => prev && prev.id === projectId ? { ...prev, assets: updatedAssets } : prev);
+            
+            // Update Supabase
+            const { error } = await supabase
+                .from('tasks')
+                .update({ assets: updatedAssets })
+                .eq('id', parseInt(projectId));
+                
+            if (error) throw error;
+            toast.success('Checklist actualizado.');
+        } catch (err) {
+            console.error('[Dashboard] Error updating checklist:', err);
+            toast.error('No se pudo actualizar el checklist.');
+            fetchTasks();
+        }
+    };
+
+    const onAddTeamMember = async (projectId, memberId) => {
+        try {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            const assetsData = parseAssets(project.assets);
+            const currentTeam = assetsData.assigned_team;
+            
+            if (currentTeam.includes(memberId)) return;
+            const updatedTeam = [...currentTeam, memberId];
+            
+            const updatedAssets = {
+                ...assetsData,
+                assigned_team: updatedTeam
+            };
+            
+            setProjects(prev => prev.map(p => p.id === projectId ? { ...p, assets: updatedAssets } : p));
+            setSelectedProject(prev => prev && prev.id === projectId ? { ...prev, assets: updatedAssets } : prev);
+            
+            const { error } = await supabase
+                .from('tasks')
+                .update({ assets: updatedAssets })
+                .eq('id', parseInt(projectId));
+                
+            if (error) throw error;
+            toast.success('Miembro de equipo asignado.');
+        } catch (err) {
+            console.error('[Dashboard] Error assigning team member:', err);
+            toast.error('No se pudo asignar al miembro.');
+            fetchTasks();
+        }
+    };
+
+    const onRemoveTeamMember = async (projectId, memberId) => {
+        try {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            const assetsData = parseAssets(project.assets);
+            const currentTeam = assetsData.assigned_team;
+            
+            const updatedTeam = currentTeam.filter(id => id !== memberId);
+            
+            const updatedAssets = {
+                ...assetsData,
+                assigned_team: updatedTeam
+            };
+            
+            setProjects(prev => prev.map(p => p.id === projectId ? { ...p, assets: updatedAssets } : p));
+            setSelectedProject(prev => prev && prev.id === projectId ? { ...prev, assets: updatedAssets } : prev);
+            
+            const { error } = await supabase
+                .from('tasks')
+                .update({ assets: updatedAssets })
+                .eq('id', parseInt(projectId));
+                
+            if (error) throw error;
+            toast.error('Miembro de equipo removido.');
+        } catch (err) {
+            console.error('[Dashboard] Error removing team member:', err);
+            toast.error('No se pudo remover al miembro.');
+            fetchTasks();
+        }
+    };
+
+    const onOpenScript = (project) => {
+        setSelectedScriptEvent(project);
+        setShowScriptModal(true);
+    };
+
     const handleDragOver = (e) => e.preventDefault();
 
     // --- CALENDAR HELPERS ---
@@ -288,7 +444,60 @@ export default function FilmmakerDashboard() {
     }
 
     return (
-        <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#050511]">
+        <div id="page-root-wrapper" className="flex-1 flex flex-col h-full overflow-hidden bg-[#050511]">
+            {/* Styles injection for Print Layout ( window.print() ) */}
+            <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                    /* Hide sidebar, topbar and other layout non-prints */
+                    aside, header, nav, button, .no-print, [role="navigation"] {
+                        display: none !important;
+                    }
+                    
+                    /* Force base pages flow for printing */
+                    html, body {
+                        background: white !important;
+                        color: black !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                    }
+                    
+                    /* Ensure scrollable wrappers show all printed contents */
+                    div, main {
+                        display: block !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                        position: static !important;
+                        background: transparent !important;
+                        box-shadow: none !important;
+                        border: none !important;
+                    }
+                    
+                    /* Hide everything inside page root wrapper except the print model */
+                    #page-root-wrapper > *:not(#print-script-modal) {
+                        display: none !important;
+                    }
+                    
+                    /* Clean courier script alignment */
+                    #print-script-modal {
+                        display: block !important;
+                        visibility: visible !important;
+                        position: relative !important;
+                        width: 100% !important;
+                        background: white !important;
+                        color: black !important;
+                        padding: 30px !important;
+                        font-family: 'Courier New', Courier, monospace !important;
+                        font-size: 12pt !important;
+                        line-height: 1.5 !important;
+                    }
+                    
+                    #print-script-modal * {
+                        color: black !important;
+                        background: transparent !important;
+                        border-color: #d1d5db !important;
+                    }
+                }
+            `}} />
             {/* Toolbar */}
             <div className="flex items-center justify-between px-8 py-4 bg-black/10 border-b border-white/5 shrink-0 z-20">
                 <div className="flex items-center gap-4">
@@ -443,9 +652,156 @@ export default function FilmmakerDashboard() {
                         project={selectedProject} 
                         onClose={() => setSelectedProject(null)} 
                         onUpdateStatus={updateProjectStatus}
+                        teamMembers={teamMembers}
+                        onAddTeamMember={onAddTeamMember}
+                        onRemoveTeamMember={onRemoveTeamMember}
+                        onToggleChecklist={toggleChecklistItem}
+                        onOpenScript={onOpenScript}
                     />
                 )}
             </AnimatePresence>
+
+            {/* Script Details Modal */}
+            <AnimatePresence>
+                {showScriptModal && selectedScriptEvent && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            onClick={() => setShowScriptModal(false)}
+                            className="absolute inset-0 bg-black/85 backdrop-blur-md" 
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+                            animate={{ scale: 1, opacity: 1, y: 0 }} 
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }} 
+                            className="relative w-full max-w-3xl bg-[#0E0E18] border border-white/10 rounded-3xl p-8 shadow-2xl z-10 flex flex-col max-h-[85vh] overflow-hidden"
+                        >
+                            {/* Header */}
+                            <div className="flex justify-between items-start border-b border-white/5 pb-4 mb-6 shrink-0 no-print">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                        <span className="px-2.5 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                            <FileText className="w-3.5 h-3.5" /> Guión Técnico de Producción
+                                        </span>
+                                    </div>
+                                    <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase">{selectedScriptEvent.title}</h3>
+                                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1">
+                                        Cliente: <span className="text-gray-300">{selectedScriptEvent.client}</span> • Duración: {selectedScriptEvent.duration}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2.5">
+                                    <button 
+                                        onClick={() => window.print()}
+                                        className="px-4 py-2 bg-white text-black hover:bg-gray-100 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-white/5 cursor-pointer"
+                                    >
+                                        <Download className="w-3.5 h-3.5" /> Exportar PDF
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowScriptModal(false)}
+                                        className="p-2 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl transition-colors cursor-pointer"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Script Content */}
+                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6 no-print">
+                                {parseAssets(selectedScriptEvent.assets).script_blocks?.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {parseAssets(selectedScriptEvent.assets).script_blocks.map((block, idx) => (
+                                            <div 
+                                                key={idx} 
+                                                className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-all space-y-4"
+                                            >
+                                                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                                    <span className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                        <span className="w-5 h-5 rounded-full bg-cyan-500/10 text-cyan-400 text-[10px] flex items-center justify-center font-bold">
+                                                            {idx + 1}
+                                                        </span>
+                                                        {block.scene || block.type}
+                                                    </span>
+                                                    <span className="text-[10px] font-mono font-bold text-gray-500 flex items-center gap-1">
+                                                        <Clock className="w-3.5 h-3.5" /> {block.time}
+                                                    </span>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    {/* Audio / Voiceover */}
+                                                    <div className="space-y-1.5">
+                                                        <h5 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                                                            🗣️ Audio / Locución
+                                                        </h5>
+                                                        <p className="text-xs text-gray-300 leading-relaxed bg-black/25 p-3 rounded-xl border border-white/5 font-medium whitespace-pre-wrap">
+                                                            {block.text}
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    {/* Video / Visuals */}
+                                                    <div className="space-y-1.5">
+                                                        <h5 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest flex items-center gap-1">
+                                                            🎥 Video / Visual Sugerido
+                                                        </h5>
+                                                        <p className="text-xs text-gray-400 leading-relaxed bg-black/25 p-3 rounded-xl border border-white/5 font-medium whitespace-pre-wrap">
+                                                            {block.visual}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center bg-white/[0.02] border border-white/5 rounded-2xl p-6">
+                                        <FileText className="w-12 h-12 text-gray-600 mb-3 opacity-30" />
+                                        <p className="text-sm font-bold text-gray-400">Sin guión estructurado localmente</p>
+                                        <p className="text-xs text-gray-600 mt-1 mb-6 max-w-sm">Este rodaje cuenta con un enlace de guión externo para su consulta.</p>
+                                        {parseAssets(selectedScriptEvent.assets).script_url && (
+                                            <a 
+                                                href={parseAssets(selectedScriptEvent.assets).script_url} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="px-6 py-2.5 bg-red-600/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all font-sans"
+                                            >
+                                                Abrir Guión en Documento Externo
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Hidden Print Container for A4 formatting */}
+            <div id="print-script-modal" className="hidden bg-white text-black p-10">
+                <h1 className="text-3xl font-bold mb-2 uppercase tracking-tight text-black">{selectedScriptEvent?.title}</h1>
+                <p className="text-sm font-bold text-gray-600 uppercase mb-8 border-b pb-2">
+                    Cliente: {selectedScriptEvent?.client} • Duración: {selectedScriptEvent?.duration} • Fecha: {selectedScriptEvent?.deadline}
+                </p>
+                <div className="space-y-8">
+                    {selectedScriptEvent && parseAssets(selectedScriptEvent.assets).script_blocks?.map((block, idx) => (
+                        <div key={idx} className="border-b border-gray-200 pb-6 space-y-3">
+                            <div className="flex justify-between items-center text-sm font-bold">
+                                <span className="text-black uppercase">{idx + 1}. {block.scene || block.type}</span>
+                                <span className="text-gray-500">{block.time}</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-6 text-xs">
+                                <div>
+                                    <h4 className="font-bold text-gray-700 uppercase mb-1">🗣️ Audio / Locución:</h4>
+                                    <p className="text-black leading-relaxed whitespace-pre-wrap">{block.text}</p>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-700 uppercase mb-1">🎥 Video / Visual Sugerido:</h4>
+                                    <p className="text-black leading-relaxed whitespace-pre-wrap">{block.visual}</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }
@@ -470,7 +826,19 @@ function ProjectCard({ project }) {
     );
 }
 
-function ProjectDetailModal({ project, onClose, onUpdateStatus }) {
+function ProjectDetailModal({ project, onClose, onUpdateStatus, teamMembers, onAddTeamMember, onRemoveTeamMember, onToggleChecklist, onOpenScript }) {
+    const [showAssignDropdown, setShowAssignDropdown] = useState(false);
+
+    // Extract real assigned team members from state
+    const assetsData = parseAssets(project.assets);
+    const assignedIds = assetsData.assigned_team || [];
+    const assignedMembers = assignedIds.map(id => {
+        return teamMembers.find(t => t.id === id) || { 
+            id, 
+            name: id === 'TEAM-9690' ? 'Dicson' : id === 'tea-004' ? 'Reyshell' : 'Colaborador', 
+            role: id === 'TEAM-9690' ? 'Filmmaker' : 'Estratega' 
+        };
+    });
     return (
         <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -520,28 +888,65 @@ function ProjectDetailModal({ project, onClose, onUpdateStatus }) {
                         <div>
                             <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><CheckSquare className="w-5 h-5 text-gray-500" /> Checklist de Producción</h3>
                             <div className="space-y-2">
-                                {['Guión Aprobado', 'Locaciones Confirmadas', 'Equipo Técnico Reservado', 'Casting / Talento', 'Plan de Rodaje Creado'].map((item, i) => (
-                                    <label key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors cursor-pointer group">
-                                        <div className={`w-5 h-5 rounded border flex items-center justify-center ${i < 2 ? 'bg-blue-600 border-blue-600' : 'border-gray-600 group-hover:border-blue-500'}`}>
-                                            {i < 2 && <CheckCircle className="w-3.5 h-3.5 text-white" />}
-                                        </div>
-                                        <span className={`text-sm ${i < 2 ? 'text-white line-through opacity-50' : 'text-gray-300'}`}>{item}</span>
-                                    </label>
-                                ))}
+                                {['Guión Aprobado', 'Locaciones Confirmadas', 'Equipo Técnico Reservado', 'Casting / Talento', 'Plan de Rodaje Creado'].map((item, i) => {
+                                    const assetsData = parseAssets(project.assets);
+                                    const isChecked = !!assetsData.checklist[item];
+                                    return (
+                                        <button 
+                                            key={i} 
+                                            onClick={() => onToggleChecklist(project.id, item)}
+                                            className="w-full flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 border border-transparent hover:border-white/5 transition-colors cursor-pointer text-left group"
+                                        >
+                                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                                                isChecked ? 'bg-cyan-600 border-cyan-600 shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'border-gray-600 group-hover:border-cyan-500'
+                                            }`}>
+                                                {isChecked && <CheckCircle className="w-3.5 h-3.5 text-white fill-cyan-600" />}
+                                            </div>
+                                            <span className={`text-sm transition-all ${isChecked ? 'text-cyan-400 line-through opacity-60' : 'text-gray-300'}`}>{item}</span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
                         <div>
                             <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><UploadCloud className="w-5 h-5 text-gray-500" /> Archivos & Assets</h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="p-3 bg-black/20 border border-white/5 rounded-xl flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center text-red-400"><FileText className="w-5 h-5" /></div>
-                                    <div><div className="text-white text-sm font-bold">Guión_v2.pdf</div><div className="text-xs text-gray-500">2.4 MB</div></div>
-                                </div>
-                                <div className="p-3 bg-black/20 border border-white/5 rounded-xl flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400"><MapPin className="w-5 h-5" /></div>
-                                    <div><div className="text-white text-sm font-bold">Locaciones.jpg</div><div className="text-xs text-gray-500">5.1 MB</div></div>
-                                </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {/* Guión Card */}
+                                <button 
+                                    onClick={() => onOpenScript(project)}
+                                    className="p-3 bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-left w-full transition-all cursor-pointer group"
+                                >
+                                    <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center text-red-400 group-hover:scale-105 transition-transform"><FileText className="w-5 h-5" /></div>
+                                    <div>
+                                        <div className="text-white text-sm font-bold group-hover:text-red-400 transition-colors">Guión de Producción</div>
+                                        <div className="text-[10px] text-gray-500 font-medium">Haz clic para revisar el guión</div>
+                                    </div>
+                                </button>
+                                
+                                {/* Materials Card */}
+                                {project.assets?.materials_url ? (
+                                    <a 
+                                        href={project.assets.materials_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="p-3 bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center gap-3 text-left w-full transition-all group"
+                                    >
+                                        <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform"><UploadCloud className="w-5 h-5" /></div>
+                                        <div>
+                                            <div className="text-white text-sm font-bold group-hover:text-blue-400 transition-colors">Materiales / Recursos</div>
+                                            <div className="text-[10px] text-gray-500 font-medium font-sans">Carpeta de Drive externa</div>
+                                        </div>
+                                    </a>
+                                ) : (
+                                    <div className="p-3 bg-white/5 border border-white/5 rounded-xl flex items-center gap-3 text-left w-full opacity-60">
+                                        <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-gray-400"><UploadCloud className="w-5 h-5" /></div>
+                                        <div>
+                                            <div className="text-gray-400 text-sm font-bold">Sin Materiales Adjuntos</div>
+                                            <div className="text-[10px] text-gray-500 font-medium">No hay carpeta vinculada</div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -567,15 +972,61 @@ function ProjectDetailModal({ project, onClose, onUpdateStatus }) {
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Equipo Asignado</h4>
                             <div className="space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500" />
-                                    <div><div className="text-white text-xs font-bold">Carlos R.</div><div className="text-[10px] text-gray-500">Director</div></div>
+                                {assignedMembers.map((member, idx) => (
+                                    <div key={idx} className="flex items-center justify-between gap-3 bg-white/[0.02] border border-white/5 p-2.5 rounded-xl group/member">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white bg-gradient-to-br ${
+                                                idx % 2 === 0 ? 'from-amber-400 to-orange-500' : 'from-purple-400 to-pink-500'
+                                            }`}>
+                                                {member.name.substring(0, 2).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div className="text-white text-xs font-bold">{member.name}</div>
+                                                <div className="text-[10px] text-gray-500">{member.role || 'Colaborador'}</div>
+                                            </div>
+                                        </div>
+                                        {/* Remove member button */}
+                                        <button 
+                                            onClick={() => onRemoveTeamMember(project.id, member.id)}
+                                            className="opacity-0 group-hover/member:opacity-100 p-1 hover:bg-white/5 text-gray-500 hover:text-red-400 rounded transition-all cursor-pointer"
+                                            title="Remover Miembro"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                ))}
+                                
+                                {/* Assign Member Button */}
+                                <div className="relative">
+                                    <button 
+                                        onClick={() => setShowAssignDropdown(!showAssignDropdown)}
+                                        className="w-full py-2 border border-dashed border-gray-700 hover:border-cyan-500 rounded-lg text-xs text-gray-500 hover:text-cyan-400 transition-colors cursor-pointer"
+                                    >
+                                        + Asignar Miembro
+                                    </button>
+                                    
+                                    {/* Dropdown list of unassigned members */}
+                                    {showAssignDropdown && (
+                                        <div className="absolute left-0 right-0 mt-1 bg-[#13131f] border border-white/10 rounded-xl p-2 shadow-2xl z-20 max-h-48 overflow-y-auto custom-scrollbar">
+                                            {teamMembers.filter(t => !assignedIds.includes(t.id)).length > 0 ? (
+                                                teamMembers.filter(t => !assignedIds.includes(t.id)).map(member => (
+                                                    <button
+                                                        key={member.id}
+                                                        onClick={() => {
+                                                            onAddTeamMember(project.id, member.id);
+                                                            setShowAssignDropdown(false);
+                                                        }}
+                                                        className="w-full text-left px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                                                    >
+                                                        {member.name} ({member.role || 'Miembro'})
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="text-center text-[10px] text-gray-600 py-2">Todos asignados</div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-400 to-pink-500" />
-                                    <div><div className="text-white text-xs font-bold">Ana M.</div><div className="text-[10px] text-gray-500">Prod. Manager</div></div>
-                                </div>
-                                <button className="w-full py-2 border border-dashed border-gray-700 rounded-lg text-xs text-gray-500 hover:text-white hover:border-gray-500 transition-colors">+ Asignar Miembro</button>
                             </div>
                         </div>
 
