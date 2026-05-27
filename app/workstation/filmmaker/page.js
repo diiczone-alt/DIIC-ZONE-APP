@@ -10,19 +10,47 @@ import {
     Sparkles, Grid as GridIcon, X, Users, Send
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
-// --- MOCK DATA ---
-const INITIAL_PROJECTS = [
-    { id: 'PRJ-204', client: 'Clínica Smith', title: 'Video Corporativo', type: 'Corporativo', deadline: '2026-02-10', status: 'pre-pro', priority: 'high', thumb: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=60', progress: 30 },
-    { id: 'PRJ-205', client: 'FitLife Gym', title: 'Reels Rutina', type: 'Redes', deadline: '2026-02-12', status: 'shooting', priority: 'medium', thumb: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop&q=60', progress: 60 },
-    { id: 'PRJ-206', client: 'Tech Solutions', title: 'Cobertura Evento', type: 'Evento', deadline: '2026-02-14', status: 'post-pro', priority: 'high', thumb: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&auto=format&fit=crop&q=60', progress: 85 },
-    { id: 'PRJ-207', client: 'EcoStore', title: 'Campaña Lanzamiento', type: 'Publicidad', deadline: '2026-02-15', status: 'review', priority: 'critical', thumb: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&auto=format&fit=crop&q=60', progress: 95 }
-];
+// --- HELPERS ---
+const getThumbForClient = (clientName) => {
+    if (!clientName) return 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800&auto=format&fit=crop&q=60';
+    const lower = clientName.toLowerCase();
+    if (lower.includes('novaclinica') || lower.includes('clinica') || lower.includes('hospital') || lower.includes('rey')) {
+        return 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=60';
+    }
+    if (lower.includes('pizza') || lower.includes('vito')) {
+        return 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop&q=60';
+    }
+    if (lower.includes('agro') || lower.includes('campo') || lower.includes('finca')) {
+        return 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=60';
+    }
+    return 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&auto=format&fit=crop&q=60';
+};
 
-const INBOX_TASKS = [
-    { id: 'TSK-001', from: 'Laura G. (Strategy)', title: '3 Reels - Tendencias Gym', desc: 'Requerimos 3 videos cortos formato 9:16 para la campaña de febrero. Guiones adjuntos.', date: 'Hace 2 horas', deadline: '2026-02-20', assets: 2, type: 'Redes' },
-    { id: 'TSK-002', from: 'Carlos R. (CM)', title: 'Edición Entrevista CEO', desc: 'El material bruto está en la carpeta compartida. Necesitamos un corte de 2min.', date: 'Hace 5 horas', deadline: '2026-02-18', assets: 15, type: 'Corporativo' }
-];
+const getRelativeDayName = (dateStr) => {
+    if (!dateStr) return '--';
+    try {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        const [year, month, day] = dateStr.split('-');
+        const targetDate = new Date(year, month - 1, day);
+        targetDate.setHours(0,0,0,0);
+        
+        const diffTime = targetDate.getTime() - today.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) return 'Hoy';
+        if (diffDays === 1) return 'Mañana';
+        if (diffDays === -1) return 'Ayer';
+        
+        return targetDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' });
+    } catch (e) {
+        return dateStr;
+    }
+};
 
 const COLUMNS = [
     { id: 'pre-pro', label: 'Pre-Pro', color: 'border-blue-500', bg: 'bg-blue-500/5' },
@@ -34,41 +62,213 @@ const COLUMNS = [
 
 export default function FilmmakerDashboard() {
     const [activeTab, setActiveTab] = useState('board');
-    const [projects, setProjects] = useState(INITIAL_PROJECTS);
-    const [inbox, setInbox] = useState(INBOX_TASKS);
+    const [projects, setProjects] = useState([]);
+    const [inbox, setInbox] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     // Calendar State
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState(null);
     const [selectedProject, setSelectedProject] = useState(null);
 
+    const fetchTasks = async () => {
+        try {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('tasks')
+                .select('*')
+                .or('assigned_role.eq.FILMMAKER,title.ilike.%Rodaje%');
+                
+            if (error) throw error;
+            
+            const loadedTasks = data || [];
+            
+            // Map requests (pending status)
+            const solicitudes = loadedTasks
+                .filter(t => t.status === 'pending')
+                .map(t => {
+                    const parts = t.notes ? t.notes.split(' | Contacto: ') : [];
+                    const contact = parts[1] || 'No especificado';
+                    return {
+                        id: t.id.toString(),
+                        from: `${contact} (${t.client})`,
+                        client: t.client,
+                        title: t.title,
+                        desc: t.assets?.description || t.notes || 'Sin descripción o briefing aún.',
+                        date: getRelativeDayName(t.deadline),
+                        deadline: t.deadline,
+                        assets: t.assets?.equipment?.length || 0,
+                        type: t.title.toLowerCase().includes('reel') ? 'Redes' : t.title.toLowerCase().includes('corporativo') ? 'Corporativo' : 'Producción',
+                        priority: t.priority || 'medium'
+                    };
+                });
+                
+            // Map board projects (statuses other than pending or cancelled)
+            const boardProjects = loadedTasks
+                .filter(t => t.status !== 'pending' && t.status !== 'cancelled')
+                .map(t => {
+                    let mappedStatus = t.status;
+                    if (mappedStatus === 'confirmed') {
+                        mappedStatus = 'pre-pro'; // Default confirmed to Pre-Pro on the board
+                    }
+                    
+                    let progress = 20;
+                    if (mappedStatus === 'shooting') progress = 40;
+                    else if (mappedStatus === 'post-pro') progress = 60;
+                    else if (mappedStatus === 'review') progress = 80;
+                    else if (mappedStatus === 'done') progress = 100;
+                    
+                    return {
+                        id: t.id.toString(),
+                        client: t.client,
+                        title: t.title,
+                        type: t.title.toLowerCase().includes('reel') ? 'Redes' : t.title.toLowerCase().includes('corporativo') ? 'Corporativo' : 'Producción',
+                        deadline: t.deadline,
+                        status: mappedStatus,
+                        priority: t.priority || 'medium',
+                        thumb: getThumbForClient(t.client),
+                        progress: progress,
+                        notes: t.notes,
+                        assets: t.assets
+                    };
+                });
+                
+            setInbox(solicitudes);
+            setProjects(boardProjects);
+        } catch (err) {
+            console.error('[Dashboard] Error fetching tasks:', err);
+            toast.error('Error al sincronizar las producciones.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTasks();
+    }, []);
+
     // --- ACTIONS ---
-    const moveTaskToBoard = (taskId) => {
-        const task = inbox.find(t => t.id === taskId);
-        if (!task) return;
-        const newProject = {
-            id: `PRJ-${Math.floor(Math.random() * 1000)}`,
-            client: 'Nuevo Cliente',
-            title: task.title,
-            type: task.type || 'General',
-            deadline: task.deadline,
-            status: 'pre-pro',
-            priority: 'medium',
-            thumb: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800&auto=format&fit=crop&q=60',
-            progress: 0
-        };
-        setProjects([...projects, newProject]);
-        setInbox(inbox.filter(t => t.id !== taskId));
+    const moveTaskToBoard = async (taskId) => {
+        try {
+            const task = inbox.find(t => t.id === taskId);
+            if (!task) return;
+            
+            const { error } = await supabase
+                .from('tasks')
+                .update({ status: 'pre-pro' })
+                .eq('id', parseInt(taskId));
+                
+            if (error) throw error;
+            
+            toast.success('¡Solicitud aceptada y movida al tablero de producción!');
+            
+            // Move locally
+            const newProject = {
+                id: task.id,
+                client: task.client || 'Nuevo Cliente',
+                title: task.title,
+                type: task.type || 'General',
+                deadline: task.deadline,
+                status: 'pre-pro',
+                priority: task.priority || 'medium',
+                thumb: getThumbForClient(task.client),
+                progress: 20
+            };
+            setProjects(prev => [...prev.filter(p => p.id !== task.id), newProject]);
+            setInbox(prev => prev.filter(t => t.id !== taskId));
+        } catch (err) {
+            console.error('[Dashboard] Error accepting task:', err);
+            toast.error('No se pudo aceptar la solicitud.');
+        }
+    };
+
+    const rejectTask = async (taskId) => {
+        try {
+            const { error } = await supabase
+                .from('tasks')
+                .update({ status: 'cancelled' })
+                .eq('id', parseInt(taskId));
+                
+            if (error) throw error;
+            
+            toast.error('Solicitud rechazada/cancelada.');
+            setInbox(prev => prev.filter(t => t.id !== taskId));
+        } catch (err) {
+            console.error('[Dashboard] Error rejecting task:', err);
+            toast.error('No se pudo rechazar la solicitud.');
+        }
     };
 
     const handleDragStart = (e, projectId) => {
         e.dataTransfer.setData('projectId', projectId);
     };
 
-    const handleDrop = (e, status) => {
+    const handleDrop = async (e, status) => {
         const projectId = e.dataTransfer.getData('projectId');
         if (projectId) {
-            setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status } : p));
+            // Update locally first for immediate responsiveness
+            setProjects(prev => prev.map(p => {
+                if (p.id === projectId) {
+                    let progress = 20;
+                    if (status === 'shooting') progress = 40;
+                    else if (status === 'post-pro') progress = 60;
+                    else if (status === 'review') progress = 80;
+                    else if (status === 'done') progress = 100;
+                    return { ...p, status, progress };
+                }
+                return p;
+            }));
+            
+            try {
+                const { error } = await supabase
+                    .from('tasks')
+                    .update({ status })
+                    .eq('id', parseInt(projectId));
+                    
+                if (error) throw error;
+                toast.success('Estado de producción actualizado.');
+            } catch (err) {
+                console.error('[Dashboard] Error updating drop status:', err);
+                toast.error('No se pudo guardar el nuevo estado.');
+                fetchTasks();
+            }
+        }
+    };
+
+    const updateProjectStatus = async (projectId, newStatus) => {
+        try {
+            // Update locally for instant responsiveness
+            setProjects(prev => prev.map(p => {
+                if (p.id === projectId) {
+                    let progress = 20;
+                    if (newStatus === 'shooting') progress = 40;
+                    else if (newStatus === 'post-pro') progress = 60;
+                    else if (newStatus === 'review') progress = 80;
+                    else if (newStatus === 'done') progress = 100;
+                    return { ...p, status: newStatus, progress };
+                }
+                return p;
+            }));
+            
+            // If the selectedProject is currently open, update it too
+            setSelectedProject(prev => {
+                if (prev && prev.id === projectId) {
+                    return { ...prev, status: newStatus };
+                }
+                return prev;
+            });
+
+            const { error } = await supabase
+                .from('tasks')
+                .update({ status: newStatus })
+                .eq('id', parseInt(projectId));
+                
+            if (error) throw error;
+            toast.success('Estado de producción actualizado.');
+        } catch (err) {
+            console.error('[Dashboard] Error updating status:', err);
+            toast.error('No se pudo actualizar el estado.');
+            fetchTasks();
         }
     };
 
@@ -78,6 +278,14 @@ export default function FilmmakerDashboard() {
     const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
     const DAYS = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+
+    if (loading) {
+        return (
+            <div className="flex-1 flex items-center justify-center bg-[#050511] h-screen">
+                <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#050511]">
@@ -165,10 +373,10 @@ export default function FilmmakerDashboard() {
                                             <p className="text-gray-400 text-sm mb-6 leading-relaxed bg-black/20 p-4 rounded-xl border border-white/5">{task.desc}</p>
                                             <div className="flex justify-between items-center">
                                                 <div className="flex gap-4 text-xs text-gray-500">
-                                                    <span className="flex items-center gap-1 hover:text-white cursor-pointer"><FileText className="w-4 h-4" /> {task.assets} Archivos</span>
+                                                    <span className="flex items-center gap-1 hover:text-white cursor-pointer"><FileText className="w-4 h-4" /> {task.assets} Equipos</span>
                                                 </div>
                                                 <div className="flex gap-3">
-                                                    <button onClick={() => setInbox(inbox.filter(t => t.id !== task.id))} className="px-4 py-2 border border-white/10 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 text-sm font-bold transition-colors">Rechazar</button>
+                                                    <button onClick={() => rejectTask(task.id)} className="px-4 py-2 border border-white/10 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 text-sm font-bold transition-colors">Rechazar</button>
                                                     <button onClick={() => moveTaskToBoard(task.id)} className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-cyan-900/40 transition-all flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Aceptar</button>
                                                 </div>
                                             </div>
@@ -231,7 +439,11 @@ export default function FilmmakerDashboard() {
             {/* --- PROJECT DETAIL MODAL --- */}
             <AnimatePresence>
                 {selectedProject && (
-                    <ProjectDetailModal project={selectedProject} onClose={() => setSelectedProject(null)} />
+                    <ProjectDetailModal 
+                        project={selectedProject} 
+                        onClose={() => setSelectedProject(null)} 
+                        onUpdateStatus={updateProjectStatus}
+                    />
                 )}
             </AnimatePresence>
         </div>
@@ -258,7 +470,7 @@ function ProjectCard({ project }) {
     );
 }
 
-function ProjectDetailModal({ project, onClose }) {
+function ProjectDetailModal({ project, onClose, onUpdateStatus }) {
     return (
         <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -342,6 +554,7 @@ function ProjectDetailModal({ project, onClose }) {
                                 {COLUMNS.map(col => (
                                     <button
                                         key={col.id}
+                                        onClick={() => onUpdateStatus(project.id, col.id)}
                                         className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold mb-1 transition-all flex items-center justify-between ${project.status === col.id ? `${col.bg} ${col.color.replace('border', 'text')} border border-current` : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
                                     >
                                         {col.label}
