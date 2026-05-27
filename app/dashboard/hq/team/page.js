@@ -9,7 +9,7 @@ import {
     Activity, Layout, LayoutGrid, Plus, Check, X,
     ChevronRight, Target, Flame, Database,
     ChevronDown, Trash2, Edit, MessageSquare, Globe, ListTodo,
-    MapPin, DollarSign, FileText,
+    MapPin, DollarSign, FileText, Cake,
     Video, Clapperboard, Palette, Mic, Camera, User, Printer, Ticket, Monitor,
     Copy, ArrowLeft, ExternalLink, ArrowRight
 } from 'lucide-react';
@@ -20,6 +20,55 @@ import PremiumDropdown from '@/components/shared/PremiumDropdown';
 import { ECUADOR_CITIES } from '@/lib/constants';
 import SquadCanvasBoard from '@/components/team/SquadCanvasBoard';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
+
+const deduplicateTeam = (teamArray) => {
+    if (!Array.isArray(teamArray)) return [];
+    
+    const byEmail = new Map();
+    const byName = new Map();
+    
+    const getScore = (m) => {
+        return (m.email ? 4 : 0) + 
+               (Number(m.salary) > 0 ? 2 : 0) + 
+               (m.cv_url ? 1 : 0) +
+               (m.whatsapp ? 1 : 0);
+    };
+
+    teamArray.forEach(member => {
+        if (!member) return;
+        const email = (member.email || '').toLowerCase().trim();
+        const normName = (member.name || '').toLowerCase().trim();
+        
+        let existing = null;
+        if (email) {
+            existing = byEmail.get(email);
+        }
+        if (!existing && normName) {
+            existing = byName.get(normName);
+        }
+        
+        if (!existing) {
+            if (email) byEmail.set(email, member);
+            if (normName) byName.set(normName, member);
+        } else {
+            const existingScore = getScore(existing);
+            const newScore = getScore(member);
+            if (newScore > existingScore) {
+                if (existing.email) byEmail.delete(existing.email.toLowerCase().trim());
+                if (existing.name) byName.delete(existing.name.toLowerCase().trim());
+                
+                if (email) byEmail.set(email, member);
+                if (normName) byName.set(normName, member);
+            }
+        }
+    });
+    
+    const uniqueMembers = new Set();
+    byEmail.forEach(m => uniqueMembers.add(m));
+    byName.forEach(m => uniqueMembers.add(m));
+    
+    return Array.from(uniqueMembers).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+};
 
 export default function HQTeamPage() {
     const [team, setTeam] = useState([]);
@@ -37,7 +86,8 @@ export default function HQTeamPage() {
         email: '',
         whatsapp: '',
         city: 'Quito',
-        salary: 0
+        salary: 0,
+        birth_date: ''
     });
 
     const isHQLive = useRealtimeSync(['team', 'clients'], () => fetchData(true));
@@ -49,11 +99,22 @@ export default function HQTeamPage() {
 
     const handleAddMember = async (e) => {
         e.preventDefault();
+        
+        // Validar duplicados por nombre
+        const inputName = (newMember.name || '').trim().toLowerCase();
+        const alreadyExists = team.some(m => (m.name || '').trim().toLowerCase() === inputName);
+        
+        if (alreadyExists) {
+            toast.error("Este talento ya se encuentra registrado con ese nombre.");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             await agencyService.createTeamMember(newMember);
             const updatedTeam = await agencyService.getTeam();
-            setTeam(updatedTeam);
+            const cleanTeam = deduplicateTeam(updatedTeam);
+            setTeam(cleanTeam);
             setIsAddModalOpen(false);
             setNewMember({ 
                 name: '', 
@@ -61,7 +122,8 @@ export default function HQTeamPage() {
                 email: '', 
                 whatsapp: '', 
                 city: 'Quito', 
-                salary: 0 
+                salary: 0,
+                birth_date: ''
             });
             toast.success("Talento Vinculado");
         } catch (error) {
@@ -86,10 +148,11 @@ export default function HQTeamPage() {
             console.log(`✅ [HQ-Team] Data received: ${teamData?.length || 0} members, ${clientData?.length || 0} clients`);
             
             if (teamData && Array.isArray(teamData)) {
-                setTeam(teamData);
+                const cleanTeam = deduplicateTeam(teamData);
+                setTeam(cleanTeam);
                 setClients(clientData || []);
                 if (!isBackground) {
-                    toast.success(`HQ Sincronizado: ${teamData.length} miembros detectados`);
+                    toast.success(`HQ Sincronizado: ${cleanTeam.length} miembros detectados`);
                 }
             } else {
                 setTeam([]);
@@ -110,6 +173,8 @@ export default function HQTeamPage() {
         localStorage.removeItem('diic_team');
         localStorage.removeItem('diic_clients');
         localStorage.removeItem('diiczone_squad_layout');
+        localStorage.removeItem('mock_db_team');
+        localStorage.removeItem('mock_db_profiles');
         await fetchData(false);
         toast.info("Caché limpiada y mando reiniciado");
     };
@@ -126,7 +191,8 @@ export default function HQTeamPage() {
                     const parsedClients = JSON.parse(cachedClients);
                     
                     if (Array.isArray(parsedTeam) && parsedTeam.length > 0) {
-                        setTeam(parsedTeam);
+                        const cleanTeam = deduplicateTeam(parsedTeam);
+                        setTeam(cleanTeam);
                         setClients(parsedClients);
                         setLoading(false);
                         console.log("⚡ [HQ-Team] Loaded from Cache");
@@ -168,7 +234,21 @@ export default function HQTeamPage() {
             { id: 'web', label: 'Desarrollo Web', icon: Globe, color: 'from-blue-500 to-cyan-600', members: team.filter(m => m.role?.toLowerCase().includes('web') || m.role?.toLowerCase().includes('programador')) },
             { id: 'modelos', label: 'Modelos', icon: User, color: 'from-fuchsia-500 to-pink-600', members: team.filter(m => m.role?.toLowerCase().includes('modelo')) },
             { id: 'imprenta', label: 'Imprenta / Merch', icon: Printer, color: 'from-slate-500 to-slate-700', members: team.filter(m => m.role?.toLowerCase().includes('imprenta') || m.role?.toLowerCase().includes('merch')) },
-            { id: 'eventos', label: 'Eventos / Prod', icon: Ticket, color: 'from-indigo-400 to-purple-500', members: team.filter(m => m.role?.toLowerCase().includes('evento')) }
+            { id: 'eventos', label: 'Eventos / Prod', icon: Ticket, color: 'from-indigo-400 to-purple-500', members: team.filter(m => m.role?.toLowerCase().includes('evento')) },
+            { id: 'creativos_generales', label: 'Otros / Creativos', icon: Users, color: 'from-slate-400 to-slate-600', members: team.filter(m => {
+                const r = m.role?.toLowerCase() || '';
+                return !r.includes('estratega') &&
+                       !r.includes('community manager') &&
+                       !r.includes('diseña') &&
+                       !r.includes('editor') &&
+                       !r.includes('film') &&
+                       !r.includes('foto') &&
+                       !r.includes('audio') &&
+                       !r.includes('web') && !r.includes('programador') &&
+                       !r.includes('modelo') &&
+                       !r.includes('imprenta') && !r.includes('merch') &&
+                       !r.includes('evento');
+            }) }
         ];
     };
 
@@ -392,10 +472,156 @@ export default function HQTeamPage() {
     );
 }
 
+const getDepartmentStyle = (role) => {
+    const r = role?.toLowerCase() || '';
+    if (r.includes('estratega')) {
+        return {
+            gradient: 'from-amber-500 to-orange-600',
+            glow: 'bg-amber-500/10',
+            glowHover: 'bg-amber-500/30',
+            hoverText: 'group-hover:text-amber-400',
+            border: 'border-amber-500/30 group-hover:border-amber-500/50',
+            badgeText: 'text-amber-400',
+            accentColor: 'amber',
+            buttonHover: 'hover:bg-amber-600 hover:border-amber-400'
+        };
+    }
+    if (r.includes('community manager')) {
+        return {
+            gradient: 'from-indigo-500 to-blue-600',
+            glow: 'bg-indigo-500/10',
+            glowHover: 'bg-indigo-500/30',
+            hoverText: 'group-hover:text-indigo-400',
+            border: 'border-indigo-500/30 group-hover:border-indigo-500/50',
+            badgeText: 'text-indigo-400',
+            accentColor: 'indigo',
+            buttonHover: 'hover:bg-indigo-600 hover:border-indigo-400'
+        };
+    }
+    if (r.includes('diseña')) {
+        return {
+            gradient: 'from-pink-500 to-rose-600',
+            glow: 'bg-pink-500/10',
+            glowHover: 'bg-pink-500/30',
+            hoverText: 'group-hover:text-pink-400',
+            border: 'border-pink-500/30 group-hover:border-pink-500/50',
+            badgeText: 'text-pink-400',
+            accentColor: 'pink',
+            buttonHover: 'hover:bg-pink-600 hover:border-pink-400'
+        };
+    }
+    if (r.includes('editor')) {
+        return {
+            gradient: 'from-purple-500 to-indigo-600',
+            glow: 'bg-purple-500/10',
+            glowHover: 'bg-purple-500/30',
+            hoverText: 'group-hover:text-purple-400',
+            border: 'border-purple-500/30 group-hover:border-purple-500/50',
+            badgeText: 'text-purple-400',
+            accentColor: 'purple',
+            buttonHover: 'hover:bg-purple-600 hover:border-purple-400'
+        };
+    }
+    if (r.includes('film')) {
+        return {
+            gradient: 'from-orange-500 to-red-600',
+            glow: 'bg-orange-500/10',
+            glowHover: 'bg-orange-500/30',
+            hoverText: 'group-hover:text-orange-400',
+            border: 'border-orange-500/30 group-hover:border-orange-500/50',
+            badgeText: 'text-orange-400',
+            accentColor: 'orange',
+            buttonHover: 'hover:bg-orange-600 hover:border-orange-400'
+        };
+    }
+    if (r.includes('foto')) {
+        return {
+            gradient: 'from-amber-400 to-orange-500',
+            glow: 'bg-amber-400/10',
+            glowHover: 'bg-amber-400/30',
+            hoverText: 'group-hover:text-amber-400',
+            border: 'border-amber-400/30 group-hover:border-amber-400/50',
+            badgeText: 'text-amber-400',
+            accentColor: 'amber',
+            buttonHover: 'hover:bg-amber-500 hover:border-amber-400'
+        };
+    }
+    if (r.includes('audio')) {
+        return {
+            gradient: 'from-emerald-400 to-teal-500',
+            glow: 'bg-emerald-400/10',
+            glowHover: 'bg-emerald-400/30',
+            hoverText: 'group-hover:text-emerald-400',
+            border: 'border-emerald-400/30 group-hover:border-emerald-400/50',
+            badgeText: 'text-emerald-400',
+            accentColor: 'emerald',
+            buttonHover: 'hover:bg-emerald-600 hover:border-emerald-400'
+        };
+    }
+    if (r.includes('web') || r.includes('programador')) {
+        return {
+            gradient: 'from-blue-500 to-cyan-600',
+            glow: 'bg-blue-500/10',
+            glowHover: 'bg-blue-500/30',
+            hoverText: 'group-hover:text-blue-400',
+            border: 'border-blue-500/30 group-hover:border-blue-500/50',
+            badgeText: 'text-blue-400',
+            accentColor: 'blue',
+            buttonHover: 'hover:bg-blue-600 hover:border-blue-400'
+        };
+    }
+    if (r.includes('modelo')) {
+        return {
+            gradient: 'from-fuchsia-500 to-pink-600',
+            glow: 'bg-fuchsia-500/10',
+            glowHover: 'bg-fuchsia-500/30',
+            hoverText: 'group-hover:text-fuchsia-400',
+            border: 'border-fuchsia-500/30 group-hover:border-fuchsia-500/50',
+            badgeText: 'text-fuchsia-400',
+            accentColor: 'fuchsia',
+            buttonHover: 'hover:bg-fuchsia-600 hover:border-fuchsia-400'
+        };
+    }
+    if (r.includes('imprenta') || r.includes('merch')) {
+        return {
+            gradient: 'from-slate-500 to-slate-700',
+            glow: 'bg-slate-500/10',
+            glowHover: 'bg-slate-500/30',
+            hoverText: 'group-hover:text-slate-400',
+            border: 'border-slate-500/30 group-hover:border-slate-500/50',
+            badgeText: 'text-slate-400',
+            accentColor: 'slate',
+            buttonHover: 'hover:bg-slate-600 hover:border-slate-400'
+        };
+    }
+    if (r.includes('evento')) {
+        return {
+            gradient: 'from-indigo-400 to-purple-500',
+            glow: 'bg-indigo-400/10',
+            glowHover: 'bg-indigo-400/30',
+            hoverText: 'group-hover:text-indigo-400',
+            border: 'border-indigo-400/30 group-hover:border-indigo-400/50',
+            badgeText: 'text-indigo-400',
+            accentColor: 'indigo',
+            buttonHover: 'hover:bg-indigo-600 hover:border-indigo-400'
+        };
+    }
+    return {
+        gradient: 'from-slate-400 to-slate-600',
+        glow: 'bg-slate-400/10',
+        glowHover: 'bg-slate-400/30',
+        hoverText: 'group-hover:text-slate-400',
+        border: 'border-slate-400/30 group-hover:border-slate-400/50',
+        badgeText: 'text-slate-400',
+        accentColor: 'slate',
+        buttonHover: 'hover:bg-slate-600 hover:border-slate-400'
+    };
+};
+
 function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal', onAudit }) {
     if (!member) return null;
     const isCM = (member.role || '').toLowerCase().includes('community manager');
-    const isEstratega = (member.role || '').toLowerCase().includes('estratega');
+    const style = getDepartmentStyle(member.role);
     
     // Filter brands assigned to this member
     const assignedBrands = allClients.filter(c => 
@@ -414,30 +640,87 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
     // Internal summary tags
     const skills = member.skills || (isCM ? ['Estrategia', 'Gestión', 'Brands'] : ['VFX', 'Edición', 'Ritmo']);
 
+    // Birthday & Age Calculation
+    const getBirthdayInfo = (birthDateStr) => {
+        if (!birthDateStr) return { isBirthday: false, isBirthdayWeek: false, age: null };
+        try {
+            const birthDate = new Date(birthDateStr);
+            const today = new Date();
+            
+            // Age calculation
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            
+            // Birthday today calculation
+            const isBirthday = today.getDate() === birthDate.getDate() && today.getMonth() === birthDate.getMonth();
+            
+            // Birthday this week calculation (next 7 days)
+            const bdateThisYear = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+            const diffTime = bdateThisYear.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const isBirthdayWeek = diffDays >= 0 && diffDays <= 7;
+            
+            return { isBirthday, isBirthdayWeek, age };
+        } catch (e) {
+            return { isBirthday: false, isBirthdayWeek: false, age: null };
+        }
+    };
+    
+    const { isBirthday, isBirthdayWeek, age } = getBirthdayInfo(member.birth_date);
+
     return (
         <motion.div 
             whileHover={{ y: -8, scale: 1.01 }} 
-            className={`relative w-full h-auto min-h-[540px] max-w-[310px] mx-auto bg-white/[0.02] backdrop-blur-3xl border ${isEstratega ? 'border-amber-500/30' : 'border-white/10'} rounded-[3rem] p-6 flex flex-col shadow-2xl group overflow-hidden`}
+            className={`relative w-full h-auto min-h-[540px] max-w-[310px] mx-auto bg-white/[0.02] backdrop-blur-3xl border ${style.border} rounded-[3rem] p-6 flex flex-col shadow-2xl group overflow-hidden`}
         >
             {/* Premium Glass Accents */}
-            <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-${isEstratega ? 'amber' : 'white'}/20 to-transparent`} />
-            <div className={`absolute -top-24 -right-24 w-48 h-48 ${isEstratega ? 'bg-amber-500/10' : 'bg-indigo-500/10'} blur-[90px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
+            <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-${style.accentColor}/20 to-transparent`} />
+            <div className={`absolute -top-24 -right-24 w-48 h-48 ${style.glow} blur-[90px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
             
             {/* Identity Header */}
             <div className="flex flex-col items-center mb-8 pt-4">
                 <div className="relative mb-5">
-                    <div className={`absolute inset-0 ${isEstratega ? 'bg-amber-500/30' : 'bg-indigo-500/30'} blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700 scale-150`} />
-                    <div className={`w-20 h-20 rounded-[1.8rem] bg-gradient-to-tr ${isEstratega ? 'from-amber-600 to-orange-600' : 'from-indigo-600 to-purple-600'} p-0.5 shadow-2xl relative z-10 transition-transform duration-500 group-hover:rotate-6`}>
+                    <div className={`absolute inset-0 ${style.glowHover} blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700 scale-150`} />
+                    <div className={`w-20 h-20 rounded-[1.8rem] bg-gradient-to-tr ${style.gradient} p-0.5 shadow-2xl relative z-10 transition-transform duration-500 group-hover:rotate-6`}>
                         <div className="w-full h-full rounded-[1.7rem] bg-[#050510] flex items-center justify-center text-3xl font-black text-white italic tracking-tighter shadow-inner">
                             {member.name ? member.name.charAt(0).toUpperCase() : '?'}
                         </div>
                     </div>
                 </div>
-                <div className="text-center">
-                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-tight group-hover:text-indigo-400 transition-colors duration-500">
-                        {member.name ? member.name.split(' ')[0] : 'Talento'}
+                <div className="text-center w-full px-2">
+                    <h3 className={`text-xl font-black text-white uppercase italic tracking-tighter leading-tight ${style.hoverText} transition-colors duration-500 flex items-center justify-center gap-2`} title={member.name || 'Talento'}>
+                        <span className="truncate">{member.name || 'Talento'}</span>
+                        {isBirthday && (
+                            <motion.span 
+                                animate={{ scale: [1, 1.2, 1] }} 
+                                transition={{ repeat: Infinity, duration: 1.5 }}
+                                className="text-indigo-400"
+                                title="¡Hoy es su Cumpleaños!"
+                            >
+                                🎂
+                            </motion.span>
+                        )}
+                        {isBirthdayWeek && !isBirthday && (
+                            <span className="text-yellow-500 text-xs" title="Cumpleaños esta semana">🎉</span>
+                        )}
                     </h3>
-                    <p className={`text-[8px] font-black ${isEstratega ? 'text-amber-500' : 'text-gray-500'} uppercase tracking-[0.4em] mt-2 bg-white/5 py-1 px-3 rounded-full border border-white/5 inline-block`}>{member.role}</p>
+                    <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
+                        <span className="text-[8px] font-mono text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/5">{member.id}</span>
+                        <p className={`text-[8px] font-black ${style.badgeText} uppercase tracking-[0.4em] bg-white/5 py-1 px-3 rounded-full border border-white/5 inline-block`}>{member.role}</p>
+                    </div>
+                    {member.email && (
+                        <p className="text-[10px] text-gray-500 group-hover:text-gray-400 transition-colors mt-2.5 select-all font-mono truncate" title={member.email}>
+                            {member.email}
+                        </p>
+                    )}
+                    {member.birth_date && (
+                        <p className="text-[9px] text-indigo-400/80 font-mono mt-1.5 flex items-center justify-center gap-1 font-bold">
+                            <Cake className="w-3 h-3 text-indigo-500/50" /> {new Date(member.birth_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} {age ? `(${age} años)` : ''}
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -525,7 +808,7 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
             {/* Tactical Action */}
             <button 
                 onClick={onAudit}
-                className="w-full py-4 rounded-2xl bg-white/[0.03] hover:bg-indigo-600 border border-white/5 hover:border-indigo-400 text-gray-500 hover:text-white font-black uppercase text-[8px] tracking-[0.4em] transition-all duration-500 shadow-xl"
+                className={`w-full py-4 rounded-2xl bg-white/[0.03] ${style.buttonHover} border border-white/5 text-gray-500 hover:text-white font-black uppercase text-[8px] tracking-[0.4em] transition-all duration-500 shadow-xl`}
             >
                 Detalles Operativos
             </button>
@@ -549,6 +832,7 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
     const isEstratega = (member.role || '').toLowerCase().includes('estratega');
     const assignedBrands = allClients.filter(c => c.cm === member.name || c.editor === member.name || c.filmmaker === member.name);
     const squadMembers = team.filter(m => m.squad_lead_id === member.id);
+    const style = getDepartmentStyle(formData.role);
 
     useEffect(() => {
         const loadData = async () => {
@@ -617,9 +901,9 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                 className="relative w-full max-w-6xl bg-[#080814] border border-white/10 rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row h-[85vh]"
             >
                 {/* LEFT SIDEBAR: Visual Branding */}
-                <div className="w-full md:w-[35%] h-full relative border-r border-white/5 bg-[#05050A] flex flex-col justify-between p-10 overflow-hidden">
+                <div className="w-full md:w-[35%] h-full relative border-r border-white/5 bg-gradient-to-b from-[#04040A] to-[#090915] flex flex-col justify-between p-10 overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
-                        <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-indigo-600/20 rounded-full blur-[120px]" />
+                        <div className={`absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-gradient-to-br ${style.glow} rounded-full blur-[120px]`} />
                     </div>
 
                     <div className="relative z-10 space-y-12">
@@ -632,15 +916,30 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
 
                         <div className="flex flex-col items-center">
                             <div className="relative group mb-8">
-                                <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-[40px] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+                                <div className={`absolute -inset-4 bg-gradient-to-r ${style.gradient} rounded-[40px] blur-2xl opacity-40 group-hover:opacity-80 transition duration-1000`} />
                                 <div className="relative w-32 h-32 rounded-[32px] bg-[#0A0A1F] border border-white/10 flex items-center justify-center text-5xl font-black text-white shadow-2xl overflow-hidden uppercase italic">
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
                                     <span className="relative z-10">{formData.name?.[0] || 'T'}</span>
                                 </div>
                             </div>
-                            <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter text-center leading-tight">{formData.name}</h2>
-                            <div className="h-[1px] w-12 bg-indigo-500/30 my-6" />
-                            <p className="text-[10px] font-black text-indigo-400/60 uppercase tracking-[0.3em] text-center">OPERATIONAL MASTER</p>
+                            <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter text-center leading-tight truncate max-w-full" title={formData.name}>{formData.name}</h2>
+                            <div className={`h-[1.5px] w-16 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent my-6`} />
+                            <span className={`text-[8px] font-black ${style.badgeText} uppercase tracking-[0.4em] bg-white/5 py-1.5 px-4 rounded-full border border-white/5 inline-block text-center`}>
+                                {formData.role}
+                            </span>
+                            {formData.email && (
+                                <div 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(formData.email);
+                                        toast.success("Correo copiado al portapapeles");
+                                    }}
+                                    className="flex items-center gap-2 mt-4 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 text-[10px] text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer group/email select-all"
+                                    title="Copiar Correo"
+                                >
+                                    <Mail className="w-3.5 h-3.5 text-indigo-400 group-hover/email:scale-110 transition-transform" />
+                                    <span className="font-mono font-medium truncate max-w-[180px]">{formData.email}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -653,7 +952,7 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                             <div className="flex items-center gap-4">
                                 <div className="flex-1 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
                                     <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Talento ID</span>
-                                    <span className="text-xs font-mono font-bold text-white tracking-widest">T-{formData.id?.slice(0, 4) || 'CORE'}</span>
+                                    <span className="text-xs font-mono font-bold text-white tracking-widest">{formData.id || 'CORE'}</span>
                                 </div>
                                 <div className="flex-1 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
                                     <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Status</span>
@@ -674,15 +973,17 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                 </div>
 
                 {/* RIGHT CONTENT */}
-                <div className="flex-1 h-full flex flex-col bg-[#080814]">
+                <div className="flex-1 h-full flex flex-col bg-gradient-to-b from-[#080814] to-[#04040A]">
                     <div className="px-10 py-8 border-b border-white/5 flex items-center justify-between">
-                        <div className="flex p-1 bg-white/[0.03] border border-white/5 rounded-[18px]">
+                        <div className="flex p-1.5 bg-black/40 backdrop-blur-md border border-white/5 rounded-2xl">
                             {tabs.map((t) => (
                                 <button
                                     key={t.id}
                                     onClick={() => setActiveTab(t.id)}
-                                    className={`flex items-center gap-2 px-6 py-2.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all ${
-                                        activeTab === t.id ? 'bg-white text-black shadow-xl shadow-white/10' : 'text-gray-500 hover:text-white'
+                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative ${
+                                        activeTab === t.id 
+                                            ? 'bg-white text-black shadow-xl shadow-white/10 scale-[1.02]' 
+                                            : 'text-gray-400 hover:text-white hover:bg-white/[0.02]'
                                     }`}
                                 >
                                     <t.icon className="w-3.5 h-3.5" /> {t.label}
@@ -707,11 +1008,15 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                             <motion.div key={activeTab} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
                                 {activeTab === 'perfil' && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <CardInput label="Nombre de Talento" value={formData.name} onChange={(v) => setFormData({...formData, name: v})} icon={Database} />
+                                        <div className="md:col-span-2">
+                                            <CardInput label="Nombre de Talento" value={formData.name} onChange={(v) => setFormData({...formData, name: v})} icon={Database} />
+                                        </div>
                                         <CardInput label="Cargo Oficial" value={formData.role} onChange={(v) => setFormData({...formData, role: v})} icon={Briefcase} isSelect options={['Editor de Video', 'Community Manager', 'Filmmaker', 'Diseñador', 'Estratega', 'Director General']} />
+                                        <CardInput label="Correo Electrónico" value={formData.email || ''} onChange={(v) => setFormData({...formData, email: v})} icon={Mail} type="email" />
                                         <CardInput label="Salario Base (USD)" value={formData.salary || ''} onChange={(v) => setFormData({...formData, salary: v})} icon={DollarSign} type="number" />
                                         <CardInput label="WhatsApp" value={formData.whatsapp || ''} onChange={(v) => setFormData({...formData, whatsapp: v})} icon={MessageSquare} />
                                         <CardInput label="Ubicación" value={formData.city || ''} onChange={(v) => setFormData({...formData, city: v})} icon={MapPin} isSelect options={ECUADOR_CITIES.map(c => c.value)} />
+                                        <CardInput label="Fecha de Nacimiento" value={formData.birth_date || ''} onChange={(v) => setFormData({...formData, birth_date: v})} icon={Cake} type="date" />
                                         {!isEstratega && <CardInput label="Líder de Mando" value={formData.squad_lead_id || ''} onChange={(v) => setFormData({...formData, squad_lead_id: v})} icon={Shield} isSelect options={eligibleLeaders.map(l => ({ value: l.id, label: l.name }))} />}
                                     </div>
                                 )}
@@ -915,6 +1220,12 @@ function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitti
                     <div className="grid grid-cols-2 gap-4">
                         <input type="email" required className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none text-sm" placeholder="Email" value={newMember.email} onChange={(e) => setNewMember({ ...newMember, email: e.target.value })} />
                         <input className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none text-sm" placeholder="WhatsApp" value={newMember.whatsapp} onChange={(e) => setNewMember({ ...newMember, whatsapp: e.target.value })} />
+                    </div>
+                    <div className="space-y-2 text-left">
+                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2 flex items-center gap-1.5">
+                            <Cake className="w-3.5 h-3.5 text-indigo-400 animate-pulse" /> Fecha de Nacimiento
+                        </label>
+                        <input required type="date" className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none text-sm" value={newMember.birth_date} onChange={(e) => setNewMember({ ...newMember, birth_date: e.target.value })} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <PremiumDropdown 

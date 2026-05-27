@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, Wifi, Cpu, Globe, ArrowRight, Mail, Lock, User, Briefcase, MapPin, ChevronDown } from 'lucide-react';
+import { ShieldCheck, Wifi, Cpu, Globe, ArrowRight, Mail, Lock, User, Briefcase, MapPin, ChevronDown, Cake } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { driveService } from '@/services/driveService';
 import { toast } from 'sonner';
@@ -15,6 +15,7 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
         full_name: '',
         brand: '',
         city: '',
+        birth_date: '',
         confirmPassword: ''
     });
     const [loading, setLoading] = useState(false);
@@ -73,8 +74,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
     ].sort();
 
     const handleGoogleConnect = async () => {
-        if (!formData.brand || !formData.city) {
-            toast.error('Por favor, ingresa tu Marca y Ciudad antes de continuar con Google.');
+        if (!formData.brand || !formData.city || !formData.birth_date) {
+            toast.error('Por favor, ingresa tu Marca/Especialidad, Ciudad y Fecha de Nacimiento antes de continuar con Google.');
             return;
         }
 
@@ -87,6 +88,7 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 name: formData.full_name || 'Usuario Google',
                 brand: formData.brand,
                 city: formData.city,
+                birth_date: formData.birth_date,
                 auth: { method: 'google', timestamp: new Date().toISOString() } 
             });
 
@@ -98,7 +100,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 full_name: formData.full_name || '',
                 brand: formData.brand,
                 city: formData.city,
-                role: finalRole
+                role: finalRole,
+                birth_date: formData.birth_date
             });
         } catch (err) {
             toast.error('Error al conectar con Google: ' + err.message);
@@ -110,6 +113,10 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
         e.preventDefault();
         if (!formData.city) {
             toast.error('Por favor, selecciona tu ciudad.');
+            return;
+        }
+        if (!formData.birth_date) {
+            toast.error('Por favor, ingresa tu fecha de nacimiento.');
             return;
         }
         setLoading(true);
@@ -124,13 +131,15 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 brand: formData.brand,
                 city: formData.city,
                 role: finalRole,
-                type: type
+                type: type,
+                birth_date: formData.birth_date
             });
 
             updateData({ 
                 name: formData.full_name,
                 brand: formData.brand,
                 city: formData.city,
+                birth_date: formData.birth_date,
                 auth: { method: 'email', timestamp: new Date().toISOString() } 
             });
 
@@ -331,6 +340,20 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                     </AnimatePresence>
                 </div>
 
+                {/* Field: Birth Date */}
+                <div className="space-y-1 text-left">
+                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                        <Cake className="w-2.5 h-2.5 animate-pulse text-indigo-400" /> Fecha de Nacimiento
+                    </label>
+                    <input 
+                        required
+                        type="date"
+                        value={formData.birth_date}
+                        onChange={e => setFormData({...formData, birth_date: e.target.value})}
+                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                    />
+                </div>
+
                 <div className="space-y-1 text-left">
                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
                         <Mail className="w-2.5 h-2.5" /> Email
@@ -378,7 +401,7 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
 
                 <button
                     type="submit"
-                    disabled={loading || !formData.email || !formData.password || !formData.confirmPassword || !formData.full_name || !formData.city || formData.password !== formData.confirmPassword}
+                    disabled={loading || !formData.email || !formData.password || !formData.confirmPassword || !formData.full_name || !formData.city || !formData.birth_date || formData.password !== formData.confirmPassword}
                     className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
                 >
                     {loading ? 'Sincronizando...' : 'Establecer Acceso Vitalicio'} <ArrowRight className="w-4 h-4" />

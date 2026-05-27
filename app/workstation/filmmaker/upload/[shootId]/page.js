@@ -1,7 +1,12 @@
 'use client';
 
 import { use, useState } from 'react';
-// ... (imports)
+import { 
+    ChevronLeft, FolderPlus, UploadCloud, FileVideo, 
+    Camera, Mic, Film 
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 
 export default function UploadPage({ params }) {
     const { shootId } = use(params);
@@ -52,7 +57,7 @@ export default function UploadPage({ params }) {
     };
 
     return (
-        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#050511]">
+        <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#050511]">
             {/* Header */}
             <header className="h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#050511]/90 backdrop-blur-md shrink-0">
                 <div className="flex items-center gap-4">

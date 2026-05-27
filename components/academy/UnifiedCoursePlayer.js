@@ -8,19 +8,106 @@ import {
     Trophy, BookOpen, Layers, CheckSquare, Square
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ACADEMY_COURSES } from '@/data/academyCourses';
+import { ACADEMY_COURSES, FILMMAKER_ACADEMY_COURSES } from '@/data/academyCourses';
 import { toast } from 'sonner';
+
+const getThemeColors = (role) => {
+    const r = (role || '').toLowerCase();
+    if (r === 'filmmaker') {
+        return {
+            primary: 'text-cyan-400',
+            primaryBg: 'bg-cyan-500/10',
+            primaryBorder: 'border-cyan-500/20',
+            primarySolidBg: 'bg-cyan-600 hover:bg-cyan-500',
+            primarySolidText: 'text-cyan-600',
+            accentGlow: 'shadow-cyan-500/20',
+            badge: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20',
+            iconColor: 'text-cyan-400',
+            glowClass: 'bg-cyan-600/5'
+        };
+    }
+    if (r === 'designer') {
+        return {
+            primary: 'text-pink-400',
+            primaryBg: 'bg-pink-500/10',
+            primaryBorder: 'border-pink-500/20',
+            primarySolidBg: 'bg-pink-600 hover:bg-pink-500',
+            primarySolidText: 'text-pink-600',
+            accentGlow: 'shadow-pink-500/20',
+            badge: 'bg-pink-500/10 text-pink-400 border border-pink-500/20',
+            iconColor: 'text-pink-400',
+            glowClass: 'bg-pink-600/5'
+        };
+    }
+    if (r === 'editor') {
+        return {
+            primary: 'text-purple-400',
+            primaryBg: 'bg-purple-500/10',
+            primaryBorder: 'border-purple-500/20',
+            primarySolidBg: 'bg-purple-600 hover:bg-purple-500',
+            primarySolidText: 'text-purple-600',
+            accentGlow: 'shadow-purple-500/20',
+            badge: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+            iconColor: 'text-purple-400',
+            glowClass: 'bg-purple-600/5'
+        };
+    }
+    if (r === 'audio') {
+        return {
+            primary: 'text-emerald-400',
+            primaryBg: 'bg-emerald-500/10',
+            primaryBorder: 'border-emerald-500/20',
+            primarySolidBg: 'bg-emerald-600 hover:bg-emerald-500',
+            primarySolidText: 'text-emerald-600',
+            accentGlow: 'shadow-emerald-500/20',
+            badge: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+            iconColor: 'text-emerald-400',
+            glowClass: 'bg-emerald-600/5'
+        };
+    }
+    if (r === 'photography') {
+        return {
+            primary: 'text-yellow-400',
+            primaryBg: 'bg-yellow-500/10',
+            primaryBorder: 'border-yellow-500/20',
+            primarySolidBg: 'bg-yellow-600 hover:bg-yellow-500',
+            primarySolidText: 'text-yellow-600',
+            accentGlow: 'shadow-yellow-500/20',
+            badge: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
+            iconColor: 'text-yellow-400',
+            glowClass: 'bg-yellow-600/5'
+        };
+    }
+    return {
+        primary: 'text-purple-400',
+        primaryBg: 'bg-purple-500/10',
+        primaryBorder: 'border-purple-500/20',
+        primarySolidBg: 'bg-purple-600 hover:bg-purple-500',
+        primarySolidText: 'text-purple-600',
+        accentGlow: 'shadow-purple-500/20',
+        badge: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+        iconColor: 'text-purple-400',
+        glowClass: 'bg-purple-600/5'
+    };
+};
 
 export default function UnifiedCoursePlayer({ params }) {
     const { id } = use(params);
     const router = useRouter();
     const pathname = usePathname();
     
+    // Parse role from path to load theme colors
+    const pathParts = pathname.split('/');
+    const isCentral = pathParts[2] === 'academy';
+    const currentRole = isCentral ? 'workstation' : pathParts[2];
+    const theme = getThemeColors(currentRole);
+    
     const [course, setCourse] = useState(null);
     const [activeLesson, setActiveLesson] = useState(null);
     const [expandedModules, setExpandedModules] = useState([]);
     const [completedLessons, setCompletedLessons] = useState({});
     const [isPlaying, setIsPlaying] = useState(false);
+    const [imageError, setImageError] = useState(false);
 
     // Get parent academy route
     const getBackRoute = () => {
@@ -29,7 +116,24 @@ export default function UnifiedCoursePlayer({ params }) {
 
     // Load course, modules, and progress
     useEffect(() => {
-        const foundCourse = ACADEMY_COURSES.find(c => c.id === parseInt(id)) || ACADEMY_COURSES[0];
+        const isFilmmakerRoute = pathname.split('/').includes('filmmaker');
+        const coursesList = isFilmmakerRoute ? FILMMAKER_ACADEMY_COURSES : ACADEMY_COURSES;
+        const foundCourse = coursesList.find(c => c.id === parseInt(id)) || coursesList[0];
+
+        // Progressive lock check
+        if (isFilmmakerRoute) {
+            const courseIdx = FILMMAKER_ACADEMY_COURSES.findIndex(c => c.id === foundCourse.id);
+            if (courseIdx >= 3) {
+                const prevCourse = FILMMAKER_ACADEMY_COURSES[courseIdx - 1];
+                const savedProgress = localStorage.getItem(`diic_academy_progress_${prevCourse.id}`);
+                const prevProgress = savedProgress ? parseInt(savedProgress) : 0;
+                if (prevProgress < 100) {
+                    toast.error('Este curso está bloqueado. Completa la clase anterior al 100% para poder acceder.');
+                    router.push(getBackRoute());
+                    return;
+                }
+            }
+        }
         
         // Generate modules/lessons structure if it doesn't exist
         const modules = foundCourse.modules || [
@@ -79,6 +183,11 @@ export default function UnifiedCoursePlayer({ params }) {
             setActiveLesson(modules[0].lessons[0]);
         }
     }, [id]);
+
+    // Reset image load error state when shifting lessons
+    useEffect(() => {
+        setImageError(false);
+    }, [activeLesson]);
 
     if (!course || !activeLesson) {
         return (
@@ -157,7 +266,7 @@ export default function UnifiedCoursePlayer({ params }) {
                     </button>
                     <div className="h-8 w-px bg-white/5" />
                     <div>
-                        <h1 className="text-[10px] font-black uppercase tracking-widest text-purple-400 flex items-center gap-1.5">
+                        <h1 className={`text-[10px] font-black uppercase tracking-widest ${theme.primary} flex items-center gap-1.5`}>
                             <BookOpen className="w-3.5 h-3.5" /> REPRODUCTOR ACADÉMICO
                         </h1>
                         <p className="text-sm font-bold text-white truncate max-w-[280px] md:max-w-[400px]">{course.title}</p>
@@ -167,7 +276,7 @@ export default function UnifiedCoursePlayer({ params }) {
                 <div className="flex items-center gap-4">
                     <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/10">
                         <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-purple-500" style={{ width: `${progressPercentage}%` }} />
+                            <div className={`h-full ${theme.primary.replace('text-', 'bg-')}`} style={{ width: `${progressPercentage}%` }} />
                         </div>
                         <span className="text-[9px] font-black text-white">{progressPercentage}% COMPLETADO</span>
                     </div>
@@ -179,20 +288,21 @@ export default function UnifiedCoursePlayer({ params }) {
 
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                 {/* Main Player Area */}
-                <div className="flex-1 flex flex-col overflow-y-auto">
+                <div className="flex-1 flex flex-col overflow-y-auto p-6 md:p-8 space-y-6">
                     {/* Video Stage */}
-                    <div className="aspect-video bg-black relative group cursor-pointer overflow-hidden max-h-[500px]">
+                    <div className="w-full aspect-video shrink-0 bg-[#020208] relative group cursor-pointer overflow-hidden border border-white/5 rounded-[2rem] shadow-2xl">
                         {isPlaying ? (
                             <div className="w-full h-full flex flex-col items-center justify-center bg-[#070713]">
                                 <motion.div 
                                     animate={{ rotate: 360 }}
                                     transition={{ repeat: Infinity, duration: 30, ease: 'linear' }}
-                                    className="w-20 h-20 rounded-full border-2 border-purple-500/20 border-t-purple-500 flex items-center justify-center mb-4"
+                                    className={`w-20 h-20 rounded-full border-2 ${theme.primaryBorder} border-t-current flex items-center justify-center mb-4 ${theme.primary}`}
+                                    style={{ width: '80px', height: '80px', minWidth: '80px', minHeight: '80px' }}
                                 >
-                                    <Play className="w-8 h-8 text-purple-500 fill-purple-500 ml-1" />
+                                    <Play className={`w-8 h-8 ${theme.primary} fill-current ml-1`} />
                                 </motion.div>
-                                <p className="text-xs font-black uppercase tracking-widest text-purple-400">Reproduciendo Clase en Streaming...</p>
-                                <p className="text-[10px] text-gray-500 mt-2">"{activeLesson.title}"</p>
+                                <p className={`text-xs font-black uppercase tracking-widest ${theme.primary}`}>Reproduciendo Clase en Streaming...</p>
+                                <p className="text-[10px] text-gray-500 mt-2 font-medium">"{activeLesson.title}"</p>
                                 <button 
                                     onClick={() => setIsPlaying(false)}
                                     className="mt-6 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10"
@@ -202,16 +312,28 @@ export default function UnifiedCoursePlayer({ params }) {
                             </div>
                         ) : (
                             <>
-                                <img 
-                                    src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44e?auto=format&fit=crop&q=80&w=1200" 
-                                    className="w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-1000" 
-                                    alt="Video Thumbnail"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                {!imageError ? (
+                                    <img 
+                                        src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44e?auto=format&fit=crop&q=80&w=1200" 
+                                        className="w-full h-full object-cover opacity-35 group-hover:scale-105 transition-transform duration-1000" 
+                                        alt="Video Thumbnail"
+                                        onError={() => setImageError(true)}
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-[#0E0E18] via-[#050511] to-[#0E0E18] flex items-center justify-center relative overflow-hidden">
+                                        <div className={`absolute w-[300px] h-[300px] rounded-full blur-[100px] opacity-[0.06] ${theme.primary.replace('text-', 'bg-')}`} />
+                                        <div className="text-white/[0.03] group-hover:text-white/[0.06] transition-colors duration-500">
+                                            {course.icon && <course.icon className="w-32 h-32" />}
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/45">
                                     <motion.div 
                                         whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
                                         onClick={() => setIsPlaying(true)}
-                                        className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-2xl shadow-purple-500/20"
+                                        className={`w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-2xl transition-transform duration-300 shrink-0 ${theme.accentGlow}`}
+                                        style={{ width: '80px', height: '80px', minWidth: '80px', minHeight: '80px' }}
                                     >
                                         <Play className="w-8 h-8 text-black fill-black ml-1" />
                                     </motion.div>
@@ -224,7 +346,7 @@ export default function UnifiedCoursePlayer({ params }) {
                             <div className="flex items-center gap-4">
                                 <Play className="w-4 h-4 text-white" />
                                 <div className="w-32 md:w-64 h-1 bg-white/20 rounded-full relative">
-                                    <div className="absolute top-0 left-0 bottom-0 w-1/3 bg-purple-500 rounded-full" />
+                                    <div className={`absolute top-0 left-0 bottom-0 w-1/3 ${theme.primary.replace('text-', 'bg-')} rounded-full`} />
                                 </div>
                                 <span className="text-[10px] font-mono text-white/70">04:12 / {activeLesson.duration}</span>
                             </div>
@@ -236,13 +358,13 @@ export default function UnifiedCoursePlayer({ params }) {
                     </div>
 
                     {/* Lesson Info */}
-                    <div className="p-8 md:p-12 max-w-4xl w-full space-y-8">
+                    <div className="max-w-4xl w-full space-y-8">
                         <div>
                             <div className="flex items-center gap-2 mb-4">
-                                <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[9px] font-black uppercase tracking-widest rounded border border-purple-500/20">Clase Activa</span>
+                                <span className={`px-2 py-0.5 ${theme.primaryBg} ${theme.primary} text-[9px] font-black uppercase tracking-widest rounded border ${theme.primaryBorder}`}>Clase Activa</span>
                                 <span className="text-xs text-gray-500 font-medium">• {activeLesson.title}</span>
                             </div>
-                            <h2 className="text-3xl font-black text-white mb-4 tracking-tight italic uppercase">{activeLesson.title}</h2>
+                            <h2 className="text-3xl font-black text-white mb-4 tracking-tight uppercase">{activeLesson.title}</h2>
                             <p className="text-sm text-gray-400 leading-relaxed font-medium">
                                 En esta clase analizaremos a fondo el tema de {activeLesson.title.toLowerCase()}. Aprenderás las metodologías prácticas utilizadas por DIIC ZONE para maximizar el rendimiento y el retorno de inversión en este pilar operativo.
                             </p>
@@ -256,7 +378,7 @@ export default function UnifiedCoursePlayer({ params }) {
                             </div>
                             <button
                                 onClick={() => handleToggleComplete(activeLesson.id)}
-                                className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2 ${completedLessons[activeLesson.id] ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-purple-400 border-purple-500/20 hover:bg-white/10'}`}
+                                className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2 ${completedLessons[activeLesson.id] ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20' : `bg-white/5 ${theme.primary} ${theme.primaryBorder} hover:bg-white/10`}`}
                             >
                                 {completedLessons[activeLesson.id] ? (
                                     <>
@@ -284,9 +406,9 @@ export default function UnifiedCoursePlayer({ params }) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-gradient-to-br from-purple-600/10 to-transparent border border-purple-500/20 rounded-3xl p-6 flex flex-col justify-center">
+                            <div className={`bg-gradient-to-br ${theme.primaryBg} to-transparent border ${theme.primaryBorder} rounded-3xl p-6 flex flex-col justify-center`}>
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+                                    <div className={`w-10 h-10 rounded-xl ${theme.primaryBg} ${theme.primary} flex items-center justify-center border ${theme.primaryBorder}`}>
                                         <Trophy className="w-5 h-5" />
                                     </div>
                                     <h4 className="text-xs font-black uppercase tracking-widest text-white">Siguiente Nivel</h4>
@@ -333,7 +455,7 @@ export default function UnifiedCoursePlayer({ params }) {
                                                             setActiveLesson(lesson);
                                                             setIsPlaying(false);
                                                         }}
-                                                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${isActive ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20' : 'hover:bg-white/5 text-gray-500'}`}
+                                                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${isActive ? `${theme.primarySolidBg} text-white shadow-lg ${theme.accentGlow}` : 'hover:bg-white/5 text-gray-500'}`}
                                                     >
                                                         <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${isActive ? 'border-white/50' : 'border-white/10'}`}>
                                                             {isCompleted ? <CheckCircle className="w-3.5 h-3.5" /> : <Play className="w-2.5 h-2.5" />}
@@ -361,7 +483,7 @@ export default function UnifiedCoursePlayer({ params }) {
                         </button>
                         <button 
                             onClick={handleNextLesson}
-                            className="flex items-center justify-center gap-2 p-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl transition-all text-[9px] font-black uppercase tracking-widest"
+                            className={`flex items-center justify-center gap-2 p-3 ${theme.primarySolidBg} text-white rounded-xl transition-all text-[9px] font-black uppercase tracking-widest`}
                         >
                             Siguiente <ArrowRight className="w-3 h-3" />
                         </button>

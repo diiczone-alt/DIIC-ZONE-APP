@@ -211,3 +211,65 @@ export const EDITOR_FILES = [
     { id: 5, name: 'REFERENCIA_ESTILO.JPG', type: 'image', size: '5.2 MB', date: '15 Oct', status: 'ready', parentId: null },
     { id: 6, name: 'THUMBNAIL_DRAFT_V1.PSD', type: 'archive', size: '84 MB', date: '12 Oct', status: 'ready', parentId: null },
 ];
+
+export const FILMMAKER_GUIDES = [
+    {
+        id: 'camera-config-2026',
+        title: 'Configuración de Cámara DIIC 2026',
+        type: 'Técnico',
+        time: '6 min',
+        rating: 4.9,
+        description: 'Parámetros optimizados para capturar el mayor rango dinámico en sets de rodaje corporativos y publicitarios.',
+        content: [
+            {
+                title: 'Perfiles de Color Recomendados',
+                body: 'Usar siempre S-Log3 (en cámaras Sony) o D-Log (en drones DJI). Recomendamos sobreexponer la toma en +1.7 EV para garantizar que las sombras no tengan ruido digital molesto al aplicar las LUTs de la agencia.'
+            },
+            {
+                title: 'Resolución & Framerates',
+                body: 'La entrevista principal debe ser grabada en 4K UHD a 24fps (obturación a 1/50). Todo el B-Roll dinámico y de acción rápida debe registrarse a 4K 60fps o 120fps si se busca hacer cámara lenta fluida.'
+            },
+            {
+                title: 'Monitoreo de Audio',
+                body: 'El canal 1 debe reservarse para el micrófono lavalier inalámbrico (corbatero) ajustado a -12dB. El canal 2 capturará sonido ambiental mediante el micrófono shotgun montado en cámara a -18dB para evitar saturaciones inesperadas.'
+            }
+        ]
+    },
+    {
+        id: 'scouting-planning',
+        title: 'Planificación & Scouting Técnico',
+        type: 'Producción',
+        time: '5 min',
+        rating: 4.7,
+        description: 'Pasos fundamentales antes de presionar el botón de grabación en una locación real.',
+        content: [
+            {
+                title: 'Visita Técnica Previa (Scouting)',
+                body: 'Siempre que sea posible, realiza una visita al set el día previo a la misma hora del shooting. Evalúa la dirección de la luz natural, fuentes de contaminación sonora (aires acondicionados, calles) y localiza las tomas de corriente eléctrica.'
+            },
+            {
+                title: 'Carga de Equipos & Tarjetas',
+                body: 'Formatea las tarjetas SD y cargadores la noche anterior. Asegúrate de tener al menos tres baterías cargadas por cámara y verifica que el lente no tenga manchas antes de salir de la oficina.'
+            }
+        ]
+    },
+    {
+        id: 'lighting-interviews',
+        title: 'Iluminación para Entrevistas Premium',
+        type: 'Fotografía',
+        time: '8 min',
+        rating: 5.0,
+        description: 'Aprende a esculpir con luz a tus sujetos para lograr un look cinematográfico corporativo.',
+        content: [
+            {
+                title: 'La Luz Principal (Key Light)',
+                body: 'Ubica la luz principal con un softbox octogonal grande a 45 grados del sujeto y un poco por encima de la altura de los ojos. Esto crea una sombra sutil pero atractiva en el lado opuesto de la cara (iluminación Rembrandt).'
+            },
+            {
+                title: 'Contraluz y Separación',
+                body: 'Coloca una luz de contra (Rim/Hair Light) detrás del sujeto (fuera de plano) apuntando a la nuca y hombros. Esto crea un perfil brillante que ayuda a separar físicamente al sujeto del fondo oscuro del consultorio u oficina.'
+            }
+        ]
+    }
+];
+

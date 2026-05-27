@@ -14,6 +14,7 @@ export const onboardingService = {
         const brandName = formData.brand || user.user_metadata?.brand || 'Sin Marca';
         const city = formData.city || user.user_metadata?.city || 'Santo Domingo';
         const profileType = formData.type || 'client'; // creative or client
+        const birthDate = formData.birth_date || user.user_metadata?.birth_date || null;
 
         console.log('[OnboardingService] Iniciando finalización para:', user.email);
 
@@ -86,6 +87,7 @@ export const onboardingService = {
                             status: 'ONBOARDING_COMPLETED',
                             priority: 'MEDIUM',
                             plan: 'Basic',
+                            birth_date: birthDate,
                             onboarding_data: formData 
                         }, { onConflict: 'id' })
                         .select()
@@ -97,13 +99,32 @@ export const onboardingService = {
                 } else if (profileType === 'creative') {
                     const targetTeamId = teamId || `TEAM-${Math.floor(1000 + Math.random() * 9000)}`;
                     
+                    const mapRoleToDb = (role) => {
+                        if (!role) return 'Creative';
+                        const r = role.toLowerCase().trim();
+                        if (r === 'editor') return 'Editor de Video';
+                        if (r === 'filmmaker') return 'Filmmaker';
+                        if (r === 'designer' || r === 'designer') return 'Diseñador';
+                        if (r === 'audio') return 'Ingeniería de Audio';
+                        if (r === 'community') return 'Community Manager';
+                        if (r === 'photo') return 'Fotografía';
+                        if (r === 'model') return 'Modelos';
+                        if (r === 'web') return 'Desarrollo Web';
+                        if (r === 'print') return 'Imprenta / Merch';
+                        if (r === 'event') return 'Eventos / Prod';
+                        if (r === 'estratega') return 'Estratega';
+                        return role;
+                    };
+
+                    const dbRole = mapRoleToDb(formData.role);
+                    
                     const { data: teamData, error: teamError } = await supabase
                         .from('team')
                         .upsert({
                             id: targetTeamId,
                             name: fullName,
                             email: user.email || formData.email || '',
-                            role: formData.role || 'Creative',
+                            role: dbRole,
                             status: 'activo',
                             city: city,
                             availability: 'full-time',
@@ -111,7 +132,8 @@ export const onboardingService = {
                             cv_url: formData.cv_url || '',
                             cv_summary: formData.cv_summary || '',
                             skills: formData.skills || [],
-                            whatsapp: formData.whatsapp || ''
+                            whatsapp: formData.whatsapp || '',
+                            birth_date: birthDate
                         }, { onConflict: 'id' })
                         .select()
                         .single();
@@ -137,7 +159,8 @@ export const onboardingService = {
                     cv_url: formData.cv_url || '',
                     cv_summary: formData.cv_summary || '',
                     skills: formData.skills || [],
-                    whatsapp: formData.whatsapp || ''
+                    whatsapp: formData.whatsapp || '',
+                    birth_date: birthDate
                 };
 
                 const { error: profileError } = await supabase
@@ -157,6 +180,7 @@ export const onboardingService = {
                         onboarding_completed: true,
                         brand: brandName,
                         city: city,
+                        birth_date: birthDate,
                         profile_type: profileType,
                         industry: industryName,
                         industry_slug: industrySlug,

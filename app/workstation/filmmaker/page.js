@@ -80,11 +80,10 @@ export default function FilmmakerDashboard() {
     const DAYS = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
     return (
-        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#050511]">
-            {/* Header */}
-            <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-[#050511]/90 backdrop-blur-md shrink-0 z-20">
+        <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#050511]">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between px-8 py-4 bg-black/10 border-b border-white/5 shrink-0 z-20">
                 <div className="flex items-center gap-4">
-                    <h1 className="text-lg font-bold text-white">Estación de Producción</h1>
                     <div className="flex bg-[#0E0E18] p-1 rounded-lg border border-white/10">
                         <button onClick={() => setActiveTab('board')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'board' ? 'bg-cyan-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                             <Layout className="w-3.5 h-3.5" /> Tablero
@@ -103,7 +102,7 @@ export default function FilmmakerDashboard() {
                         <Plus className="w-3.5 h-3.5" /> Nuevo Proyecto
                     </button>
                 </div>
-            </header>
+            </div>
 
             {/* Main Content */}
             <main className="flex-1 overflow-hidden relative">

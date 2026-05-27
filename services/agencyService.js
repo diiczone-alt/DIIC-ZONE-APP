@@ -70,7 +70,8 @@ export const agencyService = {
                 'projects', 'nextpost', 'price', 'target', 'email', 
                 'password_initial', 'whatsapp_number', 'google_drive_folder_id',
                 'onboarding_data', 'notes', 'created_at',
-                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty'
+                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty',
+                'birth_date'
             ];
             
             const sanitizedData = {};
@@ -132,7 +133,8 @@ export const agencyService = {
                 'projects', 'nextpost', 'price', 'target', 'email', 
                 'password_initial', 'whatsapp_number', 'google_drive_folder_id',
                 'onboarding_data', 'notes',
-                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty'
+                'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty',
+                'birth_date'
             ];
             const sanitizedUpdates = {};
             validFields.forEach(field => {
@@ -501,18 +503,135 @@ export const agencyService = {
         const timestamp = new Date().toLocaleTimeString();
         try {
             console.log(`🚀 [${timestamp}] Start: getTeam`);
-            const { data, error } = await supabase
+            const { data: teamData, error: teamError } = await supabase
                 .from('team')
                 .select('*')
                 .order('name', { ascending: true });
 
-            if (error) throw error;
+            if (teamError) throw teamError;
 
-            if (typeof window !== 'undefined' && Array.isArray(data)) {
-                localStorage.setItem('diic_team', JSON.stringify(data));
+            // Map lowercase or incomplete roles from DB/onboarding to proper display roles
+            const mapRoleToDisplay = (role) => {
+                if (!role) return 'Creative';
+                const r = role.toLowerCase().trim();
+                if (r === 'editor') return 'Editor de Video';
+                if (r === 'filmmaker') return 'Filmmaker';
+                if (r === 'designer' || r === 'diseñador') return 'Diseñador';
+                if (r === 'audio') return 'Ingeniería de Audio';
+                if (r === 'community' || r === 'cm' || r === 'community manager') return 'Community Manager';
+                if (r === 'photo' || r === 'fotografía') return 'Fotografía';
+                if (r === 'model' || r === 'modelos') return 'Modelos';
+                if (r === 'web' || r === 'desarrollo web') return 'Desarrollo Web';
+                if (r === 'print' || r === 'imprenta / merch') return 'Imprenta / Merch';
+                if (r === 'event' || r === 'eventos / prod') return 'Eventos / Prod';
+                if (r === 'estratega') return 'Estratega';
+                
+                // Return capitalized version of original
+                return role.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+            };
+
+            const mappedTeamData = (teamData || []).map(member => ({
+                ...member,
+                role: mapRoleToDisplay(member.role)
+            }));
+
+            // 1. Fetch profiles that are creatives using case-insensitive ilike filters
+            const { data: profiles, error: pError } = await supabase
+                .from('profiles')
+                .select('*')
+                .not('role', 'ilike', 'client')
+                .not('role', 'ilike', 'admin');
+
+            if (!pError && Array.isArray(profiles)) {
+                // Normalize names for comparison
+                const normalizeName = (n) => (n || '').toLowerCase()
+                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                    .replace(/[^\w]/g, '')
+                    .trim();
+
+                const teamEmails = new Set(
+                    (mappedTeamData)
+                        .map(t => (t.email || '').toLowerCase().trim())
+                        .filter(Boolean)
+                );
+
+                const teamNames = new Set((mappedTeamData).map(t => normalizeName(t.name)));
+                
+                const missingCreatives = profiles.filter(p => {
+                    if (!p.full_name) return false;
+                    
+                    const pEmail = (p.email || '').toLowerCase().trim();
+                    const pNameNorm = normalizeName(p.full_name);
+                    
+                    // If team already has this email, it's NOT missing!
+                    if (pEmail && teamEmails.has(pEmail)) return false;
+                    
+                    // If team already has this name, it's NOT missing!
+                    if (teamNames.has(pNameNorm)) return false;
+                    
+                    return true;
+                });
+
+                if (missingCreatives.length > 0) {
+                    console.log(`✨ [${timestamp}] Found ${missingCreatives.length} missing creatives in profiles. Auto-syncing to team...`);
+                    
+                    const inserts = missingCreatives.map(p => {
+                        let dbRole = 'Creative';
+                        const pRole = (p.role || '').toUpperCase();
+                        if (pRole === 'FILMMAKER') dbRole = 'Filmmaker';
+                        else if (pRole === 'EDITOR') dbRole = 'Editor de Video';
+                        else if (pRole === 'COMMUNITY' || pRole === 'CM') dbRole = 'Community Manager';
+                        else if (pRole === 'DESIGNER' || pRole === 'DESIGN') dbRole = 'Diseñador';
+                        else if (pRole === 'AUDIO') dbRole = 'Ingeniería de Audio';
+                        else if (pRole === 'FOTOGRAFIA' || pRole === 'FOTO') dbRole = 'Fotografía';
+                        else if (pRole === 'MODELO' || pRole === 'MODEL') dbRole = 'Modelos';
+                        else if (pRole === 'WEB') dbRole = 'Desarrollo Web';
+                        else if (pRole === 'PRINT' || pRole === 'IMPRENTA') dbRole = 'Imprenta / Merch';
+                        else if (pRole === 'EVENT' || pRole === 'EVENTO') dbRole = 'Eventos / Prod';
+                        else if (pRole === 'ESTRATEGA') dbRole = 'Estratega';
+
+                        return {
+                            id: `TEAM-${Math.floor(1000 + Math.random() * 9000)}`,
+                            name: p.full_name,
+                            role: dbRole,
+                            status: 'activo',
+                            city: p.location || 'Santo Domingo',
+                            availability: 'full-time',
+                            activetasks: 0,
+                            salary: 0,
+                            cv_url: p.cv_url || '',
+                            cv_summary: p.cv_summary || '',
+                            skills: p.skills || [],
+                            whatsapp: p.whatsapp || '',
+                            email: p.email || null
+                        };
+                    });
+
+                    const { data: insertedData, error: insertErr } = await supabase
+                        .from('team')
+                        .upsert(inserts, { onConflict: 'name' })
+                        .select();
+
+                    if (!insertErr && Array.isArray(insertedData)) {
+                        const mappedInserts = insertedData.map(member => ({
+                            ...member,
+                            role: mapRoleToDisplay(member.role)
+                        }));
+                        mappedTeamData.push(...mappedInserts);
+                        // Sort mappedTeamData by name again
+                        mappedTeamData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                        console.log(`✅ [${timestamp}] Auto-sync complete: synced ${insertedData.length} members`);
+                    } else {
+                        console.warn(`⚠️ [${timestamp}] Auto-sync insert failed:`, insertErr?.message || insertErr);
+                    }
+                }
             }
 
-            return data || [];
+            if (typeof window !== 'undefined' && Array.isArray(mappedTeamData)) {
+                localStorage.setItem('diic_team', JSON.stringify(mappedTeamData));
+            }
+
+            return mappedTeamData || [];
         } catch (error) {
             console.error(`❌ [${timestamp}] Error in getTeam:`, error);
             return [];
@@ -525,7 +644,8 @@ export const agencyService = {
         try {
             const validFields = [
                 'id', 'name', 'role', 'status', 'city', 'whatsapp', 
-                'salary', 'email', 'cv_url', 'cv_summary', 'skills'
+                'salary', 'email', 'cv_url', 'cv_summary', 'skills',
+                'birth_date'
             ];
             const sanitizedData = {};
             validFields.forEach(field => {
@@ -567,7 +687,7 @@ export const agencyService = {
                 'name', 'role', 'status', 'city', 'coords', 
                 'availability', 'activetasks', 'salary', 
                 'squad_lead_id', 'cv_url', 'cv_summary', 'skills', 
-                'whatsapp', 'email'
+                'whatsapp', 'email', 'birth_date'
             ];
             
             const sanitizedUpdates = {};

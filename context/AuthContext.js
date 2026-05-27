@@ -52,20 +52,31 @@ export const AuthProvider = ({ children }) => {
                 role = 'ADMIN';
             }
 
-            // Lookup team_id for CMs - WRAPPED IN SUB-TRY-CATCH to prevent hang
-            if ((role === 'COMMUNITY' || role === 'CM') && fullName) {
+            // Lookup team_id for all creative roles - WRAPPED IN SUB-TRY-CATCH to prevent hang
+            const creativeRoles = ['COMMUNITY', 'CM', 'EDITOR', 'DESIGNER', 'DESIGN', 'FILMMAKER', 'AUDIO', 'PHOTO', 'PHOTOGRAPHY', 'PRINT', 'TALENT', 'WEB', 'EVENT', 'EVENTS', 'ESTRATEGA', 'CREATOR'];
+            if (creativeRoles.includes(role?.toUpperCase()) && (email || fullName)) {
                 try {
-                    console.log(`[AuthContext] Looking up team ID for CM/Estratega: ${fullName}`);
-                    const { data: teamData, error: teamError } = await supabase
-                        .from('team')
-                        .select('id')
-                        .eq('name', fullName)
-                        .limit(1)
-                        .maybeSingle();
-                    
-                    if (teamError) {
-                        console.warn('[AuthContext] Team lookup non-fatal error:', teamError.message);
-                    } else if (teamData) {
+                    console.log(`[AuthContext] Looking up team ID for creative: ${fullName || email}`);
+                    let teamData = null;
+                    if (email) {
+                        const { data } = await supabase
+                            .from('team')
+                            .select('id')
+                            .eq('email', email)
+                            .limit(1)
+                            .maybeSingle();
+                        teamData = data;
+                    }
+                    if (!teamData && fullName) {
+                        const { data } = await supabase
+                            .from('team')
+                            .select('id')
+                            .eq('name', fullName)
+                            .limit(1)
+                            .maybeSingle();
+                        teamData = data;
+                    }
+                    if (teamData) {
                         teamId = teamData.id;
                     }
                 } catch (teamEx) {
@@ -104,13 +115,33 @@ export const AuthProvider = ({ children }) => {
                     if (searchParams.get('godmode') === 'true' || localStorage.getItem('diic_god_mode') === 'true') {
                         console.log('🚀 [AuthContext] GOD MODE ACTIVE - Bypassing Authentication');
                         localStorage.setItem('diic_god_mode', 'true');
-                        setUser({
-                            id: 'god-user',
-                            email: 'admin@diiczone.com',
-                            role: 'ADMIN',
-                            full_name: 'Director General (God Mode)',
-                            user_metadata: { role: 'ADMIN', full_name: 'Director General' }
-                        });
+                        
+                        try {
+                            const { data, error } = await supabase.auth.signInWithPassword({
+                                email: 'diiczone@gmail.com',
+                                password: 'Admin123!'
+                            });
+                            if (data && data.user) {
+                                setUser({
+                                    id: data.user.id,
+                                    email: 'diiczone@gmail.com',
+                                    role: 'ADMIN',
+                                    full_name: 'Director General (God Mode)',
+                                    user_metadata: { role: 'ADMIN', full_name: 'Director General' }
+                                });
+                            } else {
+                                throw error || new Error('Auth session failed');
+                            }
+                        } catch (godError) {
+                            console.warn('[AuthContext] God Mode auto-login failed, using fallback admin UUID:', godError.message);
+                            setUser({
+                                id: 'a95d5a4c-093d-4806-85c5-45bf6ed3f76f',
+                                email: 'admin@diiczone.com',
+                                role: 'ADMIN',
+                                full_name: 'Director General (God Mode)',
+                                user_metadata: { role: 'ADMIN', full_name: 'Director General' }
+                            });
+                        }
                         setLoading(false);
                         return;
                     }

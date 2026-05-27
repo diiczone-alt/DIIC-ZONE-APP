@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation';
 import {
     Camera, Calendar, CheckSquare, UploadCloud, Folder,
     FileText, Star, GraduationCap, Settings, LogOut,
-    ChevronLeft, ChevronRight, Clapperboard, Wallet
+    ChevronLeft, ChevronRight, Clapperboard, Wallet,
+    MessageCircle, Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CapacityBar } from '@/components/capacity/CapacityComponents';
@@ -97,13 +98,16 @@ export default function FilmmakerSidebar() {
 
             {/* Footer Actions */}
             <div className="p-3 border-t border-white/5">
-                <button className={`
-                    w-full flex items-center p-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all
-                    ${collapsed ? 'justify-center' : ''}
-                `}>
-                    <Settings className="w-5 h-5 shrink-0" />
-                    {!collapsed && <span className="ml-3 text-sm font-medium">Ajustes</span>}
-                </button>
+                <Link href="/workstation/profile" className="block">
+                    <button className={`
+                        w-full flex items-center p-3 rounded-xl transition-all
+                        ${pathname === '/workstation/profile' ? 'bg-cyan-600/10 text-cyan-400' : 'text-gray-400 hover:text-white hover:bg-white/5'}
+                        ${collapsed ? 'justify-center' : ''}
+                    `}>
+                        <Settings className={`w-5 h-5 shrink-0 ${pathname === '/workstation/profile' ? 'text-cyan-400' : 'text-gray-400 hover:text-white'}`} />
+                        {!collapsed && <span className="ml-3 text-sm font-medium">Ajustes</span>}
+                    </button>
+                </Link>
                 <Link href="/login">
                     <button className={`
                         w-full flex items-center p-3 rounded-xl text-red-500/70 hover:text-red-400 hover:bg-red-500/10 transition-all mt-1
@@ -117,5 +121,3 @@ export default function FilmmakerSidebar() {
         </motion.aside>
     );
 }
-
-import { MessageCircle, Clock } from 'lucide-react';

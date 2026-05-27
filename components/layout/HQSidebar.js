@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
     Layout, Users, Clapperboard, Activity,
     DollarSign, Shield, Sparkles, Settings, ShieldCheck,
-    CalendarDays, Package
+    CalendarDays, Package, MessageSquare
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -17,6 +17,7 @@ export default function HQSidebar() {
         { icon: Users, label: 'Clientes', href: '/dashboard/hq/clients', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
         { icon: DollarSign, label: 'Finanzas', href: '/dashboard/hq/payments', color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
         { icon: Shield, label: 'Equipo', href: '/dashboard/hq/team', color: 'text-rose-400', bg: 'bg-rose-400/10' },
+        { icon: MessageSquare, label: 'Mensajes', href: '/dashboard/hq/messages', color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
         { icon: Package, label: 'Servicios', href: '/dashboard/hq/services', color: 'text-purple-400', bg: 'bg-purple-400/10' },
         { icon: Activity, label: 'Control Maestro', href: '/dashboard/hq/control', color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
     ];

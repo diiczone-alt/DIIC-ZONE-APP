@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 // Global Modals
 import WorkstationGlobalModal from './modals/WorkstationGlobalModal';
@@ -72,7 +73,14 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                         icon={<MessageCircle className="w-4 h-4" />} 
                         label="Mensajes" 
                         isActive={isModalOpen && modalView === 'messages'}
-                        onClick={() => openModal('messages')}
+                        onClick={() => {
+                            const lowerRole = role?.toLowerCase() || '';
+                            if (lowerRole.includes('film') || lowerRole === 'filmmaker') {
+                                router.push('/workstation/filmmaker/messages');
+                            } else {
+                                openModal('messages');
+                            }
+                        }}
                         badge="5"
                         badgeColor="bg-indigo-500"
                     />
@@ -136,26 +144,47 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                                     </div>
 
                                     <div className="space-y-1">
-                                        <ProfileMenuItem 
-                                            icon={<User className="w-4 h-4" />} 
-                                            label="Mi Perfil" 
-                                            onClick={() => { setShowProfileMenu(false); router.push('/workstation/profile'); }}
-                                        />
-                                        <ProfileMenuItem 
-                                            icon={<Layout className="w-4 h-4" />} 
-                                            label="Panel Principal" 
-                                            onClick={() => { setShowProfileMenu(false); router.push('/workstation/editor'); }}
-                                        />
-                                        <ProfileMenuItem 
-                                            icon={<Settings className="w-4 h-4" />} 
-                                            label="Configuración" 
-                                            onClick={() => { setShowProfileMenu(false); router.push('/workstation/settings'); }}
-                                        />
-                                        <ProfileMenuItem 
-                                            icon={<CreditCard className="w-4 h-4" />} 
-                                            label="Pagos y Wallet" 
-                                            onClick={() => { setShowProfileMenu(false); router.push('/workstation/editor/finance'); }}
-                                        />
+                                        {(() => {
+                                            const lowerRole = role?.toLowerCase() || '';
+                                            const panelRoute = (lowerRole.includes('film') || lowerRole === 'filmmaker') 
+                                                ? '/workstation/filmmaker' 
+                                                : (lowerRole.includes('design') || lowerRole === 'designer') 
+                                                    ? '/workstation/designer' 
+                                                    : '/workstation/editor';
+                                                    
+                                            const financeRoute = (lowerRole.includes('film') || lowerRole === 'filmmaker') 
+                                                ? '/workstation/finance' 
+                                                : '/workstation/editor/finance';
+
+                                            return (
+                                                <>
+                                                    <Link href="/workstation/profile" onClick={() => setShowProfileMenu(false)} className="block w-full">
+                                                        <ProfileMenuItem 
+                                                            icon={<User className="w-4 h-4" />} 
+                                                            label="Mi Perfil" 
+                                                        />
+                                                    </Link>
+                                                    <Link href={panelRoute} onClick={() => setShowProfileMenu(false)} className="block w-full">
+                                                        <ProfileMenuItem 
+                                                            icon={<Layout className="w-4 h-4" />} 
+                                                            label="Panel Principal" 
+                                                        />
+                                                    </Link>
+                                                    <Link href="/workstation/profile" onClick={() => setShowProfileMenu(false)} className="block w-full">
+                                                        <ProfileMenuItem 
+                                                            icon={<Settings className="w-4 h-4" />} 
+                                                            label="Configuración" 
+                                                        />
+                                                    </Link>
+                                                    <Link href={financeRoute} onClick={() => setShowProfileMenu(false)} className="block w-full">
+                                                        <ProfileMenuItem 
+                                                            icon={<CreditCard className="w-4 h-4" />} 
+                                                            label="Pagos y Wallet" 
+                                                        />
+                                                    </Link>
+                                                </>
+                                            );
+                                        })()}
                                         
                                         <div className="h-px bg-white/5 my-2 mx-2" />
                                         

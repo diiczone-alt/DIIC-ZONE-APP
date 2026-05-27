@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ArrowLeft, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe, Activity, Mail, Stethoscope, Briefcase, HeartPulse, Sprout, GraduationCap, Video } from 'lucide-react';
+import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ArrowLeft, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe, Activity, Mail, Stethoscope, Briefcase, HeartPulse, Sprout, GraduationCap, Video, Cake } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { agencyService } from '@/services/agencyService';
 import VisionEcosystem from '@/components/VisionEcosystem';
@@ -53,6 +53,7 @@ export default function HQClientsPage() {
         industry: 'Otro',
         specialty: '',
         business_type: 'Servicios',
+        birth_date: '',
         onboarding_data: {}
     });
 
@@ -257,6 +258,34 @@ export default function HQClientsPage() {
         ];
     }, [team]);
 
+    const getBirthdayInfo = (birthDateStr) => {
+        if (!birthDateStr) return { isBirthday: false, isBirthdayWeek: false, age: null };
+        try {
+            const birthDate = new Date(birthDateStr);
+            const today = new Date();
+            
+            // Age calculation
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            
+            // Birthday today calculation
+            const isBirthday = today.getDate() === birthDate.getDate() && today.getMonth() === birthDate.getMonth();
+            
+            // Birthday this week calculation (next 7 days)
+            const bdateThisYear = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+            const diffTime = bdateThisYear.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const isBirthdayWeek = diffDays >= 0 && diffDays <= 7;
+            
+            return { isBirthday, isBirthdayWeek, age };
+        } catch (e) {
+            return { isBirthday: false, isBirthdayWeek: false, age: null };
+        }
+    };
+
     const handleToggleCM = async (id, currentCM) => {
         const cms = cmOptions.map(o => o.value);
         const nextIdx = (cms.indexOf(currentCM) + 1) % cms.length;
@@ -267,6 +296,7 @@ export default function HQClientsPage() {
         setEditingClient(client);
         setNewClient({
             ...client,
+            birth_date: client.birth_date || '',
             onboarding_data: client.onboarding_data || {},
             editor: client.editor || '',
             filmmaker: client.filmmaker || '',
@@ -459,19 +489,48 @@ export default function HQClientsPage() {
                         {loading && clients.length === 0 ? (
                             [1, 2, 3].map(i => <SkeletonRow key={i} />)
                         ) : (
-                            filteredClients.map((client) => (
-                                <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={client.id} className="hover:bg-white/[0.01] transition-colors group">
-                                    <td className="px-6 py-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-bold">
-                                                {client?.name?.[0] || '?'}
+                            filteredClients.map((client) => {
+                                const { isBirthday, isBirthdayWeek, age } = getBirthdayInfo(client.birth_date);
+                                return (
+                                    <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={client.id} className="hover:bg-white/[0.01] transition-colors group">
+                                        <td className="px-6 py-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-bold">
+                                                    {client?.name?.[0] || '?'}
+                                                </div>
+                                                <div>
+                                                    <div className="text-white font-bold flex items-center gap-2">
+                                                        <span>{client?.name || 'Cliente sin nombre'}</span>
+                                                        {isBirthday && (
+                                                            <motion.span 
+                                                                animate={{ scale: [1, 1.2, 1] }} 
+                                                                transition={{ repeat: Infinity, duration: 1.5 }}
+                                                                className="text-indigo-400"
+                                                                title="¡Hoy es su Cumpleaños!"
+                                                            >
+                                                                🎂
+                                                            </motion.span>
+                                                        )}
+                                                        {isBirthdayWeek && !isBirthday && (
+                                                            <span className="text-yellow-500 text-xs" title="Cumpleaños esta semana">🎉</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5 mt-0.5">
+                                                        <span>Ubicación: {client?.city || '-'}</span>
+                                                        {client.birth_date && (
+                                                            <>
+                                                                <span className="text-gray-700">•</span>
+                                                                <span className="flex items-center gap-1 text-indigo-500/60" title={`Fecha de nacimiento: ${client.birth_date}`}>
+                                                                    <Cake className="w-3 h-3 text-indigo-500/40" />
+                                                                    {new Date(client.birth_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                                                                    {age ? ` (${age} años)` : ''}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="text-white font-bold">{client?.name || 'Cliente sin nombre'}</div>
-                                                <div className="text-xs text-gray-500 font-medium">Ubicación: {client?.city || '-'}</div>
-                                            </div>
-                                        </div>
-                                    </td>
+                                        </td>
                                     <td className="px-6 py-6">
                                         <button onClick={() => handleCyclePlan(client.id, client.plan)} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-gray-300 hover:border-indigo-500/50 hover:text-white transition-all active:scale-95">
                                             {client?.plan || 'Presencia'}
@@ -509,7 +568,8 @@ export default function HQClientsPage() {
                                         </div>
                                     </td>
                                 </motion.tr>
-                            ))
+                            );
+                        })
                         )}
                     </tbody>
                 </table>
@@ -532,6 +592,10 @@ export default function HQClientsPage() {
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Email de Contacto (Opcional)</label>
                                             <input type="email" value={newClient.email} onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all font-mono text-sm" placeholder="cliente@ejemplo.com" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Fecha de Nacimiento (Opcional)</label>
+                                            <input type="date" value={newClient.birth_date || ''} onChange={(e) => setNewClient({ ...newClient, birth_date: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all text-sm" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => {
@@ -669,7 +733,7 @@ export default function HQClientsPage() {
                                             onClick={() => {
                                                 setIsModalOpen(false);
                                                 setShowSuccessView(false);
-                                                setNewClient({ name: '', plan: 'Presencia', price: 250, target: 0, cm: '', email: '', password_initial: '', whatsapp_number: '', google_drive_folder_id: '', notes: '', onboarding_data: {} });
+                                                setNewClient({ name: '', plan: 'Presencia', price: 250, target: 0, cm: '', email: '', password_initial: '', whatsapp_number: '', google_drive_folder_id: '', notes: '', birth_date: '', onboarding_data: {} });
                                             }} 
                                             className="w-full py-4 text-gray-500 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all"
                                         >
@@ -889,6 +953,13 @@ export default function HQClientsPage() {
                                                                 icon={Mail}
                                                                 type="email"
                                                                 placeholder="cliente@ejemplo.com"
+                                                            />
+                                                            <GlassInput 
+                                                                label="Fecha de Nacimiento" 
+                                                                value={newClient.birth_date || ''} 
+                                                                onChange={(e) => setNewClient({ ...newClient, birth_date: e.target.value })} 
+                                                                icon={Cake}
+                                                                type="date"
                                                             />
                                                             <PremiumDropdown 
                                                                 label="Modelo de Negocio" 

@@ -10,10 +10,9 @@ export const messagingService = {
             .from('chats')
             .select('*')
             .eq('client_id', clientId)
-            .eq('type', 'client_cm')
-            .single();
+            .eq('type', 'client_cm');
 
-        if (data) return data;
+        if (data && data.length > 0) return data[0];
 
         // If not, create it
         const { data: newChat, error: createError } = await supabase
@@ -37,10 +36,9 @@ export const messagingService = {
             .from('chats')
             .select('*')
             .eq('name', chatName)
-            .eq('type', 'squad')
-            .single();
+            .eq('type', 'squad');
 
-        if (data) return data;
+        if (data && data.length > 0) return data[0];
 
         const { data: newChat, error: createError } = await supabase
             .from('chats')
@@ -69,10 +67,9 @@ export const messagingService = {
             .from('chats')
             .select('*')
             .eq('name', chatName)
-            .eq('type', 'direct')
-            .single();
+            .eq('type', 'direct');
 
-        if (data) return data;
+        if (data && data.length > 0) return data[0];
 
         const { data: newChat, error: createError } = await supabase
             .from('chats')

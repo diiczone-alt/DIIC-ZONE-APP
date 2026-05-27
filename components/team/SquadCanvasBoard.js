@@ -18,18 +18,154 @@ import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
 
 // ============================================
+// HELPERS
+// ============================================
+const getDepartmentStyle = (role) => {
+    const r = role?.toLowerCase() || '';
+    if (r.includes('estratega')) {
+        return {
+            gradient: 'from-amber-500 to-orange-600',
+            glow: 'bg-amber-500/10',
+            glowHover: 'bg-amber-500/30',
+            border: 'border-amber-500/30 hover:shadow-[0_0_30px_rgba(245,158,11,0.25)]',
+            badgeText: 'text-amber-400',
+            handleBg: 'bg-amber-500',
+            shadowColor: 'shadow-[0_0_15px_rgba(245,158,11,0.5)]',
+        };
+    }
+    if (r.includes('community manager')) {
+        return {
+            gradient: 'from-indigo-500 to-blue-600',
+            glow: 'bg-indigo-500/10',
+            glowHover: 'bg-indigo-500/30',
+            border: 'border-indigo-500/30 hover:shadow-[0_0_30px_rgba(99,102,241,0.25)]',
+            badgeText: 'text-indigo-400',
+            handleBg: 'bg-indigo-500',
+            shadowColor: 'shadow-[0_0_15px_rgba(99,102,241,0.5)]',
+        };
+    }
+    if (r.includes('diseña')) {
+        return {
+            gradient: 'from-pink-500 to-rose-600',
+            glow: 'bg-pink-500/10',
+            glowHover: 'bg-pink-500/30',
+            border: 'border-pink-500/30 hover:shadow-[0_0_30px_rgba(236,72,153,0.25)]',
+            badgeText: 'text-pink-400',
+            handleBg: 'bg-pink-500',
+            shadowColor: 'shadow-[0_0_15px_rgba(236,72,153,0.5)]',
+        };
+    }
+    if (r.includes('editor')) {
+        return {
+            gradient: 'from-purple-500 to-indigo-600',
+            glow: 'bg-purple-500/10',
+            glowHover: 'bg-purple-500/30',
+            border: 'border-purple-500/30 hover:shadow-[0_0_30px_rgba(168,85,247,0.25)]',
+            badgeText: 'text-purple-400',
+            handleBg: 'bg-purple-500',
+            shadowColor: 'shadow-[0_0_15px_rgba(168,85,247,0.5)]',
+        };
+    }
+    if (r.includes('film')) {
+        return {
+            gradient: 'from-orange-500 to-red-600',
+            glow: 'bg-orange-500/10',
+            glowHover: 'bg-orange-500/30',
+            border: 'border-orange-500/30 hover:shadow-[0_0_30px_rgba(249,115,22,0.25)]',
+            badgeText: 'text-orange-400',
+            handleBg: 'bg-orange-500',
+            shadowColor: 'shadow-[0_0_15px_rgba(249,115,22,0.5)]',
+        };
+    }
+    if (r.includes('foto')) {
+        return {
+            gradient: 'from-amber-400 to-orange-500',
+            glow: 'bg-amber-400/10',
+            glowHover: 'bg-amber-400/30',
+            border: 'border-amber-400/30 hover:shadow-[0_0_30px_rgba(251,191,36,0.25)]',
+            badgeText: 'text-amber-400',
+            handleBg: 'bg-amber-400',
+            shadowColor: 'shadow-[0_0_15px_rgba(251,191,36,0.5)]',
+        };
+    }
+    if (r.includes('audio')) {
+        return {
+            gradient: 'from-emerald-400 to-teal-500',
+            glow: 'bg-emerald-400/10',
+            glowHover: 'bg-emerald-400/30',
+            border: 'border-emerald-400/30 hover:shadow-[0_0_30px_rgba(16,185,129,0.25)]',
+            badgeText: 'text-emerald-400',
+            handleBg: 'bg-emerald-500',
+            shadowColor: 'shadow-[0_0_15px_rgba(16,185,129,0.5)]',
+        };
+    }
+    if (r.includes('web') || r.includes('programador')) {
+        return {
+            gradient: 'from-blue-500 to-cyan-600',
+            glow: 'bg-blue-500/10',
+            glowHover: 'bg-blue-500/30',
+            border: 'border-blue-500/30 hover:shadow-[0_0_30px_rgba(59,130,246,0.25)]',
+            badgeText: 'text-blue-400',
+            handleBg: 'bg-blue-500',
+            shadowColor: 'shadow-[0_0_15px_rgba(59,130,246,0.5)]',
+        };
+    }
+    if (r.includes('modelo')) {
+        return {
+            gradient: 'from-fuchsia-500 to-pink-600',
+            glow: 'bg-fuchsia-500/10',
+            glowHover: 'bg-fuchsia-500/30',
+            border: 'border-fuchsia-500/30 hover:shadow-[0_0_30px_rgba(217,70,239,0.25)]',
+            badgeText: 'text-fuchsia-400',
+            handleBg: 'bg-fuchsia-500',
+            shadowColor: 'shadow-[0_0_15px_rgba(217,70,239,0.5)]',
+        };
+    }
+    if (r.includes('imprenta') || r.includes('merch')) {
+        return {
+            gradient: 'from-slate-500 to-slate-700',
+            glow: 'bg-slate-500/10',
+            glowHover: 'bg-slate-500/30',
+            border: 'border-slate-500/30 hover:shadow-[0_0_30px_rgba(100,116,139,0.25)]',
+            badgeText: 'text-slate-400',
+            handleBg: 'bg-slate-500',
+            shadowColor: 'shadow-[0_0_15px_rgba(100,116,139,0.5)]',
+        };
+    }
+    if (r.includes('evento')) {
+        return {
+            gradient: 'from-indigo-400 to-purple-500',
+            glow: 'bg-indigo-400/10',
+            glowHover: 'bg-indigo-400/30',
+            border: 'border-indigo-400/30 hover:shadow-[0_0_30px_rgba(129,140,248,0.25)]',
+            badgeText: 'text-indigo-400',
+            handleBg: 'bg-indigo-400',
+            shadowColor: 'shadow-[0_0_15px_rgba(129,140,248,0.5)]',
+        };
+    }
+    return {
+        gradient: 'from-slate-400 to-slate-600',
+        glow: 'bg-slate-400/10',
+        glowHover: 'bg-slate-400/30',
+        border: 'border-slate-400/30 hover:shadow-[0_0_30px_rgba(148,163,184,0.25)]',
+        badgeText: 'text-slate-400',
+        handleBg: 'bg-slate-400',
+        shadowColor: 'shadow-[0_0_15px_rgba(148,163,184,0.5)]',
+    };
+};
+
+// ============================================
 // CUSTOM NODE COMPONENT (Tarjeta Visual)
 // ============================================
 const MemberNode = ({ data, isConnectable }) => {
-    const isEstratega = (data.role || '').toLowerCase().includes('estratega');
-    const isCM = (data.role || '').toLowerCase().includes('community manager');
+    const style = getDepartmentStyle(data.role);
 
     return (
-        <div className={`relative w-[280px] bg-[#0A0A14]/90 backdrop-blur-xl border ${isEstratega ? 'border-amber-500/30' : isCM ? 'border-indigo-500/30' : 'border-white/10'} rounded-[2rem] p-6 flex flex-col shadow-2xl group transition-all duration-300 hover:shadow-[0_0_30px_rgba(99,102,241,0.2)]`}>
+        <div className={`relative w-[280px] bg-[#0A0A14]/90 backdrop-blur-xl border ${style.border} rounded-[2rem] p-6 flex flex-col shadow-2xl group transition-all duration-300`}>
             
             {/* Contenedor Interno para recortar las luces sin recortar los conectores (Handles) */}
             <div className="absolute inset-0 overflow-hidden rounded-[2rem] pointer-events-none">
-                 <div className={`absolute -top-10 -right-10 w-32 h-32 ${isEstratega ? 'bg-amber-500/10' : 'bg-indigo-500/10'} blur-[50px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
+                 <div className={`absolute -top-10 -right-10 w-32 h-32 ${style.glow} blur-[50px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
             </div>
 
             {/* Top Handle: Entrada (Recibe instrucciones del lider) */}
@@ -37,20 +173,27 @@ const MemberNode = ({ data, isConnectable }) => {
                 type="target" 
                 position={Position.Top} 
                 isConnectable={isConnectable} 
-                className={`w-6 h-6 -top-3 rounded-full border-[4px] border-[#0A0A14] ${isEstratega ? 'bg-amber-500' : 'bg-pink-500'} cursor-crosshair transition-transform hover:scale-125 shadow-[0_0_15px_rgba(236,72,153,0.5)] z-50`} 
+                className={`w-6 h-6 -top-3 rounded-full border-[4px] border-[#0A0A14] ${style.handleBg} cursor-crosshair transition-transform hover:scale-125 ${style.shadowColor} z-50`} 
             />
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase text-pink-500 tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">RECEPTOR</div>
+            <div className={`absolute -top-8 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase ${style.badgeText} tracking-widest opacity-0 group-hover:opacity-100 transition-opacity`}>RECEPTOR</div>
 
             {/* Avatar & Identidad */}
             <div className="flex flex-col items-center mb-6 pt-2 relative z-10">
-                <div className={`w-16 h-16 rounded-[1.2rem] bg-gradient-to-tr ${isEstratega ? 'from-amber-600 to-orange-600' : isCM ? 'from-indigo-600 to-purple-600' : 'from-emerald-500 to-teal-500'} p-0.5 shadow-2xl transition-transform duration-500`}>
+                <div className={`w-16 h-16 rounded-[1.2rem] bg-gradient-to-tr ${style.gradient} p-0.5 shadow-2xl transition-transform duration-500`}>
                     <div className="w-full h-full rounded-[1.1rem] bg-[#050510] flex items-center justify-center text-2xl font-black text-white italic tracking-tighter">
                         {data.label ? data.label[0] : '?'}
                     </div>
                 </div>
-                <div className="text-center mt-4">
-                    <h3 className="text-xl font-black text-white uppercase italic tracking-tighter leading-none">{data.label ? data.label.split(' ')[0] : 'Talento'}</h3>
-                    <p className={`text-[7px] font-black ${isEstratega ? 'text-amber-400' : isCM ? 'text-indigo-400' : 'text-emerald-400'} uppercase tracking-[0.3em] mt-2 bg-white/5 py-1 px-3 rounded-full border border-white/5 inline-block`}>{data.role}</p>
+                <div className="text-center mt-4 w-full px-2">
+                    <h3 className="text-xl font-black text-white uppercase italic tracking-tighter leading-none truncate max-w-full" title={data.label || 'Talento'}>
+                        {data.label || 'Talento'}
+                    </h3>
+                    <p className={`text-[7px] font-black ${style.badgeText} uppercase tracking-[0.3em] mt-2 bg-white/5 py-1 px-3 rounded-full border border-white/5 inline-block`}>{data.role}</p>
+                    {data.member?.email && (
+                        <p className="text-[9px] text-gray-500 group-hover:text-gray-400 transition-colors mt-2 select-all font-mono truncate max-w-full px-1" title={data.member.email}>
+                            {data.member.email}
+                        </p>
+                    )}
                 </div>
             </div>
 

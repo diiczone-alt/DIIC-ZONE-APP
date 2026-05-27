@@ -5,23 +5,78 @@ import {
     User, Mail, Phone, MapPin,
     Briefcase, Award, GraduationCap,
     TrendingUp, DollarSign, Calendar, Star,
-    Edit3, Save, X, Upload, CheckCircle2, Loader2,
-    Link as LinkIcon
+    Edit3, Save, X, Upload, CheckCircle2, Loader2, AlertCircle,
+    Link as LinkIcon, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import { LevelBadge, ReputationStats, LevelProgress } from '@/components/gamification/LevelComponents';
 import WorkstationTopBar from '@/components/workstation/WorkstationTopBar';
 
+// Sidebar Imports
+import FilmmakerSidebar from '@/components/workstation/filmmaker/FilmmakerSidebar';
+import EditorSidebar from '@/components/workstation/editor/EditorSidebar';
+import DesignerSidebar from '@/components/workstation/designer/DesignerSidebar';
+import CMSidebar from '@/components/workstation/community-manager/CMSidebar';
+import AudioSidebar from '@/components/workstation/audio/AudioSidebar';
+import PhotoSidebar from '@/components/workstation/photography/PhotoSidebar';
+import PrintSidebar from '@/components/workstation/print/PrintSidebar';
+import TalentSidebar from '@/components/workstation/talent/TalentSidebar';
+import WebSidebar from '@/components/workstation/web/WebSidebar';
+import EventSidebar from '@/components/workstation/events/EventSidebar';
+
+const SidebarMap = {
+    FILMMAKER: FilmmakerSidebar,
+    EDITOR: EditorSidebar,
+    DESIGNER: DesignerSidebar,
+    DESIGN: DesignerSidebar,
+    COMMUNITY: CMSidebar,
+    CM: CMSidebar,
+    AUDIO: AudioSidebar,
+    PHOTO: PhotoSidebar,
+    PHOTOGRAPHY: PhotoSidebar,
+    PRINT: PrintSidebar,
+    TALENT: TalentSidebar,
+    WEB: WebSidebar,
+    EVENT: EventSidebar,
+    EVENTS: EventSidebar,
+};
+
+const promiseTimeout = (promise, ms) => {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(new Error("Tiempo de espera de base de datos agotado (5s)"));
+        }, ms);
+        promise.then(
+            (res) => {
+                clearTimeout(timer);
+                resolve(res);
+            },
+            (err) => {
+                clearTimeout(timer);
+                reject(err);
+            }
+        );
+    });
+};
+
 export default function ProfilePage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [saving, setSaving] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [profileData, setProfileData] = useState(null);
     const [teamData, setTeamData] = useState(null);
+
+    // Delete flow state
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [confirmEmail, setConfirmEmail] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -36,42 +91,119 @@ export default function ProfilePage() {
 
     useEffect(() => {
         const fetchProfile = async () => {
+            if (user === null) {
+                router.push('/login');
+                return;
+            }
             if (!user) return;
+
             try {
                 setLoading(true);
+                setError(null);
                 
+                let activeProfile = null;
+                let team = null;
+
                 // 1. Fetch from profiles
-                const { data: profile, error: pError } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
+                try {
+                    const res = await promiseTimeout(
+                        supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', user.id)
+                            .single(),
+                        2500
+                    );
+                    
+                    if (res.error) {
+                        console.warn('[Profile] Profiles fetch error, building fallback:', res.error);
+                    } else {
+                        activeProfile = res.data;
+                    }
+                } catch (timeoutErr) {
+                    console.warn('[Profile] Profiles fetch timeout/exception, using offline fallback:', timeoutErr);
+                }
 
-                if (pError) throw pError;
+                // If profiles query returned null or failed/timed out, build fallback profile
+                if (!activeProfile) {
+                    activeProfile = {
+                        id: user.id,
+                        full_name: user.user_metadata?.full_name || user.full_name || 'Dicson',
+                        role: user.role || user.user_metadata?.role || 'FILMMAKER',
+                        location: user.user_metadata?.location || '',
+                        whatsapp: '',
+                        cv_url: '',
+                        cv_summary: '',
+                        skills: [],
+                        xp: 0,
+                        level: 1,
+                        rank: 'Talento en Ascenso'
+                    };
+                    
+                    // Try to insert in background, don't block
+                    supabase.from('profiles').insert(activeProfile).then(({ error }) => {
+                        if (error) console.warn('[Profile] Background profile insert skipped:', error.message);
+                    }).catch(e => console.warn('[Profile] Background profile insert exception skipped:', e));
+                }
 
-                // 2. Fetch from team (linked by team_id or email)
-                const { data: team, error: tError } = await supabase
-                    .from('team')
-                    .select('*')
-                    .eq('email', user.email)
-                    .maybeSingle();
+                // 2. Fetch from team (linked by team_id or email or name fallback)
+                try {
+                    let res = await promiseTimeout(
+                        supabase
+                            .from('team')
+                            .select('*')
+                            .eq('email', user.email)
+                            .maybeSingle(),
+                        2500
+                    );
+                    team = res.data;
 
-                setProfileData(profile);
+                    if (!team && activeProfile?.full_name) {
+                        res = await promiseTimeout(
+                            supabase
+                                .from('team')
+                                .select('*')
+                                .eq('name', activeProfile.full_name)
+                                .maybeSingle(),
+                            2500
+                        );
+                        team = res.data;
+                        
+                        // Auto-link email if null on team card in cloud
+                        if (team && !team.email && user.email) {
+                            console.log(`[Profile] Auto-linking email ${user.email} to team card ${team.id}`);
+                            supabase
+                                .from('team')
+                                .update({ email: user.email })
+                                .eq('id', team.id)
+                                .then(() => {
+                                    team.email = user.email;
+                                    console.log('[Profile] Auto-linked email successfully.');
+                                })
+                                .catch(err => console.warn('[Profile] Auto-link email failed:', err));
+                        }
+                    }
+                } catch (teamErr) {
+                    console.warn('[Profile] Team fetch timeout/exception skipped:', teamErr);
+                }
+
+                setProfileData(activeProfile);
                 setTeamData(team);
                 
                 // Sync Form
                 setFormData({
-                    full_name: profile.full_name || user.user_metadata?.full_name || '',
-                    role: profile.role || (team?.role) || 'CREATIVE',
-                    location: profile.location || team?.city || '',
-                    whatsapp: profile.whatsapp || team?.whatsapp || '',
-                    cv_url: profile.cv_url || team?.cv_url || '',
-                    cv_summary: profile.cv_summary || team?.cv_summary || '',
-                    skills: profile.skills || team?.skills || []
+                    full_name: activeProfile.full_name || user.user_metadata?.full_name || '',
+                    role: activeProfile.role || (team?.role) || 'CREATIVE',
+                    location: activeProfile.location || team?.city || '',
+                    whatsapp: activeProfile.whatsapp || team?.whatsapp || '',
+                    cv_url: activeProfile.cv_url || team?.cv_url || '',
+                    cv_summary: activeProfile.cv_summary || team?.cv_summary || '',
+                    skills: activeProfile.skills || team?.skills || []
                 });
 
             } catch (err) {
-                console.error('[Profile] Error fetching data:', err);
+                console.error('[Profile] Error in fetchProfile handler:', err);
+                setError(err.message || 'Error al cargar perfil.');
                 toast.error('Error al cargar perfil.');
             } finally {
                 setLoading(false);
@@ -79,32 +211,104 @@ export default function ProfilePage() {
         };
 
         fetchProfile();
-    }, [user]);
+    }, [user, router]);
+
+    useEffect(() => {
+        // Safe timeout to prevent loading hang if auth state is undefined
+        const safetyTimer = setTimeout(() => {
+            if (loading) {
+                console.warn('[Profile] Safety timeout triggered. Auth state might be stuck.');
+                setError('No se pudo establecer la sesión del usuario o cargar los datos. Intenta iniciar sesión de nuevo.');
+                setLoading(false);
+            }
+        }, 6000);
+
+        return () => clearTimeout(safetyTimer);
+    }, [loading]);
 
     const handleSave = async () => {
         try {
             setSaving(true);
             
             // 1. Update Profiles
-            const { error: pUpdateError } = await supabase
-                .from('profiles')
-                .update({
-                    full_name: formData.full_name,
-                    location: formData.location,
-                    whatsapp: formData.whatsapp,
-                    cv_url: formData.cv_url,
-                    cv_summary: formData.cv_summary,
-                    skills: formData.skills
-                })
-                .eq('id', user.id);
-
-            if (pUpdateError) throw pUpdateError;
+            try {
+                const { error: pUpdateError } = await promiseTimeout(
+                    supabase
+                        .from('profiles')
+                        .update({
+                            full_name: formData.full_name,
+                            location: formData.location,
+                            whatsapp: formData.whatsapp,
+                            cv_url: formData.cv_url,
+                            cv_summary: formData.cv_summary,
+                            skills: formData.skills
+                        })
+                        .eq('id', user.id),
+                    3000
+                );
+                if (pUpdateError) throw pUpdateError;
+            } catch (pUpdateErr) {
+                console.warn('[Profile] Profile database update failed, saving changes in browser localStorage:', pUpdateErr);
+                if (typeof window !== 'undefined') {
+                    const stored = localStorage.getItem('mock_db_profiles') || '[]';
+                    let records = [];
+                    try { records = JSON.parse(stored); } catch (e) {}
+                    const idx = records.findIndex(r => r.id === user.id);
+                    const updatedRec = {
+                        id: user.id,
+                        full_name: formData.full_name,
+                        role: formData.role,
+                        location: formData.location,
+                        whatsapp: formData.whatsapp,
+                        cv_url: formData.cv_url,
+                        cv_summary: formData.cv_summary,
+                        skills: formData.skills,
+                        xp: profileData?.xp || 0,
+                        level: profileData?.level || 1,
+                        rank: profileData?.rank || 'Talento en Ascenso'
+                    };
+                    if (idx !== -1) {
+                        records[idx] = { ...records[idx], ...updatedRec };
+                    } else {
+                        records.push(updatedRec);
+                    }
+                    localStorage.setItem('mock_db_profiles', JSON.stringify(records));
+                }
+                toast.info('Perfil actualizado localmente (Modo Offline).');
+            }
 
             // 2. Update Team Table (HQ Synchronization)
-            if (teamData?.id || user.email) {
-                const { error: tUpdateError } = await supabase
-                    .from('team')
-                    .upsert({
+            if (user.email) {
+                try {
+                    // Check if there is an existing team record matching this email or name
+                    let existingTeam = null;
+                    try {
+                        const { data: teamByEmail } = await promiseTimeout(
+                            supabase
+                                .from('team')
+                                .select('*')
+                                .eq('email', user.email)
+                                .maybeSingle(),
+                            2000
+                        );
+                        existingTeam = teamByEmail;
+
+                        if (!existingTeam && formData.full_name) {
+                            const { data: teamByName } = await promiseTimeout(
+                                supabase
+                                    .from('team')
+                                    .select('*')
+                                    .eq('name', formData.full_name)
+                                    .maybeSingle(),
+                                2000
+                            );
+                            existingTeam = teamByName;
+                        }
+                    } catch (err) {
+                        console.warn('[Profile] Error checking existing team record:', err);
+                    }
+
+                    const teamUpdateData = {
                         email: user.email,
                         name: formData.full_name,
                         city: formData.location,
@@ -112,18 +316,64 @@ export default function ProfilePage() {
                         cv_url: formData.cv_url,
                         cv_summary: formData.cv_summary,
                         skills: formData.skills
-                    }, { onConflict: 'email' });
-                
-                if (tUpdateError) console.warn('Sync with Team table failed:', tUpdateError);
+                    };
+
+                    if (existingTeam?.id) {
+                        // Update existing record to preserve ID and prevent duplicate conflicts
+                        const { error: tUpdateError } = await promiseTimeout(
+                            supabase
+                                .from('team')
+                                .update(teamUpdateData)
+                                .eq('id', existingTeam.id),
+                            3000
+                        );
+                        if (tUpdateError) {
+                            console.warn('Sync update with Team table failed:', tUpdateError);
+                        } else {
+                            setTeamData({ ...existingTeam, ...teamUpdateData });
+                        }
+                    } else {
+                        // Insert new record
+                        const newId = `TEAM-${Math.floor(1000 + Math.random() * 9000)}`;
+                        const newTeamMember = {
+                            id: newId,
+                            ...teamUpdateData,
+                            status: 'activo',
+                            availability: 'full-time',
+                            activetasks: 0,
+                            salary: 0
+                        };
+                        const { error: tInsertError } = await promiseTimeout(
+                            supabase
+                                .from('team')
+                                .insert(newTeamMember),
+                            3000
+                        );
+                        if (tInsertError) {
+                            console.warn('Sync insert with Team table failed:', tInsertError);
+                        } else {
+                            setTeamData(newTeamMember);
+                        }
+                    }
+                } catch (tSyncErr) {
+                    console.warn('[Profile] Team sync exception skipped:', tSyncErr);
+                }
             }
 
             // 3. Update Auth Metadata
-            await supabase.auth.updateUser({
-                data: {
-                    full_name: formData.full_name,
-                    location: formData.location
-                }
-            });
+            try {
+                await promiseTimeout(
+                    supabase.auth.updateUser({
+                        data: {
+                            full_name: formData.full_name,
+                            location: formData.location
+                        }
+                    }),
+                    3000
+                );
+            } catch (authErr) {
+                console.warn('[Profile] Auth metadata update skipped/failed:', authErr);
+            }
 
             toast.success('Perfil actualizado correctamente.');
             setIsEditing(false);
@@ -137,23 +387,95 @@ export default function ProfilePage() {
         }
     };
 
+    const handleDeleteAccount = async () => {
+        if (confirmEmail.toLowerCase() !== user?.email?.toLowerCase()) {
+            toast.error("El correo no coincide");
+            return;
+        }
+
+        setIsDeleting(true);
+        console.log("[DeleteAccount] Initiating deletion flow for user:", user?.id, user?.email);
+        try {
+            console.log("[DeleteAccount] Calling RPC 'delete_own_user'...");
+            const { data, error } = await supabase.rpc('delete_own_user');
+            
+            console.log("[DeleteAccount] RPC Response - Data:", data, "Error:", error);
+            if (error) {
+                console.error("[DeleteAccount] RPC error object:", JSON.stringify(error, null, 2));
+                throw error;
+            }
+
+            console.log("[DeleteAccount] RPC successful. Clearing local storage and session...");
+            toast.success("Cuenta eliminada con éxito");
+            
+            // Clear local session storage manually to prevent signOut() hangs on deleted session
+            if (typeof window !== 'undefined') {
+                localStorage.clear();
+                // Clear GoTrue session in memory/cookies locally without calling GoTrue API
+                try {
+                    await supabase.auth.signOut({ scope: 'local' });
+                } catch (signOutErr) {
+                    console.warn("[DeleteAccount] Local signout warning:", signOutErr);
+                }
+            }
+
+            console.log("[DeleteAccount] Redirecting to /login...");
+            window.location.href = '/login';
+        } catch (err) {
+            console.error("[DeleteAccount] Exception caught:", err);
+            toast.error(`No se pudo eliminar la cuenta: ${err.message || 'Error desconocido'}. Contacte al soporte.`);
+        } finally {
+            console.log("[DeleteAccount] Deletion flow finally block executed.");
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+        }
+    };
+
     if (loading) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-[#050511]">
+            <div className="w-full min-h-screen flex items-center justify-center bg-[#050511]">
                 <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
             </div>
         );
     }
 
-    return (
-        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#050511]">
-            <WorkstationTopBar 
-                title="Mi Perfil Profesional" 
-                subtitle="Gestión de identidad y reputación" 
-                role={profileData?.role || 'Talento'} 
-            />
+    if (error) {
+        return (
+            <div className="w-full min-h-screen flex flex-col items-center justify-center bg-[#050511] text-white p-6">
+                <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                <h1 className="text-xl font-bold uppercase tracking-widest mb-2">Error de Sincronización</h1>
+                <p className="text-sm text-gray-400 mb-6 max-w-md text-center">{error}</p>
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                    >
+                        Reintentar
+                    </button>
+                    <button 
+                        onClick={() => router.push('/workstation/filmmaker')}
+                        className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                    >
+                        Volver
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+    const SidebarComponent = SidebarMap[(profileData?.role || user?.role || '').toUpperCase()];
+
+    return (
+        <div className="flex h-screen bg-[#050511] text-white w-full">
+            {SidebarComponent && <SidebarComponent />}
+            <main className="flex-1 flex flex-col overflow-hidden relative">
+                <WorkstationTopBar 
+                    title="Mi Perfil Profesional" 
+                    subtitle="Gestión de identidad y reputación" 
+                    role={profileData?.role || 'Talento'} 
+                />
+
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                 
                 {/* Profile Master Card */}
                 <div className="bg-[#0E0E18] rounded-[2.5rem] p-10 border border-white/5 mb-8 relative overflow-hidden">
@@ -196,9 +518,18 @@ export default function ProfilePage() {
                                             {formData.full_name || 'Sin Nombre'}
                                         </h1>
                                     )}
-                                    <p className="text-indigo-400 font-black text-xs uppercase tracking-[0.3em] pl-1">
-                                        {formData.role} • {profileData?.rank || 'Talento en Ascenso'}
-                                    </p>
+                                    <div className="flex items-center gap-3 flex-wrap pl-1 mt-1">
+                                        <p className="text-indigo-400 font-black text-xs uppercase tracking-[0.3em]">
+                                            {formData.role} • {profileData?.rank || 'Talento en Ascenso'}
+                                        </p>
+                                        <span className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-xl border ${
+                                            teamData?.id 
+                                                ? 'text-gray-400 bg-white/5 border-white/5' 
+                                                : 'text-rose-400 bg-rose-500/10 border-rose-500/20 animate-pulse'
+                                        }`}>
+                                            ID: {teamData?.id || 'NO VINCULADO (Pide al administrador vincular tu correo en el Panel HQ)'}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-3">
@@ -370,7 +701,90 @@ export default function ProfilePage() {
                     </div>
 
                 </div>
-            </div>
+
+                {/* Danger Zone */}
+                <div className="bg-red-950/10 border border-red-900/30 rounded-[2rem] p-8 space-y-6 mb-8 max-w-7xl">
+                    <h3 className="text-lg font-black text-red-500 uppercase italic tracking-tighter flex items-center gap-3">
+                        <AlertTriangle className="w-5 h-5 text-red-500" />
+                        Zona de Peligro
+                    </h3>
+                    <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                        Si decides eliminar tu cuenta, todos tus registros de autenticación, tu expediente de talento y tu vinculación con la agencia DIIC ZONE serán destruidos permanentemente de forma irreversible.
+                    </p>
+                    <div className="flex">
+                        <button 
+                            onClick={() => setShowDeleteModal(true)}
+                            className="px-6 py-3.5 bg-red-600/10 border border-red-500/20 text-red-500 font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-red-600 hover:text-white transition-all duration-300"
+                        >
+                            Eliminar Cuenta Permanentemente
+                        </button>
+                    </div>
+                </div>
+
+                </div>
+            </main>
+
+            {/* Delete Account Modal */}
+            <AnimatePresence>
+                {showDeleteModal && (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            onClick={() => setShowDeleteModal(false)} 
+                            className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+                            animate={{ scale: 1, opacity: 1, y: 0 }} 
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }} 
+                            className="relative w-full max-w-lg bg-[#0E0E18] border border-red-500/20 rounded-[2.5rem] p-10 shadow-2xl z-10 text-center space-y-8"
+                        >
+                            <div className="w-20 h-20 rounded-[2rem] bg-red-500/10 flex items-center justify-center text-red-500 mx-auto">
+                                <AlertTriangle className="w-10 h-10" />
+                            </div>
+
+                            <div className="space-y-3">
+                                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">¿CONFIRMAR ELIMINACIÓN?</h3>
+                                <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                                    Esta acción eliminará permanentemente tu acceso de autenticación y todos tus expedientes. Escribe tu correo electrónico para proceder:
+                                    <br />
+                                    <strong className="text-red-400 font-bold block mt-2 select-all">{user?.email}</strong>
+                                </p>
+                            </div>
+
+                            <input 
+                                type="text"
+                                value={confirmEmail}
+                                onChange={(e) => setConfirmEmail(e.target.value)}
+                                className="w-full px-6 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-center text-sm outline-none focus:border-red-500/50 transition-all font-mono"
+                                placeholder="Escribe tu correo aquí..."
+                            />
+
+                            <div className="flex gap-4">
+                                <button 
+                                    onClick={() => setShowDeleteModal(false)}
+                                    className="flex-1 py-4 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    onClick={handleDeleteAccount}
+                                    disabled={confirmEmail.toLowerCase() !== user?.email?.toLowerCase() || isDeleting}
+                                    className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                        confirmEmail.toLowerCase() === user?.email?.toLowerCase() && !isDeleting
+                                        ? 'bg-red-600 text-white hover:scale-105 shadow-lg shadow-red-600/20'
+                                        : 'bg-white/5 text-gray-600 cursor-not-allowed border border-white/5'
+                                    }`}
+                                >
+                                    {isDeleting ? 'Eliminando...' : 'Eliminar Permanentemente'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
