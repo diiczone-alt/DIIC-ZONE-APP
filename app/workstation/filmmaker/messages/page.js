@@ -328,6 +328,22 @@ export default function FilmmakerMessagesPage() {
         });
     }, [selectedTarget, activeTab]);
 
+    // Parse query params on load (e.g. ?client=Vito's%20Pizza)
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const clientParam = params.get('client');
+            const dmParam = params.get('dm');
+            if (clientParam) {
+                setActiveTab('channel');
+                setSelectedTarget(clientParam);
+            } else if (dmParam) {
+                setActiveTab('dm');
+                setSelectedTarget(dmParam);
+            }
+        }
+    }, []);
+
     // 2. Fetch or create a Chat Thread in DB when selection changes
     useEffect(() => {
         if (!currentUserCard) return;
@@ -347,15 +363,27 @@ export default function FilmmakerMessagesPage() {
                             chatId = chat.id;
                         }
                     } else {
-                        const clientObj = squadClients.find(c => c.name === selectedTarget);
+                        const clientObj = squadClients.find(c => {
+                            const clean = (str) => (str || '').toLowerCase().replace(/['’`\s]/g, '');
+                            return clean(c.name) === clean(selectedTarget);
+                        });
                         if (clientObj) {
+                            if (selectedTarget !== clientObj.name) {
+                                setSelectedTarget(clientObj.name);
+                            }
                             const chat = await messagingService.getOrCreateSquadChat(clientObj.id, 'production');
                             chatId = chat.id;
                         }
                     }
                 } else {
-                    const memberObj = squadMembers.find(m => m.name === selectedTarget);
+                    const memberObj = squadMembers.find(m => {
+                        const clean = (str) => (str || '').toLowerCase().replace(/['’`\s]/g, '');
+                        return clean(m.name) === clean(selectedTarget);
+                    });
                     if (memberObj) {
+                        if (selectedTarget !== memberObj.name) {
+                            setSelectedTarget(memberObj.name);
+                        }
                         const chat = await messagingService.getOrCreateDirectChat(currentUserCard.id, memberObj.id);
                         chatId = chat.id;
                     }

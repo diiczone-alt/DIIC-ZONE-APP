@@ -12,6 +12,7 @@ import {
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 // --- HELPERS ---
 const parseAssets = (assets) => {
@@ -89,6 +90,7 @@ const COLUMNS = [
 ];
 
 export default function FilmmakerDashboard() {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState('board');
     const [projects, setProjects] = useState([]);
     const [inbox, setInbox] = useState([]);
@@ -982,6 +984,9 @@ export default function FilmmakerDashboard() {
                         onOpenScript={onOpenScript}
                         onAddEquipment={onAddEquipment}
                         onRemoveEquipment={onRemoveEquipment}
+                        onOpenChat={(clientName) => {
+                            router.push(`/workstation/filmmaker/messages?client=${encodeURIComponent(clientName)}`);
+                        }}
                     />
                 )}
             </AnimatePresence>
@@ -1154,7 +1159,7 @@ function ProjectCard({ project }) {
 function ProjectDetailModal({ 
     project, onClose, onUpdateStatus, teamMembers, 
     onAddTeamMember, onRemoveTeamMember, onToggleChecklist, onOpenScript,
-    onAddEquipment, onRemoveEquipment 
+    onAddEquipment, onRemoveEquipment, onOpenChat 
 }) {
     const [showAssignDropdown, setShowAssignDropdown] = useState(false);
 
@@ -1436,7 +1441,10 @@ function ProjectDetailModal({
                         </div>
 
                         <div className="mt-auto">
-                            <button className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-900/40 transition-all text-sm flex items-center justify-center gap-2">
+                            <button 
+                                onClick={() => onOpenChat && onOpenChat(project.client)}
+                                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-900/40 transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
+                            >
                                 <MessageSquare className="w-4 h-4" /> Abrir Chat de Proyecto
                             </button>
                         </div>
