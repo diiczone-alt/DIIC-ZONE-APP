@@ -1,11 +1,16 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
-import { ArrowRight, BarChart3, Bot, Clapperboard, Layers, Zap } from 'lucide-react';
+import { 
+    ArrowRight, BarChart3, Bot, Clapperboard, Layers, Zap, 
+    Shield, MessageSquare, Package, Activity, Users, DollarSign, 
+    Calendar, MapPin, CheckCircle2, AlertCircle, Cpu, Clock, Send, 
+    MessageCircle, Play, Star 
+} from 'lucide-react';
 
 export default function LandingPage() {
     const router = useRouter();
@@ -27,6 +32,175 @@ export default function LandingPage() {
             }
         }
     }, [user, loading, router, getHomeRoute]);
+
+    const [activeTab, setActiveTab] = useState('hq');
+    const [autoPlay, setAutoPlay] = useState(true);
+    const [renderProgress, setRenderProgress] = useState(45);
+
+    // Auto-play cycle for preview tabs
+    useEffect(() => {
+        if (!autoPlay) return;
+        const tabs = ['hq', 'filmmaker', 'editor', 'messages'];
+        const interval = setInterval(() => {
+            setActiveTab((current) => {
+                const nextIndex = (tabs.indexOf(current) + 1) % tabs.length;
+                return tabs[nextIndex];
+            });
+        }, 6000);
+        return () => clearInterval(interval);
+    }, [autoPlay]);
+
+    // Simulated render progress for the Editor tab
+    useEffect(() => {
+        if (activeTab !== 'editor') return;
+        const interval = setInterval(() => {
+            setRenderProgress((prev) => (prev >= 100 ? 0 : prev + 1));
+        }, 150);
+        return () => clearInterval(interval);
+    }, [activeTab]);
+
+    const renderHQPreview = () => (
+        <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
+                    <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">MRR Revenue</span>
+                    <span className="text-2xl font-black text-white italic mt-2">$14,350</span>
+                    <span className="text-[8px] text-indigo-400 mt-1">● +12.4% este mes</span>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
+                    <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Validación</span>
+                    <span className="text-2xl font-black text-white italic mt-2">90%</span>
+                    <span className="text-[8px] text-emerald-400 mt-1">● 9 / 10 Clientes</span>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
+                    <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Nodos Activos</span>
+                    <span className="text-2xl font-black text-white italic mt-2">18</span>
+                    <span className="text-[8px] text-cyan-400 mt-1">● 100% operativos</span>
+                </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+                <div className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Sincronización de Cuentas</div>
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center text-[10px] text-indigo-400 font-bold">S</div>
+                            <span className="text-gray-300 font-bold">Spiga de Oro</span>
+                        </div>
+                        <span className="text-[10px] text-indigo-400 font-mono">Plan Aceleración</span>
+                        <div className="w-24 bg-white/5 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-indigo-500 h-full w-[85%]" />
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-[10px] text-emerald-400 font-bold">O</div>
+                            <span className="text-gray-300 font-bold">Dra. Andrea Ortega</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-mono">Plan Presencia</span>
+                        <div className="w-24 bg-white/5 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-emerald-500 h-full w-[60%]" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderFilmmakerPreview = () => (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center bg-white/[0.02] border border-white/5 p-4 rounded-2xl">
+                <div>
+                    <span className="text-[8px] text-red-400 uppercase font-black tracking-widest block mb-1">Rodaje Activo</span>
+                    <h4 className="text-white font-bold text-sm">Spiga de Oro - Lanzamiento</h4>
+                    <p className="text-[10px] text-gray-500 mt-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> Quito, Estudio A</p>
+                </div>
+                <div className="text-right">
+                    <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[9px] font-black uppercase tracking-wider">Confirmado</span>
+                    <span className="text-[10px] text-gray-400 block mt-2 font-mono flex items-center gap-1 justify-end"><Clock className="w-3.5 h-3.5 text-gray-500" /> Hoy 15:30</span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                    <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Cámaras & Lentes</span>
+                    <div className="text-xs space-y-1.5 text-gray-300 font-medium">
+                        <div className="flex items-center justify-between"><span>Sony FX3</span> <span className="text-[9px] text-emerald-400 font-mono">Activa</span></div>
+                        <div className="flex items-center justify-between"><span>24-70mm f/2.8 GM II</span> <span className="text-[9px] text-emerald-400 font-mono">En uso</span></div>
+                    </div>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                    <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Planificación</span>
+                    <div className="text-xs space-y-1.5 text-gray-300 font-medium">
+                        <div className="flex items-center justify-between"><span>B-Roll de Repostería</span> <span className="text-[9px] text-gray-500">12 tomas</span></div>
+                        <div className="flex items-center justify-between"><span>Entrevista Fundador</span> <span className="text-[9px] text-gray-500">2 tomas</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderEditorPreview = () => (
+        <div className="space-y-6">
+            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <span className="text-[8px] text-purple-400 uppercase font-black tracking-widest block mb-1">Procesando Video</span>
+                        <h4 className="text-white font-bold text-sm">Reel de Lanzamiento - Spiga de Oro</h4>
+                    </div>
+                    <span className="text-lg font-black text-purple-400 font-mono">{renderProgress}%</span>
+                </div>
+                <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden mb-2">
+                    <div className="bg-purple-500 h-full transition-all duration-150" style={{ width: `${renderProgress}%` }} />
+                </div>
+                <div className="flex justify-between text-[9px] text-gray-500">
+                    <span>Exportando a MP4 (4K H.264)</span>
+                    <span>Tasa de bits: 45 Mbps</span>
+                </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2.5">
+                <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Pistas de la Línea de Tiempo</span>
+                <div className="space-y-1.5 text-[10px] font-mono">
+                    <div className="flex items-center justify-between bg-purple-950/20 border border-purple-500/10 p-1.5 rounded-lg text-purple-300">
+                        <span>[V1] A-Roll (Sony S-Log3)</span> <span>Recorte 4K</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-blue-950/20 border border-blue-500/10 p-1.5 rounded-lg text-blue-300">
+                        <span>[A1] SoundFX & Locución</span> <span>Volumen: -6dB</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-amber-950/20 border border-amber-500/10 p-1.5 rounded-lg text-amber-300">
+                        <span>[FX] Cinematic LUT v2.0</span> <span>Opacidad: 100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderMessagesPreview = () => (
+        <div className="space-y-4">
+            <div className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Canal: Spiga de Oro (Socio)</div>
+            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4 h-[180px] overflow-y-auto flex flex-col justify-end text-xs">
+                {/* Message 1 */}
+                <div className="flex items-start gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center font-bold text-indigo-400 text-[10px] shrink-0">S</div>
+                    <div className="bg-white/5 p-3 rounded-2xl rounded-tl-none border border-white/5 max-w-[80%] text-gray-300 leading-relaxed">
+                        ¿Alex, cómo quedó el reel del postre de chocolate?
+                    </div>
+                </div>
+                {/* Message 2 */}
+                <div className="flex items-start gap-2.5 self-end flex-row-reverse">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center font-bold text-emerald-400 text-[10px] shrink-0">A</div>
+                    <div className="bg-emerald-600/10 p-3 rounded-2xl rounded-tr-none border border-emerald-500/20 max-w-[80%] text-gray-300 leading-relaxed text-right">
+                        ¡Hola! Quedó increíble. Ya está listo y aprobado. El editor le puso un LUT cinematográfico espectacular. Te lo subo a la carpeta.
+                    </div>
+                </div>
+            </div>
+            <div className="flex items-center justify-between bg-emerald-500/[0.03] border border-emerald-500/10 p-3 rounded-xl text-[10px] text-emerald-400 font-bold">
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> Archivo sincronizado con Google Drive</span>
+                <span className="font-mono text-[9px]">Listo para publicar</span>
+            </div>
+        </div>
+    );
 
     if (loading) return null; // Prevent flicker
 
@@ -104,22 +278,86 @@ export default function LandingPage() {
                     </motion.div>
                 </div>
 
-                {/* Dashboard Preview / Faux 3D */}
+                {/* Dashboard Preview / Interactive Showcase */}
                 <motion.div
-                    initial={{ opacity: 0, y: 50, rotateX: 10 }}
-                    animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5, duration: 1 }}
                     className="container mx-auto px-6 mt-20"
                 >
-                    <div className="relative rounded-2xl p-2 bg-gradient-to-b from-white/10 to-transparent backdrop-blur-sm">
-                        <img
-                            src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1974&auto=format&fit=crop"
-                            alt="Dashboard Preview"
-                            className="rounded-xl w-full object-cover opacity-50 border border-white/5 shadow-2xl"
-                        />
-                        {/* Overlay UI Mockups */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-black/80 backdrop-blur-xl rounded-xl border border-white/10 flex items-center justify-center">
-                            <p className="text-gray-500">Vista Previa de Plataforma</p>
+                    <div className="flex flex-col lg:flex-row gap-8 items-stretch max-w-5xl mx-auto">
+                        {/* Tabs Column */}
+                        <div className="flex flex-row lg:flex-col justify-center lg:justify-start gap-4 flex-wrap lg:w-64 shrink-0">
+                            {[
+                                { id: 'hq', label: 'God Mode (HQ)', desc: 'Control Central', color: 'border-indigo-500/30 text-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10' },
+                                { id: 'filmmaker', label: 'Filmmakers', desc: 'Control de Rodaje', color: 'border-red-500/30 text-red-400 bg-red-500/5 hover:bg-red-500/10' },
+                                { id: 'editor', label: 'Editores', desc: 'Cola de Render', color: 'border-purple-500/30 text-purple-400 bg-purple-500/5 hover:bg-purple-500/10' },
+                                { id: 'messages', label: 'Mensajería', desc: 'Chat & Aprobaciones', color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10' }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => {
+                                        setActiveTab(tab.id);
+                                        setAutoPlay(false);
+                                    }}
+                                    className={`flex-1 lg:flex-none text-left p-5 rounded-3xl border transition-all duration-300 ${
+                                        activeTab === tab.id
+                                            ? 'bg-white/10 border-white/20 text-white shadow-[0_0_30px_rgba(255,255,255,0.05)] scale-105'
+                                            : `${tab.color} opacity-60 hover:opacity-100`
+                                    }`}
+                                >
+                                    <div className="font-black text-xs uppercase tracking-widest leading-none mb-1">{tab.label}</div>
+                                    <div className="text-[10px] text-gray-500 font-medium">{tab.desc}</div>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Showcase Window (Laptop Mockup) */}
+                        <div className="flex-1 min-h-[420px] bg-[#080814]/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+                            {/* Ambient Glows depending on active tab */}
+                            {activeTab === 'hq' && <div className="absolute inset-0 bg-indigo-500/5 blur-[120px] rounded-full" />}
+                            {activeTab === 'filmmaker' && <div className="absolute inset-0 bg-red-500/5 blur-[120px] rounded-full" />}
+                            {activeTab === 'editor' && <div className="absolute inset-0 bg-purple-500/5 blur-[120px] rounded-full" />}
+                            {activeTab === 'messages' && <div className="absolute inset-0 bg-emerald-500/5 blur-[120px] rounded-full" />}
+
+                            {/* Windows Controls Bar */}
+                            <div className="flex items-center justify-between border-b border-white/5 pb-5 mb-5 relative z-10">
+                                <div className="flex gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-rose-500/40" />
+                                    <div className="w-3 h-3 rounded-full bg-amber-500/40" />
+                                    <div className="w-3 h-3 rounded-full bg-emerald-500/40" />
+                                </div>
+                                <div className="text-[9px] font-mono text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                                    <span className={`w-1.5 h-1.5 rounded-full ${
+                                        activeTab === 'hq' ? 'bg-indigo-500' :
+                                        activeTab === 'filmmaker' ? 'bg-red-500' :
+                                        activeTab === 'editor' ? 'bg-purple-500' : 'bg-emerald-500'
+                                    } animate-pulse`} />
+                                    {activeTab === 'hq' && 'HQ_GOD_MODE.EXE'}
+                                    {activeTab === 'filmmaker' && 'FILMMAKER_SCHEDULER.EXE'}
+                                    {activeTab === 'editor' && 'RENDER_PIPELINE.EXE'}
+                                    {activeTab === 'messages' && 'COMMUNICATION_HUB.EXE'}
+                                </div>
+                            </div>
+
+                            {/* Content Render with Framer Motion AnimatePresence */}
+                            <div className="flex-1 flex flex-col justify-center relative z-10">
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={activeTab}
+                                        initial={{ opacity: 0, y: 15 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -15 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="w-full h-full"
+                                    >
+                                        {activeTab === 'hq' && renderHQPreview()}
+                                        {activeTab === 'filmmaker' && renderFilmmakerPreview()}
+                                        {activeTab === 'editor' && renderEditorPreview()}
+                                        {activeTab === 'messages' && renderMessagesPreview()}
+                                    </motion.div>
+                                </AnimatePresence>
+                            </div>
                         </div>
                     </div>
                 </motion.div>
