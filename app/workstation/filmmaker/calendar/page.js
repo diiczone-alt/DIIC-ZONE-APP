@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
     Calendar as CalendarIcon, MapPin, Clock,
     User, Camera, MoreVertical, CheckCircle,
-    XCircle, RefreshCw, ChevronLeft, ChevronRight, Loader2, X
+    XCircle, RefreshCw, ChevronLeft, ChevronRight, Loader2, X, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
@@ -45,9 +45,32 @@ const parseNotes = (notes) => {
     return { location: notes, contact: 'No especificado' };
 };
 
+const parseAssets = (assets) => {
+    const defaultVal = {
+        equipment: [],
+        script_url: '',
+        materials_url: '',
+        description: ''
+    };
+    if (!assets) return defaultVal;
+    if (Array.isArray(assets)) {
+        return { ...defaultVal, equipment: assets };
+    }
+    if (typeof assets === 'object') {
+        return {
+            equipment: Array.isArray(assets.equipment) ? assets.equipment : [],
+            script_url: assets.script_url || '',
+            materials_url: assets.materials_url || '',
+            description: assets.description || ''
+        };
+    }
+    return defaultVal;
+};
+
 export default function FilmmakerCalendar() {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [animatingConfirmId, setAnimatingConfirmId] = useState(null);
     
     // Calendar Navigation State (defaults to Feb 2026 to match screenshot context, but dynamic)
     const [currentMonth, setCurrentMonth] = useState(new Date(2026, 1, 1)); 
@@ -58,6 +81,9 @@ export default function FilmmakerCalendar() {
     const [reagendaDate, setReagendaDate] = useState('');
     const [reagendaStartTime, setReagendaStartTime] = useState('');
     const [reagendaEndTime, setReagendaEndTime] = useState('');
+    const [reagendaDescription, setReagendaDescription] = useState('');
+    const [reagendaScriptUrl, setReagendaScriptUrl] = useState('');
+    const [reagendaMaterialsUrl, setReagendaMaterialsUrl] = useState('');
 
     const fetchEvents = async () => {
         try {
@@ -70,32 +96,71 @@ export default function FilmmakerCalendar() {
             if (error) throw error;
             
             let loadedEvents = data || [];
+
+            // Clean up any old mock data from previous steps if present
+            const oldMocks = loadedEvents.filter(e => e.client === 'Clínica Smith' || e.client === 'FitLife Gym');
+            if (oldMocks.length > 0) {
+                console.log('[Calendar] Cleaning up old mock events...');
+                await supabase.from('tasks').delete().in('id', oldMocks.map(m => m.id));
+                // Reload list
+                const { data: refreshedData } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .or('assigned_role.eq.FILMMAKER,title.ilike.%Rodaje%');
+                loadedEvents = refreshedData || [];
+            }
             
-            // Auto-seed mock events in database if tasks is empty
+            // Auto-seed mock events in database using REAL clients from HQ
             if (loadedEvents.length === 0) {
-                console.log('[Calendar] Seeding filmmaker mock events...');
+                console.log('[Calendar] Seeding filmmaker mock events with real clients...');
                 const seedTasks = [
                     {
-                        title: 'Rodaje: Video Corporativo Clínica Smith',
-                        client: 'Clínica Smith',
+                        title: 'Rodaje: Video Institucional Novaclínica',
+                        client: 'Hospital Novaclinica Santa Anita',
                         deadline: '2026-02-15', 
                         duration: '14:00 - 18:00',
                         assigned_role: 'FILMMAKER',
                         status: 'confirmed',
-                        notes: 'Ubicación: Av. Libertador 1234 | Contacto: Dr. Roberto Smith',
-                        assets: ['Sony FX3', 'Gimbal', 'Audio Kit', 'Luces LED'],
+                        notes: 'Ubicación: Hospital Novaclínica - Sector Santa Anita | Contacto: Dra. Jessica Rey Uro',
+                        assets: {
+                            equipment: ['Sony FX3', 'Lente 24-70mm', 'Trípode Sachtler', 'Kit Luces Aputure'],
+                            script_url: 'https://docs.google.com/document/d/1XyZ2Y7g...',
+                            materials_url: 'https://drive.google.com/drive/folders/1Y8Z...',
+                            description: 'Video de presentación para redes sociales sobre la infraestructura de la clínica.'
+                        },
                         priority: 'high'
                     },
                     {
-                        title: 'Rodaje: Reels FitLife Gym',
-                        client: 'FitLife Gym',
+                        title: 'Rodaje: Reels Promocionales Vito\'s',
+                        client: 'Vito\'s Pizza',
                         deadline: '2026-02-16', 
                         duration: '09:00 - 13:00',
                         assigned_role: 'FILMMAKER',
                         status: 'pending',
-                        notes: 'Ubicación: FitLife Center - Zona Norte | Contacto: Ana Pérez (Marketing)',
-                        assets: ['Sony FX3', 'Lente 16-35mm', 'Micrófono Corbatero'],
+                        notes: 'Ubicación: Vito\'s Pizza Local Centro | Contacto: Administración Vito\'s',
+                        assets: {
+                            equipment: ['Sony FX3', 'Lente 16-35mm', 'Gimbal DJI Ronin RS3', 'Micrófono Inalámbrico'],
+                            script_url: 'https://docs.google.com/document/d/1Z...',
+                            materials_url: 'https://drive.google.com/drive/folders/2A...',
+                            description: 'Producción de 3 reels cortos sobre la preparación de pizzas al horno de leña.'
+                        },
                         priority: 'medium'
+                    },
+                    {
+                        title: 'Rodaje: Campaña Campo Servicios Agropecuarios',
+                        client: 'Servicios Agropecurios Ecuador',
+                        deadline: '2026-02-18', 
+                        duration: '08:00 - 15:00',
+                        assigned_role: 'FILMMAKER',
+                        status: 'pending',
+                        notes: 'Ubicación: Finca Agropecuaria Santo Domingo | Contacto: Ing. Agropecuario',
+                        assets: {
+                            equipment: ['Sony FX3', 'Drone DJI Mavic 3 Pro', 'Lente 70-200mm', 'Filtros ND'],
+                            script_url: 'https://docs.google.com/document/d/3B...',
+                            materials_url: 'https://drive.google.com/drive/folders/3C...',
+                            description: 'Tomas de apoyo en exteriores y tomas con drone para campaña de posicionamiento.'
+                        },
+                        priority: 'high'
                     }
                 ];
                 
@@ -126,6 +191,7 @@ export default function FilmmakerCalendar() {
 
     const handleConfirm = async (id) => {
         try {
+            setAnimatingConfirmId(id);
             const { error } = await supabase
                 .from('tasks')
                 .update({ status: 'confirmed' })
@@ -133,10 +199,15 @@ export default function FilmmakerCalendar() {
                 
             if (error) throw error;
             
-            toast.success('¡Rodaje confirmado con éxito!');
-            setEvents(prev => prev.map(e => e.id === id ? { ...e, status: 'confirmed' } : e));
+            // Allow animation to play fully before updating state
+            setTimeout(() => {
+                setEvents(prev => prev.map(e => e.id === id ? { ...e, status: 'confirmed' } : e));
+                setAnimatingConfirmId(null);
+                toast.success('¡Rodaje confirmado, aceptado y en proceso!');
+            }, 1200);
         } catch (err) {
             console.error('[Calendar] Confirm error:', err);
+            setAnimatingConfirmId(null);
             toast.error('No se pudo confirmar el rodaje.');
         }
     };
@@ -169,29 +240,48 @@ export default function FilmmakerCalendar() {
             setReagendaStartTime('12:00');
             setReagendaEndTime('16:00');
         }
+
+        const assetsData = parseAssets(event.assets);
+        setReagendaDescription(assetsData.description);
+        setReagendaScriptUrl(assetsData.script_url);
+        setReagendaMaterialsUrl(assetsData.materials_url);
+
         setShowReagendaModal(true);
     };
 
     const saveReagenda = async () => {
         if (!reagendaDate || !reagendaStartTime || !reagendaEndTime) {
-            toast.error('Por favor completa todos los campos.');
+            toast.error('Por favor completa todos los campos de fecha y hora.');
             return;
         }
         
         try {
             const durationStr = `${reagendaStartTime} - ${reagendaEndTime}`;
+            const updatedAssets = {
+                equipment: selectedEvent.assets?.equipment || (Array.isArray(selectedEvent.assets) ? selectedEvent.assets : []),
+                script_url: reagendaScriptUrl,
+                materials_url: reagendaMaterialsUrl,
+                description: reagendaDescription
+            };
+
             const { error } = await supabase
                 .from('tasks')
                 .update({
                     deadline: reagendaDate,
-                    duration: durationStr
+                    duration: durationStr,
+                    assets: updatedAssets
                 })
                 .eq('id', selectedEvent.id);
                 
             if (error) throw error;
             
-            toast.success('Rodaje reagendado correctamente.');
-            setEvents(prev => prev.map(e => e.id === selectedEvent.id ? { ...e, deadline: reagendaDate, duration: durationStr } : e));
+            toast.success('Rodaje actualizado correctamente.');
+            setEvents(prev => prev.map(e => e.id === selectedEvent.id ? { 
+                ...e, 
+                deadline: reagendaDate, 
+                duration: durationStr,
+                assets: updatedAssets
+            } : e));
             setShowReagendaModal(false);
         } catch (err) {
             console.error('[Calendar] Reagenda error:', err);
@@ -270,35 +360,85 @@ export default function FilmmakerCalendar() {
                 ) : (
                     filteredEvents.map((event) => {
                         const { location, contact } = parseNotes(event.notes);
-                        const equipment = Array.isArray(event.assets) ? event.assets : [];
+                        const assetsData = parseAssets(event.assets);
+                        const equipment = assetsData.equipment;
+                        const description = assetsData.description;
+                        const script_url = assetsData.script_url;
+                        const materials_url = assetsData.materials_url;
                         const dayLabel = getRelativeDayName(event.deadline);
 
                         return (
                             <div 
                                 key={event.id} 
-                                className={`bg-[#0E0E18] border rounded-2xl overflow-hidden hover:border-cyan-500/30 transition-all group ${
+                                className={`bg-[#0E0E18] border rounded-2xl overflow-hidden hover:border-cyan-500/30 transition-all group relative ${
+                                    event.status === 'confirmed' ? 'border-emerald-500/20 shadow-lg shadow-emerald-950/10' :
                                     event.status === 'cancelled' ? 'opacity-65 border-red-500/10' : 'border-white/5'
                                 }`}
                             >
+                                {/* Top status colored bar */}
+                                {event.status === 'confirmed' && (
+                                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-400" />
+                                )}
+                                {event.status === 'pending' && (
+                                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 to-indigo-500 animate-pulse" />
+                                )}
+                                {event.status === 'cancelled' && (
+                                    <div className="absolute top-0 left-0 right-0 h-1 bg-red-500/20" />
+                                )}
+
+                                {/* Confirm Animation Overlay */}
+                                <AnimatePresence>
+                                    {animatingConfirmId === event.id && (
+                                        <motion.div 
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="absolute inset-0 bg-[#0E0E18]/90 backdrop-blur-md flex flex-col items-center justify-center z-30"
+                                        >
+                                            <motion.div
+                                                initial={{ scale: 0.5, rotate: -45 }}
+                                                animate={{ scale: [0.5, 1.2, 1], rotate: 0 }}
+                                                transition={{ duration: 0.5, ease: 'easeOut' }}
+                                                className="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 mb-3"
+                                            >
+                                                <CheckCircle className="w-8 h-8 fill-emerald-500/10" />
+                                            </motion.div>
+                                            <motion.p 
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.2 }}
+                                                className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400 animate-pulse"
+                                            >
+                                                ¡Aceptado y en Proceso!
+                                            </motion.p>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
                                 <div className="flex flex-col md:flex-row">
                                     {/* Date Column */}
-                                    <div className="w-full md:w-48 bg-white/5 p-6 flex flex-col justify-center items-center text-center border-b md:border-b-0 md:border-r border-white/5">
+                                    <div className="w-full md:w-48 bg-white/5 p-6 flex flex-col justify-center items-center text-center border-b md:border-b-0 md:border-r border-white/5 shrink-0">
                                         <span className="text-cyan-400 font-bold text-lg mb-1 capitalize">{dayLabel}</span>
                                         <span className="text-2xl font-black text-white">{event.duration ? event.duration.split(' - ')[0] : '--'}</span>
                                         <span className="text-xs text-gray-500 mt-1">{event.duration || 'Hora no definida'}</span>
                                     </div>
 
                                     {/* Details Column */}
-                                    <div className="flex-1 p-6">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <h3 className={`text-xl font-bold transition-colors ${
-                                                event.status === 'confirmed' ? 'text-emerald-400' : event.status === 'cancelled' ? 'text-red-400 line-through' : 'text-white group-hover:text-cyan-400'
-                                            }`}>
-                                                {event.title}
-                                            </h3>
+                                    <div className="flex-1 p-6 space-y-6">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className={`text-xl font-bold transition-colors ${
+                                                    event.status === 'confirmed' ? 'text-emerald-400' : event.status === 'cancelled' ? 'text-red-400 line-through' : 'text-white group-hover:text-cyan-400'
+                                                }`}>
+                                                    {event.title}
+                                                </h3>
+                                                <p className="text-[10px] text-gray-500 uppercase font-black tracking-wider">
+                                                    Cliente: <span className="text-gray-300">{event.client}</span>
+                                                </p>
+                                            </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="flex items-center gap-3 text-sm text-gray-300">
                                                 <MapPin className="w-4 h-4 text-cyan-400/80 shrink-0" />
                                                 <span className="truncate">{location}</span>
@@ -307,6 +447,44 @@ export default function FilmmakerCalendar() {
                                                 <User className="w-4 h-4 text-purple-400/80 shrink-0" />
                                                 <span className="truncate">Contacto: {contact}</span>
                                             </div>
+                                        </div>
+
+                                        {/* Detalle / Brief de la Producción */}
+                                        <div className="bg-[#0A0A0E]/60 rounded-xl p-4 border border-white/5 space-y-3">
+                                            <div>
+                                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                                    <FileText className="w-3.5 h-3.5 text-cyan-400" /> Detalle de Producción
+                                                </h4>
+                                                <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                                                    {description || 'No hay una descripción o briefing detallado para este rodaje.'}
+                                                </p>
+                                            </div>
+                                            
+                                            {/* Guión y Materiales Links */}
+                                            {(script_url || materials_url) && (
+                                                <div className="pt-3 border-t border-white/5 flex flex-wrap gap-3">
+                                                    {script_url && (
+                                                        <a 
+                                                            href={script_url} 
+                                                            target="_blank" 
+                                                            rel="noreferrer"
+                                                            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all text-[10px] font-black uppercase tracking-wider"
+                                                        >
+                                                            <FileText className="w-3.5 h-3.5" /> Ver Guión
+                                                        </a>
+                                                    )}
+                                                    {materials_url && (
+                                                        <a 
+                                                            href={materials_url} 
+                                                            target="_blank" 
+                                                            rel="noreferrer"
+                                                            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all text-[10px] font-black uppercase tracking-wider"
+                                                        >
+                                                            <CalendarIcon className="w-3.5 h-3.5" /> Materiales Adjuntos
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="bg-[#0A0A0E] rounded-xl p-4 border border-white/5">
@@ -391,7 +569,7 @@ export default function FilmmakerCalendar() {
                         >
                             <div className="flex justify-between items-center border-b border-white/5 pb-4">
                                 <h3 className="text-lg font-bold text-white uppercase tracking-tight flex items-center gap-2">
-                                    <RefreshCw className="w-4 h-4 text-cyan-400" /> Reagendar Rodaje
+                                    <RefreshCw className="w-4 h-4 text-cyan-400" /> Gestionar Rodaje
                                 </h3>
                                 <button 
                                     onClick={() => setShowReagendaModal(false)}
@@ -401,7 +579,7 @@ export default function FilmmakerCalendar() {
                                 </button>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Nueva Fecha</label>
                                     <input 
@@ -431,6 +609,38 @@ export default function FilmmakerCalendar() {
                                             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-500 outline-none font-mono"
                                         />
                                     </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Detalle / Descripción</label>
+                                    <textarea 
+                                        value={reagendaDescription}
+                                        onChange={(e) => setReagendaDescription(e.target.value)}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-cyan-500 outline-none min-h-[80px]"
+                                        placeholder="Descripción detallada de la producción..."
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Enlace al Guión (PDF/Drive)</label>
+                                    <input 
+                                        type="url"
+                                        value={reagendaScriptUrl}
+                                        onChange={(e) => setReagendaScriptUrl(e.target.value)}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-cyan-500 outline-none font-mono"
+                                        placeholder="https://docs.google.com/..."
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Enlace a Recursos / Materiales</label>
+                                    <input 
+                                        type="url"
+                                        value={reagendaMaterialsUrl}
+                                        onChange={(e) => setReagendaMaterialsUrl(e.target.value)}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-cyan-500 outline-none font-mono"
+                                        placeholder="https://drive.google.com/..."
+                                    />
                                 </div>
                             </div>
 
