@@ -60,30 +60,34 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                 {/* 2. Communication & Alert Cluster */}
                 <div className="flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/5">
                     {/* Calendar Button */}
-                    <TopBarButton 
-                        icon={<Calendar className="w-4 h-4" />} 
-                        label="Agenda" 
-                        isActive={isModalOpen && modalView === 'calendar'}
-                        onClick={() => openModal('calendar')}
-                        badge="2"
-                    />
+                    {role?.toLowerCase() !== 'filmmaker' && (
+                        <TopBarButton 
+                            icon={<Calendar className="w-4 h-4" />} 
+                            label="Agenda" 
+                            isActive={isModalOpen && modalView === 'calendar'}
+                            onClick={() => openModal('calendar')}
+                            badge="2"
+                        />
+                    )}
                     
                     {/* Messages Button */}
-                    <TopBarButton 
-                        icon={<MessageCircle className="w-4 h-4" />} 
-                        label="Mensajes" 
-                        isActive={isModalOpen && modalView === 'messages'}
-                        onClick={() => {
-                            const lowerRole = role?.toLowerCase() || '';
-                            if (lowerRole.includes('film') || lowerRole === 'filmmaker') {
-                                router.push('/workstation/filmmaker/messages');
-                            } else {
-                                openModal('messages');
-                            }
-                        }}
-                        badge="5"
-                        badgeColor="bg-indigo-500"
-                    />
+                    {role?.toLowerCase() !== 'filmmaker' && (
+                        <TopBarButton 
+                            icon={<MessageCircle className="w-4 h-4" />} 
+                            label="Mensajes" 
+                            isActive={isModalOpen && modalView === 'messages'}
+                            onClick={() => {
+                                const lowerRole = role?.toLowerCase() || '';
+                                if (lowerRole.includes('film') || lowerRole === 'filmmaker') {
+                                    router.push('/workstation/filmmaker/messages');
+                                } else {
+                                    openModal('messages');
+                                }
+                            }}
+                            badge="5"
+                            badgeColor="bg-indigo-500"
+                        />
+                    )}
 
                     {/* Notifications Button */}
                     <TopBarButton 

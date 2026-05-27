@@ -110,6 +110,19 @@ const getSocialLinkStyle = (url) => {
     };
 };
 
+const COLUMNS = [
+    { id: 'pre-pro', label: 'Pre-Pro', color: 'border-cyan-500', bg: 'bg-cyan-500/5' },
+    { id: 'shooting', label: 'En Rodaje', color: 'border-rose-500', bg: 'bg-rose-500/5' },
+    { id: 'post-pro', label: 'Edición', color: 'border-fuchsia-500', bg: 'bg-fuchsia-500/5' },
+    { id: 'review', label: 'Revisión', color: 'border-yellow-500', bg: 'bg-yellow-500/5' },
+    { id: 'done', label: 'Finalizado', color: 'border-lime-500', bg: 'bg-lime-500/5' }
+];
+
+const DAYS = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+
+const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+
 export default function FilmmakerCalendar() {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -117,6 +130,9 @@ export default function FilmmakerCalendar() {
     
     // Calendar Navigation State (defaults to Feb 2026 to match screenshot context, but dynamic)
     const [currentMonth, setCurrentMonth] = useState(new Date(2026, 1, 1)); 
+    const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+    const [dailyNotes, setDailyNotes] = useState({});
+    const [dailyTasks, setDailyTasks] = useState({});
     
     // Reagenda Modal State
     const [selectedEvent, setSelectedEvent] = useState(null);
@@ -136,6 +152,71 @@ export default function FilmmakerCalendar() {
     const [selectedClient, setSelectedClient] = useState(null);
     const [showClientModal, setShowClientModal] = useState(false);
     const [loadingClient, setLoadingClient] = useState(false);
+
+    // Load notes and tasks from localStorage on mount
+    useEffect(() => {
+        const storedNotes = localStorage.getItem('filmmaker_daily_notes');
+        if (storedNotes) {
+            try {
+                setDailyNotes(JSON.parse(storedNotes));
+            } catch (e) {
+                console.error('Error parsing daily notes:', e);
+            }
+        }
+        const storedTasks = localStorage.getItem('filmmaker_daily_tasks');
+        if (storedTasks) {
+            try {
+                setDailyTasks(JSON.parse(storedTasks));
+            } catch (e) {
+                console.error('Error parsing daily tasks:', e);
+            }
+        }
+    }, []);
+
+    const saveDailyNote = (dateStr, text) => {
+        const updated = {
+            ...dailyNotes,
+            [dateStr]: text
+        };
+        setDailyNotes(updated);
+        localStorage.setItem('filmmaker_daily_notes', JSON.stringify(updated));
+    };
+
+    const toggleDailyTask = (dateStr, taskIdx) => {
+        const dayTasks = dailyTasks[dateStr] || [];
+        const updatedDayTasks = dayTasks.map((t, idx) => 
+            idx === taskIdx ? { ...t, completed: !t.completed } : t
+        );
+        const updated = {
+            ...dailyTasks,
+            [dateStr]: updatedDayTasks
+        };
+        setDailyTasks(updated);
+        localStorage.setItem('filmmaker_daily_tasks', JSON.stringify(updated));
+    };
+
+    const addDailyTask = (dateStr, text) => {
+        if (!text.trim()) return;
+        const dayTasks = dailyTasks[dateStr] || [];
+        const updatedDayTasks = [...dayTasks, { text: text.trim(), completed: false }];
+        const updated = {
+            ...dailyTasks,
+            [dateStr]: updatedDayTasks
+        };
+        setDailyTasks(updated);
+        localStorage.setItem('filmmaker_daily_tasks', JSON.stringify(updated));
+    };
+
+    const removeDailyTask = (dateStr, taskIdx) => {
+        const dayTasks = dailyTasks[dateStr] || [];
+        const updatedDayTasks = dayTasks.filter((_, idx) => idx !== taskIdx);
+        const updated = {
+            ...dailyTasks,
+            [dateStr]: updatedDayTasks
+        };
+        setDailyTasks(updated);
+        localStorage.setItem('filmmaker_daily_tasks', JSON.stringify(updated));
+    };
 
     const fetchEvents = async () => {
         try {
@@ -566,208 +647,325 @@ export default function FilmmakerCalendar() {
             </header>
 
             {/* Content */}
-            <main className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                {filteredEvents.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-gray-500 bg-[#0E0E18] border border-white/5 rounded-2xl">
-                        <CalendarIcon className="w-12 h-12 text-gray-600 mb-4 opacity-40 animate-pulse" />
-                        <p className="text-sm font-bold uppercase tracking-wider text-gray-500">No hay rodajes agendados para este mes</p>
-                        <p className="text-xs text-gray-600 mt-1">Navega a otros meses para revisar tu agenda.</p>
+            <main className="flex-1 overflow-hidden relative">
+                <div className="h-full flex gap-6 p-8 overflow-hidden">
+                    {/* Calendar Grid Container (Left) */}
+                    <div className="flex-1 bg-gradient-to-br from-[#0E0E18]/90 to-[#050511] relative p-6 rounded-[2rem] border border-cyan-500/10 flex flex-col shadow-2xl overflow-hidden shadow-cyan-900/5">
+                        {/* Header Legend */}
+                        <div className="flex justify-end items-center mb-6 shrink-0">
+                            <div className="flex gap-2">
+                                {COLUMNS.map(col => {
+                                    const dotColor = col.id === 'pre-pro' ? 'bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.6)]' :
+                                                     col.id === 'shooting' ? 'bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.6)]' :
+                                                     col.id === 'post-pro' ? 'bg-fuchsia-400 shadow-[0_0_8px_rgba(232,121,249,0.6)]' :
+                                                     col.id === 'review' ? 'bg-yellow-400 shadow-[0_0_8px_rgba(234,179,8,0.6)]' :
+                                                     'bg-lime-400 shadow-[0_0_8px_rgba(132,204,22,0.6)]';
+                                    return (
+                                        <div key={col.id} className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase bg-white/5 text-gray-400 border border-white/5 flex items-center gap-1.5">
+                                            <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span> {col.label}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-7 gap-px bg-white/5 border border-white/5 rounded-2xl overflow-hidden flex-1" style={{ gridTemplateRows: 'auto repeat(6, 1fr)' }}>
+                            {DAYS.map(d => <div key={d} className="bg-black/40 py-2.5 text-center text-[10px] font-black text-gray-500 uppercase tracking-wider">{d}</div>)}
+                            {Array(getFirstDayOfMonth(currentMonth)).fill(null).map((_, i) => <div key={`blank-${i}`} className="bg-black/20 opacity-30 border border-white/[0.02]"></div>)}
+                            {Array.from({ length: getDaysInMonth(currentMonth) }, (_, i) => i + 1).map(day => {
+                                const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                const dayEvents = filteredEvents.filter(e => e.deadline === dateStr);
+                                const isToday = new Date().toDateString() === new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toDateString();
+                                const isSelected = selectedDay === day;
+
+                                return (
+                                    <div 
+                                        key={day} 
+                                        onClick={() => setSelectedDay(day)} 
+                                        className={`relative p-2 h-full cursor-pointer transition-all duration-200 flex flex-col justify-between ${
+                                            isSelected 
+                                            ? 'bg-cyan-500/10 border border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.25)] z-10' 
+                                            : isToday 
+                                                ? 'bg-indigo-500/20 border border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.25)]' 
+                                                : 'bg-black/40 hover:bg-white/5 border border-white/5 hover:border-cyan-500/20'
+                                        }`}
+                                    >
+                                        <span className={`text-[11px] font-black w-6 h-6 flex items-center justify-center rounded-full ${
+                                            isToday 
+                                            ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' 
+                                            : isSelected 
+                                                ? 'text-cyan-400 font-black' 
+                                                : 'text-gray-500'
+                                        }`}>{day}</span>
+                                        
+                                        <div className="space-y-1 mt-1 max-h-[50px] overflow-hidden">
+                                            {dayEvents.map(e => {
+                                                const colorClass = e.status === 'pre-pro' || e.status === 'confirmed' ? 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 shadow-[0_0_8px_rgba(6,182,212,0.2)] hover:bg-cyan-500/20' :
+                                                                   e.status === 'shooting' ? 'text-rose-400 bg-rose-500/10 border border-rose-500/30 shadow-[0_0_8px_rgba(244,63,94,0.2)] hover:bg-rose-500/20' :
+                                                                   e.status === 'post-pro' ? 'text-fuchsia-400 bg-fuchsia-500/10 border border-fuchsia-500/30 shadow-[0_0_8px_rgba(232,121,249,0.2)] hover:bg-fuchsia-500/20' :
+                                                                   e.status === 'review' ? 'text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 shadow-[0_0_8px_rgba(234,179,8,0.2)] hover:bg-yellow-500/20' :
+                                                                   e.status === 'cancelled' ? 'text-red-400 bg-red-500/10 border border-red-500/30 line-through opacity-60' :
+                                                                   'text-lime-400 bg-lime-500/10 border border-lime-500/30 shadow-[0_0_8px_rgba(132,204,22,0.2)] hover:bg-lime-500/20';
+                                                return (
+                                                    <div 
+                                                        key={e.id} 
+                                                        className={`text-[8px] font-black px-1.5 py-0.5 rounded border truncate transition-all ${colorClass}`}
+                                                        title={e.title}
+                                                    >
+                                                        {e.title.replace('Rodaje: ', '')}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {/* Trailing blank cells to complete the 42 day slots grid */}
+                            {Array(42 - getFirstDayOfMonth(currentMonth) - getDaysInMonth(currentMonth)).fill(null).map((_, i) => (
+                                <div key={`blank-trail-${i}`} className="bg-black/10 opacity-20 border border-white/[0.02]"></div>
+                            ))}
+                        </div>
                     </div>
-                ) : (
-                    filteredEvents.map((event) => {
-                        const { location, contact } = parseNotes(event.notes);
-                        const assetsData = parseAssets(event.assets);
-                        const equipment = assetsData.equipment;
-                        const description = assetsData.description;
-                        const script_url = assetsData.script_url;
-                        const materials_url = assetsData.materials_url;
-                        const dayLabel = getRelativeDayName(event.deadline);
 
-                        return (
-                            <div 
-                                key={event.id} 
-                                className={`bg-[#0E0E18] border rounded-2xl overflow-hidden hover:border-cyan-500/30 transition-all group relative ${
-                                    event.status === 'cancelled' ? 'opacity-65 border-red-500/10' : 'border-white/5'
-                                }`}
-                            >
-                                {/* Top status colored bar */}
-                                {event.status === 'confirmed' && (
-                                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-400" />
-                                )}
-                                {event.status === 'pending' && (
-                                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 to-indigo-500 animate-pulse" />
-                                )}
-                                {event.status === 'cancelled' && (
-                                    <div className="absolute top-0 left-0 right-0 h-1 bg-red-500/20" />
-                                )}
+                    {/* Side Notes & Day Details Panel (Right) */}
+                    <div className="w-80 bg-[#0E0E18]/80 border border-white/5 rounded-[2rem] p-6 flex flex-col gap-6 shadow-2xl relative overflow-hidden backdrop-blur-md shrink-0">
+                        {selectedDay ? (() => {
+                            const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+                            const dayEvents = filteredEvents.filter(e => e.deadline === dateStr);
+                            const formattedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDay).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
 
-                                {/* Confirm Animation Overlay */}
-                                <AnimatePresence>
-                                    {animatingConfirmId === event.id && (
-                                        <motion.div 
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            className="absolute inset-0 bg-[#0E0E18]/90 backdrop-blur-md flex flex-col items-center justify-center z-30"
-                                        >
-                                            <motion.div
-                                                initial={{ scale: 0.5, rotate: -45 }}
-                                                animate={{ scale: [0.5, 1.2, 1], rotate: 0 }}
-                                                transition={{ duration: 0.5, ease: 'easeOut' }}
-                                                className="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 mb-3"
-                                            >
-                                                <CheckCircle className="w-8 h-8 fill-emerald-500/10" />
-                                            </motion.div>
-                                            <motion.p 
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: 0.2 }}
-                                                className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400 animate-pulse"
-                                            >
-                                                ¡Aceptado y en Proceso!
-                                            </motion.p>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                <div className="flex flex-col md:flex-row">
-                                    {/* Date Column */}
-                                    <div className="w-full md:w-48 bg-white/5 p-6 flex flex-col justify-center items-center text-center border-b md:border-b-0 md:border-r border-white/5 shrink-0">
-                                        <span className="text-cyan-400 font-bold text-lg mb-1 capitalize">{dayLabel}</span>
-                                        <span className="text-2xl font-black text-white">{event.duration ? event.duration.split(' - ')[0] : '--'}</span>
-                                        <span className="text-xs text-gray-500 mt-1">{event.duration || 'Hora no definida'}</span>
+                            return (
+                                <>
+                                    {/* Panel Header */}
+                                    <div className="shrink-0">
+                                        <div className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.5)]" /> Agenda Diaria
+                                        </div>
+                                        <h3 className="text-md font-bold text-white capitalize leading-tight">{formattedDate}</h3>
                                     </div>
 
-                                    {/* Details Column */}
-                                    <div className="flex-1 p-6 space-y-6">
-                                        <div className="flex justify-between items-start">
-                                            <div className="space-y-1">
-                                                <h3 className={`text-xl font-bold transition-colors ${
-                                                    event.status === 'confirmed' ? 'text-emerald-400' : event.status === 'cancelled' ? 'text-red-400 line-through' : 'text-white group-hover:text-cyan-400'
-                                                }`}>
-                                                    {event.title}
-                                                </h3>
-                                                <button 
-                                                    onClick={() => openClientProfile(event.client)}
-                                                    className="text-[10px] text-gray-500 uppercase font-black tracking-wider hover:text-cyan-400 transition-colors flex items-center gap-1 cursor-pointer"
-                                                    title="Ver Perfil Estratégico del Cliente"
-                                                >
-                                                    Cliente: <span className="text-gray-300 underline decoration-dashed">{event.client}</span>
-                                                </button>
+                                    {/* Projects on this day */}
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-5 pr-1">
+                                        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Rodajes del Día ({dayEvents.length})</div>
+                                        {dayEvents.length > 0 ? (
+                                            dayEvents.map(event => {
+                                                const { location, contact } = parseNotes(event.notes);
+                                                const assetsData = parseAssets(event.assets);
+                                                const description = assetsData.description;
+                                                const materials_url = assetsData.materials_url;
+                                                const equipment = assetsData.equipment;
+
+                                                const colMatch = COLUMNS.find(c => c.id === event.status) || { label: event.status };
+                                                const badgeStyle = event.status === 'confirmed' || event.status === 'confirmed' ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10 shadow-[0_0_8px_rgba(6,182,212,0.2)]' :
+                                                                   event.status === 'shooting' ? 'border-rose-500/30 text-rose-400 bg-rose-500/10 shadow-[0_0_8px_rgba(244,63,94,0.2)]' :
+                                                                   event.status === 'post-pro' ? 'border-fuchsia-500/30 text-fuchsia-400 bg-fuchsia-500/10 shadow-[0_0_8px_rgba(232,121,249,0.2)]' :
+                                                                   event.status === 'review' ? 'border-yellow-500/30 text-yellow-400 bg-yellow-500/10 shadow-[0_0_8px_rgba(234,179,8,0.2)]' :
+                                                                   event.status === 'cancelled' ? 'border-red-500/30 text-red-400 bg-red-500/10' :
+                                                                   'border-lime-500/30 text-lime-400 bg-lime-500/10 shadow-[0_0_8px_rgba(132,204,22,0.2)]';
+                                                return (
+                                                    <div 
+                                                        key={event.id} 
+                                                        className="p-4 bg-[#11111d] border border-white/5 rounded-2xl hover:border-cyan-500/30 transition-all space-y-4 relative group"
+                                                    >
+                                                        {/* Confirm Animation Overlay */}
+                                                        <AnimatePresence>
+                                                            {animatingConfirmId === event.id && (
+                                                                <motion.div 
+                                                                    initial={{ opacity: 0 }}
+                                                                    animate={{ opacity: 1 }}
+                                                                    exit={{ opacity: 0 }}
+                                                                    className="absolute inset-0 bg-[#0E0E18]/90 backdrop-blur-md flex flex-col items-center justify-center z-30 rounded-2xl"
+                                                                >
+                                                                    <motion.div
+                                                                        initial={{ scale: 0.5, rotate: -45 }}
+                                                                        animate={{ scale: [0.5, 1.2, 1], rotate: 0 }}
+                                                                        transition={{ duration: 0.5, ease: 'easeOut' }}
+                                                                        className="w-10 h-10 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 mb-1.5"
+                                                                    >
+                                                                        <CheckCircle className="w-5 h-5 fill-emerald-500/10" />
+                                                                    </motion.div>
+                                                                    <motion.p 
+                                                                        initial={{ opacity: 0, y: 10 }}
+                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                        transition={{ delay: 0.2 }}
+                                                                        className="text-[8px] font-black uppercase tracking-[0.1em] text-emerald-400"
+                                                                    >
+                                                                        Confirmado
+                                                                    </motion.p>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+
+                                                        <div className="flex justify-between items-start">
+                                                            <span className="text-[9px] font-black uppercase text-cyan-400">{event.duration || 'Hora no definida'}</span>
+                                                            <span className={`text-[8px] font-black px-1.5 py-0.2 rounded border ${badgeStyle}`}>
+                                                                {colMatch.label}
+                                                            </span>
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors line-clamp-2">{event.title}</h4>
+                                                            <button 
+                                                                onClick={() => openClientProfile(event.client)}
+                                                                className="text-[9px] text-gray-500 uppercase font-black tracking-wider hover:text-cyan-400 transition-colors mt-1 block text-left underline decoration-dashed"
+                                                            >
+                                                                Socio: {event.client}
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Location & Contact Info */}
+                                                        <div className="text-[10px] text-gray-400 space-y-1 bg-black/30 p-2.5 rounded-xl border border-white/5">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <MapPin className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                                                                <span className="truncate">{location}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <User className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                                                                <span className="truncate">{contact}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Equipment and details */}
+                                                        {equipment.length > 0 && (
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {equipment.slice(0, 3).map((item, idx) => (
+                                                                    <span key={idx} className="px-1.5 py-0.5 bg-white/5 border border-white/5 rounded text-[8px] text-gray-400">{item}</span>
+                                                                ))}
+                                                                {equipment.length > 3 && (
+                                                                    <span className="px-1.5 py-0.5 bg-white/5 border border-white/5 rounded text-[8px] text-cyan-400 font-bold">+{equipment.length - 3}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Actions & Links inside Daily details */}
+                                                        <div className="pt-2 border-t border-white/5 flex flex-wrap gap-2">
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setSelectedScriptEvent(event);
+                                                                    setShowScriptModal(true);
+                                                                }}
+                                                                className="flex-1 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 text-[9px] font-black uppercase tracking-wider cursor-pointer text-center"
+                                                            >
+                                                                Guión
+                                                            </button>
+                                                            
+                                                            {event.status === 'pending' && (
+                                                                <button 
+                                                                    onClick={() => handleConfirm(event.id)}
+                                                                    className="flex-1 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer text-center"
+                                                                >
+                                                                    Aceptar
+                                                                </button>
+                                                            )}
+
+                                                            <button 
+                                                                onClick={() => openReagendaModal(event)}
+                                                                disabled={event.status === 'cancelled'}
+                                                                className="flex-1 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-pointer text-center disabled:opacity-40"
+                                                            >
+                                                                Reagendar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="text-xs text-gray-600 italic bg-white/[0.01] p-4 rounded-xl border border-dashed border-white/5 text-center">No hay producciones agendadas.</div>
+                                        )}
+
+                                        {/* Daily Notes (Google Calendar style) */}
+                                        <div className="pt-4 border-t border-white/5">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Notas de Producción</span>
+                                                <span className="text-[8px] text-cyan-400 font-mono">Autoguardado</span>
                                             </div>
+                                            <textarea
+                                                value={dailyNotes[dateStr] || ''}
+                                                onChange={(e) => saveDailyNote(dateStr, e.target.value)}
+                                                placeholder="Escribe notas operativas, recordatorios o detalles logísticos..."
+                                                className="w-full h-24 bg-black/40 border border-white/5 focus:border-cyan-500/40 rounded-xl p-3 text-xs text-gray-300 placeholder-gray-600 outline-none resize-none transition-all leading-relaxed"
+                                            />
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="flex items-center gap-3 text-sm text-gray-300">
-                                                <MapPin className="w-4 h-4 text-cyan-400/80 shrink-0" />
-                                                <span className="truncate">{location}</span>
-                                            </div>
-                                            <button 
-                                                onClick={() => openClientProfile(contact)}
-                                                className="flex items-center gap-3 text-sm text-gray-300 hover:text-cyan-400 transition-colors bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 hover:border-cyan-500/20 cursor-pointer text-left w-full"
-                                                title="Ver Perfil de Contacto"
-                                            >
-                                                <User className="w-4 h-4 text-purple-400 shrink-0" />
-                                                <span className="truncate">Contacto: {contact}</span>
-                                            </button>
-                                        </div>
-
-                                        {/* Detalle / Brief de la Producción */}
-                                        <div className="bg-[#0A0A0E]/60 rounded-xl p-4 border border-white/5 space-y-3">
-                                            <div>
-                                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                                                    <FileText className="w-3.5 h-3.5 text-cyan-400" /> Detalle de Producción
-                                                </h4>
-                                                <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                                                    {description || 'No hay una descripción o briefing detallado para este rodaje.'}
-                                                </p>
+                                        {/* Daily Tasks / Checklist */}
+                                        <div className="pt-4 border-t border-white/5 space-y-3">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tareas Logísticas</span>
+                                                <span className="text-[8px] text-indigo-400 font-mono">Autoguardado</span>
                                             </div>
                                             
-                                            {/* Guión y Materiales Links */}
-                                            <div className="pt-3 border-t border-white/5 flex flex-wrap gap-3">
+                                            {/* Task input */}
+                                            <form 
+                                                onSubmit={(e) => {
+                                                    e.preventDefault();
+                                                    const form = e.currentTarget;
+                                                    const input = form.elements.namedItem('newTask');
+                                                    if (input.value.trim()) {
+                                                        addDailyTask(dateStr, input.value.trim());
+                                                        input.value = '';
+                                                    }
+                                                }}
+                                                className="flex gap-2"
+                                            >
+                                                <input 
+                                                    type="text" 
+                                                    name="newTask"
+                                                    placeholder="Nueva tarea logistica..." 
+                                                    className="flex-1 bg-black/40 border border-white/5 focus:border-indigo-500/50 rounded-lg px-3 py-1.5 text-xs text-white outline-none placeholder-gray-600 transition-colors"
+                                                />
                                                 <button 
-                                                    onClick={() => {
-                                                        setSelectedScriptEvent(event);
-                                                        setShowScriptModal(true);
-                                                    }}
-                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all text-[10px] font-black uppercase tracking-wider cursor-pointer"
+                                                    type="submit"
+                                                    className="px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
                                                 >
-                                                    <FileText className="w-3.5 h-3.5" /> Ver Guión
+                                                    +
                                                 </button>
-                                                {materials_url && (
-                                                    <a 
-                                                        href={materials_url} 
-                                                        target="_blank" 
-                                                        rel="noreferrer"
-                                                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all text-[10px] font-black uppercase tracking-wider"
-                                                    >
-                                                        <CalendarIcon className="w-3.5 h-3.5" /> Materiales Adjuntos
-                                                    </a>
-                                                )}
-                                            </div>
-                                        </div>
+                                            </form>
 
-                                        <div className="bg-[#0A0A0E] rounded-xl p-4 border border-white/5">
-                                            <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
-                                                <Camera className="w-4 h-4 text-cyan-400" /> Equipo Requerido
-                                            </h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                {equipment.length > 0 ? (
-                                                    equipment.map((item, i) => (
-                                                        <span key={i} className="px-2.5 py-1 bg-white/5 border border-white/5 rounded-lg text-xs text-gray-300 font-medium">
-                                                            {item}
-                                                        </span>
+                                            {/* Task list */}
+                                            <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
+                                                {(dailyTasks[dateStr] || []).length > 0 ? (
+                                                    (dailyTasks[dateStr] || []).map((t, idx) => (
+                                                        <div 
+                                                            key={idx}
+                                                            className="flex items-center justify-between gap-2 p-2 bg-white/[0.02] border border-white/5 rounded-lg group/task"
+                                                        >
+                                                            <button
+                                                                onClick={() => toggleDailyTask(dateStr, idx)}
+                                                                className="flex items-center gap-2 text-left flex-1 cursor-pointer"
+                                                            >
+                                                                <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                                                                    t.completed ? 'bg-indigo-600 border-indigo-600' : 'border-gray-600 hover:border-indigo-500'
+                                                                }`}>
+                                                                    {t.completed && <CheckCircle className="w-2.5 h-2.5 text-white" />}
+                                                                </div>
+                                                                <span className={`text-[11px] transition-all ${t.completed ? 'text-gray-500 line-through opacity-55' : 'text-gray-300'}`}>
+                                                                    {t.text}
+                                                                </span>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => removeDailyTask(dateStr, idx)}
+                                                                className="opacity-0 group-hover/task:opacity-100 p-0.5 text-gray-500 hover:text-red-400 rounded transition-all cursor-pointer"
+                                                            >
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
                                                     ))
                                                 ) : (
-                                                    <span className="text-xs text-gray-600 font-bold uppercase">No especificado</span>
+                                                    <div className="text-[10px] text-gray-600 italic py-1">Sin tareas para hoy.</div>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Actions Column */}
-                                    <div className="w-full md:w-48 bg-[#0A0A0E] p-6 flex flex-col justify-center gap-3 border-t md:border-t-0 md:border-l border-white/5 shrink-0">
-                                        {event.status === 'confirmed' ? (
-                                            <div className="w-full py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
-                                                <CheckCircle className="w-4 h-4 fill-emerald-500/10" /> Confirmado
-                                            </div>
-                                        ) : event.status === 'cancelled' ? (
-                                            <div className="w-full py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
-                                                <XCircle className="w-4 h-4 fill-red-500/10" /> Cancelado
-                                            </div>
-                                        ) : (
-                                            <button 
-                                                onClick={() => handleConfirm(event.id)}
-                                                className="w-full py-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                                            >
-                                                <CheckCircle className="w-4 h-4" /> Confirmar
-                                            </button>
-                                        )}
-
-                                        <button 
-                                            onClick={() => openReagendaModal(event)}
-                                            disabled={event.status === 'cancelled'}
-                                            className={`w-full py-2 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer ${
-                                                event.status === 'cancelled' ? 'opacity-40 cursor-not-allowed' : ''
-                                            }`}
-                                        >
-                                            <RefreshCw className="w-4 h-4" /> Reagendar
-                                        </button>
-
-                                        {event.status !== 'cancelled' && (
-                                            <button 
-                                                onClick={() => handleCancel(event.id)}
-                                                className="w-full py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                                            >
-                                                <XCircle className="w-4 h-4" /> Cancelar
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                                </>
+                            );
+                        })() : (
+                            <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500">
+                                <CalendarIcon className="w-10 h-10 text-gray-600 mb-3 opacity-30 animate-pulse" />
+                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Selecciona un Día</p>
+                                <p className="text-[10px] text-gray-600 mt-1">Haz clic en cualquier celda para ver el itinerario y redactar notas.</p>
                             </div>
-                        );
-                    })
-                )}
+                        )}
+                    </div>
+                </div>
             </main>
 
             {/* Reagenda Modal */}
