@@ -14,16 +14,26 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
         password: '',
         full_name: '',
         brand: '',
+        country: '',
         city: '',
+        address: '',
         birth_date: '',
         confirmPassword: '',
         website: ''
     });
     const [loading, setLoading] = useState(false);
     const [isSpecialtyOpen, setIsSpecialtyOpen] = useState(false);
+    const [isCountryOpen, setIsCountryOpen] = useState(false);
     const [verificationSent, setVerificationSent] = useState(false);
     const [bypassActive, setBypassActive] = useState(false);
     const [isDev, setIsDev] = useState(false);
+
+    const countryOptions = [
+        "Ecuador", "Colombia", "México", "España", "Estados Unidos", 
+        "Perú", "Chile", "Argentina", "Venezuela", "Costa Rica", 
+        "Panamá", "República Dominicana", "Guatemala", "Honduras", 
+        "El Salvador", "Nicaragua", "Bolivia", "Paraguay", "Uruguay"
+    ];
 
     const specialtyOptions = [
         "Community Manager",
@@ -69,8 +79,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
 
 
     const handleGoogleConnect = async () => {
-        if (!formData.brand || !formData.city || !formData.birth_date || !formData.website) {
-            toast.error('Por favor, ingresa tu Marca/Especialidad, Ciudad, Fecha de Nacimiento y Sitio Web antes de continuar con Google.');
+        if (!formData.brand || !formData.country || !formData.city || !formData.address || !formData.birth_date || !formData.website) {
+            toast.error('Por favor, ingresa tu Marca/Especialidad, País, Ciudad, Dirección Exacta, Fecha de Nacimiento y Sitio Web antes de continuar con Google.');
             return;
         }
 
@@ -83,6 +93,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 name: formData.full_name || 'Usuario Google',
                 brand: formData.brand,
                 city: formData.city,
+                country: formData.country,
+                address: formData.address,
                 birth_date: formData.birth_date,
                 website: formData.website,
                 auth: { method: 'google', timestamp: new Date().toISOString() } 
@@ -96,6 +108,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 full_name: formData.full_name || '',
                 brand: formData.brand,
                 city: formData.city,
+                country: formData.country,
+                address: formData.address,
                 role: finalRole,
                 birth_date: formData.birth_date,
                 website: formData.website
@@ -108,8 +122,16 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
 
     const handleEmailRegister = async (e) => {
         e.preventDefault();
+        if (!formData.country) {
+            toast.error('Por favor, selecciona tu país.');
+            return;
+        }
         if (!formData.city) {
-            toast.error('Por favor, selecciona tu ciudad.');
+            toast.error('Por favor, ingresa tu ciudad.');
+            return;
+        }
+        if (!formData.address) {
+            toast.error('Por favor, ingresa tu dirección exacta.');
             return;
         }
         if (!formData.birth_date) {
@@ -131,6 +153,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 full_name: formData.full_name,
                 brand: formData.brand,
                 city: formData.city,
+                country: formData.country,
+                address: formData.address,
                 role: finalRole,
                 type: type,
                 birth_date: formData.birth_date,
@@ -141,6 +165,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 name: formData.full_name,
                 brand: formData.brand,
                 city: formData.city,
+                country: formData.country,
+                address: formData.address,
                 birth_date: formData.birth_date,
                 website: formData.website,
                 auth: { method: 'email', timestamp: new Date().toISOString() } 
@@ -302,18 +328,78 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                     </div>
                 </div>
 
-                {/* Field: Location (City & Country) */}
+                {/* Fields: Country & City (2-column layout) */}
+                <div className="grid grid-cols-2 gap-4">
+                    {/* Country Field (Custom Dropdown) */}
+                    <div className="space-y-1 text-left relative z-[103]">
+                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                            <Globe className="w-2.5 h-2.5" /> País
+                        </label>
+                        <div 
+                            onClick={() => setIsCountryOpen(!isCountryOpen)}
+                            className={`w-full bg-black/20 border ${isCountryOpen ? 'border-indigo-500' : 'border-white/5'} rounded-2xl p-4 text-xs text-white transition-all font-bold flex items-center justify-between cursor-pointer`}
+                        >
+                            <span className={formData.country ? 'text-white' : 'text-gray-700'}>
+                                {formData.country || "Seleccionar País"}
+                            </span>
+                            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isCountryOpen ? 'rotate-180' : ''}`} />
+                        </div>
+
+                        <AnimatePresence>
+                            {isCountryOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 5 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="absolute left-0 w-full bg-[#0A0A1F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-40 overflow-y-auto z-[104] backdrop-blur-3xl scrollbar-hide"
+                                >
+                                    {countryOptions.map((item) => (
+                                        <div 
+                                            key={item}
+                                            onClick={() => {
+                                                setFormData({...formData, country: item});
+                                                setIsCountryOpen(false);
+                                            }}
+                                            className="px-6 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all flex items-center justify-between"
+                                        >
+                                            {item}
+                                            {formData.country === item && <div className="w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(79,70,229,1)]" />}
+                                        </div>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* City Field (Text Input) */}
+                    <div className="space-y-1 text-left">
+                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                            <MapPin className="w-2.5 h-2.5" /> Ciudad
+                        </label>
+                        <input 
+                            required
+                            autoComplete="off"
+                            name={`diic_city_${Math.random()}`}
+                            placeholder="Tu Ciudad"
+                            value={formData.city}
+                            onChange={e => setFormData({...formData, city: e.target.value})}
+                            className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                        />
+                    </div>
+                </div>
+
+                {/* Field: Exact Address */}
                 <div className="space-y-1 text-left">
                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                        <MapPin className="w-2.5 h-2.5" /> Ubicación (Ciudad, País)
+                        <MapPin className="w-2.5 h-2.5 text-indigo-400" /> Dirección Exacta
                     </label>
                     <input 
                         required
                         autoComplete="off"
-                        name={`diic_location_${Math.random()}`}
-                        placeholder="Ej. Guayaquil, Ecuador o Madrid, España"
-                        value={formData.city}
-                        onChange={e => setFormData({...formData, city: e.target.value})}
+                        name={`diic_address_${Math.random()}`}
+                        placeholder="Calle Principal, Secundaria, Nro de Casa/Apto"
+                        value={formData.address}
+                        onChange={e => setFormData({...formData, address: e.target.value})}
                         className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
                     />
                 </div>
@@ -395,7 +481,7 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
 
                 <button
                     type="submit"
-                    disabled={loading || !formData.email || !formData.password || !formData.confirmPassword || !formData.full_name || !formData.city || !formData.birth_date || !formData.website || formData.password !== formData.confirmPassword}
+                    disabled={loading || !formData.email || !formData.password || !formData.confirmPassword || !formData.full_name || !formData.country || !formData.city || !formData.address || !formData.birth_date || !formData.website || formData.password !== formData.confirmPassword}
                     className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
                 >
                     {loading ? 'Sincronizando...' : 'Establecer Acceso Vitalicio'} <ArrowRight className="w-4 h-4" />

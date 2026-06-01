@@ -13,6 +13,8 @@ export const onboardingService = {
         const fullName = formData.name || user.user_metadata?.full_name || '';
         const brandName = formData.brand || user.user_metadata?.brand || 'Sin Marca';
         const city = formData.city || user.user_metadata?.city || 'Santo Domingo';
+        const country = formData.country || user.user_metadata?.country || 'Ecuador';
+        const address = formData.address || user.user_metadata?.address || '';
         const profileType = formData.type || 'client'; // creative or client
         const birthDate = formData.birth_date || user.user_metadata?.birth_date || null;
 
@@ -81,6 +83,8 @@ export const onboardingService = {
                             slug: brandSlug,
                             email: user.email,
                             city: city,
+                            country: country,
+                            address: address,
                             type: industryName,
                             industry: industryName,
                             specialty: formData.niche || 'General',
@@ -162,7 +166,10 @@ export const onboardingService = {
                     skills: formData.skills || [],
                     whatsapp: formData.whatsapp || '',
                     birth_date: birthDate,
-                    website: formData.website || user.user_metadata?.website || ''
+                    website: formData.website || user.user_metadata?.website || '',
+                    country: country,
+                    address: address,
+                    location: city
                 };
 
                 const { error: profileError } = await supabase
@@ -182,6 +189,8 @@ export const onboardingService = {
                         onboarding_completed: true,
                         brand: brandName,
                         city: city,
+                        country: country,
+                        address: address,
                         birth_date: birthDate,
                         profile_type: profileType,
                         industry: industryName,

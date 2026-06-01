@@ -39,6 +39,8 @@ export default function OnboardingWizard({ initialType = 'client' }) {
         auth: {},
         name: '',         
         city: '',         
+        country: '',
+        address: '',
         birth_date: '',
         legalAccepted: false,
         profileType: '',  
