@@ -40,7 +40,7 @@ export default function GodModeSettingsPage() {
                                     <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Acceso de Nivel 5</span>
                                 </div>
                                 <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full">
-                                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em]">GOD MODE</span>
+                                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em]">HQ CONTROL</span>
                                 </div>
                             </div>
                             <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic">Configuración del <span className="text-indigo-500">HUB</span></h1>
@@ -122,7 +122,7 @@ export default function GodModeSettingsPage() {
                         <section className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-10 border-amber-500/10 group/sec">
                             <h3 className="text-xs font-black text-amber-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]" />
-                                SEGURIDAD GOD MODE
+                                SEGURIDAD HQ CENTRAL
                             </h3>
                             
                             <div className="p-6 bg-amber-500/5 rounded-3xl border border-amber-500/10 mb-10 group-hover/sec:bg-amber-500/10 transition-colors">

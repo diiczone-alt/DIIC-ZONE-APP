@@ -13,7 +13,7 @@ export default function HQSidebar() {
     const pathname = usePathname();
 
     const menuItems = [
-        { icon: Layout, label: 'GOD MODE', href: '/dashboard/hq', color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
+        { icon: Layout, label: 'HQ CENTRAL', href: '/dashboard/hq', color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
         { icon: Users, label: 'Clientes', href: '/dashboard/hq/clients', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
         { icon: DollarSign, label: 'Finanzas', href: '/dashboard/hq/payments', color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
         { icon: Shield, label: 'Equipo', href: '/dashboard/hq/team', color: 'text-rose-400', bg: 'bg-rose-400/10' },

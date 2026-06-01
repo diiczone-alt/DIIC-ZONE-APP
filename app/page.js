@@ -289,7 +289,7 @@ export default function LandingPage() {
                         {/* Tabs Column */}
                         <div className="flex flex-row lg:flex-col justify-center lg:justify-start gap-4 flex-wrap lg:w-64 shrink-0">
                             {[
-                                { id: 'hq', label: 'God Mode (HQ)', desc: 'Control Central', color: 'border-indigo-500/30 text-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10' },
+                                { id: 'hq', label: 'Dirección Central (HQ)', desc: 'Control Central', color: 'border-indigo-500/30 text-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10' },
                                 { id: 'filmmaker', label: 'Filmmakers', desc: 'Control de Rodaje', color: 'border-red-500/30 text-red-400 bg-red-500/5 hover:bg-red-500/10' },
                                 { id: 'editor', label: 'Editores', desc: 'Cola de Render', color: 'border-purple-500/30 text-purple-400 bg-purple-500/5 hover:bg-purple-500/10' },
                                 { id: 'messages', label: 'Mensajería', desc: 'Chat & Aprobaciones', color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10' }
@@ -333,7 +333,7 @@ export default function LandingPage() {
                                         activeTab === 'filmmaker' ? 'bg-red-500' :
                                         activeTab === 'editor' ? 'bg-purple-500' : 'bg-emerald-500'
                                     } animate-pulse`} />
-                                    {activeTab === 'hq' && 'HQ_GOD_MODE.EXE'}
+                                    {activeTab === 'hq' && 'HQ_CENTRAL.EXE'}
                                     {activeTab === 'filmmaker' && 'FILMMAKER_SCHEDULER.EXE'}
                                     {activeTab === 'editor' && 'RENDER_PIPELINE.EXE'}
                                     {activeTab === 'messages' && 'COMMUNICATION_HUB.EXE'}

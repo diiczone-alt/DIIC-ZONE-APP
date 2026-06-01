@@ -206,16 +206,13 @@ export default function LoginPage() {
                                 ¿Sin cuenta? Crear Nueva Identidad
                             </button>
 
-                            {/* 🚀 God Mode Bypass Button */}
+                            {/* Únete como Talento Button */}
                             <button
                                 type="button"
-                                onClick={() => {
-                                    localStorage.setItem('diic_god_mode', 'true');
-                                    window.location.reload();
-                                }}
-                                className="text-[9px] text-indigo-500/30 hover:text-indigo-500 font-bold uppercase tracking-[0.3em] transition-all"
+                                onClick={() => router.push('/onboarding?type=creative')}
+                                className="text-[10px] text-gray-500 hover:text-indigo-400 font-bold uppercase tracking-widest transition-all"
                             >
-                                Entrar como Director (Modo Dios)
+                                Únete como Talento 🎥
                             </button>
                         </div>
                     </form>
