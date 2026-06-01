@@ -88,6 +88,7 @@ export const onboardingService = {
                             priority: 'MEDIUM',
                             plan: 'Basic',
                             birth_date: birthDate,
+                            website: formData.website || user.user_metadata?.website || '',
                             onboarding_data: formData 
                         }, { onConflict: 'id' })
                         .select()
@@ -160,7 +161,8 @@ export const onboardingService = {
                     cv_summary: formData.cv_summary || '',
                     skills: formData.skills || [],
                     whatsapp: formData.whatsapp || '',
-                    birth_date: birthDate
+                    birth_date: birthDate,
+                    website: formData.website || user.user_metadata?.website || ''
                 };
 
                 const { error: profileError } = await supabase
@@ -191,7 +193,8 @@ export const onboardingService = {
                         drive_data: formData.drive || formData.driveData || null,
                         social_links: formData.social || {},
                         primary_color: formData.colors?.primary || '#6366f1',
-                        secondary_color: formData.colors?.secondary || '#ec4899'
+                        secondary_color: formData.colors?.secondary || '#ec4899',
+                        website: formData.website || user.user_metadata?.website || ''
                     }
                 });
             } catch (authErr) {

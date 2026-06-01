@@ -16,10 +16,10 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
         brand: '',
         city: '',
         birth_date: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        website: ''
     });
     const [loading, setLoading] = useState(false);
-    const [isCityOpen, setIsCityOpen] = useState(false);
     const [isSpecialtyOpen, setIsSpecialtyOpen] = useState(false);
     const [verificationSent, setVerificationSent] = useState(false);
     const [bypassActive, setBypassActive] = useState(false);
@@ -66,16 +66,11 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
         }
     }, []);
 
-    const ecuadorCities = [
-        "Quito", "Guayaquil", "Cuenca", "Santo Domingo", "Machala", 
-        "Durán", "Portoviejo", "Loja", "Quevedo", "Ambato", 
-        "Milagro", "Ibarra", "Esmeraldas", "Babahoyo", "Manta", 
-        "Sangolquí", "Latacunga", "Tulcán", "Santa Elena", "La Libertad"
-    ].sort();
+
 
     const handleGoogleConnect = async () => {
-        if (!formData.brand || !formData.city || !formData.birth_date) {
-            toast.error('Por favor, ingresa tu Marca/Especialidad, Ciudad y Fecha de Nacimiento antes de continuar con Google.');
+        if (!formData.brand || !formData.city || !formData.birth_date || !formData.website) {
+            toast.error('Por favor, ingresa tu Marca/Especialidad, Ciudad, Fecha de Nacimiento y Sitio Web antes de continuar con Google.');
             return;
         }
 
@@ -89,6 +84,7 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 brand: formData.brand,
                 city: formData.city,
                 birth_date: formData.birth_date,
+                website: formData.website,
                 auth: { method: 'google', timestamp: new Date().toISOString() } 
             });
 
@@ -101,7 +97,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 brand: formData.brand,
                 city: formData.city,
                 role: finalRole,
-                birth_date: formData.birth_date
+                birth_date: formData.birth_date,
+                website: formData.website
             });
         } catch (err) {
             toast.error('Error al conectar con Google: ' + err.message);
@@ -119,6 +116,10 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
             toast.error('Por favor, ingresa tu fecha de nacimiento.');
             return;
         }
+        if (!formData.website) {
+            toast.error('Por favor, ingresa tu sitio web.');
+            return;
+        }
         setLoading(true);
         try {
             // Determinar role final: si es creative y eligió 'community', usar 'COMMUNITY'
@@ -132,7 +133,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 city: formData.city,
                 role: finalRole,
                 type: type,
-                birth_date: formData.birth_date
+                birth_date: formData.birth_date,
+                website: formData.website
             });
 
             updateData({ 
@@ -140,6 +142,7 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 brand: formData.brand,
                 city: formData.city,
                 birth_date: formData.birth_date,
+                website: formData.website,
                 auth: { method: 'email', timestamp: new Date().toISOString() } 
             });
 
@@ -299,45 +302,20 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                     </div>
                 </div>
 
-                {/* Field: City Dropdown */}
-                <div className="space-y-1 text-left relative z-[101]">
+                {/* Field: Location (City & Country) */}
+                <div className="space-y-1 text-left">
                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                        <MapPin className="w-2.5 h-2.5" /> Location
+                        <MapPin className="w-2.5 h-2.5" /> Ubicación (Ciudad, País)
                     </label>
-                    <div 
-                        onClick={() => setIsCityOpen(!isCityOpen)}
-                        className={`w-full bg-black/20 border ${isCityOpen ? 'border-indigo-500' : 'border-white/5'} rounded-2xl p-4 text-xs text-white transition-all font-bold flex items-center justify-between cursor-pointer`}
-                    >
-                        <span className={formData.city ? 'text-white' : 'text-gray-700'}>
-                            {formData.city || "Seleccionar Ciudad"}
-                        </span>
-                        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isCityOpen ? 'rotate-180' : ''}`} />
-                    </div>
-
-                    <AnimatePresence>
-                        {isCityOpen && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 5 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="absolute left-0 w-full bg-[#0A0A1F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-40 overflow-y-auto z-[102] backdrop-blur-3xl scrollbar-hide"
-                            >
-                                {ecuadorCities.map((item) => (
-                                    <div 
-                                        key={item}
-                                        onClick={() => {
-                                            setFormData({...formData, city: item});
-                                            setIsCityOpen(false);
-                                        }}
-                                        className="px-6 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all flex items-center justify-between"
-                                    >
-                                        {item}
-                                        {formData.city === item && <div className="w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(79,70,229,1)]" />}
-                                    </div>
-                                ))}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    <input 
+                        required
+                        autoComplete="off"
+                        name={`diic_location_${Math.random()}`}
+                        placeholder="Ej. Guayaquil, Ecuador o Madrid, España"
+                        value={formData.city}
+                        onChange={e => setFormData({...formData, city: e.target.value})}
+                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                    />
                 </div>
 
                 {/* Field: Birth Date */}
@@ -350,6 +328,22 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                         type="date"
                         value={formData.birth_date}
                         onChange={e => setFormData({...formData, birth_date: e.target.value})}
+                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                    />
+                </div>
+
+                {/* Field: Website */}
+                <div className="space-y-1 text-left">
+                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                        <Globe className="w-2.5 h-2.5 text-indigo-400" /> {isCreative ? 'Portafolio o Sitio Web' : 'Sitio Web'}
+                    </label>
+                    <input 
+                        required
+                        autoComplete="off"
+                        type="text"
+                        placeholder="https://diiczone.com"
+                        value={formData.website}
+                        onChange={e => setFormData({...formData, website: e.target.value})}
                         className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
                     />
                 </div>
@@ -401,7 +395,7 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
 
                 <button
                     type="submit"
-                    disabled={loading || !formData.email || !formData.password || !formData.confirmPassword || !formData.full_name || !formData.city || !formData.birth_date || formData.password !== formData.confirmPassword}
+                    disabled={loading || !formData.email || !formData.password || !formData.confirmPassword || !formData.full_name || !formData.city || !formData.birth_date || !formData.website || formData.password !== formData.confirmPassword}
                     className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
                 >
                     {loading ? 'Sincronizando...' : 'Establecer Acceso Vitalicio'} <ArrowRight className="w-4 h-4" />

@@ -52,7 +52,8 @@ export default function OnboardingWizard({ initialType = 'client' }) {
         social: {},       
         brandIdentity: {},
         driveData: null,
-        resources: []
+        resources: [],
+        website: ''
     });
     const [isHydrated, setIsHydrated] = useState(false);
     const { user, loading } = useAuth();
