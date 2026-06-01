@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, Wifi, Cpu, Globe, ArrowRight, Mail, Lock, User, Briefcase, MapPin, ChevronDown, Cake } from 'lucide-react';
+import { ShieldCheck, Wifi, Cpu, Globe, ArrowRight, Mail, Lock, User, Briefcase, MapPin, ChevronDown, Cake, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { driveService } from '@/services/driveService';
 import { toast } from 'sonner';
@@ -24,6 +24,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
     const [loading, setLoading] = useState(false);
     const [isSpecialtyOpen, setIsSpecialtyOpen] = useState(false);
     const [isCountryOpen, setIsCountryOpen] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [verificationSent, setVerificationSent] = useState(false);
     const [bypassActive, setBypassActive] = useState(false);
     const [isDev, setIsDev] = useState(false);
@@ -447,28 +449,47 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                         <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
                             <Lock className="w-2.5 h-2.5" /> Password
                         </label>
-                        <input 
-                            required
-                            autoComplete="new-password"
-                            name={`diic_pass_${Math.random()}`}
-                            placeholder="••••••••"
-                            value={formData.password}
-                            onChange={e => setFormData({...formData, password: e.target.value})}
-                            className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
-                        />
+                        <div className="relative">
+                            <input 
+                                required
+                                type={showPassword ? "text" : "password"}
+                                autoComplete="new-password"
+                                name={`diic_pass_${Math.random()}`}
+                                placeholder="••••••••"
+                                value={formData.password}
+                                onChange={e => setFormData({...formData, password: e.target.value})}
+                                className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 pr-12 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                            >
+                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                        </div>
                     </div>
                     <div className="space-y-1 text-left">
                         <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
                             <ShieldCheck className="w-2.5 h-2.5" /> Confirm
                         </label>
-                        <input 
-                            required
-                            type="password" 
-                            placeholder="••••••••"
-                            value={formData.confirmPassword}
-                            onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
-                            className={`w-full bg-black/20 border ${formData.confirmPassword && formData.password !== formData.confirmPassword ? 'border-red-500' : 'border-white/5'} rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700`}
-                        />
+                        <div className="relative">
+                            <input 
+                                required
+                                type={showConfirmPassword ? "text" : "password"}
+                                placeholder="••••••••"
+                                value={formData.confirmPassword}
+                                onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
+                                className={`w-full bg-black/20 border ${formData.confirmPassword && formData.password !== formData.confirmPassword ? 'border-red-500' : 'border-white/5'} rounded-2xl p-4 pr-12 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700`}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                            >
+                                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
