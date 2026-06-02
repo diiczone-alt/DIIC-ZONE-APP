@@ -4,6 +4,7 @@ import { ShieldCheck, Wifi, Cpu, Globe, ArrowRight, Mail, Lock, User, Briefcase,
 import { useAuth } from '@/context/AuthContext';
 import { driveService } from '@/services/driveService';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 export default function AuthStep({ onNext, updateData, type = 'client' }) {
     const { register, login, signInWithGoogle } = useAuth();
@@ -176,13 +177,37 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
 
             if (result.needsConfirmation) {
                 setVerificationSent(true);
-                toast.success('¡Casi listo! Protocolo de verificación enviado.');
+                toast.success('¡Casi listo! Enlace de confirmación enviado.', { duration: 3000 });
             } else {
-                toast.success('Protocolo de acceso generado.');
+                toast.success('Protocolo de acceso generado.', { duration: 2000 });
                 onNext();
             }
         } catch (err) {
-            toast.error('Error: ' + err.message);
+            toast.error('Error: ' + err.message, { duration: 3000 });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResendEmail = async () => {
+        setLoading(true);
+        try {
+            const { error } = await supabase.auth.resend({
+                type: 'signup',
+                email: formData.email,
+                options: {
+                    emailRedirectTo: typeof window !== 'undefined' 
+                        ? `${window.location.origin}/onboarding?type=${type}`
+                        : undefined
+                }
+            });
+            if (error) {
+                toast.error('Error al reenviar: ' + error.message, { duration: 3000 });
+            } else {
+                toast.success('Enlace de confirmación reenviado a tu correo.', { duration: 3000 });
+            }
+        } catch (err) {
+            toast.error('Error al reenviar: ' + err.message, { duration: 3000 });
         } finally {
             setLoading(false);
         }
@@ -195,16 +220,30 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
             if (loginError) {
                 const errMsg = loginError.message.toLowerCase();
                 if (errMsg.includes('confirm') || errMsg.includes('verify') || errMsg.includes('email_not_confirmed')) {
-                    toast.error('Por favor, confirma tu correo electrónico primero. Haz clic en el enlace enviado a tu correo.');
+                    toast.error('Por favor, confirma tu correo electrónico primero. Reenviando enlace...');
+                    try {
+                        await supabase.auth.resend({
+                            type: 'signup',
+                            email: formData.email,
+                            options: {
+                                emailRedirectTo: typeof window !== 'undefined' 
+                                    ? `${window.location.origin}/onboarding?type=${type}`
+                                    : undefined
+                            }
+                        });
+                        toast.success('Enlace de confirmación reenviado a tu correo. Revisa tu bandeja de entrada.', { duration: 3500 });
+                    } catch (resendErr) {
+                        console.error('[AuthStep] Failed to auto-resend verification email:', resendErr);
+                    }
                 } else {
-                    toast.error('Error de verificación: ' + loginError.message);
+                    toast.error('Error de verificación: ' + loginError.message, { duration: 3000 });
                 }
                 return;
             }
-            toast.success('¡Cuenta confirmada y activa!');
+            toast.success('¡Cuenta confirmada y activa!', { duration: 2000 });
             onNext();
         } catch (err) {
-            toast.error('Error al comprobar confirmación: ' + err.message);
+            toast.error('Error al comprobar confirmación: ' + err.message, { duration: 3000 });
         } finally {
             setLoading(false);
         }
@@ -254,13 +293,22 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                         </p>
                     </div>
 
-                    <div className="pt-4">
+                    <div className="pt-4 space-y-3">
                         <button
                             onClick={handleConfirmAndContinue}
                             disabled={loading}
                             className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {loading ? 'Verificando...' : 'Confirmar y Continuar'} <ArrowRight className="w-4 h-4" />
+                        </button>
+                        
+                        <button
+                            type="button"
+                            onClick={handleResendEmail}
+                            disabled={loading}
+                            className="w-full py-4 border border-white/5 hover:border-white/15 bg-white/[0.01] hover:bg-white/[0.04] text-gray-500 hover:text-white rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {loading ? 'Reenviando...' : '¿No recibiste el correo? Reenviar'}
                         </button>
                     </div>
 
