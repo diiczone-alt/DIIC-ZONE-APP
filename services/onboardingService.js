@@ -93,6 +93,7 @@ export const onboardingService = {
                             plan: 'Basic',
                             birth_date: birthDate,
                             website: formData.website || user.user_metadata?.website || '',
+                            goals: formData.goals || [],
                             onboarding_data: formData 
                         }, { onConflict: 'id' })
                         .select()
@@ -169,7 +170,8 @@ export const onboardingService = {
                     website: formData.website || user.user_metadata?.website || '',
                     country: country,
                     address: address,
-                    location: city
+                    location: city,
+                    goals: formData.goals || []
                 };
 
                 const { error: profileError } = await supabase
@@ -197,7 +199,8 @@ export const onboardingService = {
                         industry_slug: industrySlug,
                         client_slug: brandSlug,
                         crm_usage: formData.businessInfo?.usesCRM || false,
-                        goal: formData.goal || '',
+                        goals: formData.goals || [],
+                        goal: formData.goals?.[0] || formData.goal || '',
                         niche: formData.niche || '',
                         drive_data: formData.drive || formData.driveData || null,
                         social_links: formData.social || {},

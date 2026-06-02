@@ -304,7 +304,8 @@ export default function ClientStrategicProfile() {
             resolution: '4K',
             fps: 30
         },
-        insights: {} // Para guardar reportes de tráfico, fricción, etc.
+        insights: {}, // Para guardar reportes de tráfico, fricción, etc.
+        goals: []
     });
 
     const [syncCount, setSyncCount] = useState(0);
@@ -348,6 +349,7 @@ export default function ClientStrategicProfile() {
                         ...prev,
                         ...client,
                         brandName: client.name || client.brandName || prev.brandName || '',
+                        goals: client.goals || client.onboarding_data?.goals || prev.goals || [],
                         // Map strategic data from onboarding_data (or fallback to metadata for legacy)
                         ...(client.onboarding_data?.strategic || client.metadata?.strategic || {})
                     }));
@@ -984,6 +986,31 @@ export default function ClientStrategicProfile() {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Onboarding Goals */}
+                            {profile.goals && profile.goals.length > 0 && (
+                                <div className="mt-12 p-8 rounded-[2rem] bg-indigo-500/5 border border-indigo-500/10 space-y-4 text-left w-full">
+                                    <div className="flex items-center gap-3 text-indigo-400 font-black uppercase tracking-widest text-[10px]">
+                                        <TargetIcon className="w-5 h-5 text-indigo-500 animate-pulse" /> Objetivos de Onboarding
+                                    </div>
+                                    <div className="flex flex-wrap gap-3">
+                                        {profile.goals.map((gId) => {
+                                            const goalMap = {
+                                                clients: 'Conseguir más clientes',
+                                                sales: 'Vender más',
+                                                authority: 'Posicionarme como experto',
+                                                automate: 'Automatizar mi negocio',
+                                                scale: 'Escalar mi marca'
+                                            };
+                                            return (
+                                                <span key={gId} className="px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                                                    {goalMap[gId] || gId}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Production Strategy Section */}
                             <div className="pt-12 border-t border-white/5 space-y-12 text-left">
