@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
 import { aiService } from '@/services/aiService';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 // Helper to decode HTML entities from titles
 const decodeEntities = (text) => {
@@ -278,8 +279,13 @@ const RecordingFormatsModal = ({ isOpen, onClose, profile }) => {
 
 export default function ClientStrategicProfile() {
     const { user } = useAuth();
-    // Current client ID from auth context
-    const clientId = user?.client_id;
+    const [activeClientId, setActiveClientId] = useState(user?.client_id || null);
+
+    useEffect(() => {
+        if (user?.client_id) {
+            setActiveClientId(user.client_id);
+        }
+    }, [user?.client_id]);
 
     // Basic state for the profile
     const [profile, setProfile] = useState({
@@ -338,12 +344,31 @@ export default function ClientStrategicProfile() {
 
     useEffect(() => {
         const loadClient = async () => {
-            if (!clientId) {
-                console.log("Strategic Profile: No clientId found in user context.");
+            let currentClientId = activeClientId;
+            
+            // Fallback: Fetch directly from profiles if missing in user context
+            if (!currentClientId && user?.id) {
+                try {
+                    const { data: profileRow } = await supabase
+                        .from('profiles')
+                        .select('client_id')
+                        .eq('id', user.id)
+                        .single();
+                    if (profileRow?.client_id) {
+                        currentClientId = profileRow.client_id;
+                        setActiveClientId(currentClientId);
+                    }
+                } catch (e) {
+                    console.log("No client_id found in profile yet:", e);
+                }
+            }
+
+            if (!currentClientId) {
+                console.log("Strategic Profile: No activeClientId found yet.");
                 return;
             }
             try {
-                const client = await agencyService.getClientById(clientId);
+                const client = await agencyService.getClientById(currentClientId);
                 if (client) {
                     setProfile(prev => ({
                         ...prev,
@@ -362,7 +387,7 @@ export default function ClientStrategicProfile() {
             }
         };
         loadClient();
-    }, [clientId]);
+    }, [user?.id, activeClientId]);
 
     const handleChange = (field, value) => {
         setProfile(prev => ({ ...prev, [field]: value }));
@@ -396,14 +421,44 @@ export default function ClientStrategicProfile() {
 
     const handleConfirm = async (overrideProfile = null) => {
         const targetProfile = overrideProfile || profile;
+        let currentClientId = activeClientId;
 
-        if (!clientId) {
-            toast.error("Error: No se encontró la sesión del cliente.");
-            return;
-        }
-        
         setIsSaving(true);
         try {
+            // Auto-create client record if missing in profiles table
+            if (!currentClientId && user?.id) {
+                console.log("No client_id found. Auto-creating client record...");
+                const newClientRes = await agencyService.createClient({
+                    name: targetProfile.brandName || user?.user_metadata?.brand || user?.user_metadata?.full_name || 'Nuevo Cliente',
+                    email: user?.email || '',
+                    website: targetProfile.websiteUrl || '',
+                    goals: targetProfile.goals || []
+                });
+                
+                if (!newClientRes || !newClientRes.id) {
+                    throw new Error("No se pudo auto-crear el registro del cliente.");
+                }
+
+                currentClientId = newClientRes.id;
+                setActiveClientId(currentClientId);
+                
+                // Link it to the user profile
+                const { error: linkError } = await supabase
+                    .from('profiles')
+                    .update({ client_id: currentClientId })
+                    .eq('id', user.id);
+                
+                if (linkError) {
+                    throw new Error("Error al enlazar el cliente al perfil: " + linkError.message);
+                }
+            }
+
+            if (!currentClientId) {
+                toast.error("Error: No se encontró la sesión del cliente.");
+                setIsSaving(false);
+                return;
+            }
+
             // Strip out non-strategic keys to avoid large/circular payloads
             const { id, created_at, metadata, onboarding_data, editor, filmmaker, ...strategicData } = targetProfile;
 
@@ -426,7 +481,7 @@ export default function ClientStrategicProfile() {
             // con referencias circulares complejas (ej. Eventos de React) que escapen al safeOnboardingData.
             const ultraSafePayload = JSON.parse(JSON.stringify(updatePayload));
 
-            const updatePromise = agencyService.updateClient(clientId, ultraSafePayload);
+            const updatePromise = agencyService.updateClient(currentClientId, ultraSafePayload);
 
             // Esperamos que termine el guardado sin forzar un timeout artificial.
             // Si el servidor de Supabase está despertando (Cold Boot), puede tomar hasta 2 minutos.
