@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, Wifi, Cpu, Globe, ArrowRight, Mail, Lock, User, Briefcase, MapPin, ChevronDown, Cake, Eye, EyeOff } from 'lucide-react';
+import { ShieldCheck, Wifi, Cpu, Globe, ArrowRight, Mail, Lock, User, Briefcase, MapPin, ChevronDown, Cake, Eye, EyeOff, Calendar } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { driveService } from '@/services/driveService';
 import { toast } from 'sonner';
@@ -425,14 +425,14 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 {/* Field: Birth Date */}
                 <div className="space-y-1 text-left">
                     <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                        <Cake className="w-2.5 h-2.5 animate-pulse text-indigo-400" /> Fecha de Nacimiento
+                        <Calendar className="w-2.5 h-2.5 animate-pulse text-green-400" /> Fecha de Nacimiento
                     </label>
                     <input 
                         required
                         type="date"
                         value={formData.birth_date}
                         onChange={e => setFormData({...formData, birth_date: e.target.value})}
-                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700 neon-date-input"
                     />
                 </div>
 
