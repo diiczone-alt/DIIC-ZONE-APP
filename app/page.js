@@ -267,13 +267,6 @@ export default function LandingPage() {
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </Link>
                             </motion.div>
-                            
-                            <Link 
-                                href="/onboarding?type=creative"
-                                className="px-10 py-5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold text-lg backdrop-blur-md transition-all hover:border-white/20"
-                            >
-                                Únete como Talento 🎥
-                            </Link>
                         </div>
                     </motion.div>
                 </div>
@@ -447,7 +440,7 @@ export default function LandingPage() {
 
                             <Link href="/onboarding?type=creative">
                                 <button className="px-10 py-5 rounded-3xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-blue-500/20 transition-all hover:scale-105 flex items-center gap-3 mx-auto">
-                                    Aplicar para ser Nodo <Zap className="w-4 h-4 fill-white" />
+                                    Únete como Talento 🎥
                                 </button>
                             </Link>
                         </motion.div>
