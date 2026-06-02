@@ -284,7 +284,7 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                             className="group relative w-full mt-6 rounded-2xl p-[2px] overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 shadow-2xl shadow-emerald-500/20"
                         >
                             <div className="relative bg-[#0A0A12] hover:bg-transparent transition-colors rounded-[14px] py-4 px-6 flex items-center justify-center gap-3">
-                                <span className="text-white font-black text-xs uppercase tracking-[0.2em]">FORZAR ENTRADA AL DASHBOARD</span>
+                                <span className="text-white font-black text-xs uppercase tracking-[0.2em]">INICIAR DASHBOARD</span>
                                 <ArrowRight className="w-4 h-4 text-emerald-500 group-hover:text-white" />
                             </div>
                         </motion.button>
@@ -343,7 +343,7 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                         className="w-full py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-bold text-xl hover:scale-[1.02] transition-transform shadow-xl hover:shadow-indigo-500/20 flex flex-col items-center justify-center gap-1"
                     >
                         <div className="flex items-center gap-3">
-                            Entrar a mi Sistema
+                            Iniciar Dashboard
                             <ArrowRight className="w-6 h-6" />
                         </div>
                         <span className="text-[10px] font-mono text-white/50 uppercase tracking-widest">
