@@ -188,6 +188,28 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
         }
     };
 
+    const handleConfirmAndContinue = async () => {
+        setLoading(true);
+        try {
+            const { error: loginError } = await login(formData.email, formData.password);
+            if (loginError) {
+                const errMsg = loginError.message.toLowerCase();
+                if (errMsg.includes('confirm') || errMsg.includes('verify') || errMsg.includes('email_not_confirmed')) {
+                    toast.error('Por favor, confirma tu correo electrónico primero. Haz clic en el enlace enviado a tu correo.');
+                } else {
+                    toast.error('Error de verificación: ' + loginError.message);
+                }
+                return;
+            }
+            toast.success('¡Cuenta confirmada y activa!');
+            onNext();
+        } catch (err) {
+            toast.error('Error al comprobar confirmación: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="flex flex-col items-center justify-center min-h-[550px] text-center space-y-6 max-w-lg mx-auto relative group py-2">
             
@@ -234,10 +256,11 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
 
                     <div className="pt-4">
                         <button
-                            onClick={onNext}
-                            className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                            onClick={handleConfirmAndContinue}
+                            disabled={loading}
+                            className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            Confirmar y Continuar <ArrowRight className="w-4 h-4" />
+                            {loading ? 'Verificando...' : 'Confirmar y Continuar'} <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
 
