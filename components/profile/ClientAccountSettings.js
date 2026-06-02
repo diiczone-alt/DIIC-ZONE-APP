@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X, MapPin, Sparkles, Zap, Stethoscope, Network, Target, Globe, Calendar } from 'lucide-react';
+import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X, MapPin, Sparkles, Zap, Stethoscope, Network, Target, Globe, Calendar, HardDrive } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
 import { supabase } from '@/lib/supabase';
+import { driveService } from '@/services/driveService';
 import GrowthPricing from '../growth/GrowthPricing';
 import PremiumDropdown from '../shared/PremiumDropdown';
 import { motion } from 'framer-motion';
@@ -234,12 +235,26 @@ export default function ClientAccountSettings() {
                     address: profileData.address,
                     website: profileData.website,
                     goals: profileData.goals,
-                    brochure_url: profileData.brochure_url
+                    brochure_url: profileData.brochure_url,
+                    drive_root_link: profileData.drive_root_link,
+                    drive_root_id: profileData.drive_root_id
                 })
                 .eq('id', user.id);
             
             if (profileError) {
                 throw new Error("Failed to update profile: " + profileError.message);
+            }
+
+            // Sync to clients table
+            const { error: clientError } = await supabase
+                .from('clients')
+                .update({
+                    google_drive_folder_id: profileData.drive_root_id
+                })
+                .eq('id', targetClientId);
+            
+            if (clientError) {
+                console.warn("Client table sync warning:", clientError.message);
             }
 
             toast.success('Perfil y Hub de Datos sincronizados');
@@ -250,6 +265,81 @@ export default function ClientAccountSettings() {
             setIsLoading(false);
         }
     };
+
+    const handleConnectDrive = async () => {
+        try {
+            toast.loading('Iniciando conexión con Google...', { id: 'drive-connect' });
+            const currentPath = window.location.pathname;
+            localStorage.setItem('diic_waiting_oauth', 'true');
+            
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent',
+                    },
+                    redirectTo: window.location.origin + currentPath + '?tab=settings',
+                    scopes: 'https://www.googleapis.com/auth/drive.file'
+                }
+            });
+            if (error) throw error;
+        } catch (err) {
+            toast.error('Error al conectar Google: ' + err.message, { id: 'drive-connect' });
+        }
+    };
+
+    useEffect(() => {
+        const scanForToken = async () => {
+            try {
+                const hash = window.location.hash || window.location.search;
+                if (hash && (hash.includes('provider_token') || hash.includes('access_token'))) {
+                    const params = new URLSearchParams(hash.replace('#', '?'));
+                    const token = params.get('provider_token') || params.get('access_token');
+                    if (token) {
+                        toast.loading('Google Drive conectado. Configurando entorno en la nube...', { id: 'drive-setup' });
+                        window.history.replaceState(null, null, window.location.pathname + '?tab=settings');
+                        
+                        const brandName = profileData.brand_name || user?.user_metadata?.brand || 'Mi Marca';
+                        const driveResult = await driveService.automatedSetup(token, brandName);
+                        
+                        // Save in profiles table
+                        await supabase.from('profiles').update({
+                            drive_root_link: driveResult.rootLink,
+                            drive_root_id: driveResult.rootId
+                        }).eq('id', user.id);
+
+                        // If client_id is set, also save in clients table
+                        const { data: profile } = await supabase
+                            .from('profiles')
+                            .select('client_id')
+                            .eq('id', user.id)
+                            .single();
+                        
+                        if (profile?.client_id) {
+                            await supabase.from('clients').update({
+                                google_drive_folder_id: driveResult.rootId
+                            }).eq('id', profile.client_id);
+                        }
+
+                        setProfileData(prev => ({
+                            ...prev,
+                            drive_root_link: driveResult.rootLink,
+                            drive_root_id: driveResult.rootId
+                        }));
+
+                        toast.success('¡Ecosistema Google Drive creado y sincronizado!', { id: 'drive-setup' });
+                    }
+                }
+            } catch (err) {
+                console.error('Error during settings drive setup:', err);
+                toast.error('Error al configurar Drive: ' + err.message, { id: 'drive-setup' });
+            }
+        };
+        if (user && profileData.brand_name) {
+            scanForToken();
+        }
+    }, [user, profileData.brand_name]);
 
     const initials = (profileData.full_name || 'DU').substring(0, 2).toUpperCase();
 
@@ -478,9 +568,9 @@ export default function ClientAccountSettings() {
                                 />
                             </div>
 
-                            {profileData.drive_root_link && (
-                                <div className="md:col-span-2 space-y-2">
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Workspace Google Drive</label>
+                            <div className="md:col-span-2 space-y-3">
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Workspace Google Drive</label>
+                                {profileData.drive_root_link ? (
                                     <div className="flex gap-3">
                                         <div className="flex-1 relative group">
                                             <input
@@ -498,9 +588,61 @@ export default function ClientAccountSettings() {
                                         >
                                             <Globe className="w-4 h-4" /> Abrir Drive
                                         </a>
+                                        <button
+                                            onClick={() => {
+                                                if(confirm("¿Estás seguro de desvincular esta carpeta de Google Drive?")) {
+                                                    setProfileData(prev => ({ ...prev, drive_root_link: '', drive_root_id: '' }));
+                                                }
+                                            }}
+                                            className="px-4 py-3 bg-rose-900/40 hover:bg-rose-900/60 text-rose-300 text-xs font-bold rounded-xl border border-rose-500/20 transition-all active:scale-95 shrink-0"
+                                        >
+                                            Desvincular
+                                        </button>
                                     </div>
-                                </div>
-                            )}
+                                ) : (
+                                    <div className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl space-y-4">
+                                        <p className="text-xs text-gray-400">
+                                            No hay ninguna carpeta de Google Drive vinculada a tu cuenta. Puedes vincular una existente o conectar tu cuenta de Google para crear una estructura automática.
+                                        </p>
+                                        <div className="flex flex-col md:flex-row gap-4">
+                                            <button
+                                                onClick={handleConnectDrive}
+                                                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-xl uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
+                                            >
+                                                Crear Carpetas en Google Drive
+                                            </button>
+                                            <div className="flex-1 flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Pega el enlace de tu carpeta de Google Drive existente aquí..."
+                                                    className="flex-1 bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-indigo-500/50"
+                                                    id="existing-drive-link"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        const val = document.getElementById('existing-drive-link')?.value;
+                                                        if (!val) {
+                                                            toast.error("Por favor ingresa un enlace válido");
+                                                            return;
+                                                        }
+                                                        const match = val.match(/\/folders\/([a-zA-Z0-9-_]+)/) || val.match(/\/open\?id=([a-zA-Z0-9-_]+)/);
+                                                        if (match) {
+                                                            const id = match[1];
+                                                            setProfileData(prev => ({ ...prev, drive_root_link: val, drive_root_id: id }));
+                                                            toast.success("¡Carpeta Google Drive vinculada temporalmente! Guarda los cambios para persistirla.");
+                                                        } else {
+                                                            toast.error("No se pudo extraer el ID de la carpeta. Verifica que el enlace sea correcto.");
+                                                        }
+                                                    }}
+                                                    className="px-4 py-3 bg-white/5 hover:bg-white/10 text-white text-xs font-bold rounded-xl border border-white/10 transition-colors uppercase tracking-wider shrink-0"
+                                                >
+                                                    Vincular
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Business Goals */}

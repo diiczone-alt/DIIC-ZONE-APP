@@ -54,9 +54,9 @@ export async function POST(req) {
                 ¿De dónde vienen sus clientes? (LinkedIn Ads, Google Search, Referidos, etc). Sé específico.`;
                 break;
             case 'refine':
-                tacticalPrompt = `INVESTIGA Y DETECTA INFORMACIÓN REAL PARA EL CAMPO "${field}" DE LA MARCA "${brandName}" BASÁNDOTE EN: ${url}. 
-                Si ya existe este texto: "${currentText}", mejóralo con datos encontrados en la web. 
-                Sé extremadamente conciso (máximo 3-4 líneas). No uses introducciones tipo "Aquí tienes...".`;
+                tacticalPrompt = `INVESTIGA EXHAUSTIVAMENTE EN LA WEB (incluyendo redes sociales como Instagram, Facebook, LinkedIn y listados locales) información real sobre la marca "${brandName}" (basándote en ${url}) para el campo "${field}".
+                Si ya existe este texto: "${currentText}", mejóralo y compleméntalo con los nuevos datos reales encontrados.
+                Sé extremadamente conciso (máximo 3-4 líneas). No inventes datos y no uses introducciones tipo "Aquí tienes...".`;
                 break;
             case 'persuade':
                 tacticalPrompt = `TOMA ESTE TEXTO ESTRATÉGICO: "${currentText}" (del campo ${field}) PARA LA MARCA "${brandName}" Y REESCRÍBELO USANDO SESGOS COGNITIVOS Y COPYWRITING DE ALTA CONVERSIÓN. 
@@ -64,11 +64,36 @@ export async function POST(req) {
                 Mantenlo corto, impactante e impulsado por resultados.`;
                 break;
             default:
-                tacticalPrompt = `Responde a la siguiente consulta estratégica de manera ESTRICTA sobre el ecosistema en la URL exacta: ${url}. ${ignoreNameNote}
-                REGLA DE ORO: NO confundas la marca con empresas homónimas (con el mismo nombre o similar) en otros países o rubros. Asegúrate de que la información que utilizas pertenece EXACTAMENTE al perfil proporcionado y no a otra academia o empresa aleatoria.
+                const brandContext = context || {};
+                const nameToSearch = brandContext.brandName || brandName || '';
+                const locationToSearch = brandContext.location || '';
+                const industryToSearch = brandContext.industry || '';
+                
+                tacticalPrompt = `Eres un Estratega Digital y Consultor de Negocios de Élite. Tu objetivo es realizar una investigación exhaustiva y sumamente profesional sobre la marca "${nameToSearch}" ${locationToSearch ? `ubicada en ${locationToSearch}` : ''}.
+                
+                Para responder a la consulta del usuario, NO te limites únicamente a analizar la URL principal (${url}). Debes buscar activamente y cruzar información en:
+                1. Redes sociales principales (Facebook, Instagram, LinkedIn, TikTok, YouTube).
+                2. Canales locales y directorios (Google Maps, listados locales de ${locationToSearch || 'su región'}).
+                3. Noticias, comunicados de prensa y cualquier otra mención en la web.
+                
                 Consulta del usuario: "${query || 'Análisis general'}"
-                Contexto actual de la plataforma: ${JSON.stringify(context || {})}. 
-                Sé honesto, usa datos reales de búsqueda y si la info pertenece a otro país u otra empresa, corrígete.`;
+                
+                Contexto estratégico actual de la marca:
+                - Nombre de marca: ${nameToSearch}
+                - Sitio Web/Red principal: ${url}
+                - Redes registradas: Instagram: ${brandContext.instagramUrl || 'No registrada'}, Web: ${brandContext.websiteUrl || 'No registrada'}
+                - Ubicación: ${locationToSearch || 'No especificada'}
+                - Sector: ${industryToSearch || 'No especificado'}
+                - Líderes/Fundadores: ${brandContext.leadership || 'No especificado'}
+                - Qué hace: ${brandContext.whatItDoes || 'No especificado'}
+                - Qué ofrece: ${brandContext.whatItOffers || 'No especificado'}
+                - Propuesta de valor: ${brandContext.valueProp || 'No especificado'}
+                - Tono: ${brandContext.tone || 'Profesional'}
+                
+                REGLA DE ORO DE SEGURIDAD Y PRECISIÓN:
+                - Asegúrate de buscar información que pertenezca a la marca real en su ubicación geográfica (${locationToSearch || 'local'}). 
+                - Si encuentras marcas homónimas (mismo nombre en otros países, ciudades o industrias), descártalas inmediatamente para evitar mezclar información.
+                - Entrega tu respuesta con una presentación sumamente profesional, clara y estructurada, similar al estilo analítico y elegante de Claude. Usa formato Markdown bien estructurado, negritas estratégicas y listas si es necesario.`;
         }
 
         let result;

@@ -871,10 +871,16 @@ export default function ClientStrategicProfile() {
             // Using the insight route with mode='chat'
             // Streamlined context to prevent API errors
             const profileContext = {
+                brandName: profile.brandName,
+                websiteUrl: profile.websiteUrl,
+                instagramUrl: profile.instagramUrl,
+                location: profile.city || profile.location || '',
+                industry: profile.industry || '',
                 leadership: profile.leadership,
                 whatItDoes: profile.whatItDoes,
                 whatItOffers: profile.whatItOffers,
-                valueProp: profile.valueProp
+                valueProp: profile.valueProp,
+                tone: profile.tone
             };
 
             const response = await fetch('/api/ai/insight', {

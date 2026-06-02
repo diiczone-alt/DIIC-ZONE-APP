@@ -11,31 +11,44 @@ export async function POST(req) {
             return NextResponse.json({ error: "AI Key missing" }, { status: 500 });
         }
 
+        const strategic = context.onboarding_data?.strategic || {};
+        const brandName = strategic.brandName || context.name;
+        const industry = strategic.industry || context.industry || 'General';
+        const whatItDoes = strategic.whatItDoes || '';
+        const whatItOffers = strategic.whatItOffers || '';
+        const problemSolved = strategic.problemSolved || '';
+        const valueProp = strategic.valueProp || '';
+        const tone = strategic.tone || 'Profesional, cercano y sofisticado';
+
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-flash",
             systemInstruction: `
                 Eres un experto en Ventas y atención al cliente de DIIC ZONE.
-                Tu objetivo es generar una respuesta persuasiva, profesional y empática para un paciente/lead.
+                Tu objetivo es generar una respuesta persuasiva, profesional y empática para un paciente o lead.
                 
-                CONTEXTO DE LA MARCA:
-                - Nombre: ${context.name}
-                - Industria/Especialidad: ${context.industry || 'Medicina Estética'}
-                - Tono: Sofisticado, médico, cercano y profesional.
+                CONTEXTO ESTRATÉGICO DE LA MARCA (DATOS REALES):
+                - Nombre de la Marca: ${brandName}
+                - Industria/Nicho: ${industry}
+                - ¿Qué hace?: ${whatItDoes}
+                - ¿Qué ofrece?: ${whatItOffers}
+                - Dolor que resuelve: ${problemSolved}
+                - Propuesta de Valor (USP): ${valueProp}
+                - Tono de Comunicación: ${tone}
                 
-                DATOS DEL PACIENTE:
+                DATOS DEL RECEPTOR:
                 - Nombre: ${lead.full_name}
-                - Interés: ${lead.industry || 'Consulta general'}
+                - Interés registrado: ${lead.industry || 'Consulta o asesoría'}
                 - Origen: ${lead.source || 'Social Media'}
                 
                 MENSAJE RECIBIDO (Si hay uno):
-                "${lastMessage}"
+                "${lastMessage || ''}"
 
-                INSTRUCCIONES:
-                1. Genera una respuesta corta (máximo 3 párrafos).
-                2. Usa el nombre del paciente para personalizar.
-                3. Menciona la especialidad de la marca: ${context.industry}.
-                4. Incluye un llamado a la acción (CTA) para agendar una cita o pedir más info.
-                5. El tono debe ser de autoridad pero sumamente amable.
+                INSTRUCCIONES DE RESPUESTA:
+                1. Genera una respuesta corta, coherente y altamente persuasiva (máximo 3 párrafos).
+                2. Adapta la comunicación exactamente al tono definido por la marca (${tone}).
+                3. Usa la propuesta de valor (${valueProp}) y los servicios reales (${whatItOffers}) para sonar sumamente profesional. NO inventes servicios que no estén explícitamente citados en la información de arriba.
+                4. Usa el nombre de la persona para personalizar el trato.
+                5. Agrega una llamada a la acción (CTA) natural enfocada en agendar o avanzar con su interés.
                 6. Solo devuelve el texto de la respuesta, nada más.
             `
         });

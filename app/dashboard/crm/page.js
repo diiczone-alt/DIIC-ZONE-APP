@@ -11,7 +11,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { X, ChevronDown, Check, Send, Clock, Activity, FileText, ClipboardList } from 'lucide-react';
+import { X, ChevronDown, Check, Send, Clock, Activity, FileText, ClipboardList, Heart, Network } from 'lucide-react';
 import { MEDICAL_PROTOCOLS, getUrologyTags } from '@/services/medicalInstructions';
 import PipelineBoard from '@/components/crm/PipelineBoard';
 import UnifiedInbox from '@/components/crm/UnifiedInbox';
@@ -76,6 +76,7 @@ export default function CRMPage() {
     const [loading, setLoading] = useState(true);
     const [selectedLead, setSelectedLead] = useState(null);
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+    const [isStrategicDrawerOpen, setIsStrategicDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('reales'); // 'reales' | 'recientes'
     const [newLead, setNewLead] = useState({
@@ -106,7 +107,7 @@ export default function CRMPage() {
 
             const { data: clientData } = await supabase
                 .from('clients')
-                .select('id, name, city, growth_level, industry, niche, price');
+                .select('id, name, city, growth_level, industry, niche, price, onboarding_data');
             
             // If Client, filter the selector data too
             setClients(isStaff ? (clientData || []) : (clientData?.filter(c => c.id === targetId) || []));
@@ -398,6 +399,14 @@ const handleCreateLead = async (e) => {
                                 className="bg-[#0A0A12] border border-white/5 focus:border-indigo-500/40 rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold outline-none text-white w-48 transition-all placeholder:text-gray-600 focus:w-60 focus:shadow-[0_0_20px_rgba(99,102,241,0.05)]" 
                             />
                         </div>
+                        {activeClient && (
+                            <button 
+                                onClick={() => setIsStrategicDrawerOpen(true)}
+                                className="bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95"
+                            >
+                                <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" /> Inteligencia de Marca
+                            </button>
+                        )}
                         <button 
                             onClick={() => setIsRegisterModalOpen(true)}
                             className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-md shadow-indigo-600/10 active:scale-95"
@@ -640,6 +649,78 @@ const handleCreateLead = async (e) => {
                         </div>
                     )}
                 </motion.div>
+            </AnimatePresence>
+
+            {/* Brand Intelligence Side Panel */}
+            <AnimatePresence>
+                {isStrategicDrawerOpen && activeClient && (
+                    <motion.div 
+                        initial={{ opacity: 0, x: 100 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 100 }}
+                        className="fixed top-0 right-0 w-[500px] h-screen bg-[#070712]/95 backdrop-blur-xl border-l border-white/10 shadow-3xl z-50 p-10 space-y-8 overflow-y-auto custom-scrollbar"
+                    >
+                        <button onClick={() => setIsStrategicDrawerOpen(false)} className="absolute top-6 left-[-20px] w-10 h-10 bg-white text-black rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-all z-50">
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        <div className="space-y-2 border-b border-white/5 pb-6">
+                            <div className="flex items-center gap-3">
+                                <span className="px-2.5 py-0.5 bg-indigo-500/10 border border-indigo-500/25 rounded-md text-[8px] font-black uppercase tracking-widest text-indigo-400">
+                                    DIIC BRAND INTELLIGENCE
+                                </span>
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            </div>
+                            <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">
+                                {activeClient.name}
+                            </h2>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.25em]">
+                                Perfil Estratégico Sincronizado
+                            </p>
+                        </div>
+
+                        <div className="space-y-6 text-left">
+                            {/* Niche & Location */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1">
+                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Nicho de Mercado</span>
+                                    <p className="text-xs font-bold text-white uppercase">{activeClient.onboarding_data?.strategic?.niche || activeClient.industry || 'No definido'}</p>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1">
+                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Ubicación</span>
+                                    <p className="text-xs font-bold text-white uppercase">{activeClient.city || 'No registrada'}</p>
+                                </div>
+                            </div>
+
+                            {/* Core Fields */}
+                            {[
+                                { label: '¿Qué hace?', key: 'whatItDoes', icon: Network },
+                                { label: '¿Qué ofrece?', key: 'whatItOffers', icon: Zap },
+                                { label: 'Público Objetivo', key: 'targetAudience', icon: Users },
+                                { label: 'Problema que Resuelve', key: 'problemSolved', icon: Search },
+                                { label: 'Propuesta de Valor (USP)', key: 'valueProp', icon: Target },
+                                { label: 'Tono de Comunicación', key: 'tone', icon: Heart }
+                            ].map((f, idx) => {
+                                const val = activeClient.onboarding_data?.strategic?.[f.key] || 'Información no indexada.';
+                                return (
+                                    <div key={idx} className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2 hover:border-indigo-500/20 transition-all">
+                                        <div className="flex items-center gap-2 text-indigo-400">
+                                            <f.icon className="w-4 h-4" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider">{f.label}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-300 font-medium leading-relaxed text-left">
+                                            {val}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="pt-6 border-t border-white/5 flex flex-col items-center gap-2 opacity-35">
+                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">DIIC ZONE CORE ENGINE</span>
+                        </div>
+                    </motion.div>
+                )}
             </AnimatePresence>
 
             {/* Side Panel for Detail */}
