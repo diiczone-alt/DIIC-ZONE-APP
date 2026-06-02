@@ -25,6 +25,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
     const [loading, setLoading] = useState(false);
     const [isSpecialtyOpen, setIsSpecialtyOpen] = useState(false);
     const [isCountryOpen, setIsCountryOpen] = useState(false);
+    const [isCityOpen, setIsCityOpen] = useState(false);
+    const [customCityActive, setCustomCityActive] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [verificationSent, setVerificationSent] = useState(false);
@@ -37,6 +39,28 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
         "Panamá", "República Dominicana", "Guatemala", "Honduras", 
         "El Salvador", "Nicaragua", "Bolivia", "Paraguay", "Uruguay"
     ];
+
+    const citiesByCountry = {
+        "Ecuador": ["Quito", "Guayaquil", "Cuenca", "Santo Domingo", "Ambato", "Portoviejo", "Manta", "Loja", "Machala", "Salinas", "Ibarra", "Riobamba", "Esmeraldas"],
+        "Colombia": ["Bogotá", "Medellín", "Cali", "Barranquilla", "Cartagena", "Bucaramanga", "Pereira", "Santa Marta", "Manizales", "Cúcuta"],
+        "México": ["Ciudad de México", "Guadalajara", "Monterrey", "Puebla", "Tijuana", "Mérida", "Cancún", "Querétaro", "León", "Oaxaca"],
+        "España": ["Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza", "Málaga", "Murcia", "Palma de Mallorca", "Las Palmas", "Bilbao"],
+        "Estados Unidos": ["New York", "Miami", "Los Angeles", "Chicago", "Houston", "Orlando", "San Francisco", "Austin", "Boston", "Seattle"],
+        "Perú": ["Lima", "Arequipa", "Trujillo", "Chiclayo", "Piura", "Cusco", "Huancayo", "Tacna"],
+        "Chile": ["Santiago", "Valparaíso", "Concepción", "Viña del Mar", "Antofagasta", "La Serena", "Temuco"],
+        "Argentina": ["Buenos Aires", "Córdoba", "Rosario", "Mendoza", "La Plata", "San Miguel de Tucumán", "Mar del Plata"],
+        "Venezuela": ["Caracas", "Maracaibo", "Valencia", "Barquisimeto", "Maracay", "San Cristóbal"],
+        "Costa Rica": ["San José", "Alajuela", "Cartago", "Heredia", "Puntarenas", "Limón"],
+        "Panamá": ["Ciudad de Panamá", "David", "Colón", "Santiago de Veraguas", "Chitré"],
+        "República Dominicana": ["Santo Domingo", "Santiago de los Caballeros", "La Romana", "San Pedro de Macorís", "Punta Cana"],
+        "Guatemala": ["Ciudad de Guatemala", "Quetzaltenango", "Escuintla", "Antigua Guatemala"],
+        "Honduras": ["Tegucigalpa", "San Pedro Sula", "La Ceiba", "Choloma"],
+        "El Salvador": ["San Salvador", "Santa Ana", "San Miguel", "Santa Tecla"],
+        "Nicaragua": ["Managua", "León", "Masaya", "Granada"],
+        "Bolivia": ["La Paz", "Santa Cruz de la Sierra", "Cochabamba", "Sucre", "Oruro"],
+        "Paraguay": ["Asunción", "Ciudad del Este", "San Lorenzo", "Luque"],
+        "Uruguay": ["Montevideo", "Salto", "Paysandú", "Maldonado"]
+    };
 
     const specialtyOptions = [
         "Community Manager",
@@ -423,7 +447,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                                         <div 
                                             key={item}
                                             onClick={() => {
-                                                setFormData({...formData, country: item});
+                                                setFormData({...formData, country: item, city: ''});
+                                                setCustomCityActive(false);
                                                 setIsCountryOpen(false);
                                             }}
                                             className="px-6 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all flex items-center justify-between"
@@ -437,21 +462,84 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                         </AnimatePresence>
                     </div>
 
-                    {/* City Field (Text Input) */}
-                    <div className="space-y-1 text-left">
-                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                            <MapPin className="w-2.5 h-2.5" /> Ciudad
-                        </label>
-                        <input 
-                            required
-                            autoComplete="off"
-                            name={`diic_city_${Math.random()}`}
-                            placeholder="Tu Ciudad"
-                            value={formData.city}
-                            onChange={e => setFormData({...formData, city: e.target.value})}
-                            className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
-                        />
-                    </div>
+                    {/* City Field (Custom Dropdown with Custom Input Fallback) */}
+                    {customCityActive ? (
+                        <div className="space-y-1 text-left relative z-[103]">
+                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center justify-between">
+                                <span className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" /> Ciudad</span>
+                                <button 
+                                    type="button" 
+                                    onClick={() => {
+                                        setCustomCityActive(false);
+                                        setFormData({...formData, city: ''});
+                                    }}
+                                    className="text-[8px] text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-wider transition-colors"
+                                >
+                                    Ver Lista
+                                </button>
+                            </label>
+                            <input 
+                                required
+                                autoComplete="off"
+                                name={`diic_city_${Math.random()}`}
+                                placeholder="Escribe tu Ciudad"
+                                value={formData.city}
+                                onChange={e => setFormData({...formData, city: e.target.value})}
+                                className="w-full bg-black/20 border border-indigo-500/50 rounded-2xl p-4 text-xs text-white focus:outline-none transition-all font-bold placeholder:text-gray-700"
+                            />
+                        </div>
+                    ) : (
+                        <div className="space-y-1 text-left relative z-[103]">
+                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                                <MapPin className="w-2.5 h-2.5" /> Ciudad
+                            </label>
+                            <div 
+                                onClick={() => {
+                                    if (!formData.country) {
+                                        toast.error('Por favor, selecciona primero un país.');
+                                        return;
+                                    }
+                                    setIsCityOpen(!isCityOpen);
+                                }}
+                                className={`w-full bg-black/20 border ${isCityOpen ? 'border-indigo-500' : 'border-white/5'} rounded-2xl p-4 text-xs text-white transition-all font-bold flex items-center justify-between cursor-pointer ${!formData.country ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                <span className={formData.city ? 'text-white' : 'text-gray-700'}>
+                                    {formData.city || (formData.country ? "Seleccionar Ciudad" : "Selecciona un País")}
+                                </span>
+                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isCityOpen ? 'rotate-180' : ''}`} />
+                            </div>
+
+                            <AnimatePresence>
+                                {isCityOpen && formData.country && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 5 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="absolute left-0 w-full bg-[#0A0A1F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-40 overflow-y-auto z-[104] backdrop-blur-3xl scrollbar-hide"
+                                    >
+                                        {[...(citiesByCountry[formData.country] || []), "Otra ciudad..."].map((item) => (
+                                            <div 
+                                                key={item}
+                                                onClick={() => {
+                                                    if (item === "Otra ciudad...") {
+                                                        setCustomCityActive(true);
+                                                        setFormData({...formData, city: ''});
+                                                    } else {
+                                                        setFormData({...formData, city: item});
+                                                    }
+                                                    setIsCityOpen(false);
+                                                }}
+                                                className="px-6 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all flex items-center justify-between"
+                                            >
+                                                {item}
+                                                {formData.city === item && <div className="w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(79,70,229,1)]" />}
+                                            </div>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    )}
                 </div>
 
                 {/* Field: Exact Address */}
