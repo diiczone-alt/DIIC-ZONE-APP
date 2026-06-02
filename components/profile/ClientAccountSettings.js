@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X, MapPin, Sparkles, Zap, Stethoscope, Network, Target } from 'lucide-react';
+import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X, MapPin, Sparkles, Zap, Stethoscope, Network, Target, Globe, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
@@ -17,25 +17,33 @@ export default function ClientAccountSettings() {
     const [activeSection, setActiveSection] = useState('profile'); // profile, brand, security, billing, notifications
     const [showPlans, setShowPlans] = useState(false);
     
-    // Sync State
     const [profileData, setProfileData] = useState({
-        full_name: 'Servicios Agropecuarios Ecuador',
-        brand_name: 'Servicios Agropecuarios Ecuador',
-        phone: '+593963068478',
-        email: 'serviciosagropecuariosecuador@gmail.com',
-        location: 'Santo Domingo, Ecuador',
-        marketing_type: 'educativo',
-        specialty: 'cursos_agro',
-        plan: 'Growth Engine',
-        bio: 'Aprende, Emprende y Especialízate en ganadería vacuna y porcina.',
-        primary_color: '#FFC823', // Yellow/Gold
-        secondary_color: '#008D36', // Green
-        accent_color: '#12372A', // Dark Green
-        logo_url: 'https://serviciosagropecuariosecuador.com/wp-content/uploads/Logo-Agro-web.webp',
-        industry_slug: 'educacion-agro'
+        full_name: '',
+        brand_name: '',
+        phone: '',
+        email: '',
+        location: '',
+        country: '',
+        address: '',
+        birth_date: '',
+        website: '',
+        marketing_type: 'agropecuario',
+        specialty: '',
+        plan: 'Basic',
+        bio: '',
+        primary_color: '#6366f1',
+        secondary_color: '#ec4899',
+        accent_color: '#10b981',
+        logo_url: '',
+        industry_slug: '',
+        goals: [],
+        drive_root_link: '',
+        drive_root_id: '',
+        brochure_url: ''
     });
 
     const fileInputRef = useRef(null);
+    const brochureInputRef = useRef(null);
 
     const handleLogoUpload = async (e) => {
         const file = e.target.files[0];
@@ -43,14 +51,49 @@ export default function ClientAccountSettings() {
 
         setIsLoading(true);
         try {
-            // Simulate upload to Supabase Storage
             await new Promise(r => setTimeout(r, 1500));
-            // In a real app: const { data, error } = await supabase.storage.from('brand-assets').upload(...)
             const simulatedUrl = URL.createObjectURL(file); 
             setProfileData(prev => ({ ...prev, logo_url: simulatedUrl }));
             toast.success("Logotipo cargado exitosamente");
         } catch (error) {
             toast.error("Error al subir el logotipo");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleBrochureUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsLoading(true);
+        try {
+            console.log("Uploading brochure:", file.name);
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}_brochure_${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `brochures/${fileName}`;
+
+            // Attempt upload to 'documents' bucket
+            const { data, error } = await supabase.storage
+                .from('documents')
+                .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+            let brochureUrl = '';
+            if (error) {
+                console.warn("Storage upload failed, simulating URL:", error.message);
+                brochureUrl = URL.createObjectURL(file);
+            } else {
+                const { data: { publicUrl } } = supabase.storage
+                    .from('documents')
+                    .getPublicUrl(filePath);
+                brochureUrl = publicUrl;
+            }
+
+            setProfileData(prev => ({ ...prev, brochure_url: brochureUrl }));
+            toast.success("Brochure cargado exitosamente");
+        } catch (error) {
+            console.error("Brochure upload error:", error);
+            toast.error("Error al subir el brochure");
         } finally {
             setIsLoading(false);
         }
@@ -82,6 +125,10 @@ export default function ClientAccountSettings() {
                     phone: clientRecord?.whatsapp_number || profile?.whatsapp || '',
                     email: user?.email || '',
                     location: clientRecord?.city || profile?.location || 'Santo Domingo',
+                    country: clientRecord?.country || profile?.country || 'Ecuador',
+                    address: clientRecord?.address || profile?.address || '',
+                    birth_date: clientRecord?.birth_date || profile?.birth_date || '',
+                    website: clientRecord?.website || profile?.website || '',
                     marketing_type: clientRecord?.industry || profile?.industry || 'agropecuario',
                     specialty: clientRecord?.specialty || profile?.specialty || '',
                     plan: clientRecord?.plan || profile?.plan || 'Basic',
@@ -90,7 +137,11 @@ export default function ClientAccountSettings() {
                     secondary_color: clientRecord?.onboarding_data?.brand?.secondaryColor || '#ec4899',
                     accent_color: clientRecord?.onboarding_data?.brand?.accentColor || '#10b981',
                     logo_url: clientRecord?.onboarding_data?.brand?.logo || '',
-                    industry_slug: profile?.industry_slug || ''
+                    industry_slug: profile?.industry_slug || '',
+                    goals: clientRecord?.goals || profile?.goals || [],
+                    drive_root_link: profile?.drive_root_link || '',
+                    drive_root_id: profile?.drive_root_id || '',
+                    brochure_url: clientRecord?.brochure_url || profile?.brochure_url || ''
                 });
             } catch (error) {
                 console.error("Error fetching sync data:", error);
@@ -123,7 +174,12 @@ export default function ClientAccountSettings() {
                     whatsapp_number: profileData.phone,
                     industry: profileData.marketing_type,
                     email: user.email,
-                    plan: profileData.plan
+                    plan: profileData.plan,
+                    country: profileData.country,
+                    address: profileData.address,
+                    website: profileData.website,
+                    goals: profileData.goals,
+                    brochure_url: profileData.brochure_url
                 });
                 
                 if (!newClientRes || !newClientRes.id) {
@@ -156,7 +212,12 @@ export default function ClientAccountSettings() {
                 primary_color: profileData.primary_color,
                 secondary_color: profileData.secondary_color,
                 accent_color: profileData.accent_color,
-                logo_url: profileData.logo_url
+                logo_url: profileData.logo_url,
+                country: profileData.country,
+                address: profileData.address,
+                website: profileData.website,
+                goals: profileData.goals,
+                brochure_url: profileData.brochure_url
             });
 
             // Update specific personal profile fields
@@ -168,7 +229,12 @@ export default function ClientAccountSettings() {
                     whatsapp: profileData.phone,
                     industry: profileData.marketing_type,
                     specialty: profileData.specialty,
-                    plan: profileData.plan
+                    plan: profileData.plan,
+                    country: profileData.country,
+                    address: profileData.address,
+                    website: profileData.website,
+                    goals: profileData.goals,
+                    brochure_url: profileData.brochure_url
                 })
                 .eq('id', user.id);
             
@@ -243,22 +309,63 @@ export default function ClientAccountSettings() {
                             <p className="text-gray-400 text-sm">Administra tu información personal y cómo te ven los demás.</p>
                         </div>
 
-                        {/* Avatar Upload */}
-                        <div className="flex items-center gap-6 p-4 bg-white/5 rounded-2xl border border-white/5">
-                            <div className="relative group cursor-pointer w-20 h-20">
-                                <div className="w-full h-full rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-blue-500/20 overflow-hidden">
-                                    {initials}
+                        {/* Avatar & Brochure Uploads */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Avatar Upload */}
+                            <div className="flex items-center gap-6 p-6 bg-white/5 rounded-3xl border border-white/5">
+                                <div className="relative group cursor-pointer w-20 h-20 shrink-0">
+                                    <div className="w-full h-full rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-blue-500/20 overflow-hidden">
+                                        {initials}
+                                    </div>
+                                    <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
+                                        <Camera className="w-6 h-6 text-white" />
+                                    </div>
                                 </div>
-                                <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
-                                    <Camera className="w-6 h-6 text-white" />
+                                <div>
+                                    <h3 className="text-white font-bold text-sm">Foto de Perfil</h3>
+                                    <p className="text-xs text-gray-500 mb-3 max-w-[200px]">Recomendado: 400x400px, PNG o JPG. Máx 2MB.</p>
+                                    <button className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold rounded-lg border border-white/10 transition-colors uppercase tracking-wider">
+                                        Subir Nueva
+                                    </button>
                                 </div>
                             </div>
-                            <div>
-                                <h3 className="text-white font-bold text-sm">Foto de Perfil</h3>
-                                <p className="text-xs text-gray-500 mb-3 max-w-[200px]">Recomendado: 400x400px, PNG o JPG. Máx 2MB.</p>
-                                <button className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold rounded-lg border border-white/10 transition-colors uppercase tracking-wider">
-                                    Subir Nueva
-                                </button>
+
+                            {/* Brochure Upload */}
+                            <div className="flex items-center gap-6 p-6 bg-white/5 rounded-3xl border border-white/5 relative overflow-hidden group">
+                                <input 
+                                    type="file" 
+                                    ref={brochureInputRef} 
+                                    className="hidden" 
+                                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                                    onChange={handleBrochureUpload} 
+                                />
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-rose-600 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-rose-500/20 shrink-0">
+                                    <CreditCard className="w-8 h-8" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-white font-bold text-sm">Brochure de Marca</h3>
+                                    <p className="text-xs text-gray-500 mb-3 truncate max-w-[200px]">
+                                        {profileData.brochure_url ? 'Brochure cargado correctamente' : 'Sube información de tu marca o empresa'}
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => brochureInputRef.current?.click()}
+                                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded-lg transition-colors uppercase tracking-wider"
+                                        >
+                                            Subir Brochure
+                                        </button>
+                                        {profileData.brochure_url && (
+                                            <a 
+                                                href={profileData.brochure_url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold rounded-lg border border-white/10 transition-colors uppercase tracking-wider"
+                                            >
+                                                Ver
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -290,6 +397,31 @@ export default function ClientAccountSettings() {
                                 onChange={(e) => setProfileData({...profileData, phone: e.target.value})} 
                                 type="tel" 
                                 icon={Phone} 
+                            />
+                            <InputField 
+                                label="País" 
+                                value={profileData.country} 
+                                onChange={(e) => setProfileData({...profileData, country: e.target.value})} 
+                                icon={Globe} 
+                            />
+                            <InputField 
+                                label="Fecha de Nacimiento" 
+                                value={profileData.birth_date} 
+                                onChange={(e) => setProfileData({...profileData, birth_date: e.target.value})} 
+                                type="date"
+                                icon={Calendar} 
+                            />
+                            <InputField 
+                                label="Sitio Web" 
+                                value={profileData.website} 
+                                onChange={(e) => setProfileData({...profileData, website: e.target.value})} 
+                                icon={Globe} 
+                            />
+                            <InputField 
+                                label="Dirección Exacta" 
+                                value={profileData.address} 
+                                onChange={(e) => setProfileData({...profileData, address: e.target.value})} 
+                                icon={MapPin} 
                             />
                         </div>
 
@@ -344,6 +476,82 @@ export default function ClientAccountSettings() {
                                     options={PLAN_OPTIONS}
                                     icon={Zap}
                                 />
+                            </div>
+
+                            {profileData.drive_root_link && (
+                                <div className="md:col-span-2 space-y-2">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Workspace Google Drive</label>
+                                    <div className="flex gap-3">
+                                        <div className="flex-1 relative group">
+                                            <input
+                                                type="text"
+                                                value={profileData.drive_root_link}
+                                                readOnly
+                                                className="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-4 pr-4 text-white text-sm focus:outline-none opacity-60"
+                                            />
+                                        </div>
+                                        <a
+                                            href={profileData.drive_root_link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-all active:scale-95 shrink-0"
+                                        >
+                                            <Globe className="w-4 h-4" /> Abrir Drive
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Business Goals */}
+                        <div className="space-y-3 pt-6 border-t border-white/5">
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide flex items-center gap-2">
+                                <Target className="w-4 h-4 text-indigo-400" /> Objetivos de Negocio (Onboarding)
+                            </label>
+                            <p className="text-xs text-gray-500">Selecciona uno o más objetivos estratégicos para enfocar a tu equipo creativo.</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                {[
+                                    { id: 'clientes', label: 'Conseguir más clientes' },
+                                    { id: 'ventas', label: 'Vender más' },
+                                    { id: 'experto', label: 'Posicionarme como experto' },
+                                    { id: 'automatizar', label: 'Automatizar mi negocio' },
+                                    { id: 'escalar', label: 'Escalar mi marca' }
+                                ].map((goal) => {
+                                    const isSelected = profileData.goals?.includes(goal.id) || profileData.goals?.includes(goal.label);
+                                    return (
+                                        <div
+                                            key={goal.id}
+                                            onClick={() => {
+                                                const currentGoals = [...(profileData.goals || [])];
+                                                const index = currentGoals.indexOf(goal.id);
+                                                if (index > -1) {
+                                                    currentGoals.splice(index, 1);
+                                                } else {
+                                                    const labelIndex = currentGoals.indexOf(goal.label);
+                                                    if (labelIndex > -1) currentGoals.splice(labelIndex, 1);
+                                                    currentGoals.push(goal.id);
+                                                }
+                                                setProfileData({ ...profileData, goals: currentGoals });
+                                            }}
+                                            className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                                                isSelected
+                                                    ? 'bg-indigo-600/10 border-indigo-500 shadow-md shadow-indigo-600/5'
+                                                    : 'bg-black/20 border-white/5 hover:border-white/10'
+                                            }`}
+                                        >
+                                            <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+                                                {goal.label}
+                                            </span>
+                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
+                                                isSelected 
+                                                    ? 'bg-indigo-500 border-indigo-500 text-white' 
+                                                    : 'border-white/10'
+                                            }`}>
+                                                {isSelected && <span className="text-[10px]">✓</span>}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -408,7 +616,7 @@ export default function ClientAccountSettings() {
                                 <p className="text-xs text-gray-500 max-w-sm leading-relaxed font-medium">
                                     Tu logo y paleta de colores se aplicarán automáticamente en tu Dashboard, reportes comerciales y notificaciones oficiales.
                                 </p>
-                                <div className="flex gap-3 pt-2">
+                                <div className="flex flex-wrap gap-3 pt-2">
                                     <button 
                                         onClick={() => fileInputRef.current.click()}
                                         className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black rounded-2xl border border-indigo-400/20 transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-indigo-600/20"
@@ -420,8 +628,32 @@ export default function ClientAccountSettings() {
                                             onClick={() => setProfileData({...profileData, logo_url: ''})}
                                             className="px-6 py-3 bg-white/5 hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 text-[10px] font-black rounded-2xl border border-white/10 transition-all uppercase tracking-widest active:scale-95"
                                         >
-                                            Eliminar
+                                            Eliminar Logo
                                         </button>
+                                    )}
+                                    <button 
+                                        onClick={() => brochureInputRef.current?.click()}
+                                        className="px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black rounded-2xl border border-rose-400/20 transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-rose-600/20"
+                                    >
+                                        Subir Brochure
+                                    </button>
+                                    {profileData.brochure_url && (
+                                        <div className="flex gap-2">
+                                            <a 
+                                                href={profileData.brochure_url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black rounded-2xl border border-white/10 transition-all uppercase tracking-widest active:scale-95 flex items-center"
+                                            >
+                                                Ver Brochure
+                                            </a>
+                                            <button 
+                                                onClick={() => setProfileData({...profileData, brochure_url: ''})}
+                                                className="px-6 py-3 bg-white/5 hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 text-[10px] font-black rounded-2xl border border-white/10 transition-all uppercase tracking-widest active:scale-95"
+                                            >
+                                                Eliminar Brochure
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>

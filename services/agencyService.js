@@ -71,7 +71,7 @@ export const agencyService = {
                 'password_initial', 'whatsapp_number', 'google_drive_folder_id',
                 'onboarding_data', 'notes', 'created_at',
                 'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty',
-                'birth_date'
+                'birth_date', 'country', 'address', 'website', 'goals', 'brochure_url'
             ];
             
             const sanitizedData = {};
@@ -134,7 +134,7 @@ export const agencyService = {
                 'password_initial', 'whatsapp_number', 'google_drive_folder_id',
                 'onboarding_data', 'notes',
                 'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty',
-                'birth_date'
+                'birth_date', 'country', 'address', 'website', 'goals', 'brochure_url'
             ];
             const sanitizedUpdates = {};
             validFields.forEach(field => {
@@ -163,7 +163,7 @@ export const agencyService = {
             toast.success("BD Clients actualizada", { id: 'debug-db' });
 
             // 🔄 SYNC TO PROFILE (Propagate Brand Identity)
-            if (updates.name || updates.city || updates.whatsapp_number || updates.industry || updates.plan || updates.business_type || updates.specialty) {
+            if (updates.name || updates.city || updates.whatsapp_number || updates.industry || updates.plan || updates.business_type || updates.specialty || updates.country || updates.address || updates.website || updates.goals || updates.brochure_url) {
                 await agencyService.syncClientProfile(id, updates);
             }
 
@@ -216,7 +216,12 @@ export const agencyService = {
                 industry: updates.industry || existingClient.industry,
                 specialty: updates.specialty || existingClient.specialty,
                 plan: updates.plan || existingClient.plan,
-                business_type: updates.business_type || existingClient.business_type
+                business_type: updates.business_type || existingClient.business_type,
+                country: updates.country || existingClient.country,
+                address: updates.address || existingClient.address,
+                website: updates.website || existingClient.website,
+                goals: updates.goals || existingClient.goals,
+                brochure_url: updates.brochure_url || existingClient.brochure_url
             };
             
             // Clean undefined fields

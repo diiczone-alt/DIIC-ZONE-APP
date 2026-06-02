@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Network, Tag, Target, Users, Search, Target as TargetIcon, Zap, Heart, Link as LinkIcon, Globe, Image as ImageIcon, CheckCircle2, ShieldAlert, Crosshair, Plus, Trash2, ShieldCheck, Activity, Bot, Sparkles, Database, Command, Maximize2, Wand2, Edit3, Paperclip, Mic, FileUp, Facebook, Instagram, Linkedin, Camera, Smartphone, Monitor, Layout, Layers, Video, X } from 'lucide-react';
+import { Network, Tag, Target, Users, Search, Target as TargetIcon, Zap, Heart, Link as LinkIcon, Globe, Image as ImageIcon, CheckCircle2, ShieldAlert, Crosshair, Plus, Trash2, ShieldCheck, Activity, Bot, Sparkles, Database, Command, Maximize2, Wand2, Edit3, Paperclip, Mic, FileUp, Facebook, Instagram, Linkedin, Camera, Smartphone, Monitor, Layout, Layers, Video, X, MapPin, FolderOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
@@ -1012,6 +1012,104 @@ export default function ClientStrategicProfile() {
                                 </div>
                             )}
 
+                            {/* Brand Assets & Onboarding Details */}
+                            {(profile.website || profile.websiteUrl || profile.brochure_url || profile.google_drive_folder_id || profile.drive_root_link || profile.country || profile.address || profile.industry || profile.marketing_type || profile.birth_date) && (
+                                <div className="mt-12 p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 space-y-6 text-left w-full">
+                                    <div className="flex items-center gap-3 text-indigo-400 font-black uppercase tracking-widest text-[10px]">
+                                        <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" /> Activos y Datos de Onboarding
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {/* Website */}
+                                        {(profile.website || profile.websiteUrl) && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex flex-col justify-between space-y-2">
+                                                <div>
+                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Sitio Web</span>
+                                                    <p className="text-xs font-bold text-white truncate">{profile.website || profile.websiteUrl}</p>
+                                                </div>
+                                                <a 
+                                                    href={profile.website || profile.websiteUrl} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-[10px] font-black text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors pt-2"
+                                                >
+                                                    <Globe className="w-3.5 h-3.5" /> Visitar Sitio Web
+                                                </a>
+                                            </div>
+                                        )}
+
+                                        {/* Brochure */}
+                                        {profile.brochure_url && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex flex-col justify-between space-y-2">
+                                                <div>
+                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Brochure de Marca</span>
+                                                    <p className="text-xs font-bold text-white truncate">Archivo adjunto disponible</p>
+                                                </div>
+                                                <a 
+                                                    href={profile.brochure_url} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-[10px] font-black text-rose-400 hover:text-rose-300 uppercase tracking-wider transition-colors pt-2"
+                                                >
+                                                    <FileUp className="w-3.5 h-3.5" /> Descargar Brochure
+                                                </a>
+                                            </div>
+                                        )}
+
+                                        {/* Google Drive Workspace */}
+                                        {(profile.drive_root_link || profile.google_drive_folder_id) && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex flex-col justify-between space-y-2">
+                                                <div>
+                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Workspace Cloud</span>
+                                                    <p className="text-xs font-bold text-white truncate">Google Drive Sincronizado</p>
+                                                </div>
+                                                <a 
+                                                    href={profile.drive_root_link || `https://drive.google.com/drive/folders/${profile.google_drive_folder_id}`} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-400 hover:text-emerald-300 uppercase tracking-wider transition-colors pt-2"
+                                                >
+                                                    <FolderOpen className="w-3.5 h-3.5" /> Abrir Carpeta Drive
+                                                </a>
+                                            </div>
+                                        )}
+
+                                        {/* Sector / Nicho */}
+                                        {(profile.industry || profile.marketing_type) && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Sector / Nicho</span>
+                                                <p className="text-xs font-bold text-white uppercase tracking-wide">
+                                                    {profile.industry || profile.marketing_type} 
+                                                    {profile.specialty ? ` - ${profile.specialty}` : ''}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Ubicación / Dirección */}
+                                        {(profile.country || profile.city || profile.location) && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Ubicación</span>
+                                                <p className="text-xs font-bold text-white truncate">
+                                                    {[profile.city || profile.location, profile.country].filter(Boolean).join(', ')}
+                                                </p>
+                                                {profile.address && (
+                                                    <p className="text-[10px] text-gray-400 truncate">{profile.address}</p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Birth Date */}
+                                        {profile.birth_date && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Fecha de Fundación</span>
+                                                <p className="text-xs font-bold text-white">
+                                                    {new Date(profile.birth_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Production Strategy Section */}
                             <div className="pt-12 border-t border-white/5 space-y-12 text-left">
                                 <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-3">
@@ -1365,6 +1463,78 @@ export default function ClientStrategicProfile() {
                         >
                             Ver Configuración Completa
                         </button>
+                    </div>
+
+                    {/* Onboarding & Brand Assets Card */}
+                    <div className="bg-[#0A0A0F] border border-white/5 rounded-[32px] p-6 space-y-4 hover:border-indigo-500/30 transition-all duration-300 group relative shadow-lg hover:shadow-indigo-500/10 flex flex-col h-full">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 group-hover:scale-110 transition-transform">
+                                    <Sparkles className="w-5 h-5" />
+                                </div>
+                                <label className="text-sm font-black text-white uppercase italic tracking-widest">Activos & Onboarding</label>
+                            </div>
+                        </div>
+                        
+                        <div className="flex-1 space-y-3 mt-2 text-left">
+                            {/* Website */}
+                            {(profile.website || profile.websiteUrl) ? (
+                                <div className="flex items-center justify-between p-2.5 bg-white/[0.02] border border-white/5 rounded-xl">
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Sitio Web</span>
+                                        <span className="text-[10px] text-gray-300 font-bold truncate max-w-[150px]">{profile.website || profile.websiteUrl}</span>
+                                    </div>
+                                    <a href={profile.website || profile.websiteUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg hover:bg-indigo-500/20 transition-colors">
+                                        <Globe size={12} />
+                                    </a>
+                                </div>
+                            ) : (
+                                <span className="text-[9px] text-gray-600 block italic">Sin Sitio Web (ir a Cuenta)</span>
+                            )}
+
+                            {/* Brochure */}
+                            {profile.brochure_url ? (
+                                <div className="flex items-center justify-between p-2.5 bg-white/[0.02] border border-white/5 rounded-xl">
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Brochure de Marca</span>
+                                        <span className="text-[10px] text-rose-400 font-bold truncate">Archivo PDF/Doc</span>
+                                    </div>
+                                    <a href={profile.brochure_url} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500/20 transition-colors">
+                                        <FileUp size={12} />
+                                    </a>
+                                </div>
+                            ) : (
+                                <span className="text-[9px] text-gray-600 block italic">Sin Brochure (ir a Cuenta)</span>
+                            )}
+
+                            {/* Google Drive Workspace */}
+                            {(profile.drive_root_link || profile.google_drive_folder_id) ? (
+                                <div className="flex items-center justify-between p-2.5 bg-white/[0.02] border border-white/5 rounded-xl">
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Google Drive</span>
+                                        <span className="text-[10px] text-emerald-400 font-bold truncate">Workspace Sincronizado</span>
+                                    </div>
+                                    <a href={profile.drive_root_link || `https://drive.google.com/drive/folders/${profile.google_drive_folder_id}`} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500/20 transition-colors">
+                                        <FolderOpen size={12} />
+                                    </a>
+                                </div>
+                            ) : (
+                                <span className="text-[9px] text-gray-600 block italic">Sin Drive (ir a Cuenta)</span>
+                            )}
+                        </div>
+
+                        <div className="pt-2 border-t border-white/5 flex flex-wrap gap-1.5 justify-start">
+                            {profile.country && (
+                                <span className="px-2 py-1 bg-white/5 rounded-md text-[8px] font-bold text-gray-400 uppercase tracking-wide">
+                                    📍 {profile.country}
+                                </span>
+                            )}
+                            {(profile.industry || profile.marketing_type) && (
+                                <span className="px-2 py-1 bg-white/5 rounded-md text-[8px] font-bold text-gray-400 uppercase tracking-wide">
+                                    💼 {profile.industry || profile.marketing_type}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
