@@ -38,7 +38,7 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
     const isMounted = useRef(true);
     const retryTimeoutRef = useRef(null);
     const hasExecuted = useRef(false);
-    const finalSlugs = useRef({ industry: 'general', client: 'workspace' });
+    const finalSlugs = useRef({ industry: 'general', client: 'workspace', clientId: null });
 
     useEffect(() => {
         isMounted.current = true;
@@ -91,7 +91,8 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                             if (result.industry_slug && result.client_slug) {
                                 finalSlugs.current = {
                                     industry: result.industry_slug,
-                                    client: result.client_slug
+                                    client: result.client_slug,
+                                    clientId: result.clientId
                                 };
                             }
 
@@ -146,6 +147,13 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                                 drive_root_link: driveResult.rootLink,
                                 drive_root_id: driveResult.rootId
                             }).eq('id', activeUser.id);
+
+                            // If client, also save in clients table
+                            if (formData.type === 'client' && finalSlugs.current.clientId) {
+                                await supabase.from('clients').update({
+                                    google_drive_folder_id: driveResult.rootId
+                                }).eq('id', finalSlugs.current.clientId);
+                            }
 
                             // Clean up backup token
                             localStorage.removeItem('diic_google_token');
