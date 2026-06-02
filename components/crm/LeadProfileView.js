@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     X, Phone, MessageCircle, Calendar, Mail, MapPin, Globe,
     Facebook, Instagram, Linkedin, Clock, CheckCircle2,
@@ -10,13 +10,133 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ScheduleModal from './ScheduleModal';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
-export default function LeadProfileView({ lead, onClose }) {
+const COLUMN_CONFIG = {
+    'incoming': { title: 'LEADS ENTRANTES', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
+    'contact': { title: 'CONTACTO INICIAL', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+    'rebound': { title: 'REPESCA 15 DÍAS', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
+    'identified': { title: 'CURSO INTERÉS ID', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
+    'negotiation': { title: 'NEGOCIACIÓN', color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' },
+    'won': { title: 'CERRADO - VENTA', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
+};
+
+function getStatusColor(status) {
+    const key = status?.toLowerCase() || 'incoming';
+    return COLUMN_CONFIG[key]?.color || 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+}
+
+function getScoreColor(score) {
+    if (score >= 80) return 'text-red-500';
+    if (score >= 50) return 'text-orange-500';
+    return 'text-blue-500';
+}
+
+function getScoreBg(score) {
+    if (score >= 80) return 'bg-red-500';
+    if (score >= 50) return 'bg-orange-500';
+    return 'bg-blue-500';
+}
+
+export default function LeadProfileView({ lead, onClose, onLeadStatusChange, onLeadUpdate, onLeadDelete }) {
     const [activeTab, setActiveTab] = useState('timeline');
     const [showSchedule, setShowSchedule] = useState(false);
     const [isSynced, setIsSynced] = useState(false);
 
+    const [editedLead, setEditedLead] = useState({ ...lead });
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        setEditedLead({ ...lead });
+    }, [lead]);
+
     if (!lead) return null;
+
+    const leadScore = lead.score || lead.growth_level || Math.floor(Math.random() * 40) + 40;
+
+    const handleSaveDetails = async () => {
+        setIsSaving(true);
+        try {
+            const { error } = await supabase
+                .from('crm_leads')
+                .update({
+                    full_name: editedLead.full_name || editedLead.name,
+                    email: editedLead.email,
+                    phone: editedLead.phone,
+                    city: editedLead.city,
+                    industry: editedLead.industry || editedLead.niche,
+                    price_estimated: Number(editedLead.price_estimated || editedLead.value || 0)
+                })
+                .eq('id', lead.id);
+
+            if (error) throw error;
+
+            toast.success("Detalles actualizados con éxito");
+            
+            const updated = {
+                ...lead,
+                ...editedLead,
+                full_name: editedLead.full_name || editedLead.name,
+                name: editedLead.full_name || editedLead.name,
+                price_estimated: Number(editedLead.price_estimated || editedLead.value || 0),
+                value: Number(editedLead.price_estimated || editedLead.value || 0)
+            };
+
+            if (onLeadUpdate) {
+                onLeadUpdate(updated);
+            }
+        } catch (err) {
+            console.error("Error updating lead details:", err);
+            toast.error("Error al guardar cambios");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleStatusChange = async (newStatus) => {
+        try {
+            const statusUpper = newStatus.toUpperCase();
+            const { error } = await supabase
+                .from('crm_leads')
+                .update({ status: statusUpper })
+                .eq('id', lead.id);
+
+            if (error) throw error;
+
+            setEditedLead(prev => ({ ...prev, status: newStatus }));
+            toast.success(`Estado cambiado a ${COLUMN_CONFIG[newStatus]?.title || newStatus}`);
+
+            if (onLeadStatusChange) {
+                onLeadStatusChange(lead.id, statusUpper);
+            }
+        } catch (err) {
+            console.error("Error changing status:", err);
+            toast.error("Error al actualizar el estado");
+        }
+    };
+
+    const handleDeleteLead = async () => {
+        if (!confirm("¿Estás seguro de que deseas eliminar este lead del CRM de forma permanente?")) return;
+        
+        try {
+            const { error } = await supabase
+                .from('crm_leads')
+                .delete()
+                .eq('id', lead.id);
+
+            if (error) throw error;
+
+            toast.success("Lead eliminado correctamente");
+            if (onLeadDelete) {
+                onLeadDelete(lead.id);
+            }
+            onClose();
+        } catch (err) {
+            console.error("Error deleting lead:", err);
+            toast.error("Error al eliminar el lead");
+        }
+    };
 
     return (
         <motion.div
@@ -30,22 +150,29 @@ export default function LeadProfileView({ lead, onClose }) {
             <div className="p-6 border-b border-white/10 bg-[#151520] flex justify-between items-start">
                 <div className="flex items-start gap-4">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-indigo-500/20">
-                        {lead.name.charAt(0)}
+                        {(editedLead.full_name || editedLead.name)?.charAt(0) || 'L'}
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-white mb-1">{lead.name}</h2>
+                        <h2 className="text-2xl font-bold text-white mb-1">{editedLead.full_name || editedLead.name}</h2>
                         <div className="flex items-center gap-3 text-sm text-gray-400">
-                            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {lead.city || 'Ciudad de México'}</span>
+                            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {editedLead.city || 'Ubicación No Registrada'}</span>
                             <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
-                            <span className="flex items-center gap-1"><BriefcaseIcon niche={lead.niche} /> {lead.niche}</span>
+                            <span className="flex items-center gap-1"><BriefcaseIcon niche={editedLead.industry || editedLead.niche} /> {editedLead.industry || editedLead.niche || 'General'}</span>
                         </div>
                         <div className="flex gap-2 mt-3">
                             <div className="relative group/wa">
                                 <ActionButton 
                                     icon={MessageCircle} 
-                                    label="WhatsApp Business" 
+                                    label="WhatsApp" 
                                     color="text-[#25D366] hover:bg-[#25D366]/10 border-[#25D366]/20" 
-                                    onClick={() => window.open('https://wa.me/525512345678', '_blank')}
+                                    onClick={() => {
+                                        if (!editedLead.phone) {
+                                            toast.error("No hay teléfono registrado");
+                                            return;
+                                        }
+                                        const cleanPhone = editedLead.phone.replace(/\D/g, '');
+                                        window.open(`https://wa.me/${cleanPhone}`, '_blank');
+                                    }}
                                 />
                                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-[#25D366] text-white text-[8px] font-black uppercase rounded-lg opacity-0 group-hover/wa:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg shadow-[#25D366]/20 flex items-center gap-2">
                                     <Bot className="w-3 h-3" /> Sincronización IA Activa
@@ -55,13 +182,25 @@ export default function LeadProfileView({ lead, onClose }) {
                                 icon={Phone} 
                                 label="Llamar" 
                                 color="text-blue-400 hover:bg-blue-400/10" 
-                                onClick={() => window.open('tel:+525512345678')}
+                                onClick={() => {
+                                    if (!editedLead.phone) {
+                                        toast.error("No hay teléfono registrado");
+                                        return;
+                                    }
+                                    window.open(`tel:${editedLead.phone}`);
+                                }}
                             />
                             <ActionButton 
                                 icon={Mail} 
                                 label="Email" 
                                 color="text-yellow-400 hover:bg-yellow-400/10" 
-                                onClick={() => window.open('mailto:contacto@dentalpro.com')}
+                                onClick={() => {
+                                    if (!editedLead.email) {
+                                        toast.error("No hay correo registrado");
+                                        return;
+                                    }
+                                    window.open(`mailto:${editedLead.email}`);
+                                }}
                             />
                             <ActionButton 
                                 icon={Calendar} 
@@ -75,8 +214,8 @@ export default function LeadProfileView({ lead, onClose }) {
                 <div className="flex items-center gap-3">
                     <div className="text-right mr-2">
                         <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Estado Actual</p>
-                        <div className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(lead.status)}`}>
-                            {lead.statusName || 'Nuevo Lead'}
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(editedLead.status)}`}>
+                            {COLUMN_CONFIG[editedLead.status]?.title || 'Nuevo Lead'}
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -101,8 +240,15 @@ export default function LeadProfileView({ lead, onClose }) {
                     {/* Tab Content */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#0E0E18] p-6">
                         {activeTab === 'timeline' && <TimelineTab />}
-                        {activeTab === 'info' && <InfoTab lead={lead} />}
-                        {activeTab === 'commercial' && <CommercialTab lead={lead} />}
+                        {activeTab === 'info' && (
+                            <InfoTab 
+                                editedLead={editedLead} 
+                                setEditedLead={setEditedLead} 
+                                isSaving={isSaving} 
+                                handleSaveDetails={handleSaveDetails} 
+                            />
+                        )}
+                        {activeTab === 'commercial' && <CommercialTab lead={editedLead} />}
                         {activeTab === 'files' && <FilesTab />}
                     </div>
 
@@ -128,15 +274,32 @@ export default function LeadProfileView({ lead, onClose }) {
                         <div className="absolute top-0 right-0 p-2 opacity-50"><BrainCircuit className="w-12 h-12 text-indigo-500/20" /></div>
                         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Lead Score (IA)</h4>
                         <div className="flex items-end gap-2 mb-2">
-                            <span className={`text-4xl font-bold ${getScoreColor(lead.score)}`}>{lead.score}</span>
+                            <span className={`text-4xl font-bold ${getScoreColor(leadScore)}`}>{leadScore}</span>
                             <span className="text-gray-500 text-sm mb-1">/ 100</span>
                         </div>
                         <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                            <div className={`h-full ${getScoreBg(lead.score)}`} style={{ width: `${lead.score}%` }}></div>
+                            <div className={`h-full ${getScoreBg(leadScore)}`} style={{ width: `${leadScore}%` }}></div>
                         </div>
                         <p className="text-[10px] text-gray-500 mt-2">
-                            {lead.score > 70 ? 'Alta probabilidad de cierre. Responder en < 1h.' : 'Requiere nutrición. Enviar secuencia de valor.'}
+                            {leadScore > 70 ? 'Alta probabilidad de cierre. Responder en < 1h.' : 'Requiere nutrición. Enviar secuencia de valor.'}
                         </p>
+                    </div>
+
+                    {/* CRM Pipeline Status Selector */}
+                    <div className="bg-[#151520] p-4 rounded-2xl border border-white/5">
+                        <h4 className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-3">Estado en Pipeline</h4>
+                        <select 
+                            value={editedLead.status || 'incoming'}
+                            onChange={(e) => handleStatusChange(e.target.value)}
+                            className="w-full bg-[#0A0A12] border border-white/10 text-white text-sm rounded-xl px-3 py-2 outline-none focus:border-indigo-500 appearance-none cursor-pointer font-bold"
+                        >
+                            <option value="incoming">LEADS ENTRANTES</option>
+                            <option value="contact">CONTACTO INICIAL</option>
+                            <option value="rebound">REPESCA 15 DÍAS</option>
+                            <option value="identified">CURSO INTERÉS ID</option>
+                            <option value="negotiation">NEGOCIACIÓN</option>
+                            <option value="won">CERRADO - VENTA</option>
+                        </select>
                     </div>
 
                     {/* AI Insights / Next Action */}
@@ -146,10 +309,13 @@ export default function LeadProfileView({ lead, onClose }) {
                         </h4>
                         <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3">
                             <p className="text-sm text-indigo-200">
-                                Enviar propuesta "Plan Growth" basándose en su interés por Reels y Ads.
+                                {leadScore > 70 
+                                    ? `Enviar propuesta comercial para ${editedLead.industry || 'Servicio Premium'}.`
+                                    : "Enviar secuencia de nutrición y contenido automatizado por WhatsApp."
+                                }
                             </p>
                             <button 
-                                onClick={() => alert('Generando Propuesta PDF Estratégica...') }
+                                onClick={() => toast.info('Generando Propuesta PDF Estratégica...')}
                                 className="mt-2 w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-indigo-600/20"
                             >
                                 Generar Propuesta
@@ -181,7 +347,7 @@ export default function LeadProfileView({ lead, onClose }) {
                                 </span>
                             ))}
                             <button 
-                                onClick={() => alert('Añadir nueva etiqueta estratégica...')}
+                                onClick={() => toast.info('Añadir nueva etiqueta estratégica...')}
                                 className="px-2 py-1 border border-dashed border-gray-600 rounded-md text-[10px] text-gray-500 hover:text-white hover:border-gray-400 transition-colors"
                             >
                                 + Add
@@ -189,22 +355,27 @@ export default function LeadProfileView({ lead, onClose }) {
                         </div>
                     </div>
 
+                    {/* Delete Lead Button */}
+                    <div className="pt-4 border-t border-white/5">
+                        <button
+                            onClick={handleDeleteLead}
+                            className="w-full py-2.5 bg-red-950/20 hover:bg-red-900/40 text-red-400 hover:text-red-300 text-[10px] font-black uppercase tracking-widest rounded-xl border border-red-900/20 hover:border-red-500/30 transition-all"
+                        >
+                            Eliminar Lead
+                        </button>
+                    </div>
+
                 </div>
             </div>
             <AnimatePresence>
                 {showSchedule && (
                     <ScheduleModal 
-                        lead={lead} 
+                        lead={editedLead} 
                         onClose={() => setShowSchedule(false)} 
                         onSchedule={(data) => {
                             console.log('Scheduled:', data);
                             setIsSynced(true);
-                            // Visual feedback
-                            const toast = document.createElement('div');
-                            toast.innerText = `Cita agendada para el ${data.date} a las ${data.time}. Sincronizado con Google Calendar.`;
-                            toast.className = "fixed bottom-8 right-8 bg-emerald-600 text-white px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest z-[100] animate-bounce";
-                            document.body.appendChild(toast);
-                            setTimeout(() => toast.remove(), 4000);
+                            toast.success(`Cita agendada para el ${data.date} a las ${data.time}. Sincronizado con Google Calendar.`);
                         }} 
                     />
                 )}
@@ -244,7 +415,7 @@ function TimelineTab() {
                         <span className="text-xs font-bold text-yellow-200">Nota Interna (Carlos)</span>
                         <span className="text-[10px] text-yellow-500/60">Ayer, 4:30 PM</span>
                     </div>
-                    <p className="text-sm text-yellow-100/80 italic">Cliente potencial alto valore. Tiene 3 sucursales. Prioridad para agendar llamada esta semana.</p>
+                    <p className="text-sm text-yellow-100/80 italic">Cliente potencial alto valor. Tiene 3 sucursales. Prioridad para agendar llamada esta semana.</p>
                 </div>
             </div>
 
@@ -262,75 +433,110 @@ function TimelineTab() {
     )
 }
 
-function InfoTab({ lead }) {
+function InfoTab({ editedLead, setEditedLead, isSaving, handleSaveDetails }) {
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-                <InfoField label="Email" value="contacto@dentalpro.com" icon={Mail} />
-                <InfoField label="Teléfono" value="+52 55 1234 5678" icon={Phone} />
-                <InfoField label="Empresa" value="Dental Pro S.A." icon={Shield} />
-                <InfoField label="Sitio Web" value="www.dentalpro.com" icon={Globe} />
+                <div className="bg-[#151520] p-3 rounded-xl border border-white/5">
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Nombre Completo</label>
+                    <input 
+                        type="text" 
+                        value={editedLead.full_name || editedLead.name || ''} 
+                        onChange={(e) => setEditedLead(prev => ({ ...prev, full_name: e.target.value, name: e.target.value }))}
+                        className="bg-transparent border-none text-sm text-white focus:outline-none w-full font-medium"
+                    />
+                </div>
+                <div className="bg-[#151520] p-3 rounded-xl border border-white/5">
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Teléfono (WhatsApp)</label>
+                    <input 
+                        type="text" 
+                        value={editedLead.phone || ''} 
+                        onChange={(e) => setEditedLead(prev => ({ ...prev, phone: e.target.value }))}
+                        className="bg-transparent border-none text-sm text-white focus:outline-none w-full font-medium"
+                    />
+                </div>
+                <div className="bg-[#151520] p-3 rounded-xl border border-white/5">
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Email</label>
+                    <input 
+                        type="email" 
+                        value={editedLead.email || ''} 
+                        onChange={(e) => setEditedLead(prev => ({ ...prev, email: e.target.value }))}
+                        className="bg-transparent border-none text-sm text-white focus:outline-none w-full font-medium"
+                    />
+                </div>
+                <div className="bg-[#151520] p-3 rounded-xl border border-white/5">
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Ciudad / Ubicación</label>
+                    <input 
+                        type="text" 
+                        value={editedLead.city || ''} 
+                        onChange={(e) => setEditedLead(prev => ({ ...prev, city: e.target.value }))}
+                        className="bg-transparent border-none text-sm text-white focus:outline-none w-full font-medium"
+                    />
+                </div>
             </div>
 
-            <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Redes Sociales</h4>
-                <div className="flex gap-3">
-                    <SocialBtn icon={Instagram} url="#" />
-                    <SocialBtn icon={Facebook} url="#" />
-                    <SocialBtn icon={Linkedin} url="#" />
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-[#151520] p-3 rounded-xl border border-white/5">
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Especialidad / Interés</label>
+                    <input 
+                        type="text" 
+                        value={editedLead.industry || editedLead.niche || ''} 
+                        onChange={(e) => setEditedLead(prev => ({ ...prev, industry: e.target.value, niche: e.target.value }))}
+                        className="bg-transparent border-none text-sm text-white focus:outline-none w-full font-medium"
+                    />
+                </div>
+                <div className="bg-[#151520] p-3 rounded-xl border border-white/5">
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Valor Estimado ($)</label>
+                    <input 
+                        type="number" 
+                        value={editedLead.price_estimated || editedLead.value || 0} 
+                        onChange={(e) => setEditedLead(prev => ({ ...prev, price_estimated: Number(e.target.value), value: Number(e.target.value) }))}
+                        className="bg-transparent border-none text-sm text-white focus:outline-none w-full font-medium text-emerald-400"
+                    />
                 </div>
             </div>
-            <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Dirección</h4>
-                <div className="bg-[#151520] p-3 rounded-xl border border-white/5 flex gap-3">
-                    <MapPin className="w-5 h-5 text-gray-500" />
-                    <p className="text-sm text-gray-300">Av. Reforma 222, CDMX, México</p>
-                </div>
-            </div>
+
+            <button 
+                onClick={handleSaveDetails}
+                disabled={isSaving}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+            >
+                {isSaving ? 'Guardando Cambios...' : 'Guardar Detalles del Lead'}
+            </button>
         </div>
     )
 }
 
 function CommercialTab({ lead }) {
+    const score = lead.score || lead.growth_level || 50;
+    const probability = score >= 80 ? '85%' : score >= 50 ? '60%' : '25%';
+    const probColor = score >= 80 ? 'text-emerald-400' : score >= 50 ? 'text-amber-400' : 'text-blue-400';
+    
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
                 <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20 text-center">
                     <p className="text-xs text-emerald-400 uppercase font-bold mb-1">Valor Potencial</p>
-                    <p className="text-2xl font-bold text-emerald-300">${lead.value ? lead.value.toLocaleString() : '0'}</p>
+                    <p className="text-2xl font-bold text-emerald-300">
+                        ${lead.price_estimated ? Number(lead.price_estimated).toLocaleString() : lead.value ? Number(lead.value).toLocaleString() : '0'}
+                    </p>
                 </div>
                 <div className="bg-indigo-500/10 p-4 rounded-xl border border-indigo-500/20 text-center">
-                    <p className="text-xs text-indigo-400 uppercase font-bold mb-1">Probabilidad</p>
-                    <p className="text-2xl font-bold text-indigo-300">75%</p>
+                    <p className="text-xs text-indigo-400 uppercase font-bold mb-1">Probabilidad (IA)</p>
+                    <p className={`text-2xl font-bold ${probColor}`}>{probability}</p>
                 </div>
             </div>
 
             <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Intereses</h4>
-                <div className="bg-[#151520] p-4 rounded-xl border border-white/5 space-y-2">
-                    {['Gestión Redes Sociales', 'Campañas Ads', 'Diseño Web'].map(service => (
-                        <div key={service} className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                            <span className="text-sm text-gray-300">{service}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Historial de Propuestas</h4>
-                <div className="space-y-2">
-                    <div className="bg-[#151520] p-3 rounded-xl border border-white/5 flex justify-between items-center hover:bg-white/5 cursor-pointer transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500">
-                                <FileText className="w-4 h-4" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-white font-bold">Propuesta_Growth_v1.pdf</p>
-                                <p className="text-[10px] text-gray-500">Enviado hace 2 días</p>
-                            </div>
-                        </div>
-                        <span className="text-xs text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded">Vista</span>
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Origen e Intereses</h4>
+                <div className="bg-[#151520] p-4 rounded-xl border border-white/5 space-y-3">
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-400">Canal de Adquisición:</span>
+                        <span className="text-xs text-white font-bold uppercase">{lead.source || 'Ads / Orgánico'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-400">Servicio de Interés:</span>
+                        <span className="text-xs text-indigo-400 font-bold uppercase">{lead.industry || lead.niche || 'General'}</span>
                     </div>
                 </div>
             </div>
@@ -355,7 +561,6 @@ function FilesTab() {
         </div>
     )
 }
-
 
 // --- HELPERS ---
 
@@ -385,15 +590,6 @@ function TabButton({ id, label, icon: Icon, active, set }) {
     )
 }
 
-function InfoField({ label, value, icon: Icon }) {
-    return (
-        <div className="bg-[#151520] p-3 rounded-xl border border-white/5">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1"><Icon className="w-3 h-3" /> {label}</p>
-            <p className="text-sm text-white font-medium truncate">{value}</p>
-        </div>
-    )
-}
-
 function SocialBtn({ icon: Icon, url }) {
     return (
         <a href={url} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-xl bg-[#151520] border border-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all">
@@ -404,22 +600,4 @@ function SocialBtn({ icon: Icon, url }) {
 
 function BriefcaseIcon({ niche }) {
     return <Wallet className="w-3.5 h-3.5 text-gray-400" />
-}
-
-function getStatusColor(status) {
-    if (status === 'won') return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-    if (status === 'lost') return 'bg-red-500/20 text-red-400 border-red-500/30';
-    return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-}
-
-function getScoreColor(score) {
-    if (score >= 80) return 'text-red-500'; // Hot
-    if (score >= 50) return 'text-orange-500'; // Warm
-    return 'text-blue-500'; // Cold
-}
-
-function getScoreBg(score) {
-    if (score >= 80) return 'bg-red-500';
-    if (score >= 50) return 'bg-orange-500';
-    return 'bg-blue-500';
 }

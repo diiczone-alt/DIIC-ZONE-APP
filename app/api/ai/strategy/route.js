@@ -52,7 +52,8 @@ export async function POST(req) {
         1. Utiliza Google Search para obtener datos REALES y ACTUALIZADOS.
         2. Si la URL es de Instagram/Facebook y el contenido está bloqueado para bots, busca el nombre del perfil en Google para hallar su sitio web, LinkedIn o directorios médicos/comerciales.
         3. NO INVENTES DATOS. Si no hallas nada, usa "Información no indexada" o "Dato no detectable".
-        4. RESPONDE EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO.
+        4. Como estratega, diseña de 3 a 4 botones o chips de búsqueda adicionales hiper-específicos para este nicho/empresa basándote en lo hallado en las búsquedas (ej. temas locales, alianzas, debilidades de competidores o dudas específicas).
+        5. RESPONDE EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO.
         
         ESTRUCTURA JSON OBLIGATORIA:
         {
@@ -65,8 +66,14 @@ export async function POST(req) {
             "valueProp": "USP detectado",
             "tone": "Estilo de comunicación",
             "mainGoal": "Objetivo aparente (Ventas, LeadGen, etc)",
-            "marketContext": "Ubicación y competencia detectada"
-        }`;
+            "marketContext": "Ubicación y competencia detectada",
+            "dynamicButtons": ["Búsqueda o pregunta estratégica sugerida 1", "Búsqueda o pregunta estratégica sugerida 2", "Búsqueda o pregunta estratégica sugerida 3"]
+        }
+        
+        REQUISITOS PARA dynamicButtons:
+        - Deben ser exactamente de 3 a 4 preguntas o búsquedas estratégicas basadas en los hallazgos reales de la investigación y específicas para este nicho.
+        - Por ejemplo, si es una clínica de urología, sugerir: "¿Qué tipo de cirugías láser realiza esta clínica y cuáles son los convenios?" o "¿Qué competidores locales existen y cómo se diferencia en sus tratamientos?".
+        - Evita generalidades y no inventes datos.`;
 
         let result;
         try {
@@ -85,6 +92,9 @@ export async function POST(req) {
         if (jsonMatch) {
             try {
                 let data = JSON.parse(jsonMatch[0]);
+                if (!data.dynamicButtons) {
+                    data.dynamicButtons = [];
+                }
                 return NextResponse.json({ data, steps });
             } catch (parseError) {
                 console.error("[NeuralInvestigator] JSON Parse Error:", parseError);
@@ -97,7 +107,8 @@ export async function POST(req) {
             return NextResponse.json({ 
                 data: { 
                     brandName: brandName || "No detectado",
-                    whatItDoes: responseText.substring(0, 500) 
+                    whatItDoes: responseText.substring(0, 500),
+                    dynamicButtons: []
                 }, 
                 steps: [{ msg: 'Información parcial extraída', icon: 'AlertTriangle' }] 
             });

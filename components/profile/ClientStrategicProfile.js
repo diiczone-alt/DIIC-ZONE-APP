@@ -17,6 +17,123 @@ const decodeEntities = (text) => {
     return temp.value;
 };
 
+// Helper component for Claude-style professional markdown rendering
+const ClaudeStyleMarkdownViewer = ({ content }) => {
+    if (!content) return null;
+
+    const blocks = content.replace(/\r\n/g, '\n').split(/\n\n+/);
+
+    return (
+        <div className="space-y-4 text-gray-200 leading-relaxed font-sans text-xs md:text-sm antialiased">
+            {blocks.map((block, bIdx) => {
+                const trimmed = block.trim();
+                if (!trimmed) return null;
+
+                // 1. Alert boxes / Blockquotes (either starts with > or matches warning trigger pattern)
+                const isWarningTrigger = trimmed.startsWith('>') || 
+                                         /^(es importante señalar|nota|atención|advertencia|importante|cuidado):/i.test(trimmed);
+
+                if (isWarningTrigger) {
+                    const cleanText = trimmed.startsWith('>') ? trimmed.slice(1).trim() : trimmed;
+                    const isImportantOrWarning = /^(es importante señalar|atención|advertencia|importante)/i.test(cleanText);
+                    
+                    return (
+                        <div 
+                            key={bIdx} 
+                            className={`p-4 rounded-2xl border backdrop-blur-md flex gap-3 my-3 animate-in fade-in slide-in-from-left-2 duration-500 ${
+                                isImportantOrWarning 
+                                    ? 'bg-rose-500/5 border-rose-500/20 text-rose-200' 
+                                    : 'bg-indigo-500/5 border-indigo-500/20 text-indigo-200'
+                            }`}
+                        >
+                            <div className="shrink-0 mt-0.5">
+                                {isImportantOrWarning ? (
+                                    <ShieldAlert className="w-4 h-4 text-rose-400 animate-pulse" />
+                                ) : (
+                                    <Sparkles className="w-4 h-4 text-indigo-400" />
+                                )}
+                            </div>
+                            <div className="space-y-1 flex-1">
+                                <span className="text-[9px] font-black uppercase tracking-widest opacity-60">
+                                    {isImportantOrWarning ? 'Nota Estratégica / Alerta' : 'Sugerencia de Investigación'}
+                                </span>
+                                <p className="text-[11px] md:text-xs font-medium leading-relaxed">
+                                    {cleanText.split('**').map((part, i) => (
+                                        i % 2 === 1 
+                                            ? <strong key={i} className="text-white font-bold">{part}</strong> 
+                                            : part
+                                    ))}
+                                </p>
+                            </div>
+                        </div>
+                    );
+                }
+
+                // 2. Headings (starts with # or ## or ###)
+                if (trimmed.startsWith('#')) {
+                    const level = (trimmed.match(/^#+/) || ['#'])[0].length;
+                    const cleanText = trimmed.replace(/^#+\s*/, '');
+                    const headingClasses = level === 1 
+                        ? "text-base md:text-lg font-black text-white uppercase tracking-wider border-b border-white/10 pb-1.5 mt-5" 
+                        : level === 2 
+                        ? "text-sm md:text-base font-black text-indigo-300 uppercase tracking-widest mt-3.5" 
+                        : "text-xs md:text-sm font-bold text-white tracking-wide mt-2.5";
+                    
+                    return (
+                        <div key={bIdx} className={headingClasses}>
+                            {cleanText}
+                        </div>
+                    );
+                }
+
+                // 3. Lists (lines starting with *, -, or numbers)
+                const lines = trimmed.split('\n');
+                const isList = lines.every(line => /^\s*([\*\-\•]|\d+\.)\s+/.test(line));
+
+                if (isList) {
+                    return (
+                        <ul key={bIdx} className="space-y-2.5 pl-1 my-2.5">
+                            {lines.map((line, lIdx) => {
+                                const cleanLine = line.replace(/^\s*([\*\-\•]|\d+\.)\s+/, '').trim();
+                                return (
+                                    <li key={lIdx} className="flex gap-2.5 text-[11px] md:text-xs text-gray-300 font-medium group">
+                                        <div className="w-4 h-4 shrink-0 rounded-md bg-indigo-500/10 border border-white/5 flex items-center justify-center text-indigo-400 group-hover:border-indigo-500/30 transition-colors mt-0.5">
+                                            <Zap size={8} className="group-hover:scale-110 transition-transform" />
+                                        </div>
+                                        <span className="flex-1 leading-relaxed">
+                                            {cleanLine.split('**').map((part, i) => (
+                                                i % 2 === 1 
+                                                    ? <strong key={i} className="text-white font-bold">{part}</strong> 
+                                                    : part
+                                            ))}
+                                        </span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    );
+                }
+
+                // 4. Standard Paragraph
+                return (
+                    <p key={bIdx} className="text-[11px] md:text-xs text-gray-300 font-medium leading-relaxed">
+                        {trimmed.split('\n').map((line, lineIdx) => (
+                            <React.Fragment key={lineIdx}>
+                                {lineIdx > 0 && <br />}
+                                {line.split('**').map((part, i) => (
+                                    i % 2 === 1 
+                                        ? <strong key={i} className="text-white font-bold">{part}</strong> 
+                                        : part
+                                ))}
+                            </React.Fragment>
+                        ))}
+                    </p>
+                );
+            })}
+        </div>
+    );
+};
+
 // Helper component for luxury report rendering
 const StrategicReportViewer = ({ content }) => {
     if (!content) return null;
@@ -311,7 +428,8 @@ export default function ClientStrategicProfile() {
             fps: 30
         },
         insights: {}, // Para guardar reportes de tráfico, fricción, etc.
-        goals: []
+        goals: [],
+        dynamicButtons: []
     });
 
     const [syncCount, setSyncCount] = useState(0);
@@ -605,7 +723,8 @@ export default function ClientStrategicProfile() {
                 valueProp: d.valueProp || "Propuesta en fase de definición.",
                 tone: d.tone || "Profesional",
                 mainGoal: d.mainGoal || "Ventas y Autoridad",
-                marketContext: d.marketContext || "Contexto de mercado estándar."
+                marketContext: d.marketContext || "Contexto de mercado estándar.",
+                dynamicButtons: d.dynamicButtons || []
             };
 
             setProfile(updatedProfile);
@@ -712,9 +831,11 @@ export default function ClientStrategicProfile() {
         }, 1500);
     };
 
-    const handleResearchChat = async (e) => {
-        e.preventDefault();
-        if ((!chatInput.trim() && !selectedFile) || isChatting) return;
+    const handleResearchChat = async (e, customInput = null) => {
+        if (e && e.preventDefault) e.preventDefault();
+        
+        const textToSubmit = customInput || chatInput;
+        if ((!textToSubmit.trim() && !selectedFile) || isChatting) return;
         
         const url = profile.websiteUrl || profile.instagramUrl;
         if (!url) {
@@ -722,11 +843,11 @@ export default function ClientStrategicProfile() {
             return;
         }
 
-        const userMsg = chatInput || (selectedFile ? `Archivo adjunto: ${selectedFile.name}` : '');
+        const userMsg = textToSubmit || (selectedFile ? `Archivo adjunto: ${selectedFile.name}` : '');
         const newMessages = [...chatMessages, { role: 'user', content: userMsg }];
         setChatMessages(newMessages);
         
-        const currentInput = chatInput;
+        const currentInput = textToSubmit;
         const currentFile = selectedFile;
         
         setChatInput('');
@@ -1369,9 +1490,13 @@ export default function ClientStrategicProfile() {
                                 chatMessages.map((msg, i) => (
                                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${msg.role === 'user' ? 'bg-indigo-600/30 text-indigo-100 border border-indigo-500/30 rounded-br-none' : 'bg-white/5 text-gray-300 border border-white/10 rounded-bl-none'}`}>
-                                            <div style={{ whiteSpace: "pre-wrap" }} className="leading-relaxed">
-                                                {msg.content}
-                                            </div>
+                                            {msg.role === 'user' ? (
+                                                <div style={{ whiteSpace: "pre-wrap" }} className="leading-relaxed">
+                                                    {msg.content}
+                                                </div>
+                                            ) : (
+                                                <ClaudeStyleMarkdownViewer content={msg.content} />
+                                            )}
                                         </div>
                                     </div>
                                 ))
@@ -1387,7 +1512,27 @@ export default function ClientStrategicProfile() {
                             <div ref={chatEndRef} />
                         </div>
 
-                        <div className="p-2 border-t border-white/5 bg-black/40">
+                        <div className="p-3 border-t border-white/5 bg-black/40">
+                            {/* Dynamic Suggested Question Chips */}
+                            {profile.dynamicButtons && profile.dynamicButtons.length > 0 && (
+                                <div className="flex flex-wrap gap-2 px-1 pb-3 pt-1 border-b border-white/5 mb-3">
+                                    <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest w-full mb-1 flex items-center gap-1">
+                                        <Sparkles size={10} className="animate-pulse" /> Investigaciones Sugeridas:
+                                    </span>
+                                    {profile.dynamicButtons.map((btnText, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => handleResearchChat(null, btnText)}
+                                            disabled={isChatting}
+                                            className="text-[10px] md:text-xs text-gray-300 hover:text-white bg-white/5 hover:bg-indigo-500/20 border border-white/10 hover:border-indigo-500/40 rounded-xl px-3 py-1.5 transition-all text-left font-medium leading-tight disabled:opacity-50 disabled:pointer-events-none"
+                                        >
+                                            {btnText}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* File Preview Chip */}
                             <AnimatePresence>
                                 {selectedFile && (

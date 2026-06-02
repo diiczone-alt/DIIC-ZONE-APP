@@ -19,6 +19,7 @@ import CRMAnalytics from '@/components/crm/CRMAnalytics';
 import BroadcastCenter from '@/components/crm/BroadcastCenter';
 import ProductivityView from '@/components/crm/ProductivityView';
 import { LayoutGrid, List, MessageSquare as InboxIcon, BarChart3, Settings2, megaphone } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Helper para terminología dinámica según el nicho
 const getCRMTerminology = (niche = '', role = '') => {
@@ -197,6 +198,32 @@ const handleGenerateSuggestion = async (lead) => {
     }
 };
 
+const handleLeadStatusChange = (leadId, newStatus) => {
+    setLeads(prevLeads => 
+        prevLeads.map(lead => 
+            lead.id === leadId ? { ...lead, status: newStatus } : lead
+        )
+    );
+};
+
+const handleLeadDelete = (leadId) => {
+    setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId));
+    if (selectedLead?.id === leadId) {
+        setSelectedLead(null);
+    }
+};
+
+const handleLeadUpdate = (updatedLead) => {
+    setLeads(prevLeads => 
+        prevLeads.map(lead => 
+            lead.id === updatedLead.id ? updatedLead : lead
+        )
+    );
+    if (selectedLead?.id === updatedLead.id) {
+        setSelectedLead(updatedLead);
+    }
+};
+
 const handleCreateLead = async (e) => {
     e.preventDefault();
     try {
@@ -258,129 +285,147 @@ const handleCreateLead = async (e) => {
     return (
         <main className="min-h-screen bg-[#050510] text-white p-6 md:p-10 space-y-10">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-white/5 pb-8 relative overflow-hidden group">
-                    <div className="flex flex-col gap-2 relative z-10">
-                        {/* High-Performance Breadcrumb Navigation */}
-                        <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.4em] text-gray-500 mb-2">
-                            <span 
-                                onClick={() => router.push('/dashboard')}
-                                className="hover:text-indigo-400 cursor-pointer transition-colors"
-                            >
-                                DIIC ZONE
-                            </span>
-                            <div className="w-1 h-1 bg-gray-700 rounded-full" />
-                            <span className="text-indigo-400">
-                                {activeClient ? getNicheLabel(activeClient.industry || activeClient.niche) : 'GLOBAL HUB'}
-                            </span>
-                             {activeClient && (
-                                <>
-                                    <div className="w-1 h-1 bg-gray-700 rounded-full" />
-                                    <span className="text-white">CRM</span>
-                                </>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col gap-0">
-                            <div className="flex items-center gap-3">
-                                <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.3em] text-indigo-400">
-                                    {labels.unitName === 'Lead' ? 'CRM HUB' : 'SISTEMA DE GESTIÓN'}
-                                </span>
-                                <div className="h-[1px] w-12 bg-gradient-to-r from-indigo-500/50 to-transparent" />
-                            </div>
-                            
-                            <h1 className="text-6xl md:text-[9rem] font-black text-white tracking-tighter uppercase leading-[0.75] -ml-1 mt-2">
-                                {activeClient ? (
-                                    <div className="flex flex-col">
-                                        <span className="opacity-40 text-4xl md:text-6xl -mb-2">{labels.unitName}</span>
-                                        <span className="text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-200 to-purple-400 drop-shadow-[0_0_30px_rgba(99,102,241,0.3)]">
-                                            {activeClient.name}
-                                        </span>
-                                    </div>
-                                ) : 'CENTRAL CRM'}
-                            </h1>
-                        </div>
-                                           
-                        {(!activeClient || (user?.role !== 'CLIENT')) ? (
-                            <div className="flex items-center gap-4 mt-6">
-                                <div className="relative">
-                                     <button 
-                                         onClick={() => setIsClientSelectorOpen(!isClientSelectorOpen)}
-                                         className="flex items-center gap-4 px-8 py-4 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.08] transition-all shadow-2xl group overflow-hidden relative"
-                                     >
-                                         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 group-hover:text-white transition-colors relative z-10">
-                                             Desplegar Nodo de Marca
-                                         </span>
-                                         <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform relative z-10 ${isClientSelectorOpen ? 'rotate-180 text-white' : ''}`} />
-                                     </button>
-
-                                     <AnimatePresence>
-                                         {isClientSelectorOpen && (
-                                             <motion.div 
-                                                 initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                 exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                                                 className="absolute top-full left-0 mt-4 w-72 bg-[#050510]/95 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 overflow-hidden p-3"
-                                             >
-                                                 <div className="space-y-1">
-                                                     <button 
-                                                         onClick={() => handleSelectClient(null)}
-                                                         className={`w-full flex items-center justify-between px-5 py-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${!activeClient ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'text-gray-500 hover:bg-white/5'}`}
-                                                     >
-                                                         Vista Operativa Global
-                                                         {!activeClient && <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,1)]" />}
-                                                     </button>
-                                                     <div className="h-[1px] bg-white/5 my-2 mx-4" />
-                                                     {clients.map(client => (
-                                                         <button 
-                                                             key={client.id}
-                                                             onClick={() => handleSelectClient(client)}
-                                                             className={`w-full flex items-center justify-between px-5 py-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeClient?.id === client.id ? 'bg-white/10 text-white border border-white/10' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
-                                                         >
-                                                             {client.name}
-                                                             {activeClient?.id === client.id && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]" />}
-                                                         </button>
-                                                     ))}
-                                                 </div>
-                                             </motion.div>
-                                         )}
-                                     </AnimatePresence>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-4 mt-8">
-                                <div className="flex items-center gap-3 px-4 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded-full">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,1)]" />
-                                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.3em]">Nodo Operativo Live</span>
-                                </div>
-                                <div className="h-4 w-[1px] bg-white/10" />
-                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em]">Terminal de Control Exclusiva</span>
-                            </div>
+            <div className="border-b border-white/5 pb-6 space-y-4">
+                {/* Top Row: Breadcrumbs & Client Status Selector */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    {/* High-Performance Breadcrumb Navigation */}
+                    <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.3em] text-gray-500">
+                        <span 
+                            onClick={() => router.push('/dashboard')}
+                            className="hover:text-indigo-400 cursor-pointer transition-colors"
+                        >
+                            DIIC ZONE
+                        </span>
+                        <div className="w-1 h-1 bg-gray-700 rounded-full" />
+                        <span className="text-indigo-400">
+                            {activeClient ? getNicheLabel(activeClient.industry || activeClient.niche) : 'GLOBAL HUB'}
+                        </span>
+                        {activeClient && (
+                            <>
+                                <div className="w-1 h-1 bg-gray-700 rounded-full" />
+                                <span className="text-white">CRM</span>
+                            </>
                         )}
-                    <p className="text-[10px] font-black text-gray-500/40 uppercase tracking-[0.5em] mt-8 flex items-center gap-4">
-                        <span className="h-[1px] w-8 bg-gray-800" />
-                        {activeClient ? `Engine Insight: ${activeClient.name}` : 'Security Protocol DIIC v3.2'}
-                        <span className="h-[1px] w-8 bg-gray-800" />
-                    </p>
+                    </div>
+
+                    {/* Client Status Badge / Selector */}
+                    {(!activeClient || (user?.role !== 'CLIENT')) ? (
+                        <div className="relative">
+                            <button 
+                                onClick={() => setIsClientSelectorOpen(!isClientSelectorOpen)}
+                                className="flex items-center gap-3 px-4 py-2 bg-white/[0.03] border border-white/5 rounded-xl hover:bg-white/[0.08] transition-all shadow-md group relative overflow-hidden"
+                            >
+                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-white transition-colors">
+                                    {activeClient ? activeClient.name : 'Desplegar Nodo de Marca'}
+                                </span>
+                                <ChevronDown className={`w-3.5 h-3.5 text-gray-600 transition-transform ${isClientSelectorOpen ? 'rotate-180 text-white' : ''}`} />
+                            </button>
+
+                            <AnimatePresence>
+                                {isClientSelectorOpen && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className="absolute right-0 sm:left-0 mt-2 w-64 bg-[#0A0A14]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden p-2"
+                                    >
+                                        <div className="space-y-1">
+                                            <button 
+                                                onClick={() => handleSelectClient(null)}
+                                                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${!activeClient ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'text-gray-500 hover:bg-white/5'}`}
+                                            >
+                                                Vista Operativa Global
+                                                {!activeClient && <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
+                                            </button>
+                                            <div className="h-[1px] bg-white/5 my-1 mx-2" />
+                                            {clients.map(client => (
+                                                <button 
+                                                    key={client.id}
+                                                    onClick={() => handleSelectClient(client)}
+                                                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeClient?.id === client.id ? 'bg-white/10 text-white border border-white/10' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
+                                                >
+                                                    {client.name}
+                                                    {activeClient?.id === client.id && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/5 border border-emerald-500/10 rounded-full">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-[0.2em]">Live Connection</span>
+                            </div>
+                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-[0.2em]">Operativo Exclusivo</span>
+                        </div>
+                    )}
                 </div>
 
-                <div className="flex gap-4">
-                    <div className="hidden md:flex items-center bg-white/5 border border-white/10 rounded-xl px-4 py-2">
-                        <Search className="w-4 h-4 text-gray-500 mr-3" />
-                        <input 
-                            type="text" 
-                            placeholder={`Buscar ${labels.unitName?.toLowerCase() || 'dato'}...`}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-transparent text-sm font-bold outline-none text-white w-48" 
-                        />
+                {/* Main Row: Title & Actions & Search */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 bg-indigo-500/10 border border-indigo-500/25 rounded-md text-[8px] font-black uppercase tracking-widest text-indigo-400">
+                                {labels.unitName === 'Lead' ? 'CRM HUB' : 'SISTEMA DE GESTIÓN'}
+                            </span>
+                            {activeClient && (
+                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
+                                    • {labels.unitName}
+                                </span>
+                            )}
+                        </div>
+                        <h1 className="text-xl md:text-3xl font-black text-white tracking-tight uppercase flex items-center gap-2">
+                            {activeClient ? (
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-400">
+                                    {activeClient.name}
+                                </span>
+                            ) : 'CENTRAL CRM GLOBAL'}
+                        </h1>
                     </div>
-                    <button 
-                        onClick={() => setIsRegisterModalOpen(true)}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
-                    >
-                        <UserPlus className="w-4 h-4" /> Nuevo {labels.unitName}
-                    </button>
+
+                    {/* Search & Actions toolbar */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative group">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-hover:text-indigo-400 transition-colors" />
+                            <input 
+                                type="text" 
+                                placeholder={`Buscar ${labels.unitName?.toLowerCase() || 'dato'}...`}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="bg-[#0A0A12] border border-white/5 focus:border-indigo-500/40 rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold outline-none text-white w-48 transition-all placeholder:text-gray-600 focus:w-60 focus:shadow-[0_0_20px_rgba(99,102,241,0.05)]" 
+                            />
+                        </div>
+                        <button 
+                            onClick={() => setIsRegisterModalOpen(true)}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-md shadow-indigo-600/10 active:scale-95"
+                        >
+                            <UserPlus className="w-3.5 h-3.5" /> Nuevo {labels.unitName}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Persistent Mini Dashboard Ribbon */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#0A0A12]/50 border border-white/5 p-3 rounded-2xl backdrop-blur-md">
+                    {[
+                        { label: 'Facturación Est.', val: `$${stats.monthlyRevenue.toLocaleString()}`, sub: 'Acumulado Real', icon: DollarSign, color: 'text-emerald-400' },
+                        { label: `${labels.unitPlural} Activos`, val: stats.totalLeads, sub: 'En Seguimiento', icon: Users, color: 'text-indigo-400' },
+                        { label: 'Agendamientos', val: '12', sub: 'Esta Semana', icon: Calendar, color: 'text-amber-400' },
+                        { label: 'Sugerencias IA', val: stats.aiDraftsCount, sub: 'Respuestas Listas', icon: Sparkles, color: 'text-pink-400' },
+                    ].map((s, i) => (
+                        <div key={i} className="px-4 py-2 flex items-center justify-between border-r last:border-r-0 border-white/5 last:border-none sm:first:pl-2">
+                            <div className="space-y-0.5">
+                                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-wider block">{s.label}</span>
+                                <span className="text-sm font-black text-white tracking-tight block">{s.val}</span>
+                                <span className="text-[7px] text-gray-600 uppercase tracking-widest block">{s.sub}</span>
+                            </div>
+                            <div className={`p-2 rounded-lg bg-white/[0.02] border border-white/5 ${s.color}`}>
+                                <s.icon className="w-4 h-4" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
 
@@ -429,7 +474,12 @@ const handleCreateLead = async (e) => {
                 >
                     {activeView === 'pipeline' && (
                         <div className="h-[750px] border border-white/5 rounded-[3rem] overflow-hidden shadow-2xl">
-                             <PipelineBoard leads={leads} />
+                             <PipelineBoard 
+                                 leads={leads} 
+                                 onLeadStatusChange={handleLeadStatusChange}
+                                 onLeadUpdate={handleLeadUpdate}
+                                 onLeadDelete={handleLeadDelete}
+                             />
                         </div>
                     )}
 
@@ -458,27 +508,7 @@ const handleCreateLead = async (e) => {
                     )}
 
                     {activeView === 'list' && (
-                        <div className="space-y-10">
-                            {/* Business Intelligence Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                {[
-                                    { label: 'Facturación Total', val: `$${stats.monthlyRevenue.toLocaleString()}`, sub: 'ACUMULADO REAL', icon: DollarSign, color: '#10b981' },
-                                    { label: `${labels.unitPlural} Activos`, val: stats.totalLeads, sub: 'EN SEGUIMIENTO', icon: Users, color: '#6366f1' },
-                                    { label: 'Agendamientos', val: '12', sub: 'ESTA SEMANA', icon: Calendar, color: '#f59e0b' },
-                                    { label: 'IA Sugerencias', val: stats.aiDraftsCount, sub: 'PENDIENTES BOTS', icon: Sparkles, color: '#ec4899' },
-                                ].map((s, i) => (
-                                    <div key={i} className="bg-white/[0.02] border border-white/5 p-6 rounded-[2rem] relative overflow-hidden group hover:border-white/10 transition-all">
-                                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                            <s.icon className="w-12 h-12" style={{ color: s.color }} />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{s.label}</p>
-                                            <p className="text-2xl font-black text-white italic tracking-tighter">{s.val}</p>
-                                            <p className="text-[7px] font-bold text-gray-600 uppercase tracking-widest">{s.sub}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                        <div className="space-y-6">
 
                             {/* Medical CRM Table */}
                             <div className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl shadow-2xl">
@@ -644,11 +674,46 @@ const handleCreateLead = async (e) => {
                         {/* Quick Communication Actions */}
                         <div className="grid grid-cols-3 gap-3">
                             {[
-                                { label: 'Llamar', icon: Phone, color: 'text-emerald-500', bg: 'bg-emerald-500/5', border: 'border-emerald-500/20' },
-                                { label: 'WhatsApp', icon: MessageCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/5', border: 'border-emerald-500/20' },
-                                { label: 'Email', icon: Mail, color: 'text-indigo-500', bg: 'bg-indigo-500/5', border: 'border-indigo-500/20' },
+                                { 
+                                    label: 'Llamar', 
+                                    icon: Phone, 
+                                    color: 'text-emerald-500', 
+                                    bg: 'bg-emerald-500/5', 
+                                    border: 'border-emerald-500/20',
+                                    action: () => {
+                                        if (!selectedLead.phone) return toast.error("No hay teléfono registrado");
+                                        window.open(`tel:${selectedLead.phone}`);
+                                    }
+                                },
+                                { 
+                                    label: 'WhatsApp', 
+                                    icon: MessageCircle, 
+                                    color: 'text-emerald-400', 
+                                    bg: 'bg-emerald-500/5', 
+                                    border: 'border-emerald-500/20',
+                                    action: () => {
+                                        if (!selectedLead.phone) return toast.error("No hay teléfono registrado");
+                                        const cleanPhone = selectedLead.phone.replace(/\D/g, '');
+                                        window.open(`https://wa.me/${cleanPhone}`, '_blank');
+                                    }
+                                },
+                                { 
+                                    label: 'Email', 
+                                    icon: Mail, 
+                                    color: 'text-indigo-500', 
+                                    bg: 'bg-indigo-500/5', 
+                                    border: 'border-indigo-500/20',
+                                    action: () => {
+                                        if (!selectedLead.email) return toast.error("No hay correo registrado");
+                                        window.open(`mailto:${selectedLead.email}`);
+                                    }
+                                },
                             ].map((btn, i) => (
-                                <button key={i} className={`flex flex-col items-center gap-2 p-4 rounded-2xl ${btn.bg} ${btn.border} border hover:bg-white/5 transition-all group`}>
+                                <button 
+                                    key={i} 
+                                    onClick={btn.action}
+                                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl ${btn.bg} ${btn.border} border hover:bg-white/5 transition-all group`}
+                                >
                                     <btn.icon className={`w-5 h-5 ${btn.color} group-hover:scale-110 transition-transform`} />
                                     <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">{btn.label}</span>
                                 </button>

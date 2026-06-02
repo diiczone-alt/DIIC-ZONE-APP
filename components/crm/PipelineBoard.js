@@ -6,6 +6,8 @@ import { Plus, MoreHorizontal, ChevronLeft, ChevronRight, Filter, Search, Sparkl
 import { AnimatePresence } from 'framer-motion';
 import LeadCard from './LeadCard';
 import LeadProfileView from './LeadProfileView';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 const COLUMN_CONFIG = {
     'incoming': { id: 'incoming', title: 'LEADS ENTRANTES', color: 'border-red-500', glow: 'shadow-[0_0_15px_#ef444430]' },
@@ -18,7 +20,18 @@ const COLUMN_CONFIG = {
 
 const COLUMN_ORDER = ['incoming', 'contact', 'rebound', 'identified', 'negotiation', 'won'];
 
-export default function PipelineBoard({ leads = [] }) {
+const normalizeStatus = (status = '') => {
+    const val = status?.toLowerCase().trim() || 'incoming';
+    if (['incoming', 'prospecto', 'active', 'nuevo', 'nuevo lead'].includes(val)) return 'incoming';
+    if (['contact', 'agendado', 'contacto', 'contacto inicial'].includes(val)) return 'contact';
+    if (['rebound', 'repesca', 'repesca 15 días'].includes(val)) return 'rebound';
+    if (['identified', 'curso interés', 'curso interés id'].includes(val)) return 'identified';
+    if (['negotiation', 'negociación', 'negocio'].includes(val)) return 'negotiation';
+    if (['won', 'cerrado', 'cerrado - venta', 'tratado', 'exito'].includes(val)) return 'won';
+    return 'incoming';
+};
+
+export default function PipelineBoard({ leads = [], onLeadStatusChange, onLeadUpdate, onLeadDelete }) {
     const [isBrowser, setIsBrowser] = useState(false);
     const [data, setData] = useState({
         columns: COLUMN_CONFIG,
@@ -39,16 +52,16 @@ export default function PipelineBoard({ leads = [] }) {
 
             leads.forEach(lead => {
                 const id = lead.id;
+                const normalized = normalizeStatus(lead.status);
                 leadsMap[id] = {
                     ...lead,
                     name: lead.full_name,
                     value: Number(lead.price_estimated || 0),
-                    status: lead.status?.toLowerCase() || 'incoming'
+                    status: normalized
                 };
                 
-                const colKey = lead.status?.toLowerCase() || 'incoming';
-                if (colsData[colKey]) {
-                    colsData[colKey].push(id);
+                if (colsData[normalized]) {
+                    colsData[normalized].push(id);
                 } else {
                     colsData['incoming'].push(id);
                 }
@@ -58,6 +71,14 @@ export default function PipelineBoard({ leads = [] }) {
                 ...prev,
                 leads: leadsMap,
                 columnsData: colsData
+            }));
+        } else {
+            setData(prev => ({
+                ...prev,
+                leads: {},
+                columnsData: {
+                    'incoming': [], 'contact': [], 'rebound': [], 'identified': [], 'negotiation': [], 'won': []
+                }
             }));
         }
     }, [leads]);
@@ -80,7 +101,7 @@ export default function PipelineBoard({ leads = [] }) {
         setIsBrowser(true);
     }, []);
 
-    const onDragEnd = (result) => {
+    const onDragEnd = async (result) => {
         const { destination, source, draggableId } = result;
 
         if (!destination) return;
@@ -89,33 +110,81 @@ export default function PipelineBoard({ leads = [] }) {
         const start = data.columnsData[source.droppableId];
         const finish = data.columnsData[destination.droppableId];
 
+        let newColumnsData;
         if (start === finish) {
             const newLeadIds = Array.from(start);
             newLeadIds.splice(source.index, 1);
             newLeadIds.splice(destination.index, 0, draggableId);
 
-            const newColumnsData = {
+            newColumnsData = {
                 ...data.columnsData,
                 [source.droppableId]: newLeadIds,
             };
-
-            setData({ ...data, columnsData: newColumnsData });
         } else {
             const startLeadIds = Array.from(start);
             startLeadIds.splice(source.index, 1);
-            const newStart = startLeadIds;
 
             const finishLeadIds = Array.from(finish);
             finishLeadIds.splice(destination.index, 0, draggableId);
-            const newFinish = finishLeadIds;
 
-            const newColumnsData = {
+            newColumnsData = {
                 ...data.columnsData,
-                [source.droppableId]: newStart,
-                [destination.droppableId]: newFinish,
+                [source.droppableId]: startLeadIds,
+                [destination.droppableId]: finishLeadIds,
             };
+        }
 
-            setData({ ...data, columnsData: newColumnsData });
+        const originalColumnsData = data.columnsData;
+
+        // Optimistically update local board state
+        setData(prev => ({
+            ...prev,
+            columnsData: newColumnsData,
+            leads: {
+                ...prev.leads,
+                [draggableId]: {
+                    ...prev.leads[draggableId],
+                    status: destination.droppableId
+                }
+            }
+        }));
+
+        // Propagate status change to parent state
+        if (onLeadStatusChange) {
+            onLeadStatusChange(draggableId, destination.droppableId.toUpperCase());
+        }
+
+        try {
+            const { error } = await supabase
+                .from('crm_leads')
+                .update({ status: destination.droppableId.toUpperCase() })
+                .eq('id', draggableId);
+
+            if (error) throw error;
+
+            toast.success("Estado del lead actualizado", {
+                description: `Movido a ${COLUMN_CONFIG[destination.droppableId].title}.`
+            });
+        } catch (err) {
+            console.error("Error updating lead status in DB:", err);
+            toast.error("Error al guardar estado en el servidor");
+            
+            // Revert state
+            setData(prev => ({
+                ...prev,
+                columnsData: originalColumnsData,
+                leads: {
+                    ...prev.leads,
+                    [draggableId]: {
+                        ...prev.leads[draggableId],
+                        status: source.droppableId
+                    }
+                }
+            }));
+            
+            if (onLeadStatusChange) {
+                onLeadStatusChange(draggableId, source.droppableId.toUpperCase());
+            }
         }
     };
 
@@ -267,7 +336,73 @@ export default function PipelineBoard({ leads = [] }) {
                             onClick={() => setSelectedLead(null)}
                         ></div>
                         {/* Drawer */}
-                        <LeadProfileView lead={selectedLead} onClose={() => setSelectedLead(null)} />
+                        <LeadProfileView 
+                            lead={selectedLead} 
+                            onClose={() => setSelectedLead(null)} 
+                            onLeadStatusChange={(leadId, newStatus) => {
+                                setData(prev => {
+                                    const leadsMap = { ...prev.leads };
+                                    if (leadsMap[leadId]) {
+                                        const oldCol = leadsMap[leadId].status;
+                                        const newCol = newStatus.toLowerCase();
+                                        leadsMap[leadId] = { ...leadsMap[leadId], status: newCol };
+                                        
+                                        const colsData = { ...prev.columnsData };
+                                        if (colsData[oldCol]) {
+                                            colsData[oldCol] = colsData[oldCol].filter(id => id !== leadId);
+                                        }
+                                        if (colsData[newCol] && !colsData[newCol].includes(leadId)) {
+                                            colsData[newCol] = [leadId, ...colsData[newCol]];
+                                        }
+                                        return { ...prev, leads: leadsMap, columnsData: colsData };
+                                    }
+                                    return prev;
+                                });
+                                if (onLeadStatusChange) onLeadStatusChange(leadId, newStatus);
+                            }}
+                            onLeadUpdate={(updatedLead) => {
+                                setData(prev => {
+                                    const leadsMap = { ...prev.leads };
+                                    if (leadsMap[updatedLead.id]) {
+                                        const oldCol = leadsMap[updatedLead.id].status;
+                                        const newCol = normalizeStatus(updatedLead.status);
+                                        leadsMap[updatedLead.id] = {
+                                            ...updatedLead,
+                                            name: updatedLead.full_name,
+                                            value: Number(updatedLead.price_estimated || 0),
+                                            status: newCol
+                                        };
+                                        
+                                        let colsData = { ...prev.columnsData };
+                                        if (oldCol !== newCol) {
+                                            if (colsData[oldCol]) {
+                                                colsData[oldCol] = colsData[oldCol].filter(id => id !== updatedLead.id);
+                                            }
+                                            if (colsData[newCol] && !colsData[newCol].includes(updatedLead.id)) {
+                                                colsData[newCol] = [updatedLead.id, ...colsData[newCol]];
+                                            }
+                                        }
+                                        return { ...prev, leads: leadsMap, columnsData: colsData };
+                                    }
+                                    return prev;
+                                });
+                                if (onLeadUpdate) onLeadUpdate(updatedLead);
+                            }}
+                            onLeadDelete={(leadId) => {
+                                setData(prev => {
+                                    const leadsMap = { ...prev.leads };
+                                    const oldCol = leadsMap[leadId]?.status;
+                                    delete leadsMap[leadId];
+                                    
+                                    const colsData = { ...prev.columnsData };
+                                    if (oldCol && colsData[oldCol]) {
+                                        colsData[oldCol] = colsData[oldCol].filter(id => id !== leadId);
+                                    }
+                                    return { ...prev, leads: leadsMap, columnsData: colsData };
+                                });
+                                if (onLeadDelete) onLeadDelete(leadId);
+                            }}
+                        />
                     </>
                 )}
             </AnimatePresence>
