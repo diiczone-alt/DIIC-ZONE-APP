@@ -394,7 +394,7 @@ const RecordingFormatsModal = ({ isOpen, onClose, profile }) => {
     );
 };
 
-export default function ClientStrategicProfile() {
+export default function ClientStrategicProfile({ forcedViewMode }) {
     const { user } = useAuth();
     const [activeClientId, setActiveClientId] = useState(user?.client_id || null);
 
@@ -434,7 +434,13 @@ export default function ClientStrategicProfile() {
 
     const [syncCount, setSyncCount] = useState(0);
     const [showFormats, setShowFormats] = useState(false);
-    const [viewMode, setViewMode] = useState('edit'); // 'edit' or 'report'
+    const [viewMode, setViewMode] = useState(forcedViewMode || 'edit'); // 'edit' or 'report'
+
+    useEffect(() => {
+        if (forcedViewMode) {
+            setViewMode(forcedViewMode);
+        }
+    }, [forcedViewMode]);
     const [isSaving, setIsSaving] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [isSnapshotModalOpen, setIsSnapshotModalOpen] = useState(false);
@@ -1004,35 +1010,46 @@ export default function ClientStrategicProfile() {
         <div className="animate-in fade-in duration-500 pb-16">
             <div className="space-y-4 text-center pb-8 border-b border-white/5 mb-12">
                 <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[9px] font-black text-indigo-400 uppercase tracking-widest">
-                    Capa 1: Base del Negocio
+                    {viewMode === 'edit' ? 'Capa 1: Búsqueda Estratégica' : 'Capa 2: Perfil Estratégico'}
                 </span>
                 <h2 className="text-5xl md:text-6xl font-black text-white uppercase italic tracking-tighter">
-                    Perfil <span className="text-indigo-500">Estratégico</span>
+                    {viewMode === 'edit' ? (
+                        <>Búsqueda <span className="text-indigo-500">Estratégica</span></>
+                    ) : (
+                        <>Perfil <span className="text-indigo-500">Estratégico</span></>
+                    )}
                 </h2>
                 <p className="text-gray-500 text-sm font-bold uppercase tracking-[0.2em] max-w-2xl mx-auto">
-                    Define la identidad central de tu marca. Conecta tus redes y web para que Diiczone entienda tu negocio automáticamente.
+                    {viewMode === 'edit' 
+                        ? 'Investiga tu huella digital y define las bases estratégicas de tu negocio. Conecta tus redes y web para iniciar la auditoría IA.'
+                        : 'Consulta el diagnóstico y reporte final de tu marca optimizado por Inteligencia Artificial.'
+                    }
                 </p>
                 <div className="flex justify-center items-center gap-6 mt-6 print:hidden">
-                    <div className="flex bg-[#0A0A0F] border border-white/5 rounded-2xl p-1 p-1">
+                    {!forcedViewMode && (
+                        <div className="flex bg-[#0A0A0F] border border-white/5 rounded-2xl p-1 p-1">
+                            <button 
+                                onClick={() => setViewMode('edit')}
+                                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'edit' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                Modo Edición
+                            </button>
+                            <button 
+                                onClick={() => setViewMode('report')}
+                                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'report' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                Vista de Reporte
+                            </button>
+                        </div>
+                    )}
+                    {(!forcedViewMode || viewMode === 'report') && (
                         <button 
-                            onClick={() => setViewMode('edit')}
-                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'edit' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                            onClick={handleDownloadReport}
+                            className="px-6 py-2.5 bg-indigo-600 border border-indigo-400/50 rounded-xl text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all flex items-center gap-2 transform active:scale-95"
                         >
-                            Modo Edición
+                            <FileUp size={14} className="animate-bounce" /> Descargar Reporte (PDF)
                         </button>
-                        <button 
-                            onClick={() => setViewMode('report')}
-                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'report' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                        >
-                            Vista de Reporte
-                        </button>
-                    </div>
-                    <button 
-                        onClick={handleDownloadReport}
-                        className="px-6 py-2.5 bg-indigo-600 border border-indigo-400/50 rounded-xl text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all flex items-center gap-2 transform active:scale-95"
-                    >
-                        <FileUp size={14} className="animate-bounce" /> Descargar Reporte (PDF)
-                    </button>
+                    )}
                 {/* Print Styles - Ultra Optimized for PDF */}
             <style jsx global>{`
                 @media print {

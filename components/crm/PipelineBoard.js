@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Plus, MoreHorizontal, ChevronLeft, ChevronRight, Filter, Search, Sparkles } from 'lucide-react';
+import { Plus, MoreHorizontal, ChevronLeft, ChevronRight, Filter, Search, Sparkles, Check, X, Loader2 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import LeadCard from './LeadCard';
 import LeadProfileView from './LeadProfileView';
@@ -31,8 +31,12 @@ const normalizeStatus = (status = '') => {
     return 'incoming';
 };
 
-export default function PipelineBoard({ leads = [], onLeadStatusChange, onLeadUpdate, onLeadDelete }) {
+export default function PipelineBoard({ leads = [], onLeadStatusChange, onLeadUpdate, onLeadDelete, onLeadCreate, labels }) {
     const [isBrowser, setIsBrowser] = useState(false);
+    const [boardSearch, setBoardSearch] = useState('');
+    const [quickAddColumn, setQuickAddColumn] = useState(null);
+    const [quickAddName, setQuickAddName] = useState('');
+    const [quickAddSaving, setQuickAddSaving] = useState(false);
     const [data, setData] = useState({
         columns: COLUMN_CONFIG,
         columnOrder: COLUMN_ORDER,
@@ -44,44 +48,46 @@ export default function PipelineBoard({ leads = [], onLeadStatusChange, onLeadUp
 
     useEffect(() => {
         setIsBrowser(true);
-        if (leads.length > 0) {
-            const leadsMap = {};
-            const colsData = {
-                'incoming': [], 'contact': [], 'rebound': [], 'identified': [], 'negotiation': [], 'won': []
+        
+        // Filter leads locally for search
+        const filteredLeads = leads.filter(lead => {
+            if (!boardSearch) return true;
+            const searchLower = boardSearch.toLowerCase();
+            return (
+                lead.full_name?.toLowerCase().includes(searchLower) ||
+                lead.city?.toLowerCase().includes(searchLower) ||
+                lead.industry?.toLowerCase().includes(searchLower)
+            );
+        });
+
+        const leadsMap = {};
+        const colsData = {
+            'incoming': [], 'contact': [], 'rebound': [], 'identified': [], 'negotiation': [], 'won': []
+        };
+
+        filteredLeads.forEach(lead => {
+            const id = lead.id;
+            const normalized = normalizeStatus(lead.status);
+            leadsMap[id] = {
+                ...lead,
+                name: lead.full_name,
+                value: Number(lead.price_estimated || 0),
+                status: normalized
             };
+            
+            if (colsData[normalized]) {
+                colsData[normalized].push(id);
+            } else {
+                colsData['incoming'].push(id);
+            }
+        });
 
-            leads.forEach(lead => {
-                const id = lead.id;
-                const normalized = normalizeStatus(lead.status);
-                leadsMap[id] = {
-                    ...lead,
-                    name: lead.full_name,
-                    value: Number(lead.price_estimated || 0),
-                    status: normalized
-                };
-                
-                if (colsData[normalized]) {
-                    colsData[normalized].push(id);
-                } else {
-                    colsData['incoming'].push(id);
-                }
-            });
-
-            setData(prev => ({
-                ...prev,
-                leads: leadsMap,
-                columnsData: colsData
-            }));
-        } else {
-            setData(prev => ({
-                ...prev,
-                leads: {},
-                columnsData: {
-                    'incoming': [], 'contact': [], 'rebound': [], 'identified': [], 'negotiation': [], 'won': []
-                }
-            }));
-        }
-    }, [leads]);
+        setData(prev => ({
+            ...prev,
+            leads: leadsMap,
+            columnsData: colsData
+        }));
+    }, [leads, boardSearch]);
     const [selectedLead, setSelectedLead] = useState(null);
     const scrollContainerRef = useRef(null);
 
@@ -97,9 +103,35 @@ export default function PipelineBoard({ leads = [], onLeadStatusChange, onLeadUp
         }
     };
 
-    useEffect(() => {
-        setIsBrowser(true);
-    }, []);
+    const handleQuickAddSubmit = async (columnId) => {
+        if (!quickAddName.trim()) {
+            toast.error("Por favor ingresa un nombre válido");
+            return;
+        }
+
+        setQuickAddSaving(true);
+        try {
+            const defaultIndustry = labels?.unitName === 'Paciente' ? 'Urología General' : 'Interés General';
+            const defaultSource = 'Directo';
+
+            if (onLeadCreate) {
+                await onLeadCreate({
+                    full_name: quickAddName.trim(),
+                    status: columnId.toUpperCase(),
+                    price_estimated: 0,
+                    industry: defaultIndustry,
+                    source: defaultSource
+                });
+            }
+
+            setQuickAddName('');
+            setQuickAddColumn(null);
+        } catch (err) {
+            console.error("Error in handleQuickAddSubmit:", err);
+        } finally {
+            setQuickAddSaving(false);
+        }
+    };
 
     const onDragEnd = async (result) => {
         const { destination, source, draggableId } = result;
@@ -210,7 +242,13 @@ export default function PipelineBoard({ leads = [], onLeadStatusChange, onLeadUp
                     <div className="h-6 w-px bg-white/10"></div>
                     <div className="flex items-center gap-3 bg-[#151520] rounded-xl px-3 py-1.5 border border-white/5">
                         <Search className="w-4 h-4 text-gray-500" />
-                        <input type="text" placeholder="Buscar lead..." className="bg-transparent border-none text-xs text-white focus:outline-none w-48" />
+                        <input 
+                            type="text" 
+                            placeholder={`Buscar ${labels?.unitName?.toLowerCase() || 'lead'}...`} 
+                            value={boardSearch}
+                            onChange={(e) => setBoardSearch(e.target.value)}
+                            className="bg-transparent border-none text-xs text-white focus:outline-none w-48" 
+                        />
                     </div>
                     <button className="flex items-center gap-2 text-xs text-gray-400 hover:text-white px-3 py-1.5 rounded-xl border border-white/5 hover:bg-white/5 transition-colors">
                         <Filter className="w-3.5 h-3.5" /> Filtros
@@ -232,7 +270,7 @@ export default function PipelineBoard({ leads = [], onLeadStatusChange, onLeadUp
             {/* --- PIPELINE CANVAS --- */}
             <div 
                 ref={scrollContainerRef}
-                className="flex-1 overflow-x-hidden overflow-y-hidden p-3 relative"
+                className="flex-1 overflow-x-auto overflow-y-hidden p-3 relative custom-scrollbar"
             >
                 {/* Ambient Background Glow */}
                 <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
@@ -298,10 +336,61 @@ export default function PipelineBoard({ leads = [], onLeadStatusChange, onLeadUp
                                             )}
                                             {provided.placeholder}
 
-                                            {/* Quick Add Button */}
-                                            <button className="w-full py-2 flex items-center justify-center gap-2 text-gray-500 hover:bg-white/5 hover:text-gray-300 rounded-xl border border-dashed border-white/10 transition-colors text-sm">
-                                                <Plus className="w-4 h-4" /> Añadir
-                                            </button>
+                                            {/* Quick Add Form / Button */}
+                                            {quickAddColumn === column.id ? (
+                                                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2.5 space-y-2 mt-2">
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder={`Nombre del ${labels?.unitName || 'Lead'}...`}
+                                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50"
+                                                        value={quickAddName}
+                                                        onChange={(e) => setQuickAddName(e.target.value)}
+                                                        onKeyDown={async (e) => {
+                                                            if (e.key === 'Enter') {
+                                                                await handleQuickAddSubmit(column.id);
+                                                            } else if (e.key === 'Escape') {
+                                                                setQuickAddColumn(null);
+                                                            }
+                                                        }}
+                                                        autoFocus
+                                                        disabled={quickAddSaving}
+                                                    />
+                                                    <div className="flex gap-1.5 justify-end">
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => setQuickAddColumn(null)} 
+                                                            disabled={quickAddSaving}
+                                                            className="p-1 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-colors"
+                                                            title="Cancelar"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => handleQuickAddSubmit(column.id)}
+                                                            disabled={quickAddSaving}
+                                                            className="p-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 transition-colors flex items-center justify-center"
+                                                            title="Guardar"
+                                                        >
+                                                            {quickAddSaving ? (
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                            ) : (
+                                                                <Check className="w-3.5 h-3.5" />
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => {
+                                                        setQuickAddColumn(column.id);
+                                                        setQuickAddName('');
+                                                    }}
+                                                    className="w-full py-2 mt-2 flex items-center justify-center gap-2 text-gray-500 hover:bg-white/5 hover:text-gray-300 rounded-xl border border-dashed border-white/10 transition-colors text-xs uppercase font-black tracking-wider"
+                                                >
+                                                    <Plus className="w-3.5 h-3.5" /> Añadir {labels?.unitName || 'Lead'}
+                                                </button>
+                                            )}
                                         </div>
                                     )}
                                 </Droppable>

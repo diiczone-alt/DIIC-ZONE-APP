@@ -90,7 +90,7 @@ export default function CRMPage() {
         source: 'Ads'
     });
 
-    const labels = getCRMTerminology(activeClient?.industry || activeClient?.niche || '', user?.role);
+    const labels = getCRMTerminology(activeClient?.industry || activeClient?.specialty || '', user?.role);
 
     useEffect(() => {
         if (!user) return;
@@ -107,7 +107,7 @@ export default function CRMPage() {
 
             const { data: clientData } = await supabase
                 .from('clients')
-                .select('id, name, city, growth_level, industry, niche, price, onboarding_data');
+                .select('id, name, city, growth_level, industry, specialty, price, onboarding_data');
             
             // If Client, filter the selector data too
             setClients(isStaff ? (clientData || []) : (clientData?.filter(c => c.id === targetId) || []));
@@ -253,6 +253,27 @@ const handleCreateLead = async (e) => {
         } catch (err) {
             console.error("Error creating lead:", err);
             toast.error(`Error al registrar ${labels.unitName.toLowerCase()}`);
+        }
+    };
+
+    const handleCreateLeadQuick = async (leadData) => {
+        try {
+            const targetId = user.role === 'CLIENT' ? user.client_id : (clientId || user.user_metadata?.client_id || user.client_id || 'C-REYS');
+            const { data, error } = await supabase
+                .from('crm_leads')
+                .insert([{ ...leadData, client_id: targetId }])
+                .select();
+
+            if (error) throw error;
+            setLeads(prevLeads => [data[0], ...prevLeads]);
+            toast.success(`${labels.unitName} registrado correctamente`, {
+                description: `${data[0].full_name} añadido al CRM.`
+            });
+            return data[0];
+        } catch (err) {
+            console.error("Error creating lead quickly:", err);
+            toast.error(`Error al registrar ${labels.unitName.toLowerCase()}`);
+            throw err;
         }
     };
 
@@ -488,6 +509,8 @@ const handleCreateLead = async (e) => {
                                  onLeadStatusChange={handleLeadStatusChange}
                                  onLeadUpdate={handleLeadUpdate}
                                  onLeadDelete={handleLeadDelete}
+                                 onLeadCreate={handleCreateLeadQuick}
+                                 labels={labels}
                              />
                         </div>
                     )}

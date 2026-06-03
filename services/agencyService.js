@@ -147,19 +147,21 @@ export const agencyService = {
                 setTimeout(() => reject(new Error("Supabase timeout after 60s")), 60000)
             );
 
-            const { data, error } = await Promise.race([
-                supabase
+            const updatePromise = (async () => {
+                const { data, error } = await supabase
                     .from('clients')
                     .update(sanitizedUpdates)
                     .eq('id', id)
-                    .select(),
+                    .select();
+                if (error) throw error;
+                return data;
+            })();
+
+            const data = await Promise.race([
+                updatePromise,
                 timeoutPromise
             ]);
 
-            if (error) {
-                toast.error("Error BD Clients: " + error.message, { id: 'debug-db' });
-                throw error;
-            }
             toast.success("BD Clients actualizada", { id: 'debug-db' });
 
             // 🔄 SYNC TO PROFILE (Propagate Brand Identity)
