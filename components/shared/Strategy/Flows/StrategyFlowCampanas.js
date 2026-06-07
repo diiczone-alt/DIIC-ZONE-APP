@@ -178,6 +178,56 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
         }
     });
 
+    const [detailedNodes, setDetailedNodes] = useState([]);
+
+    useEffect(() => {
+        const categories = [
+            { label: 'Videos', key: 'videos', icon: Video, color: '#f43f5e', type: 'video', subtype: 'v_educativo', stage: 'conexión' },
+            { label: 'Posts', key: 'posts', icon: Box, color: '#818cf8', type: 'post', subtype: 'i_post', stage: 'conexión' },
+            { label: 'Stories', key: 'stories', icon: Instagram, color: '#f97316', type: 'post', subtype: 'i_historia', stage: 'conexión' },
+            { label: 'Reels', key: 'reels', icon: Play, color: '#10b981', type: 'video', subtype: 'v_viral', stage: 'atracción' },
+            { label: 'Tik Tok', key: 'tiktok', icon: Activity, color: '#22d3ee', type: 'video', subtype: 'v_viral', stage: 'atracción' },
+            { label: 'Flujos CRM', key: 'crm', icon: Bot, color: '#10b981', type: 'recurso', subtype: 'r_crm_flow', stage: 'crm' },
+            { label: 'Forms', key: 'forms', icon: Target, color: '#22d3ee', type: 'recurso', subtype: 'r_form', stage: 'conversión' }
+        ];
+
+        setDetailedNodes(prev => {
+            const nextList = [...prev];
+            
+            categories.forEach(cat => {
+                const targetCount = newCampaign.ingredients[cat.key] || 0;
+                const currentItems = nextList.filter(item => item.categoryKey === cat.key);
+                
+                if (currentItems.length < targetCount) {
+                    const diff = targetCount - currentItems.length;
+                    for (let i = 0; i < diff; i++) {
+                        const index = currentItems.length + i + 1;
+                        nextList.push({
+                            id: `${cat.key}_detailed_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                            categoryKey: cat.key,
+                            label: `${cat.label} ${index}`,
+                            type: cat.type,
+                            subtype: cat.subtype,
+                            stage: cat.stage,
+                            title: `${cat.label.slice(0, -1)} ${index}`.toUpperCase(),
+                            platforms: cat.key === 'tiktok' ? ['tiktok'] : (cat.key === 'reels' ? ['instagram'] : (['videos', 'posts'].includes(cat.key) ? ['instagram', 'youtube'] : ['web']))
+                        });
+                    }
+                } else if (currentItems.length > targetCount) {
+                    let diff = currentItems.length - targetCount;
+                    for (let i = nextList.length - 1; i >= 0; i--) {
+                        if (nextList[i].categoryKey === cat.key && diff > 0) {
+                            nextList.splice(i, 1);
+                            diff--;
+                        }
+                    }
+                }
+            });
+            
+            return nextList;
+        });
+    }, [newCampaign.ingredients]);
+
     useEffect(() => {
         if (forceCreate) {
             setIsCreating(true);
@@ -188,7 +238,93 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
         const finalName = newCampaign.name.trim() || `Estrategia ${campaigns.length + 1}`;
         const finalObj = newCampaign.objective.trim() || 'Sin objetivo definido';
 
-        const { nodes, edges } = generateStrategicNodes(newCampaign.ingredients);
+        let nodes = [];
+        let edges = [];
+
+        if (detailedNodes && detailedNodes.length > 0) {
+            const STAGES = ['atracción', 'conexión', 'autoridad', 'conversión', 'escala', 'crm'];
+            const startX = 256; 
+            const colWidth = 600;
+            const startY = 64;  
+            const laneHeight = 600;
+            
+            const getYBase = (type, title) => {
+                const t = (type || "").toLowerCase();
+                const titleStr = (title || "").toLowerCase();
+                if (t === 'label' || t === 'sticky' || titleStr.includes('objetivo') || titleStr.includes('texto')) return startY;
+                if (t.includes('imagen') || t.includes('post') || titleStr.includes('carrusel')) return startY + laneHeight;
+                if (t === 'video' || titleStr.includes('youtube') || titleStr.includes('cinemático')) return startY + (laneHeight * 2);
+                if (t.includes('reel') || t.includes('tiktok') || titleStr.includes('short')) return startY + (laneHeight * 3);
+                if (t.includes('historia') || t.includes('story')) return startY + (laneHeight * 4);
+                if (t.includes('crm') || t.includes('whatsapp') || t.includes('automatización') || t.includes('form') || t.includes('captación')) return startY + (laneHeight * 5);
+                return startY + laneHeight;
+            };
+
+            const nodeBuckets = { atracción: [], conexión: [], autoridad: [], conversión: [], crm: [] };
+
+            detailedNodes.forEach(item => {
+                const s = item.stage.toLowerCase();
+                const sIdx = STAGES.indexOf(s) !== -1 ? STAGES.indexOf(s) : 0;
+                const xBase = startX + (sIdx * colWidth);
+                const yBase = getYBase(item.type, item.title);
+                
+                const nodesInCell = nodes.filter(n => (n.data.stage || '').toLowerCase() === s && Math.abs(n.y - yBase) < 400).length;
+                const x = xBase + 50 + (Math.floor(nodesInCell / 3) * 220);
+                const y = yBase + 80 + (nodesInCell % 3 * 180);
+
+                const node = {
+                    id: `${item.type}_${Date.now()}_${nodes.length}_${Math.random().toString(36).substr(2, 4)}`,
+                    type: item.type,
+                    x,
+                    y,
+                    data: {
+                        title: item.title.trim().toUpperCase(),
+                        subtype: item.subtype,
+                        stage: s.toUpperCase(),
+                        funnelLevel: s === 'atracción' ? 'TOFU' : (['conexión', 'autoridad'].includes(s) ? 'MOFU' : (s === 'conversión' ? 'BOFU' : 'CRM')),
+                        platforms: item.platforms || []
+                    }
+                };
+                nodes.push(node);
+                
+                if (nodeBuckets[s]) {
+                    nodeBuckets[s].push(node);
+                } else {
+                    nodeBuckets.atracción.push(node);
+                }
+            });
+
+            // Links Attraction -> Connection / Autoridad
+            const nextTarget = nodeBuckets.conexión.length > 0 ? nodeBuckets.conexión[0] : (nodeBuckets.autoridad.length > 0 ? nodeBuckets.autoridad[0] : null);
+            if (nodeBuckets.atracción.length > 0 && nextTarget) {
+                nodeBuckets.atracción.forEach(src => {
+                    edges.push({ id: `e-att-${src.id}`, source: src.id, target: nextTarget.id });
+                });
+            }
+            // Connection -> Autoridad / Conversion
+            const nextTarget2 = nodeBuckets.autoridad.length > 0 ? nodeBuckets.autoridad[0] : (nodeBuckets.conversión.length > 0 ? nodeBuckets.conversión[0] : null);
+            if (nodeBuckets.conexión.length > 0 && nextTarget2) {
+                nodeBuckets.conexión.forEach(src => {
+                    edges.push({ id: `e-con-${src.id}`, source: src.id, target: nextTarget2.id });
+                });
+            }
+            // Autoridad -> Conversion
+            if (nodeBuckets.autoridad.length > 0 && nodeBuckets.conversión.length > 0) {
+                nodeBuckets.autoridad.forEach(src => {
+                    edges.push({ id: `e-aut-${src.id}`, source: src.id, target: nodeBuckets.conversión[0].id });
+                });
+            }
+            // Conversion -> CRM
+            if (nodeBuckets.conversión.length > 0 && nodeBuckets.crm.length > 0) {
+                nodeBuckets.conversión.forEach(src => {
+                    edges.push({ id: `e-cv-${src.id}`, source: src.id, target: nodeBuckets.crm[0].id });
+                });
+            }
+        } else {
+            const fallback = generateStrategicNodes(newCampaign.ingredients);
+            nodes = fallback.nodes;
+            edges = fallback.edges;
+        }
 
         const campaign = {
             id: `camp_${Date.now()}`,
@@ -198,8 +334,8 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
             duration: newCampaign.duration || '4 Semanas',
             startDate: newCampaign.startDate || 'Inmediato',
             deadline: newCampaign.deadline || 'A determinar',
-            progress: newCampaign.progress || 0,
-            status: newCampaign.status || 'Empezado',
+            progress: 0,
+            status: 'Empezado',
             ingredients: { ...newCampaign.ingredients },
             nodes, 
             edges,
@@ -225,6 +361,7 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
             deadline: '',
             ingredients: { videos: 1, posts: 2, stories: 0, reels: 1, tiktok: 0, crm: 1, forms: 1 }
         });
+        setDetailedNodes([]);
         
         if (onOpenCanvas) {
             onOpenCanvas(campaign.id);
@@ -429,7 +566,7 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                         >
                             <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_15px_rgba(34,211,238,0.8)]" />
                             <span className={`text-[10px] font-black uppercase tracking-[0.5em] opacity-60 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                                Protocolo Operativo
+                                Campaña Operativa
                             </span>
                             {/* Scanning line effect */}
                             <motion.div 
@@ -502,7 +639,7 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                                 className={`absolute inset-0 pointer-events-none ${theme === 'dark' ? 'bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent' : 'bg-gradient-to-r from-transparent via-white/10 to-transparent'}`}
                             />
                             <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500 relative z-10" /> 
-                            <span className="relative z-10">Activar Protocolo</span>
+                            <span className="relative z-10">Activar Campaña</span>
                         </motion.button>
                     </div>
                 </div>
@@ -525,7 +662,7 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                         <div className="flex flex-col md:flex-row items-start justify-between gap-10 relative z-10">
                             <div className="space-y-4">
                                 <h3 className={`text-7xl font-black uppercase italic tracking-tighter leading-none group transition-colors ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                                    NUEVO <span className="text-cyan-500">PROTOCOLO</span>
+                                    NUEVA <span className="text-cyan-500">CAMPAÑA</span>
                                 </h3>
                                 <p className={`text-[10px] font-black uppercase tracking-[0.6em] ${theme === 'dark' ? 'text-cyan-400/40' : 'text-indigo-400/60'}`}>System Architecture v4.0 // Neural Engine</p>
                             </div>
@@ -620,6 +757,122 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                              </div>
                         </div>
 
+                        {/* Detailed Node Customization List */}
+                        {detailedNodes && detailedNodes.length > 0 && (
+                            <div className="space-y-8 border-t border-white/[0.03] pt-12 mt-8">
+                                <h4 className={`text-[11px] font-black uppercase tracking-[0.6em] text-center mb-8 ${theme === 'dark' ? 'text-gray-600' : 'text-slate-400'}`}>
+                                    Personalización de Componentes
+                                </h4>
+                                <div className="max-h-[300px] overflow-y-auto pr-4 space-y-4 custom-scrollbar">
+                                    {detailedNodes.map((item) => (
+                                        <div 
+                                            key={item.id} 
+                                            className={`flex flex-col md:flex-row items-center gap-6 p-5 rounded-[24px] border transition-all duration-300 ${
+                                                theme === 'dark' 
+                                                ? 'bg-[#0A0A1F]/40 border-white/[0.03] hover:border-white/10 hover:bg-[#0A0A1F]/60' 
+                                                : 'bg-slate-50/50 border-slate-200/60 hover:border-slate-300 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            {/* 1. Category Indicator */}
+                                            <div className="flex items-center gap-4 w-full md:w-[22%] shrink-0">
+                                                <div className={`p-2.5 rounded-xl border flex items-center justify-center ${
+                                                    theme === 'dark' ? 'bg-white/[0.02] border-white/10' : 'bg-white border-slate-200 shadow-sm'
+                                                }`}>
+                                                    {(() => {
+                                                        const Icon = item.categoryKey === 'videos' ? Video : (item.categoryKey === 'posts' ? Box : (item.categoryKey === 'stories' ? Instagram : (item.categoryKey === 'reels' ? Play : (item.categoryKey === 'tiktok' ? Activity : (item.categoryKey === 'crm' ? Bot : Target)))));
+                                                        return <Icon className={`w-4 h-4 ${
+                                                            item.categoryKey === 'videos' ? 'text-rose-500' : (item.categoryKey === 'posts' ? 'text-indigo-400' : (item.categoryKey === 'stories' ? 'text-orange-500' : (item.categoryKey === 'reels' ? 'text-emerald-500' : (item.categoryKey === 'tiktok' ? 'text-cyan-400' : (item.categoryKey === 'crm' ? 'text-emerald-500' : 'text-cyan-400')))))
+                                                        }`} />;
+                                                    })()}
+                                                </div>
+                                                <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                                    {item.label}
+                                                </span>
+                                            </div>
+
+                                            {/* 2. Custom Title Input */}
+                                            <div className="flex-1 w-full relative">
+                                                <input 
+                                                    type="text"
+                                                    value={item.title}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setDetailedNodes(prev => prev.map(x => x.id === item.id ? { ...x, title: val } : x));
+                                                    }}
+                                                    placeholder="Ej. VIDEO DE PRESENTACIÓN"
+                                                    className={`w-full bg-transparent border-b py-2 text-xs font-bold outline-none transition-all placeholder:text-gray-800 ${
+                                                        theme === 'dark' ? 'border-white/10 focus:border-cyan-400 text-white' : 'border-slate-200 focus:border-indigo-500 text-slate-900 placeholder:text-slate-300'
+                                                    }`}
+                                                />
+                                            </div>
+
+                                            {/* 3. Stage Selector */}
+                                            <div className="w-full md:w-[22%] shrink-0">
+                                                <select 
+                                                    value={item.stage}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setDetailedNodes(prev => prev.map(x => x.id === item.id ? { ...x, stage: val } : x));
+                                                    }}
+                                                    className={`w-full border rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-widest outline-none transition-all ${
+                                                        theme === 'dark' 
+                                                        ? 'bg-[#050511] border-white/10 focus:border-cyan-400 text-gray-400' 
+                                                        : 'bg-white border-slate-200 focus:border-indigo-500 text-slate-700 shadow-sm'
+                                                    }`}
+                                                >
+                                                    <option value="atracción">Atracción (TOFU)</option>
+                                                    <option value="conexión">Conexión (MOFU)</option>
+                                                    <option value="autoridad">Autoridad (MOFU)</option>
+                                                    <option value="conversión">Conversión (BOFU)</option>
+                                                    <option value="crm">Retención / CRM</option>
+                                                </select>
+                                            </div>
+
+                                            {/* 4. Subtype Selector */}
+                                            <div className="w-full md:w-[22%] shrink-0">
+                                                <select 
+                                                    value={item.subtype}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setDetailedNodes(prev => prev.map(x => x.id === item.id ? { ...x, subtype: val } : x));
+                                                    }}
+                                                    className={`w-full border rounded-xl px-3 py-2.5 text-[10px] font-black uppercase tracking-widest outline-none transition-all ${
+                                                        theme === 'dark' 
+                                                        ? 'bg-[#050511] border-white/10 focus:border-cyan-400 text-gray-400' 
+                                                        : 'bg-white border-slate-200 focus:border-indigo-500 text-slate-700 shadow-sm'
+                                                    }`}
+                                                >
+                                                    {item.type === 'video' && (
+                                                        <>
+                                                            <option value="v_viral">Reel / Video Viral</option>
+                                                            <option value="v_educativo">Video de Valor</option>
+                                                            <option value="v_testimonio">Caso de Éxito</option>
+                                                            <option value="v_vsl">VSL (Masterclass)</option>
+                                                        </>
+                                                    )}
+                                                    {item.type === 'post' && (
+                                                        <>
+                                                            <option value="i_post">Post Estático / Carrusel</option>
+                                                            <option value="i_historia">Historia / Story</option>
+                                                            <option value="i_blueprint">Infografía / Blueprint</option>
+                                                        </>
+                                                    )}
+                                                    {item.type === 'recurso' && (
+                                                        <>
+                                                            <option value="r_form">Formulario Captación</option>
+                                                            <option value="r_crm_flow">Automatización CRM</option>
+                                                            <option value="r_lead_magnet">Lead Magnet PDF</option>
+                                                            <option value="r_appointment">Cita / Agenda</option>
+                                                        </>
+                                                    )}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-10 justify-end pt-10">
                             <button 
                                 onClick={handleCreate}
@@ -650,7 +903,7 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                         <div className="flex justify-between items-start">
                             <div className="space-y-4">
                                 <h3 className={`text-6xl font-black uppercase italic tracking-tighter ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Bóveda de Maestría</h3>
-                                <p className={`text-[11px] font-black uppercase tracking-[0.5em] ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>Protocolos Pre-Configurados de Alto Rendimiento</p>
+                                <p className={`text-[11px] font-black uppercase tracking-[0.5em] ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>Estrategias Pre-Configuradas de Alto Rendimiento</p>
                             </div>
                             <button 
                                 onClick={() => setIsTemplatesOpen(false)}
@@ -757,13 +1010,13 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                                 <>
                                     <h3 className="text-6xl font-black text-white uppercase italic tracking-tighter mb-6">REPOSITORIO <span className="text-[#BCFF00]">VACÍO</span></h3>
                                     <p className="text-gray-500 text-[11px] font-black uppercase tracking-[0.5em] max-w-lg mx-auto mb-16 opacity-60">
-                                        No se han detectado flujos operativos. Inicializa un nuevo protocolo para comenzar el despliegue.
+                                        No se han detectado flujos operativos. Inicializa una nueva campaña para comenzar el despliegue.
                                     </p>
                                     <button 
                                         onClick={() => setIsCreating(true)}
                                         className="px-20 py-7 rounded-full bg-[#BCFF00] text-black font-black text-[11px] uppercase tracking-[0.4em] hover:scale-110 transition-all shadow-[0_20px_50px_rgba(188,255,0,0.2)] active:scale-95"
                                     >
-                                        INICIAR PROTOCOLO ALPHA
+                                        INICIAR CAMPAÑA ALPHA
                                     </button>
                                 </>
                             ) : (
@@ -854,7 +1107,7 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                                     <div className="space-y-4">
                                         <p className="text-[9px] font-black text-[#ff00e5]/40 uppercase tracking-[0.5em]">Directiva Principal</p>
                                         <p className="text-[14px] font-medium text-gray-500 line-clamp-3 leading-relaxed tracking-tight group-hover:text-white/70 transition-colors italic">
-                                            "{strategy.objective || 'Protocolo de escalado masivo mediante optimización de activos digitales.'}"
+                                            "{strategy.objective || 'Estrategia de escalado masivo mediante optimización de activos digitales.'}"
                                         </p>
                                     </div>
                                 </div>
