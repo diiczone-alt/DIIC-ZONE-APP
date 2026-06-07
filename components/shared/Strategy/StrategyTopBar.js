@@ -60,24 +60,13 @@ export default function StrategyTopBar({
 
                 {/* Left Section: Info */}
                 <div className="flex items-center gap-8 relative z-10">
-                    {onClose ? (
+                    {onClose && (
                         <button 
                             onClick={onClose}
                             className="p-3 bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white rounded-2xl transition-all shadow-lg active:scale-95 group/back"
                             title="Volver al Workstation"
                         >
                             <ChevronLeft className="w-5 h-5 group-hover/back:-translate-x-1 transition-transform" />
-                        </button>
-                    ) : (
-                        <button 
-                            onClick={() => {
-                                localStorage.clear();
-                                window.location.href = '/';
-                            }}
-                            className="p-3 bg-rose-500/10 border border-white/5 text-rose-400 hover:bg-rose-500 hover:text-white rounded-2xl transition-all shadow-lg active:scale-95 group/logout"
-                            title="Cerrar Sesión"
-                        >
-                            <LogOut className="w-5 h-5 group-hover/logout:rotate-12 transition-transform" />
                         </button>
                     )}
 
