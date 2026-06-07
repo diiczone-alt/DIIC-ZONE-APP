@@ -54,18 +54,19 @@ export async function POST(req) {
             }]
         });
 
-        const prompt = `OBJETIVO: Investigar y analizar el ecosistema digital completo de la marca.
+        const prompt = `OBJETIVO: Investigar y analizar en profundidad el ecosistema digital completo de la marca buscando de manera individual cada canal provisto.
         Sitio Web Principal / Enlace base: ${url || 'No especificado'}
         ${brandName ? `(Nombre registrado de la marca: "${brandName}")` : ''}
         ${socialUrlsContext ? `\nPerfiles de Redes Sociales de la marca:${socialUrlsContext}` : ''}
         ${extractedContext}
         
-        INSTRUCCIONES CRÍTICAS:
-        1. Utiliza Google Search para realizar búsquedas activas y obtener datos REALES, FIABLES y ACTUALIZADOS sobre el sitio web y cada uno de los perfiles de redes sociales provistos arriba.
-        2. Realiza búsquedas específicas en Google para rastrear lo que hace la marca, sus líderes/fundadores, sus servicios, su propuesta de valor única y su contexto de mercado.
-        3. NO INVENTES DATOS. Si no hallas nada tras las búsquedas en Google, coloca "Información no indexada" o "Dato no detectable". No uses datos simulados de ejemplo bajo ninguna circunstancia.
-        4. Como estratega, diseña de 3 a 4 botones o chips de búsqueda adicionales hiper-específicos para este nicho/empresa basándote en lo hallado en las búsquedas (ej. temas locales, alianzas, debilidades de competidores o dudas específicas).
-        5. RESPONDE EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO.
+        INSTRUCCIONES CRÍTICAS DE BÚSQUEDA Y ANÁLISIS:
+        1. Utiliza obligatoriamente la herramienta de Google Search para realizar búsquedas activas y obtener datos REALES, FIABLES y ACTUALIZADOS sobre el sitio web y sobre CADA UNO de los perfiles de redes sociales provistos arriba.
+        2. DEBES ejecutar consultas de Google Search separadas o específicas para cada enlace de red social provisto (por ejemplo: si se ingresó un link de Facebook, busca en Google qué dice ese perfil o fanpage; si se ingresó Instagram, busca información del feed de ese usuario; etc.). No consolides todo en una sola búsqueda genérica.
+        3. Investiga y mapea la información real sobre la marca de todos los canales activos: qué servicios o productos promueven en su web, qué tipo de publicaciones hacen en Instagram/Facebook/TikTok, quiénes lideran la marca, cuál es su propuesta de valor única, su tono de comunicación y su contexto comercial real.
+        4. NO INVENTES DATOS. Si tras buscar activamente en Google no encuentras resultados reales para algún campo, coloca "Información no indexada en Google para este canal". Bajo ninguna circunstancia uses datos ficticios o ejemplos simulados.
+        5. Como estratega, diseña de 3 a 4 botones o chips de búsqueda adicionales hiper-específicos para este nicho/empresa basándote en lo hallado en las búsquedas (ej. temas locales, alianzas, debilidades de competidores o dudas específicas).
+        6. RESPONDE EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO.
         
         ESTRUCTURA JSON OBLIGATORIA:
         {

@@ -741,7 +741,20 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
             console.log("!!! INICIANDO INVESTIGACIÓN OMNINIVEL - DIIC ZONE !!!");
             setIsSimulatingScrape(true);
             setIsPreviewMode(true);
-            setAnalysisMsg('Infiltrando arquitectura web...');
+            
+            const channelsToScan = [];
+            if (profile.websiteUrl) channelsToScan.push('sitio web');
+            if (profile.facebookUrl) channelsToScan.push('Facebook');
+            if (profile.instagramUrl) channelsToScan.push('Instagram');
+            if (profile.tiktokUrl) channelsToScan.push('TikTok');
+            if (profile.youtubeUrl) channelsToScan.push('YouTube');
+            if (profile.linkedinUrl) channelsToScan.push('LinkedIn');
+            
+            const scanTargetMsg = channelsToScan.length > 0 
+                ? `Infiltrando: ${channelsToScan.join(', ')}...` 
+                : 'Infiltrando activos digitales...';
+            
+            setAnalysisMsg(scanTargetMsg);
             
             // CLEAR PREVIOUS STATE TO PREVENT STALENESS - VITAL FOR USER FEEDBACK
             setProfile(p => ({
@@ -793,20 +806,40 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
             setProfile(updatedProfile);
             setSyncCount(c => c + 1);
 
-            // EXTENDED INTELLIGENCE STEPS
-            const displaySteps = result.steps || [
-                { msg: 'Rastreando activos digitales y footprint...', icon: 'Target' },
-                { msg: 'Mapeando arquitectura de marca y core...', icon: 'Bot' },
-                { msg: 'Analizando audiencia y puntos de dolor...', icon: 'Users' },
+            // DYNAMIC PROGRESS STEPS BASED ON ENTERED URLS
+            const displaySteps = [
+                { msg: 'Activando motores de búsqueda y rastreo...', icon: 'Target' }
+            ];
+            
+            if (profile.websiteUrl) {
+                displaySteps.push({ msg: `Analizando estructura y contenido web de: ${profile.websiteUrl.replace(/https?:\/\//, '')}`, icon: 'Globe' });
+            }
+            if (profile.facebookUrl) {
+                displaySteps.push({ msg: 'Rastreando fanpage y publicaciones en Facebook...', icon: 'Facebook' });
+            }
+            if (profile.instagramUrl) {
+                displaySteps.push({ msg: 'Analizando feed, tono y engagement en Instagram...', icon: 'Instagram' });
+            }
+            if (profile.tiktokUrl) {
+                displaySteps.push({ msg: 'Evaluando tendencias y videos virales en TikTok...', icon: 'Video' });
+            }
+            if (profile.youtubeUrl) {
+                displaySteps.push({ msg: 'Analizando portafolio de video largo en YouTube...', icon: 'Camera' });
+            }
+            if (profile.linkedinUrl) {
+                displaySteps.push({ msg: 'Verificando liderazgo y autoridad corporativa en LinkedIn...', icon: 'ShieldCheck' });
+            }
+            
+            displaySteps.push(
                 { msg: 'Detectando competidores y brechas de mercado...', icon: 'Search' },
                 { msg: 'Sintetizando inteligencia estratégica real...', icon: 'Zap' },
                 { msg: 'Generando recomendaciones de producción...', icon: 'Camera' },
-                { msg: 'Compilando reporte de ecosistema...', icon: 'Database' }
-            ];
+                { msg: 'Compilando reporte de ecosistema omni-nivel...', icon: 'Database' }
+            );
 
             for (const step of displaySteps) {
                 setAnalysisMsg(step.msg);
-                await new Promise(r => setTimeout(r, 1000)); // Slightly longer for 'God Mode' feel
+                await new Promise(r => setTimeout(r, 1200)); // God Mode feel
             }
             
             setHasUnsyncedUrl(false);
