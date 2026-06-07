@@ -877,6 +877,11 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     }, [activeCampaign, updateActiveCampaign]);
 
     const handleApplyTemplate = useCallback((templateName) => {
+        if (activeCampaign && activeCampaign.nodes && activeCampaign.nodes.length > 0) {
+            const confirmed = window.confirm("¿Estás seguro de aplicar esta plantilla? Se eliminarán todos los componentes y flujos actuales de esta campaña.");
+            if (!confirmed) return;
+        }
+
         const templates = {
             organic: [
                 { type: 'reel_viral', label: 'Reel Viral: Dolor principal', funnelLevel: 'conciencia', subtype: 'v_reels', y: 150 },
@@ -942,7 +947,8 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
         }
         
         toast.success(`Plantilla '${templateName}' aplicada con éxito.`);
-    }, [updateActiveCampaign, activeCampaign]);
+        setActiveFlow('tablero');
+    }, [updateActiveCampaign, activeCampaign, setActiveFlow]);
 
     const handleNodeMove = useCallback((id, x, y) => {
         updateActiveCampaign(c => {
