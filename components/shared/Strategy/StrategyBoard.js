@@ -878,43 +878,71 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
 
     const handleApplyTemplate = useCallback((templateName) => {
         const templates = {
-            default: [
-                { id: 'd1', type: 'reel_viral', x: 40, y: 150, label: 'Video Viral' },
-                { id: 'd2', type: 'estilo_vida', x: 640, y: 150, label: 'Conexión' }
+            organic: [
+                { type: 'reel_viral', label: 'Reel Viral: Dolor principal', funnelLevel: 'conciencia', subtype: 'v_reels', y: 150 },
+                { type: 'reel_viral', label: 'Reel Viral: 3 Pasos de Valor', funnelLevel: 'conciencia', subtype: 'v_reels', y: 350 },
+                { type: 'estilo_vida', label: 'Post Estático: Mi Historia', funnelLevel: 'interés', subtype: 'i_carrusel_edu', y: 150 },
+                { type: 'testimonio', label: 'Caso de Éxito de Cliente', funnelLevel: 'consideración', subtype: 'v_testimonio', y: 150 },
+                { type: 'oferta', label: 'Reel: CTA a WhatsApp / DM', funnelLevel: 'conversión', subtype: 'v_promocional', y: 150 },
+                { type: 'automatizacion', label: 'WhatsApp: Cierre Automatizado', funnelLevel: 'retención', subtype: 'r_whatsapp_funnel', y: 150 }
+            ],
+            magnet: [
+                { type: 'ads', label: 'Meta Ads: Tráfico Fijo al Lead Magnet', funnelLevel: 'conciencia', subtype: 'ads', y: 150 },
+                { type: 'reel_viral', label: 'Reel Viral: Gancho a PDF', funnelLevel: 'conciencia', subtype: 'v_reels', y: 350 },
+                { type: 'lead_magnet', label: 'Checklist PDF (Lead Magnet)', funnelLevel: 'interés', subtype: 'r_lead_magnet', y: 150 },
+                { type: 'email_sequence', label: 'Email Nurture: 3 Correos', funnelLevel: 'consideración', subtype: 'r_email_sequence', y: 150 },
+                { type: 'caso_exito', label: 'Video: Demostración de Proceso', funnelLevel: 'consideración', subtype: 'v_testimonio', y: 350 },
+                { type: 'cierre', label: 'Cita / Llamada Gratis', funnelLevel: 'conversión', subtype: 'r_appointment', y: 150 },
+                { type: 'automatizacion', label: 'CRM Sync: Sincronización', funnelLevel: 'retención', subtype: 'r_crm_flow', y: 150 }
             ],
             authority: [
-                // 6 Reels (Conciencia / Interés)
-                ...Array.from({ length: 6 }).map((_, i) => ({ type: 'reel_viral', label: `Reel Viral #${i+1}`, x: 40, y: 150 + (i * 200) })),
-                // 12 Posts (Conexión / Autoridad)
-                ...Array.from({ length: 12 }).map((_, i) => ({ type: 'imagen', label: `Post Estático #${i+1}`, x: 640, y: 150 + (i * 150) })),
-                // 2 Filmmaker (Autoridad / Conversión)
-                { type: 'educativo', label: 'Video Filmmaker #1', x: 1240, y: 150 },
-                { type: 'educativo', label: 'Video Filmmaker #2', x: 1240, y: 450 }
+                { type: 'ads', label: 'Ads: Tráfico Frío Escalado', funnelLevel: 'conciencia', subtype: 'ads', y: 150 },
+                { type: 'seo_blog', label: 'YouTube: Video de Autoridad', funnelLevel: 'conciencia', subtype: 'v_youtube', y: 350 },
+                { type: 'reel_viral', label: 'Reel Viral: Tráfico a VSL', funnelLevel: 'conciencia', subtype: 'v_reels', y: 550 },
+                { type: 'cierre', label: 'Formulario Cualificado', funnelLevel: 'interés', subtype: 'r_form', y: 150 },
+                { type: 'lead_score', label: 'CRM: Scoring Automático', funnelLevel: 'interés', subtype: 'l3_crm_scoring', y: 350 },
+                { type: 'vsl', label: 'VSL / Clase Maestra 15 min', funnelLevel: 'consideración', subtype: 'v_vsl', y: 150 },
+                { type: 'caso_exito', label: 'Testimonio de Cliente', funnelLevel: 'consideración', subtype: 'v_testimonio', y: 350 },
+                { type: 'explicacion_pro', label: 'Infografía: Método Único', funnelLevel: 'consideración', subtype: 'i_blueprint', y: 550 },
+                { type: 'cierre', label: 'Llamada de Venta con Closer', funnelLevel: 'conversión', subtype: 'r_appointment', y: 150 },
+                { type: 'retargeting', label: 'Retargeting: Garantía y Escasez', funnelLevel: 'conversión', subtype: 'ads', y: 350 },
+                { type: 'automatizacion', label: 'WhatsApp: Onboarding Alumnos', funnelLevel: 'retención', subtype: 'r_whatsapp_funnel', y: 150 },
+                { type: 'referral', label: 'Programa de Referidos / Upsell', funnelLevel: 'retención', subtype: 'r_affiliate', y: 350 }
             ]
         };
-        const nodesToAdd = templates[templateName] || templates.default;
+
+        const nodesToAdd = templates[templateName] || templates.organic;
         
         // Reset current campaign nodes and add new ones
         updateActiveCampaign(c => {
-            const newNodes = nodesToAdd.map(n => ({
-                id: `node_tpl_${Math.random().toString(36).substr(2, 5)}`,
-                type: n.type,
-                x: n.x, y: n.y,
-                data: { 
-                    title: n.label, 
-                    status: 'Idea', 
-                    funnelLevel: n.x === 40 ? 'conciencia' : (n.x === 640 ? 'conexión' : 'autoridad'),
-                    subtype: n.type === 'reel_viral' ? 'v_reels' : (n.type === 'imagen' ? 'i_post' : 'v_youtube')
-                }
-            }));
+            const newNodes = nodesToAdd.map(n => {
+                const colIdx = STRATEGIC_COLUMNS.findIndex(col => col.id === n.funnelLevel);
+                const actualColIdx = colIdx === -1 ? 0 : colIdx;
+                const initialX = (STRATEGIC_RAILS.COLUMNS[actualColIdx] || 1000) + 25;
+
+                return {
+                    id: `node_tpl_${Math.random().toString(36).substr(2, 5)}`,
+                    type: n.type,
+                    x: initialX, 
+                    y: n.y,
+                    data: { 
+                        title: n.label, 
+                        status: 'Idea', 
+                        funnelLevel: n.funnelLevel,
+                        subtype: n.subtype
+                    }
+                };
+            });
             return { ...c, nodes: newNodes, edges: [] };
         });
         
-        // Force layout for the new template
-        layoutRef.current[activeCampaign.id] = "FORCE_REORG_" + Date.now();
+        if (activeCampaign) {
+            // Force layout for the new template
+            layoutRef.current[activeCampaign.id] = "FORCE_REORG_" + Date.now();
+        }
         
         toast.success(`Plantilla '${templateName}' aplicada con éxito.`);
-    }, [updateActiveCampaign]);
+    }, [updateActiveCampaign, activeCampaign]);
 
     const handleNodeMove = useCallback((id, x, y) => {
         updateActiveCampaign(c => {

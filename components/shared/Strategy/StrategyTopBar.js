@@ -187,7 +187,7 @@ export default function StrategyTopBar({
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                         transition={{ duration: 0.15 }}
-                                        className={`absolute right-0 mt-2 w-64 rounded-2xl border p-2 z-50 shadow-2xl ${
+                                        className={`absolute right-0 mt-2 w-72 rounded-2xl border p-2 z-50 shadow-2xl ${
                                             theme === 'dark' 
                                             ? 'bg-[#0E0E18]/95 backdrop-blur-xl border-white/10 text-white' 
                                             : 'bg-white border-slate-200 text-slate-800'
@@ -196,23 +196,61 @@ export default function StrategyTopBar({
                                         <div className="px-3 py-2 border-b border-white/5 mb-1">
                                             <p className="text-[9px] font-black uppercase tracking-widest text-indigo-400">Estrategias Maestras</p>
                                         </div>
+                                        
+                                        {/* 1. Lanzamiento Orgánico */}
+                                        <button
+                                            onClick={() => {
+                                                onApplyTemplate('organic');
+                                                setIsTemplatesMenuOpen(false);
+                                            }}
+                                            className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex flex-col gap-0.5 ${
+                                                theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                                <span className="text-xs font-bold uppercase tracking-wider">1. Orgánico Express</span>
+                                            </div>
+                                            <span className="text-[9px] text-gray-500 leading-normal pl-3.5">
+                                                Para marcas con bajo presupuesto. Contenidos de atracción que convierten en DMs/WhatsApp.
+                                            </span>
+                                        </button>
+
+                                        {/* 2. Lead Magnet Funnel */}
+                                        <button
+                                            onClick={() => {
+                                                onApplyTemplate('magnet');
+                                                setIsTemplatesMenuOpen(false);
+                                            }}
+                                            className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex flex-col gap-0.5 mt-1 ${
+                                                theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                                <span className="text-xs font-bold uppercase tracking-wider">2. Imán de Prospectos</span>
+                                            </div>
+                                            <span className="text-[9px] text-gray-500 leading-normal pl-3.5">
+                                                Perfecto para Coaches, Salud y B2B. Nutre con correos y lleva a agendamientos.
+                                            </span>
+                                        </button>
+
+                                        {/* 3. Perpetual Authority Matrix */}
                                         <button
                                             onClick={() => {
                                                 onApplyTemplate('authority');
                                                 setIsTemplatesMenuOpen(false);
                                             }}
-                                            className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex flex-col gap-1 ${
-                                                theme === 'dark' 
-                                                ? 'hover:bg-white/5' 
-                                                : 'hover:bg-slate-50'
+                                            className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex flex-col gap-0.5 mt-1 ${
+                                                theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-slate-50'
                                             }`}
                                         >
                                             <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                                <span className="text-xs font-bold uppercase tracking-wider">Nivel Autoridad</span>
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                <span className="text-xs font-bold uppercase tracking-wider">3. Híbrido Perpetuo</span>
                                             </div>
-                                            <span className="text-[9px] text-gray-500 font-medium leading-normal pl-4">
-                                                Aplica la estructura optimizada para posicionamiento y embudos de alta conversión.
+                                            <span className="text-[9px] text-gray-500 leading-normal pl-3.5">
+                                                La máquina definitiva de High-ticket. Tráfico pagado, cualificación, VSL y Closer.
                                             </span>
                                         </button>
                                     </motion.div>
