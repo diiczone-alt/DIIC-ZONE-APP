@@ -228,7 +228,26 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
             };
 
             const stageIdx = getStageIdx(node);
-            const stageId = node.data?.funnelLevel || STRATEGIC_COLUMNS[stageIdx]?.id || 'conciencia';
+            let stageId = node.data?.funnelLevel || STRATEGIC_COLUMNS[stageIdx]?.id || 'conciencia';
+            
+            // Map legacy, shorthand, or alternative stage identifiers to valid column IDs
+            const legacyMapping = {
+                'tofu': 'conciencia',
+                'mofu': 'interés',
+                'mofu+': 'consideración',
+                'bofu': 'conversión',
+                'crm': 'retención',
+                'atracción': 'conciencia',
+                'conexión': 'interés',
+                'autoridad': 'consideración',
+                'escala': 'retención',
+                'retención': 'retención'
+            };
+            const normalized = stageId.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            if (legacyMapping[normalized]) {
+                stageId = legacyMapping[normalized];
+            }
+
             const finalStageIdx = STRATEGIC_COLUMNS.findIndex(c => c.id === stageId);
             const validStageIdx = finalStageIdx === -1 ? 0 : finalStageIdx;
             const targetX = (STRATEGIC_RAILS.COLUMNS[validStageIdx] || 1000) + 25; 

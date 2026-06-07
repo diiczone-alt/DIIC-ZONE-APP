@@ -50,7 +50,7 @@ const generateStrategicNodes = (ingredients) => {
                 title: title.toUpperCase(),
                 subtype,
                 stage: s.toUpperCase(),
-                funnelLevel: s === 'atracción' ? 'TOFU' : (['conexión', 'autoridad'].includes(s) ? 'MOFU' : (s === 'conversión' ? 'BOFU' : 'CRM')),
+                funnelLevel: s === 'atracción' ? 'conciencia' : (s === 'conexión' ? 'interés' : (s === 'autoridad' ? 'consideración' : (s === 'conversión' ? 'conversión' : 'retención'))),
                 platforms: platforms || []
             }
         };
@@ -281,7 +281,7 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                         title: item.title.trim().toUpperCase(),
                         subtype: item.subtype,
                         stage: s.toUpperCase(),
-                        funnelLevel: s === 'atracción' ? 'TOFU' : (['conexión', 'autoridad'].includes(s) ? 'MOFU' : (s === 'conversión' ? 'BOFU' : 'CRM')),
+                        funnelLevel: s === 'atracción' ? 'conciencia' : (s === 'conexión' ? 'interés' : (s === 'autoridad' ? 'consideración' : (s === 'conversión' ? 'conversión' : 'retención'))),
                         platforms: item.platforms || []
                     }
                 };

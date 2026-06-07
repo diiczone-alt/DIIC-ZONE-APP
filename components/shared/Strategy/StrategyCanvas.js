@@ -120,12 +120,12 @@ export default function StrategyCanvas({
 
             // 2. Align Tactical Nodes to their Strategic Columns
             const getColIdx = (cat) => {
-                const c = (cat || '').toLowerCase();
-                if (c === 'conciencia' || c === 'video') return 0;
-                if (c === 'interés' || c === 'conexión') return 1;
-                if (c === 'consideración' || c === 'autoridad' || c === 'imagen') return 2;
-                if (c === 'conversión' || c === 'crm') return 3;
-                if (c === 'retención' || c === 'recurso') return 4;
+                const c = (cat || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (c === 'conciencia' || c === 'video' || c === 'tofu' || c === 'atraccion') return 0;
+                if (c === 'interes' || c === 'conexion' || c === 'mofu') return 1;
+                if (c === 'consideracion' || c === 'autoridad' || c === 'imagen' || c === 'mofu+') return 2;
+                if (c === 'conversion' || c === 'bofu') return 3;
+                if (c === 'retencion' || c === 'recurso' || c === 'escala' || c === 'crm') return 4;
                 return 0;
             };
 
