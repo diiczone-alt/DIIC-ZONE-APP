@@ -4,6 +4,7 @@ import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 import StrategyTopBar from './StrategyTopBar';
 import StrategyNodeLibrary from './StrategyNodeLibrary';
 import StrategyCanvas from './StrategyCanvas';
@@ -78,6 +79,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     // --- STATE ---
     const searchParams = useSearchParams();
     const clientId = searchParams.get('client');
+    const { user } = useAuth();
     const [strategyData, setStrategyData] = useState(initialStrategyData);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [discoveredClientId, setDiscoveredClientId] = useState(null);
@@ -85,7 +87,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     // --- RECOVERY ON MOUNT (DEATH TO DATA LOSS) ---
     useEffect(() => {
         const fetchPersistentData = async () => {
-            let finalClientId = propClientId || clientId;
+            let finalClientId = propClientId || clientId || user?.client_id;
             
             if (!finalClientId) {
                 try {
@@ -135,7 +137,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
         };
 
         fetchPersistentData();
-    }, [propClientId, clientId]);
+    }, [propClientId, clientId, user?.client_id]);
 
     // --- GLOBAL SYNC & PERSISTENCE (BUNKER GUARD) ---
     useEffect(() => {
@@ -149,7 +151,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
 
         const syncToStorage = () => {
             try {
-                const finalClientId = propClientId || clientId;
+                const finalClientId = propClientId || clientId || user?.client_id || discoveredClientId;
                 
                 // Backup to LocalStorage (Immediate)
                 localStorage.setItem('diiczone_global_pipeline', JSON.stringify(activeCampaign.nodes));
@@ -165,7 +167,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
         };
 
         syncToStorage();
-    }, [strategyData, isInitialLoad, propClientId, clientId]);
+    }, [strategyData, isInitialLoad, propClientId, clientId, user?.client_id, discoveredClientId]);
 
     // --- AUTO-LAYOUT LOGIC: INTELLIGENT STRATEGIC MAPPING ---
     const layoutRef = useRef({}); // Track which campaigns have been auto-laid out
@@ -274,7 +276,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     // Sync Strategy Data with HQ Client Record & Load Persistent Strategy
     useEffect(() => {
         const fetchPersistentData = async () => {
-            const finalClientId = propClientId || clientId;
+            const finalClientId = propClientId || clientId || user?.client_id || discoveredClientId;
             if (finalClientId) {
                 // 1. Fetch Client Profile for Context
                 const client = await agencyService.getClientById(finalClientId);
@@ -303,7 +305,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
             }
         };
         fetchPersistentData();
-    }, [clientId, propClientId]);
+    }, [clientId, propClientId, user?.client_id, discoveredClientId]);
     const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
     const [isConfiguring, setIsConfiguring] = useState(false);
     const [activeTool, setActiveTool] = useState('select');
@@ -546,7 +548,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
 
     // --- TOP BAR ACTIONS ---
     const handleSaveStrategy = useCallback(async () => {
-        const finalClientId = propClientId || clientId || discoveredClientId;
+        const finalClientId = propClientId || clientId || user?.client_id || discoveredClientId;
         if (!finalClientId) {
             toast.error("No se puede guardar: No hay un ID de cliente vinculado.");
             return;
@@ -568,17 +570,17 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
             toast.error("Error al guardar la estrategia.");
             console.error(err);
         }
-    }, [strategyData, clientId, propClientId, discoveredClientId]);
+    }, [strategyData, clientId, propClientId, user?.client_id, discoveredClientId]);
 
     // Auto-save/Sync Heartbeat (Saves every 5 seconds if changes detected)
     useEffect(() => {
-        if (!isStrategySaved && !isInitialLoad && (clientId || propClientId || discoveredClientId)) {
+        if (!isStrategySaved && !isInitialLoad && (clientId || propClientId || user?.client_id || discoveredClientId)) {
             const timer = setTimeout(() => {
                 handleSaveStrategy();
             }, 5000); 
             return () => clearTimeout(timer);
         }
-    }, [strategyData, isStrategySaved, isInitialLoad, clientId, propClientId, discoveredClientId, handleSaveStrategy]);
+    }, [strategyData, isStrategySaved, isInitialLoad, clientId, propClientId, user?.client_id, discoveredClientId, handleSaveStrategy]);
 
     // Exit Guard: Warn user if leaving with unsaved changes
     useEffect(() => {

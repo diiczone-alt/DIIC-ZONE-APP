@@ -89,9 +89,10 @@ export default function Sidebar() {
 
     // Helper to preserve client context across navigation
     const getScopedHref = (baseHref) => {
-        if (!clientId) return baseHref;
+        const finalClientId = clientId || user?.client_id || user?.user_metadata?.client_id;
+        if (!finalClientId) return baseHref;
         const url = new URL(baseHref, 'http://localhost'); // Using dummy base for URL parsing
-        url.searchParams.set('client', clientId);
+        url.searchParams.set('client', finalClientId);
         return url.pathname + url.search;
     };
 
