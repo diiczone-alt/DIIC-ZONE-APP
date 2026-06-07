@@ -6,7 +6,7 @@ import {
     AlertTriangle, DollarSign, FileText
 } from 'lucide-react';
 
-export default function NotificationCenter({ notifications = [], onMarkAsRead, onMarkAllAsRead, onViewAll }) {
+export default function NotificationCenter({ notifications = [], onMarkAsRead, onMarkAllAsRead, onViewAll, align = 'down' }) {
     const [isOpen, setIsOpen] = useState(false);
     // local notifications state can be removed if using props, but I'll keep it as fallback
     const [localNotifications, setLocalNotifications] = useState([]);
@@ -54,7 +54,9 @@ export default function NotificationCenter({ notifications = [], onMarkAsRead, o
             {isOpen && (
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-80 bg-[#0E0E18] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className={`absolute right-0 w-80 bg-[#0E0E18] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
+                        align === 'up' ? 'bottom-full mb-3' : 'mt-2'
+                    }`}>
                         <div className="p-4 border-b border-white/5 flex justify-between items-center bg-[#1A1A24]">
                             <h3 className="font-bold text-white text-sm">Notificaciones</h3>
                             <button 

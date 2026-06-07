@@ -53,7 +53,7 @@ export default function StrategyTopBar({
 
     return (
         <>
-            <header className={`h-24 border-b px-10 flex items-center justify-between z-[100] relative overflow-hidden pt-4 pb-2 transition-all duration-700 ${theme === 'dark' ? 'bg-[#0A0A0F]/60 backdrop-blur-3xl border-white/5' : 'bg-white/80 backdrop-blur-3xl border-slate-200'}`}>
+            <header className={`h-24 border-b px-10 flex items-center justify-between z-[100] relative overflow-visible pt-4 pb-2 transition-all duration-700 ${theme === 'dark' ? 'bg-[#0A0A0F]/60 backdrop-blur-3xl border-white/5' : 'bg-white/80 backdrop-blur-3xl border-slate-200'}`}>
                 {/* Ambient Top Glow - Refined for better depth */}
                 <div className={`absolute top-0 left-1/4 w-1/3 h-[1px] opacity-50 blur-[2px] pointer-events-none ${theme === 'dark' ? 'bg-indigo-500' : 'bg-indigo-400/30'}`} />
                 <div className={`absolute top-0 left-0 w-full h-full pointer-events-none ${theme === 'dark' ? 'bg-gradient-to-b from-indigo-500/[0.03] to-transparent' : 'bg-gradient-to-b from-slate-100/50 to-transparent'}`} />
