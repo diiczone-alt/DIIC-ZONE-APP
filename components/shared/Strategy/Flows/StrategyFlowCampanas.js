@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     Search, Layers, Plus, Calendar, Target, Play, ChevronRight, 
     Activity, Trash2, LayoutTemplate, X, Star, UserCheck, 
-    Sparkles, Video, Box, Instagram, Bot 
+    Sparkles, Video, Box, Instagram, Bot, Mic
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DatePicker from '@/components/ui/DatePicker';
@@ -60,13 +60,13 @@ const generateStrategicNodes = (ingredients) => {
 
     const nodeBuckets = { atracción: [], conexión: [], conversión: [], crm: [] };
 
-    // 1. VIDEOS (Boutique Labels)
-    const videoLabels = ['AD: ATRACCIÓN', 'VIDEO DE VALOR', 'MASTERCLASS: VENTA', 'TESTIMONIO VIF'];
+    // 1. PODCAST (Boutique Labels)
+    const videoLabels = ['PODCAST: EPISODIO', 'PODCAST: ENTREVISTA', 'PODCAST: AUDIOGUIA', 'PODCAST: CLIP'];
     const videoCount = parseInt(ingredients.videos) || 0;
     for (let i = 0; i < videoCount; i++) {
         const stage = i === 0 ? 'atracción' : (i === 1 ? 'conexión' : 'conversión');
         const label = videoLabels[i % videoLabels.length];
-        const n = addNode(stage, 'video', 'v_educativo', label, ['instagram', 'tiktok', 'youtube']);
+        const n = addNode(stage, 'video', 'pod_episodio', label, ['youtube', 'spotify']);
         nodeBuckets[stage].push(n);
     }
 
@@ -182,7 +182,7 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
 
     useEffect(() => {
         const categories = [
-            { label: 'Videos', key: 'videos', icon: Video, color: '#f43f5e', type: 'video', subtype: 'v_educativo', stage: 'conexión' },
+            { label: 'Podcast', key: 'videos', icon: Mic, color: '#f43f5e', type: 'video', subtype: 'pod_episodio', stage: 'conexión' },
             { label: 'Posts', key: 'posts', icon: Box, color: '#818cf8', type: 'post', subtype: 'i_post', stage: 'conexión' },
             { label: 'Stories', key: 'stories', icon: Instagram, color: '#f97316', type: 'post', subtype: 'i_historia', stage: 'conexión' },
             { label: 'Reels', key: 'reels', icon: Play, color: '#10b981', type: 'video', subtype: 'v_viral', stage: 'atracción' },
@@ -209,8 +209,8 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                             type: cat.type,
                             subtype: cat.subtype,
                             stage: cat.stage,
-                            title: `${cat.label.slice(0, -1)} ${index}`.toUpperCase(),
-                            platforms: cat.key === 'tiktok' ? ['tiktok'] : (cat.key === 'reels' ? ['instagram'] : (['videos', 'posts'].includes(cat.key) ? ['instagram', 'youtube'] : ['web']))
+                            title: `${cat.label.endsWith('s') ? cat.label.slice(0, -1) : cat.label} ${index}`.toUpperCase(),
+                            platforms: cat.key === 'tiktok' ? ['tiktok'] : (cat.key === 'reels' ? ['instagram'] : (cat.key === 'videos' ? ['youtube', 'spotify'] : (cat.key === 'posts' ? ['instagram', 'youtube'] : ['web'])))
                         });
                     }
                 } else if (currentItems.length > targetCount) {
@@ -724,7 +724,7 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                              <h4 className="text-[11px] font-black text-gray-600 uppercase tracking-[0.6em] text-center mb-10">Componentes de Arquitectura</h4>
                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-10">
                                 {[
-                                    { label: 'Videos', key: 'videos', icon: Video, color: 'text-rose-500' },
+                                    { label: 'Podcast', key: 'videos', icon: Mic, color: 'text-rose-500' },
                                     { label: 'Posts', key: 'posts', icon: Box, color: 'text-indigo-400' },
                                     { label: 'Stories', key: 'stories', icon: Instagram, color: 'text-orange-500' },
                                     { label: 'Reels', key: 'reels', icon: Play, color: 'text-emerald-500' },
@@ -779,7 +779,7 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                                                     theme === 'dark' ? 'bg-white/[0.02] border-white/10' : 'bg-white border-slate-200 shadow-sm'
                                                 }`}>
                                                     {(() => {
-                                                        const Icon = item.categoryKey === 'videos' ? Video : (item.categoryKey === 'posts' ? Box : (item.categoryKey === 'stories' ? Instagram : (item.categoryKey === 'reels' ? Play : (item.categoryKey === 'tiktok' ? Activity : (item.categoryKey === 'crm' ? Bot : Target)))));
+                                                        const Icon = item.categoryKey === 'videos' ? Mic : (item.categoryKey === 'posts' ? Box : (item.categoryKey === 'stories' ? Instagram : (item.categoryKey === 'reels' ? Play : (item.categoryKey === 'tiktok' ? Activity : (item.categoryKey === 'crm' ? Bot : Target)))));
                                                         return <Icon className={`w-4 h-4 ${
                                                             item.categoryKey === 'videos' ? 'text-rose-500' : (item.categoryKey === 'posts' ? 'text-indigo-400' : (item.categoryKey === 'stories' ? 'text-orange-500' : (item.categoryKey === 'reels' ? 'text-emerald-500' : (item.categoryKey === 'tiktok' ? 'text-cyan-400' : (item.categoryKey === 'crm' ? 'text-emerald-500' : 'text-cyan-400')))))
                                                         }`} />;
@@ -842,7 +842,15 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                                                         : 'bg-white border-slate-200 focus:border-indigo-500 text-slate-700 shadow-sm'
                                                     }`}
                                                 >
-                                                    {item.type === 'video' && (
+                                                    {item.categoryKey === 'videos' && (
+                                                        <>
+                                                            <option value="pod_episodio">Episodio Principal</option>
+                                                            <option value="pod_entrevista">Entrevista / Invitado</option>
+                                                            <option value="pod_clip">Podcast Clip / Short</option>
+                                                            <option value="pod_audioguia">Audio-Guía / Audio-Libro</option>
+                                                        </>
+                                                    )}
+                                                    {item.type === 'video' && item.categoryKey !== 'videos' && (
                                                         <>
                                                             <option value="v_viral">Reel / Video Viral</option>
                                                             <option value="v_educativo">Video de Valor</option>
@@ -1115,7 +1123,7 @@ export default function StrategyFlowCampanas({ strategyData, onUpdate, onOpenCan
                                 {/* Architecture Blueprint: High Contrast */}
                                 <div className="grid grid-cols-4 gap-4 py-8 border-y border-white/5 mt-10 bg-white/[0.01]">
                                     {[
-                                        { label: 'VID', key: 'videos', icon: Video, color: 'text-cyan-400' },
+                                        { label: 'POD', key: 'videos', icon: Mic, color: 'text-rose-500' },
                                         { label: 'PST', key: 'posts', icon: Box, color: 'text-magenta-400' },
                                         { label: 'REL', key: 'reels', icon: Play, color: 'text-[#ff00e5]' },
                                         { label: 'TKT', key: 'tiktok', icon: Activity, color: 'text-emerald-400' }
