@@ -1535,19 +1535,36 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                     className="bg-transparent border-none text-white text-base md:text-xl focus:outline-none flex-1 font-medium placeholder:text-gray-600"
                                 />
                             </div>
-                            <button 
-                                onClick={handleSimulateSync}
-                                disabled={!(profile.websiteUrl || profile.instagramUrl || profile.facebookUrl || profile.tiktokUrl || profile.youtubeUrl || profile.linkedinUrl)}
-                                className={`px-4 py-3 md:px-8 font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 ${
-                                    hasUnsyncedUrl 
-                                    ? 'bg-indigo-600 text-white shadow-[0_0_30px_rgba(79,70,229,0.5)] animate-pulse' 
-                                    : 'bg-white text-black hover:bg-indigo-50 shadow-xl'
-                                } disabled:opacity-50 disabled:bg-gray-800 disabled:text-gray-500 group relative overflow-hidden`}
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                {isSimulatingScrape ? <Activity className="w-5 h-5 animate-pulse text-white" /> : <Command className="w-5 h-5" />}
-                                <span className="relative z-10">{isSimulatingScrape ? 'INVESTIGANDO...' : 'REPORTE IA'}</span>
-                            </button>
+                            {(() => {
+                                const activeScanChannels = [];
+                                if (profile.websiteUrl) activeScanChannels.push('WEB');
+                                if (profile.facebookUrl) activeScanChannels.push('FB');
+                                if (profile.instagramUrl) activeScanChannels.push('IG');
+                                if (profile.tiktokUrl) activeScanChannels.push('TK');
+                                if (profile.youtubeUrl) activeScanChannels.push('YT');
+                                if (profile.linkedinUrl) activeScanChannels.push('IN');
+                                const buttonLabel = isSimulatingScrape 
+                                    ? 'INVESTIGANDO...' 
+                                    : (activeScanChannels.length > 1 
+                                        ? `INVESTIGAR (${activeScanChannels.join(' + ')})` 
+                                        : 'REPORTE IA');
+
+                                return (
+                                    <button 
+                                        onClick={handleSimulateSync}
+                                        disabled={!(profile.websiteUrl || profile.instagramUrl || profile.facebookUrl || profile.tiktokUrl || profile.youtubeUrl || profile.linkedinUrl)}
+                                        className={`px-4 py-3 md:px-8 font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 ${
+                                            hasUnsyncedUrl 
+                                            ? 'bg-indigo-600 text-white shadow-[0_0_30px_rgba(79,70,229,0.5)] animate-pulse' 
+                                            : 'bg-white text-black hover:bg-indigo-50 shadow-xl'
+                                        } disabled:opacity-50 disabled:bg-gray-800 disabled:text-gray-500 group relative overflow-hidden`}
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        {isSimulatingScrape ? <Activity className="w-5 h-5 animate-pulse text-white" /> : <Command className="w-5 h-5" />}
+                                        <span className="relative z-10">{buttonLabel}</span>
+                                    </button>
+                                );
+                            })()}
                         </div>
                     </div>
 
@@ -1681,7 +1698,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
-                                            className="relative flex items-center bg-[#07070F]/60 border border-blue-500/20 rounded-2xl p-3 gap-3"
+                                            className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
+                                                profile.facebookUrl 
+                                                    ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                    : 'border-blue-500/20'
+                                            }`}
                                         >
                                             <Facebook size={16} className="text-blue-500 shrink-0" />
                                             <input
@@ -1691,6 +1712,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                                 onChange={(e) => handleChange('facebookUrl', e.target.value)}
                                                 className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
                                             />
+                                            {profile.facebookUrl && (
+                                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1 animate-pulse">
+                                                    <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
+                                                </span>
+                                            )}
                                             <button 
                                                 type="button"
                                                 onClick={() => {
@@ -1710,7 +1736,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
-                                            className="relative flex items-center bg-[#07070F]/60 border border-pink-500/20 rounded-2xl p-3 gap-3"
+                                            className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
+                                                profile.instagramUrl 
+                                                    ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                    : 'border-pink-500/20'
+                                            }`}
                                         >
                                             <Instagram size={16} className="text-pink-500 shrink-0" />
                                             <input
@@ -1720,6 +1750,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                                 onChange={(e) => handleChange('instagramUrl', e.target.value)}
                                                 className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
                                             />
+                                            {profile.instagramUrl && (
+                                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1 animate-pulse">
+                                                    <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
+                                                </span>
+                                            )}
                                             <button 
                                                 type="button"
                                                 onClick={() => {
@@ -1739,7 +1774,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
-                                            className="relative flex items-center bg-[#07070F]/60 border border-teal-500/20 rounded-2xl p-3 gap-3"
+                                            className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
+                                                profile.tiktokUrl 
+                                                    ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                    : 'border-teal-500/20'
+                                            }`}
                                         >
                                             <svg className="w-4 h-4 fill-current text-teal-500 shrink-0" viewBox="0 0 24 24">
                                                 <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.95-1.72-.1.08-.21.17-.3.26v9.71c-.04 2.44-1.42 4.77-3.69 5.75-2.28.98-5.06.72-7.06-.66-2-1.38-2.92-3.9-2.31-6.28.61-2.38 2.84-4.06 5.3-4.02.16 0 .32.01.48.03v4.02c-.83-.22-1.73-.05-2.42.44-.7.49-1.1 1.35-1.07 2.22.03.87.52 1.69 1.28 2.1 1.05.57 2.44.42 3.32-.4.4-.38.62-.93.61-1.49V.02z"/>
@@ -1751,6 +1790,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                                 onChange={(e) => handleChange('tiktokUrl', e.target.value)}
                                                 className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
                                             />
+                                            {profile.tiktokUrl && (
+                                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1 animate-pulse">
+                                                    <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
+                                                </span>
+                                            )}
                                             <button 
                                                 type="button"
                                                 onClick={() => {
@@ -1770,7 +1814,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
-                                            className="relative flex items-center bg-[#07070F]/60 border border-red-500/20 rounded-2xl p-3 gap-3"
+                                            className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
+                                                profile.youtubeUrl 
+                                                    ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                    : 'border-red-500/20'
+                                            }`}
                                         >
                                             <svg className="w-4 h-4 fill-current text-red-500 shrink-0" viewBox="0 0 24 24">
                                                 <path d="M23.498 6.163c-.272-.98-1.04-1.755-2.02-2.027C19.7 3.5 12 3.5 12 3.5s-7.7 0-9.478.436c-.98.272-1.748 1.047-2.02 2.027C0 7.9 0 12 0 12s0 4.1.522 5.837c.272.98 1.04 1.755 2.02 2.027C4.3 20.5 12 20.5 12 20.5s7.7 0 9.478-.436c.98-.272 1.748-1.047 2.02-2.027C24 16.1 24 12 24 12s0-4.1-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
@@ -1782,6 +1830,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                                 onChange={(e) => handleChange('youtubeUrl', e.target.value)}
                                                 className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
                                             />
+                                            {profile.youtubeUrl && (
+                                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1 animate-pulse">
+                                                    <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
+                                                </span>
+                                            )}
                                             <button 
                                                 type="button"
                                                 onClick={() => {
@@ -1801,7 +1854,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
-                                            className="relative flex items-center bg-[#07070F]/60 border border-sky-500/20 rounded-2xl p-3 gap-3"
+                                            className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
+                                                profile.linkedinUrl 
+                                                    ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                    : 'border-sky-500/20'
+                                            }`}
                                         >
                                             <Linkedin size={16} className="text-sky-500 shrink-0" />
                                             <input
@@ -1811,6 +1868,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                                 onChange={(e) => handleChange('linkedinUrl', e.target.value)}
                                                 className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
                                             />
+                                            {profile.linkedinUrl && (
+                                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1 animate-pulse">
+                                                    <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
+                                                </span>
+                                            )}
                                             <button 
                                                 type="button"
                                                 onClick={() => {
