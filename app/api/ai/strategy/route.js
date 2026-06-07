@@ -80,6 +80,7 @@ export async function POST(req) {
             "tone": "Tono y estilo de comunicación real en sus publicaciones y web",
             "mainGoal": "Objetivo comercial aparente",
             "marketContext": "Ubicación geográfica, mercado y entorno competitivo real detectado",
+            "socialAudit": "Auditoría en profundidad de la huella en redes sociales de la marca. Para cada red provista (Facebook, Instagram, TikTok, YouTube, LinkedIn), detalla de forma profesional su presencia, su actividad real, calidad visual, engagement con la comunidad y oportunidades estratégicas de mejora. Sé muy específico con el contenido que publican. Si no se proveyeron redes, indica 'Sin canales sociales configurados para auditoría'.",
             "dynamicButtons": ["Búsqueda o pregunta estratégica sugerida 1", "Búsqueda o pregunta estratégica sugerida 2", "Búsqueda o pregunta estratégica sugerida 3"]
         }
         
@@ -131,7 +132,7 @@ export async function POST(req) {
     } catch (error) {
         console.error("[NeuralInvestigator] Critical Error:", error);
         
-        let errorMessage = "Falla crítica en la red de búsqueda global.";
+        let errorMessage = `Falla en el escáner de IA: ${error.message || "Error desconocido de red"}`;
         if (error.message?.includes("SAFETY")) errorMessage = "Contenido restringido por filtros de seguridad.";
         if (error.message?.includes("quota") || error.message?.includes("429")) errorMessage = "Cuota de IA excedida. Reintenta en 60 segundos.";
         if (error.message?.includes("huella digital")) errorMessage = error.message;

@@ -416,6 +416,7 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
         tone: '',
         mainGoal: '',
         marketContext: '',
+        socialAudit: '',
         competitors: [],
         strategicAllies: [],
         websiteUrl: '',
@@ -767,7 +768,8 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                 valueProp: 'Extrayendo USP...',
                 tone: 'Definiendo...',
                 mainGoal: 'Mapeando KPIs...',
-                marketContext: 'Auditando mercado...'
+                marketContext: 'Auditando mercado...',
+                socialAudit: 'Analizando perfiles sociales...'
             }));
 
             const result = await aiService.analyzeStrategicProfile(
@@ -800,6 +802,7 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                 tone: d.tone || "Profesional",
                 mainGoal: d.mainGoal || "Ventas y Autoridad",
                 marketContext: d.marketContext || "Contexto de mercado estándar.",
+                socialAudit: d.socialAudit || "Auditoría de canales sociales no disponible.",
                 dynamicButtons: d.dynamicButtons || []
             };
 
@@ -1262,7 +1265,8 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                     { label: 'Oferta Estratégica', val: profile.whatItOffers, icon: Zap },
                                     { label: 'Público Objetivo', val: profile.targetAudience, icon: Users },
                                     { label: 'Propuesta de Valor', val: profile.valueProp, icon: TargetIcon },
-                                    { label: 'Meta Principal', val: profile.mainGoal, icon: Target }
+                                    { label: 'Meta Principal', val: profile.mainGoal, icon: Target },
+                                    { label: 'Auditoría de Redes', val: profile.socialAudit, icon: Bot }
                                 ].map((item, i) => (
                                     <div key={i} className="space-y-4 group">
                                         <div className="flex items-center gap-3">
@@ -2017,6 +2021,7 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                     <div className="relative z-10">{renderInput('CONTEXTO DE MERCADO', 'marketContext', Globe, 'Ej. Líderes en el sector agropecuario de Ecuador...', true)}</div>
                     <div className="relative z-10">{renderInput('TONO DE COMUNICACIÓN', 'tone', Heart, 'Ej. Profesional, directo, corporativo, disruptivo...')}</div>
                     <div className="relative z-10">{renderInput('OBJETIVO PRINCIPAL', 'mainGoal', Target, 'Ej. Lograr $100K MRR para Q3 2024.', true)}</div>
+                    <div className="relative z-10">{renderInput('AUDITORÍA DE REDES SOCIALES', 'socialAudit', Bot, 'Análisis y diagnóstico profundo de la huella digital en redes sociales del cliente...', true)}</div>
                     
                     {/* Strategic Recording Formats Card */}
                     <div className="bg-[#0A0A0F] border border-white/5 rounded-[32px] p-6 space-y-4 hover:border-indigo-500/30 transition-all duration-300 group relative shadow-lg hover:shadow-indigo-500/10 flex flex-col h-full">
