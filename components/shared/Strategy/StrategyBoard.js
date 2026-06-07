@@ -320,6 +320,15 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     const [view, setView] = useState({ x: 100, y: 100, scale: 0.85 });
     const [selectedNodeId, setSelectedNodeId] = useState(null);
     const [selectedEdgeId, setSelectedEdgeId] = useState(null);
+    const [isOutlinerCollapsed, setIsOutlinerCollapsed] = useState(false);
+    const [isPropertyPanelCollapsed, setIsPropertyPanelCollapsed] = useState(false);
+
+    useEffect(() => {
+        if (selectedNodeId || selectedEdgeId) {
+            setIsPropertyPanelCollapsed(false);
+        }
+    }, [selectedNodeId, selectedEdgeId]);
+
     const [isMemoryPickerOpen, setIsMemoryPickerOpen] = useState(false);
     const [memoryTargetNodeId, setMemoryTargetNodeId] = useState(null);
     const [isCompactMode, setIsCompactMode] = useState(false);
@@ -1204,21 +1213,24 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                     <h2 className={`text-xl font-bold mb-2 transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Pizarra No Disponible</h2>
                                 </div>
                             ) : (
-                                <div className="flex-1 flex overflow-hidden">
-                                    <StrategicOutliner 
-                                        nodes={activeCampaign.nodes} 
-                                        activeNodeId={selectedNodeId}
-                                        onNodeSelect={(id) => { setSelectedNodeId(id); setSelectedEdgeId(null); }}
-                                        onUpdateNode={handleUpdateNode}
-                                        theme={theme}
-                                    />
+                                <div className="flex-1 flex overflow-hidden relative">
+                                    {!isOutlinerCollapsed && (
+                                        <StrategicOutliner 
+                                            nodes={activeCampaign.nodes} 
+                                            activeNodeId={selectedNodeId}
+                                            onNodeSelect={(id) => { setSelectedNodeId(id); setSelectedEdgeId(null); }}
+                                            onUpdateNode={handleUpdateNode}
+                                            theme={theme}
+                                            onCollapse={() => setIsOutlinerCollapsed(true)}
+                                        />
+                                    )}
                                     
                                     <AnimatePresence>
-                                        {(selectedNodeId || selectedEdgeId) && (
+                                        {(selectedNodeId || selectedEdgeId) && !isPropertyPanelCollapsed && (
                                             <motion.div
-                                                initial={{ x: -400, opacity: 0 }}
+                                                initial={{ x: -320, opacity: 0 }}
                                                 animate={{ x: 0, opacity: 1 }}
-                                                exit={{ x: -400, opacity: 0 }}
+                                                exit={{ x: -320, opacity: 0 }}
                                                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
                                                 className="z-[90]"
                                             >
@@ -1228,6 +1240,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                                     activeTab={activePropertyTab}
                                                     onTabChange={setActivePropertyTab}
                                                     onClose={() => { setSelectedNodeId(null); setSelectedEdgeId(null); }}
+                                                    onCollapse={() => setIsPropertyPanelCollapsed(true)}
                                                     onUpdateNode={handleUpdateNode}
                                                     onDeleteNode={handleDeleteNode}
                                                     onDeleteEdge={handleDeleteEdge}
@@ -1241,6 +1254,36 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                     </AnimatePresence>
 
                                     <div className={`flex-1 relative flex flex-col min-h-0 overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-white'}`}>
+                                        {isOutlinerCollapsed && (
+                                            <button 
+                                                onClick={() => setIsOutlinerCollapsed(false)}
+                                                className={`absolute left-6 top-6 p-3 rounded-2xl z-[85] border transition-all duration-300 hover:scale-105 active:scale-95 shadow-2xl flex items-center gap-2 ${
+                                                    theme === 'dark' 
+                                                    ? 'bg-[#050511]/90 border-white/10 text-indigo-400 hover:text-white hover:bg-white/10' 
+                                                    : 'bg-white border-slate-200 text-indigo-600 hover:text-indigo-800 hover:bg-slate-50'
+                                                }`}
+                                                title="Mostrar Outliner"
+                                            >
+                                                <ChevronRight className="w-4 h-4" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest">OUTLINER</span>
+                                            </button>
+                                        )}
+
+                                        {isPropertyPanelCollapsed && (selectedNodeId || selectedEdgeId) && (
+                                            <button 
+                                                onClick={() => setIsPropertyPanelCollapsed(false)}
+                                                className={`absolute left-6 ${isOutlinerCollapsed ? 'top-[70px]' : 'top-6'} p-3 rounded-2xl z-[85] border transition-all duration-300 hover:scale-105 active:scale-95 shadow-2xl flex items-center gap-2 ${
+                                                    theme === 'dark' 
+                                                    ? 'bg-[#050511]/90 border-white/10 text-indigo-400 hover:text-white hover:bg-white/10' 
+                                                    : 'bg-white border-slate-200 text-indigo-600 hover:text-indigo-800 hover:bg-slate-50'
+                                                }`}
+                                                title="Mostrar Configuración"
+                                            >
+                                                <Settings2 className="w-4 h-4 text-indigo-400 animate-pulse" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest">PROPIEDADES</span>
+                                            </button>
+                                        )}
+
                                         {activeTool === 'create' && (
                                             <StrategyNodeLibrary  
                                                 onAddNode={(selection) => { handleAddNode(selection); setActiveTool('select'); }} 

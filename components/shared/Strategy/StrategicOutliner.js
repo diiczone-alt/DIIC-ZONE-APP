@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Search, ChevronDown, ChevronRight, Hash, Globe, Target, Rocket, Zap, MessageSquare, Database, ListTree, FolderTree, Binary, Eye, EyeOff, Folder, Video, Instagram, Type as TypeIcon, Layout, Music, Mic, Youtube, PlayCircle } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, ChevronLeft, Hash, Globe, Target, Rocket, Zap, MessageSquare, Database, ListTree, FolderTree, Binary, Eye, EyeOff, Folder, Video, Instagram, Type as TypeIcon, Layout, Music, Mic, Youtube, PlayCircle } from 'lucide-react';
 import { NODE_TYPES, NODE_CATEGORIES, getNodeLaneId } from './StrategyConstants';
 
-export default function StrategicOutliner({ nodes, activeNodeId, onNodeSelect, onUpdateNode, theme = 'dark' }) {
+export default function StrategicOutliner({ nodes, activeNodeId, onNodeSelect, onUpdateNode, theme = 'dark', onCollapse }) {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [collapsedGroups, setCollapsedGroups] = React.useState({});
 
@@ -64,19 +64,32 @@ export default function StrategicOutliner({ nodes, activeNodeId, onNodeSelect, o
   });
 
   return (
-    <div className={`w-64 border-r flex flex-col h-full z-[70] shadow-2xl relative overflow-hidden group/outliner transition-all duration-700 ${theme === 'dark' ? 'bg-[#050511] border-white/5' : 'bg-white border-slate-200 shadow-xl shadow-slate-200/20'}`}>
+    <div className={`w-56 border-r flex flex-col h-full z-[70] shadow-2xl relative overflow-hidden group/outliner transition-all duration-700 ${theme === 'dark' ? 'bg-[#050511] border-white/5' : 'bg-white border-slate-200 shadow-xl shadow-slate-200/20'}`}>
       {/* Subtle Glow Background */}
       <div className={`absolute top-0 left-0 w-full h-[300px] pointer-events-none ${theme === 'dark' ? 'bg-gradient-to-b from-indigo-500/5 to-transparent' : 'bg-gradient-to-b from-slate-100 to-transparent'}`} />
 
       {/* Header Area - Increased Spacing for breathing room */}
       <div className="p-5 pt-9 space-y-7 relative z-10">
-        <div className="flex justify-between items-end px-1">
-          <h2 className={`text-[12px] font-black italic uppercase tracking-[0.4em] leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-            Outliner
-          </h2>
-          <span className={`text-[9px] font-black uppercase tracking-widest leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>
-            {nodes.length} Nodes
-          </span>
+        <div className="flex justify-between items-center px-1">
+          <div className="flex items-center gap-2">
+            <h2 className={`text-[12px] font-black italic uppercase tracking-[0.4em] leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+              Outliner
+            </h2>
+            <span className={`text-[9px] font-black uppercase tracking-widest leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>
+              {nodes.length} Nodes
+            </span>
+          </div>
+          {onCollapse && (
+            <button 
+              onClick={onCollapse}
+              className={`p-1.5 rounded-lg transition-all ${
+                theme === 'dark' ? 'hover:bg-white/5 text-gray-500 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-900'
+              }`}
+              title="Colapsar Outliner"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
         
         <div className="relative group/search">

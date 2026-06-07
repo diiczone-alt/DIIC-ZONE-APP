@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { 
     X, Trash2, Copy, Send, Layout, Target, 
     Share2, Clock, BarChart, ExternalLink, Info,
-    ChevronDown, Plus, Star, ArrowRight, Settings,
+    ChevronDown, ChevronLeft, Plus, Star, ArrowRight, Settings,
     Calendar, Users, Type, Video, Link, MessageSquare,
     CheckCircle2, AlertCircle, TrendingUp, Sparkles, Pencil, Search, Box,
     Zap, Globe, Database, Cpu, Flame, Snowflake, Thermometer, Palette,
@@ -33,6 +33,7 @@ export default function StrategyPropertyPanel({
     activeTab = 'estratégica',
     onTabChange,
     onClose, 
+    onCollapse,
     onUpdateNode, 
     onDeleteNode, 
     onDeleteEdge,
@@ -144,7 +145,7 @@ export default function StrategyPropertyPanel({
     };
 
     return (
-        <aside className={`w-[400px] border-r flex flex-col h-full z-[100] overflow-hidden ring-1 group/panel transition-all duration-700 ${
+        <aside className={`w-[320px] border-r flex flex-col h-full z-[100] overflow-hidden ring-1 group/panel transition-all duration-700 ${
             theme === 'dark' 
             ? 'bg-[#050511]/95 backdrop-blur-3xl border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.8)] ring-white/5' 
             : 'bg-white/95 backdrop-blur-3xl border-slate-200 shadow-xl shadow-slate-200/50 ring-slate-100'
@@ -194,6 +195,16 @@ export default function StrategyPropertyPanel({
                                 <Trash2 className="w-3.5 h-3.5 group-hover/act:scale-110" />
                             </button>
                         </div>
+
+                        {onCollapse && (
+                            <button 
+                                onClick={onCollapse} 
+                                className={`p-2 rounded-full transition-all group ${theme === 'dark' ? 'hover:bg-white/5 text-gray-600 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-900'}`}
+                                title="Colapsar Panel"
+                            >
+                                <ChevronLeft className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                            </button>
+                        )}
 
                         <button onClick={onClose} className={`p-2 rounded-full transition-all group ${theme === 'dark' ? 'hover:bg-white/5 text-gray-600 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-900'}`}>
                             <X className="w-4 h-4 group-hover:scale-110 transition-transform" />
