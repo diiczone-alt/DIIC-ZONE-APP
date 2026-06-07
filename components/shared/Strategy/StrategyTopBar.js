@@ -49,6 +49,7 @@ export default function StrategyTopBar({
     const activeCampaign = campaigns.find(c => c.id === activeCampaignId);
     const [isCampaignMenuOpen, setIsCampaignMenuOpen] = useState(false);
     const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
+    const [isTemplatesMenuOpen, setIsTemplatesMenuOpen] = useState(false);
 
     return (
         <>
@@ -139,8 +140,9 @@ export default function StrategyTopBar({
                     </AnimatePresence>
                 </div>
 
-                {/* Left Section: Status & Manual Sync */}
+                {/* Right Section: Navigation & Actions */}
                 <div className="flex items-center gap-4 relative z-10">
+                    {/* Manual Save Button (Main Save Action) */}
                     <button 
                         onClick={onSave}
                         className={`px-4 py-3 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 group/save ${
@@ -155,23 +157,69 @@ export default function StrategyTopBar({
                             {isStrategySaved ? 'Bunker Sincronizado' : 'Guardar Bunker'}
                         </span>
                     </button>
-                </div>
 
-                {/* Right Section: Navigation & Actions */}
-                <div className="flex items-center gap-4 relative z-10">
-                    {/* Plantillas Button */}
-                    <button 
-                        onClick={() => onApplyTemplate('authority')}
-                        className={`px-4 py-3 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 group/template ${
-                            theme === 'dark' 
-                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white' 
-                            : 'bg-emerald-500/5 border-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
-                        }`}
-                        title="Aplicar Plantilla Nivel Autoridad"
-                    >
-                        <LayoutTemplate className="w-5 h-5 group-hover/template:rotate-12 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Nivel Autoridad</span>
-                    </button>
+                    {/* Plantillas Dropdown Menu */}
+                    <div className="relative">
+                        <button 
+                            onClick={() => setIsTemplatesMenuOpen(!isTemplatesMenuOpen)}
+                            className={`px-4 py-3 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 group/template ${
+                                theme === 'dark' 
+                                ? 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white' 
+                                : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                            }`}
+                            title="Ver Plantillas Disponibles"
+                        >
+                            <LayoutTemplate className="w-5 h-5 transition-transform" />
+                            <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Plantillas</span>
+                            <ChevronDown className="w-4 h-4 opacity-50" />
+                        </button>
+                        
+                        <AnimatePresence>
+                            {isTemplatesMenuOpen && (
+                                <>
+                                    {/* Backdrop to close dropdown */}
+                                    <div 
+                                        className="fixed inset-0 z-40" 
+                                        onClick={() => setIsTemplatesMenuOpen(false)}
+                                    />
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        transition={{ duration: 0.15 }}
+                                        className={`absolute right-0 mt-2 w-64 rounded-2xl border p-2 z-50 shadow-2xl ${
+                                            theme === 'dark' 
+                                            ? 'bg-[#0E0E18]/95 backdrop-blur-xl border-white/10 text-white' 
+                                            : 'bg-white border-slate-200 text-slate-800'
+                                        }`}
+                                    >
+                                        <div className="px-3 py-2 border-b border-white/5 mb-1">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-indigo-400">Estrategias Maestras</p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                onApplyTemplate('authority');
+                                                setIsTemplatesMenuOpen(false);
+                                            }}
+                                            className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex flex-col gap-1 ${
+                                                theme === 'dark' 
+                                                ? 'hover:bg-white/5' 
+                                                : 'hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                <span className="text-xs font-bold uppercase tracking-wider">Nivel Autoridad</span>
+                                            </div>
+                                            <span className="text-[9px] text-gray-500 font-medium leading-normal pl-4">
+                                                Aplica la estructura optimizada para posicionamiento y embudos de alta conversión.
+                                            </span>
+                                        </button>
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>
+                    </div>
 
                     {/* Proactive Theme Toggle */}
                     <button 
@@ -184,20 +232,6 @@ export default function StrategyTopBar({
                         title={theme === 'dark' ? 'Activar Modo Claro' : 'Activar Modo Oscuro'}
                     >
                         {theme === 'dark' ? <Sun className="w-5 h-5 transition-transform group-hover/theme:rotate-90" /> : <Moon className="w-5 h-5 transition-transform group-hover/theme:-rotate-12" />}
-                    </button>
-
-                    {/* Master Save Button */}
-                    <button 
-                        onClick={onSave}
-                        className={`px-6 py-3 rounded-2xl flex items-center gap-3 font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl relative overflow-hidden group/save ${
-                            theme === 'dark'
-                            ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-600/30'
-                            : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/20'
-                        }`}
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover/save:translate-x-[100%] transition-transform duration-1000" />
-                        <Save className={`w-4 h-4 ${!isStrategySaved ? 'animate-bounce' : ''}`} />
-                        <span>Desplegar Cambios</span>
                     </button>
                 </div>
             </header>
