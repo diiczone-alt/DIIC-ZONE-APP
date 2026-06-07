@@ -10,7 +10,7 @@ export const aiService = {
      * In a production environment, this would call a serverless function 
      * that performs scraping and uses an LLM.
      */
-    analyzeStrategicProfile: async (url, brandName = '') => {
+    analyzeStrategicProfile: async (url, brandName = '', additionalUrls = {}) => {
         // Steps for the UI progress bar
         const steps = [
             { id: 'grounding', msg: 'Activando Motores de Búsqueda Google...' },
@@ -24,7 +24,15 @@ export const aiService = {
             const response = await fetch('/api/ai/strategy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, brandName })
+                body: JSON.stringify({ 
+                    url, 
+                    brandName,
+                    facebookUrl: additionalUrls.facebookUrl || '',
+                    instagramUrl: additionalUrls.instagramUrl || '',
+                    tiktokUrl: additionalUrls.tiktokUrl || '',
+                    youtubeUrl: additionalUrls.youtubeUrl || '',
+                    linkedinUrl: additionalUrls.linkedinUrl || ''
+                })
             });
 
             if (response.ok) {

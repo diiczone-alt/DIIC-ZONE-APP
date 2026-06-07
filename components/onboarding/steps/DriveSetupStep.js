@@ -86,6 +86,17 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
             return false;
         };
 
+        // Check for synchronously captured errors
+        const savedError = typeof window !== 'undefined' ? localStorage.getItem('diic_google_error') : null;
+        if (savedError) {
+            console.error('[DriveSetupStep] Sync captured error detected:', savedError);
+            setError(`Error de Google: ${savedError}`);
+            setStatus('error');
+            localStorage.removeItem('diic_google_error');
+            localStorage.removeItem('diic_waiting_oauth');
+            return;
+        }
+
         // Intentar captura inmediata
         if (scanForToken()) return;
 

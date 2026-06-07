@@ -106,8 +106,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
 
 
     const handleGoogleConnect = async () => {
-        if (!formData.brand || !formData.country || !formData.city || !formData.address || !formData.birth_date || !formData.website) {
-            toast.error('Por favor, ingresa tu Marca/Especialidad, País, Ciudad, Dirección Exacta, Fecha de Nacimiento y Sitio Web antes de continuar con Google.');
+        if ((!isCreative && !formData.brand) || !formData.country || !formData.city || !formData.address || !formData.birth_date || !formData.website) {
+            toast.error(`Por favor, ingresa tu ${isCreative ? '' : 'Marca, '}País, Ciudad, Dirección Exacta, Fecha de Nacimiento y Sitio Web antes de continuar con Google.`);
             return;
         }
 
@@ -359,8 +359,8 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 onSubmit={handleEmailRegister}
                 className="w-full space-y-4 bg-white/5 p-8 rounded-[2.5rem] border border-white/10 backdrop-blur-3xl relative overflow-hidden"
             >
-                {/* Field Group: Identity */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Field Group: Identity & Brand */}
+                {isCreative ? (
                     <div className="space-y-1 text-left">
                         <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
                             <User className="w-2.5 h-2.5" /> Identity
@@ -375,48 +375,26 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                             className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
                         />
                     </div>
-                    <div className="space-y-1 text-left relative z-[105]">
-                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                            <Briefcase className="w-2.5 h-2.5" /> {isCreative ? 'Specialty' : 'Brand'}
-                        </label>
-                        {isCreative ? (
-                            <>
-                                <div 
-                                    onClick={() => setIsSpecialtyOpen(!isSpecialtyOpen)}
-                                    className={`w-full bg-black/20 border ${isSpecialtyOpen ? 'border-indigo-500' : 'border-white/5'} rounded-2xl p-4 text-xs text-white transition-all font-bold flex items-center justify-between cursor-pointer`}
-                                >
-                                    <span className={formData.brand ? 'text-white' : 'text-gray-700'}>
-                                        {formData.brand || "Seleccionar Especialidad"}
-                                    </span>
-                                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isSpecialtyOpen ? 'rotate-180' : ''}`} />
-                                </div>
-
-                                <AnimatePresence>
-                                    {isSpecialtyOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 5 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            className="absolute left-0 w-full bg-[#0A0A1F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-40 overflow-y-auto z-[106] backdrop-blur-3xl scrollbar-hide"
-                                        >
-                                            {specialtyOptions.map((item) => (
-                                                <div 
-                                                    key={item}
-                                                    onClick={() => {
-                                                        setFormData({...formData, brand: item});
-                                                        setIsSpecialtyOpen(false);
-                                                    }}
-                                                    className="px-6 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all flex items-center justify-between"
-                                                >
-                                                    {item}
-                                                    {formData.brand === item && <div className="w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(79,70,229,1)]" />}
-                                                </div>
-                                            ))}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </>
-                        ) : (
+                ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1 text-left">
+                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                                <User className="w-2.5 h-2.5" /> Identity
+                            </label>
+                            <input 
+                                required
+                                autoComplete="off"
+                                name={`diic_identity_${Math.random()}`}
+                                placeholder="Tu Nombre"
+                                value={formData.full_name}
+                                onChange={e => setFormData({...formData, full_name: e.target.value})}
+                                className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                            />
+                        </div>
+                        <div className="space-y-1 text-left">
+                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                                <Briefcase className="w-2.5 h-2.5" /> Brand
+                            </label>
                             <input 
                                 required
                                 autoComplete="off"
@@ -426,9 +404,9 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                                 onChange={e => setFormData({...formData, brand: e.target.value})}
                                 className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
                             />
-                        )}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Fields: Country & City (2-column layout) */}
                 <div className="grid grid-cols-2 gap-4">

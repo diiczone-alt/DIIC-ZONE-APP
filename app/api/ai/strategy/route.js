@@ -17,22 +17,32 @@ export async function POST(req) {
     ];
 
     try {
-        const { url, brandName } = await req.json();
-        if (!url) return NextResponse.json({ error: 'Falta la URL de investigación' }, { status: 400 });
+        const { url, brandName, facebookUrl, instagramUrl, tiktokUrl, youtubeUrl, linkedinUrl } = await req.json();
+        if (!url && !facebookUrl && !instagramUrl && !tiktokUrl && !youtubeUrl && !linkedinUrl) {
+            return NextResponse.json({ error: 'Falta la URL de investigación' }, { status: 400 });
+        }
 
         if (!process.env.GEMINI_API_KEY) {
             console.error("[NeuralInvestigator] CRITICAL: GEMINI_API_KEY is not defined in environment variables.");
             return NextResponse.json({ error: 'Falla de configuración: API Key no detectada.' }, { status: 500 });
         }
 
-        console.log(`[NeuralInvestigator] Starting Grounded Search for: ${brandName || url}`);
+        const primarySearchUrl = url || instagramUrl || facebookUrl || tiktokUrl || youtubeUrl || linkedinUrl;
+        console.log(`[NeuralInvestigator] Starting Grounded Search for: ${brandName || primarySearchUrl}`);
+
+        let socialUrlsContext = "";
+        if (facebookUrl) socialUrlsContext += `\n- Facebook: ${facebookUrl}`;
+        if (instagramUrl) socialUrlsContext += `\n- Instagram: ${instagramUrl}`;
+        if (tiktokUrl) socialUrlsContext += `\n- TikTok: ${tiktokUrl}`;
+        if (youtubeUrl) socialUrlsContext += `\n- YouTube: ${youtubeUrl}`;
+        if (linkedinUrl) socialUrlsContext += `\n- LinkedIn: ${linkedinUrl}`;
 
         // Extract Handle for better searching on social media
         let extractedContext = "";
-        if (url.includes('instagram.com/')) {
+        if (url && url.includes('instagram.com/')) {
             const handle = url.split('instagram.com/')[1].split('/')[0];
             extractedContext = `\nNOTA IMPORTANTE: Se trata de un perfil de Instagram (@${handle}). Busca información sobre este especialista, médico o marca en Google, LinkedIn y directorios locales.`;
-        } else if (url.includes('facebook.com/')) {
+        } else if (url && url.includes('facebook.com/')) {
             const handle = url.split('facebook.com/')[1].split('/')[0];
             extractedContext = `\nNOTA IMPORTANTE: Se trata de un perfil de Facebook (${handle}). Busca información sobre este negocio en Google y otras redes.`;
         }
@@ -44,35 +54,36 @@ export async function POST(req) {
             }]
         });
 
-        const prompt = `OBJETIVO: Investigar y analizar el ecosistema digital en la URL: ${url}.
-        ${brandName ? `(Nombre registrado: "${brandName}")` : ''}
+        const prompt = `OBJETIVO: Investigar y analizar el ecosistema digital completo de la marca.
+        Sitio Web Principal / Enlace base: ${url || 'No especificado'}
+        ${brandName ? `(Nombre registrado de la marca: "${brandName}")` : ''}
+        ${socialUrlsContext ? `\nPerfiles de Redes Sociales de la marca:${socialUrlsContext}` : ''}
         ${extractedContext}
         
         INSTRUCCIONES CRÍTICAS:
-        1. Utiliza Google Search para obtener datos REALES y ACTUALIZADOS.
-        2. Si la URL es de Instagram/Facebook y el contenido está bloqueado para bots, busca el nombre del perfil en Google para hallar su sitio web, LinkedIn o directorios médicos/comerciales.
-        3. NO INVENTES DATOS. Si no hallas nada, usa "Información no indexada" o "Dato no detectable".
+        1. Utiliza Google Search para realizar búsquedas activas y obtener datos REALES, FIABLES y ACTUALIZADOS sobre el sitio web y cada uno de los perfiles de redes sociales provistos arriba.
+        2. Realiza búsquedas específicas en Google para rastrear lo que hace la marca, sus líderes/fundadores, sus servicios, su propuesta de valor única y su contexto de mercado.
+        3. NO INVENTES DATOS. Si no hallas nada tras las búsquedas en Google, coloca "Información no indexada" o "Dato no detectable". No uses datos simulados de ejemplo bajo ninguna circunstancia.
         4. Como estratega, diseña de 3 a 4 botones o chips de búsqueda adicionales hiper-específicos para este nicho/empresa basándote en lo hallado en las búsquedas (ej. temas locales, alianzas, debilidades de competidores o dudas específicas).
         5. RESPONDE EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO.
         
         ESTRUCTURA JSON OBLIGATORIA:
         {
-            "brandName": "Nombre real detectado o el registrado",
-            "leadership": "Fundadores o especialistas hallados",
-            "whatItDoes": "Descripción de la actividad principal",
-            "whatItOffers": "Productos o servicios específicos",
-            "targetAudience": "A quién se dirigen",
-            "problemSolved": "Dolor que mitigan",
-            "valueProp": "USP detectado",
-            "tone": "Estilo de comunicación",
-            "mainGoal": "Objetivo aparente (Ventas, LeadGen, etc)",
-            "marketContext": "Ubicación y competencia detectada",
+            "brandName": "Nombre real de la marca detectado en las búsquedas o el registrado",
+            "leadership": "Fundadores, directores o especialistas reales hallados",
+            "whatItDoes": "Descripción detallada de la actividad principal y sector",
+            "whatItOffers": "Productos, servicios o portafolio específico ofrecido",
+            "targetAudience": "Público objetivo y perfil de cliente ideal real",
+            "problemSolved": "Dolor o problemas específicos que mitigan para su audiencia",
+            "valueProp": "Propuesta Única de Valor (USP) real detectada",
+            "tone": "Tono y estilo de comunicación real en sus publicaciones y web",
+            "mainGoal": "Objetivo comercial aparente",
+            "marketContext": "Ubicación geográfica, mercado y entorno competitivo real detectado",
             "dynamicButtons": ["Búsqueda o pregunta estratégica sugerida 1", "Búsqueda o pregunta estratégica sugerida 2", "Búsqueda o pregunta estratégica sugerida 3"]
         }
         
         REQUISITOS PARA dynamicButtons:
         - Deben ser exactamente de 3 a 4 preguntas o búsquedas estratégicas basadas en los hallazgos reales de la investigación y específicas para este nicho.
-        - Por ejemplo, si es una clínica de urología, sugerir: "¿Qué tipo de cirugías láser realiza esta clínica y cuáles son los convenios?" o "¿Qué competidores locales existen y cómo se diferencia en sus tratamientos?".
         - Evita generalidades y no inventes datos.`;
 
         let result;

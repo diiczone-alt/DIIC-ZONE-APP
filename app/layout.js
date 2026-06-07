@@ -33,6 +33,28 @@ export default function RootLayout({ children }) {
                   });
                 });
               }
+              
+              // Capture Google OAuth token and errors synchronously before Next.js router handles it
+              try {
+                var hash = window.location.hash || window.location.search;
+                if (hash && (hash.indexOf('provider_token') !== -1 || hash.indexOf('error') !== -1)) {
+                  var cleanHash = hash.replace('#', '?');
+                  var urlParams = new URLSearchParams(cleanHash);
+                  var token = urlParams.get('provider_token');
+                  if (token) {
+                    localStorage.setItem('diic_google_token', token);
+                    localStorage.removeItem('diic_waiting_oauth');
+                    console.log('[TokenCapture] Captured token:', token.substring(0, 10) + '...');
+                  }
+                  var errorMsg = urlParams.get('error_description') || urlParams.get('error');
+                  if (errorMsg) {
+                    localStorage.setItem('diic_google_error', errorMsg.replace(/\\+/g, ' '));
+                    localStorage.removeItem('diic_waiting_oauth');
+                  }
+                }
+              } catch (e) {
+                console.warn('[TokenCapture] Error:', e);
+              }
             `,
           }}
         />

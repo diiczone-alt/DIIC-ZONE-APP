@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
             // First attempt: Database Profile
             const { data, error } = await supabase
                 .from('profiles')
-                .select('role, client_id, full_name, xp, level, rank')
+                .select('*')
                 .eq('id', userId)
                 .single();
                 
@@ -86,6 +86,7 @@ export const AuthProvider = ({ children }) => {
 
             console.log(`[AuthContext] Profile loaded successfully for ${fullName} (${role})`);
             return {
+                ...data,
                 role: role,
                 client_id: client_id,
                 full_name: fullName,

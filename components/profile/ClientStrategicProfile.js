@@ -420,6 +420,9 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
         strategicAllies: [],
         websiteUrl: '',
         instagramUrl: '',
+        facebookUrl: '',
+        tiktokUrl: '',
+        youtubeUrl: '',
         linkedinUrl: '',
         whatsappNumber: '',
         recordingFormats: {
@@ -435,6 +438,35 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
     const [syncCount, setSyncCount] = useState(0);
     const [showFormats, setShowFormats] = useState(false);
     const [viewMode, setViewMode] = useState(forcedViewMode || 'edit'); // 'edit' or 'report'
+
+    // Social visibility and expand states
+    const [visibleSocials, setVisibleSocials] = useState({
+        facebook: false,
+        instagram: false,
+        tiktok: false,
+        youtube: false,
+        linkedin: false
+    });
+    const [showMoreSocials, setShowMoreSocials] = useState(false);
+
+    const toggleSocialInput = (network) => {
+        setVisibleSocials(prev => ({
+            ...prev,
+            [network]: !prev[network]
+        }));
+    };
+
+    useEffect(() => {
+        if (profile) {
+            setVisibleSocials(prev => ({
+                facebook: prev.facebook || !!profile.facebookUrl,
+                instagram: prev.instagram || !!profile.instagramUrl,
+                tiktok: prev.tiktok || !!profile.tiktokUrl,
+                youtube: prev.youtube || !!profile.youtubeUrl,
+                linkedin: prev.linkedin || !!profile.linkedinUrl
+            }));
+        }
+    }, [profile.facebookUrl, profile.instagramUrl, profile.tiktokUrl, profile.youtubeUrl, profile.linkedinUrl]);
 
     useEffect(() => {
         if (forcedViewMode) {
@@ -515,7 +547,14 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
 
     const handleChange = (field, value) => {
         setProfile(prev => ({ ...prev, [field]: value }));
-        if (field === 'websiteUrl' || field === 'instagramUrl') {
+        if (
+            field === 'websiteUrl' || 
+            field === 'instagramUrl' ||
+            field === 'facebookUrl' ||
+            field === 'tiktokUrl' ||
+            field === 'youtubeUrl' ||
+            field === 'linkedinUrl'
+        ) {
             setHasUnsyncedUrl(true);
         }
     };
@@ -596,7 +635,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                     strategic: { 
                         ...strategicData, 
                         websiteUrl: targetProfile.websiteUrl || '', 
-                        instagramUrl: targetProfile.instagramUrl || ''
+                        instagramUrl: targetProfile.instagramUrl || '',
+                        facebookUrl: targetProfile.facebookUrl || '',
+                        tiktokUrl: targetProfile.tiktokUrl || '',
+                        youtubeUrl: targetProfile.youtubeUrl || '',
+                        linkedinUrl: targetProfile.linkedinUrl || ''
                     }
                 }
             };
@@ -682,8 +725,15 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
     };
 
     const handleSimulateSync = async () => {
-        if (!profile.websiteUrl && !profile.instagramUrl) {
-            toast.error("Ingresa una URL para iniciar la investigación");
+        const primaryUrl = profile.websiteUrl || 
+                            profile.instagramUrl || 
+                            profile.facebookUrl || 
+                            profile.tiktokUrl || 
+                            profile.youtubeUrl || 
+                            profile.linkedinUrl;
+
+        if (!primaryUrl) {
+            toast.error("Ingresa al menos una URL para iniciar la investigación");
             return;
         }
 
@@ -708,8 +758,15 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
             }));
 
             const result = await aiService.analyzeStrategicProfile(
-                profile.websiteUrl || profile.instagramUrl, 
-                profile.brandName
+                primaryUrl, 
+                profile.brandName,
+                {
+                    facebookUrl: profile.facebookUrl || '',
+                    instagramUrl: profile.instagramUrl || '',
+                    tiktokUrl: profile.tiktokUrl || '',
+                    youtubeUrl: profile.youtubeUrl || '',
+                    linkedinUrl: profile.linkedinUrl || ''
+                }
             );
 
             console.log("RESULTADO DE INTELIGENCIA RECIBIDO:", result);
@@ -1433,7 +1490,7 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                 <input 
                                     type="text" 
                                     placeholder="Pega el enlace web (Ej: tupaginaweb.com) o perfil social..."
-                                    value={profile.websiteUrl || profile.instagramUrl || ''}
+                                    value={profile.websiteUrl || ''}
                                     onChange={(e) => {
                                        const val = e.target.value;
                                        handleChange('websiteUrl', val);
@@ -1443,7 +1500,7 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                             </div>
                             <button 
                                 onClick={handleSimulateSync}
-                                disabled={!profile.websiteUrl && !profile.instagramUrl}
+                                disabled={!(profile.websiteUrl || profile.instagramUrl || profile.facebookUrl || profile.tiktokUrl || profile.youtubeUrl || profile.linkedinUrl)}
                                 className={`px-4 py-3 md:px-8 font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 ${
                                     hasUnsyncedUrl 
                                     ? 'bg-indigo-600 text-white shadow-[0_0_30px_rgba(79,70,229,0.5)] animate-pulse' 
@@ -1456,6 +1513,283 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                             </button>
                         </div>
                     </div>
+
+                    {/* Social Network Selector Row */}
+                    <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
+                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mr-1">Canales Digitales:</span>
+                        
+                        {/* Facebook Button */}
+                        <button
+                            type="button"
+                            onClick={() => toggleSocialInput('facebook')}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                                profile.facebookUrl 
+                                    ? 'bg-blue-600/20 border-blue-500/50 text-blue-400 shadow-[0_0_15px_rgba(37,99,235,0.2)]' 
+                                    : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                            } border`}
+                            title="Agregar Facebook"
+                        >
+                            <Facebook size={16} />
+                        </button>
+
+                        {/* Instagram Button */}
+                        <button
+                            type="button"
+                            onClick={() => toggleSocialInput('instagram')}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                                profile.instagramUrl 
+                                    ? 'bg-pink-600/20 border-pink-500/50 text-pink-400 shadow-[0_0_15px_rgba(219,39,119,0.2)]' 
+                                    : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                            } border`}
+                            title="Agregar Instagram"
+                        >
+                            <Instagram size={16} />
+                        </button>
+
+                        {/* TikTok Button */}
+                        <button
+                            type="button"
+                            onClick={() => toggleSocialInput('tiktok')}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                                profile.tiktokUrl 
+                                    ? 'bg-teal-600/20 border-teal-500/50 text-teal-400 shadow-[0_0_15px_rgba(13,148,136,0.2)]' 
+                                    : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                            } border`}
+                            title="Agregar TikTok"
+                        >
+                            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.95-1.72-.1.08-.21.17-.3.26v9.71c-.04 2.44-1.42 4.77-3.69 5.75-2.28.98-5.06.72-7.06-.66-2-1.38-2.92-3.9-2.31-6.28.61-2.38 2.84-4.06 5.3-4.02.16 0 .32.01.48.03v4.02c-.83-.22-1.73-.05-2.42.44-.7.49-1.1 1.35-1.07 2.22.03.87.52 1.69 1.28 2.1 1.05.57 2.44.42 3.32-.4.4-.38.62-.93.61-1.49V.02z"/>
+                            </svg>
+                        </button>
+
+                        {/* Expandable + Button */}
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setShowMoreSocials(!showMoreSocials)}
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                                    showMoreSocials || profile.youtubeUrl || profile.linkedinUrl
+                                        ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
+                                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                                } border`}
+                                title="Más Redes Sociales"
+                            >
+                                <Plus size={16} />
+                            </button>
+                            
+                            <AnimatePresence>
+                                {showMoreSocials && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                        className="absolute z-30 bottom-12 left-1/2 -translate-x-1/2 bg-[#0F0F1A] border border-white/10 rounded-2xl p-2 flex gap-2 shadow-2xl min-w-[200px]"
+                                    >
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                toggleSocialInput('youtube');
+                                                setShowMoreSocials(false);
+                                            }}
+                                            className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all flex-1 justify-center ${
+                                                profile.youtubeUrl 
+                                                    ? 'bg-red-600/20 text-red-400 border border-red-500/30' 
+                                                    : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                                            }`}
+                                        >
+                                            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                                                <path d="M23.498 6.163c-.272-.98-1.04-1.755-2.02-2.027C19.7 3.5 12 3.5 12 3.5s-7.7 0-9.478.436c-.98.272-1.748 1.047-2.02 2.027C0 7.9 0 12 0 12s0 4.1.522 5.837c.272.98 1.04 1.755 2.02 2.027C4.3 20.5 12 20.5 12 20.5s7.7 0 9.478-.436c.98-.272 1.748-1.047 2.02-2.027C24 16.1 24 12 24 12s0-4.1-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                            </svg>
+                                            YouTube
+                                        </button>
+                                        
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                toggleSocialInput('linkedin');
+                                                setShowMoreSocials(false);
+                                            }}
+                                            className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all flex-1 justify-center ${
+                                                profile.linkedinUrl 
+                                                    ? 'bg-sky-600/20 text-sky-400 border border-sky-500/30' 
+                                                    : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                                            }`}
+                                        >
+                                            <Linkedin size={14} />
+                                            LinkedIn
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+
+                    {/* Social Inputs list */}
+                    <AnimatePresence>
+                        {Object.keys(visibleSocials).some(key => visibleSocials[key]) && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="mt-6 space-y-3 w-full text-left overflow-hidden"
+                            >
+                                <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1 pl-1 flex items-center gap-1.5">
+                                    <Network size={12} className="text-indigo-400" /> Huella Digital Adicional
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {/* Facebook */}
+                                    {visibleSocials.facebook && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            className="relative flex items-center bg-[#07070F]/60 border border-blue-500/20 rounded-2xl p-3 gap-3"
+                                        >
+                                            <Facebook size={16} className="text-blue-500 shrink-0" />
+                                            <input
+                                                type="text"
+                                                placeholder="Enlace de Facebook..."
+                                                value={profile.facebookUrl || ''}
+                                                onChange={(e) => handleChange('facebookUrl', e.target.value)}
+                                                className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    handleChange('facebookUrl', '');
+                                                    toggleSocialInput('facebook');
+                                                }}
+                                                className="text-gray-600 hover:text-rose-400 p-1"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </motion.div>
+                                    )}
+
+                                    {/* Instagram */}
+                                    {visibleSocials.instagram && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            className="relative flex items-center bg-[#07070F]/60 border border-pink-500/20 rounded-2xl p-3 gap-3"
+                                        >
+                                            <Instagram size={16} className="text-pink-500 shrink-0" />
+                                            <input
+                                                type="text"
+                                                placeholder="Enlace de Instagram..."
+                                                value={profile.instagramUrl || ''}
+                                                onChange={(e) => handleChange('instagramUrl', e.target.value)}
+                                                className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    handleChange('instagramUrl', '');
+                                                    toggleSocialInput('instagram');
+                                                }}
+                                                className="text-gray-600 hover:text-rose-400 p-1"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </motion.div>
+                                    )}
+
+                                    {/* TikTok */}
+                                    {visibleSocials.tiktok && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            className="relative flex items-center bg-[#07070F]/60 border border-teal-500/20 rounded-2xl p-3 gap-3"
+                                        >
+                                            <svg className="w-4 h-4 fill-current text-teal-500 shrink-0" viewBox="0 0 24 24">
+                                                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.95-1.72-.1.08-.21.17-.3.26v9.71c-.04 2.44-1.42 4.77-3.69 5.75-2.28.98-5.06.72-7.06-.66-2-1.38-2.92-3.9-2.31-6.28.61-2.38 2.84-4.06 5.3-4.02.16 0 .32.01.48.03v4.02c-.83-.22-1.73-.05-2.42.44-.7.49-1.1 1.35-1.07 2.22.03.87.52 1.69 1.28 2.1 1.05.57 2.44.42 3.32-.4.4-.38.62-.93.61-1.49V.02z"/>
+                                            </svg>
+                                            <input
+                                                type="text"
+                                                placeholder="Enlace de TikTok..."
+                                                value={profile.tiktokUrl || ''}
+                                                onChange={(e) => handleChange('tiktokUrl', e.target.value)}
+                                                className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    handleChange('tiktokUrl', '');
+                                                    toggleSocialInput('tiktok');
+                                                }}
+                                                className="text-gray-600 hover:text-rose-400 p-1"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </motion.div>
+                                    )}
+
+                                    {/* YouTube */}
+                                    {visibleSocials.youtube && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            className="relative flex items-center bg-[#07070F]/60 border border-red-500/20 rounded-2xl p-3 gap-3"
+                                        >
+                                            <svg className="w-4 h-4 fill-current text-red-500 shrink-0" viewBox="0 0 24 24">
+                                                <path d="M23.498 6.163c-.272-.98-1.04-1.755-2.02-2.027C19.7 3.5 12 3.5 12 3.5s-7.7 0-9.478.436c-.98.272-1.748 1.047-2.02 2.027C0 7.9 0 12 0 12s0 4.1.522 5.837c.272.98 1.04 1.755 2.02 2.027C4.3 20.5 12 20.5 12 20.5s7.7 0 9.478-.436c.98-.272 1.748-1.047 2.02-2.027C24 16.1 24 12 24 12s0-4.1-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                            </svg>
+                                            <input
+                                                type="text"
+                                                placeholder="Enlace de YouTube..."
+                                                value={profile.youtubeUrl || ''}
+                                                onChange={(e) => handleChange('youtubeUrl', e.target.value)}
+                                                className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    handleChange('youtubeUrl', '');
+                                                    toggleSocialInput('youtube');
+                                                }}
+                                                className="text-gray-600 hover:text-rose-400 p-1"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </motion.div>
+                                    )}
+
+                                    {/* LinkedIn */}
+                                    {visibleSocials.linkedin && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            className="relative flex items-center bg-[#07070F]/60 border border-sky-500/20 rounded-2xl p-3 gap-3"
+                                        >
+                                            <Linkedin size={16} className="text-sky-500 shrink-0" />
+                                            <input
+                                                type="text"
+                                                placeholder="Enlace de LinkedIn..."
+                                                value={profile.linkedinUrl || ''}
+                                                onChange={(e) => handleChange('linkedinUrl', e.target.value)}
+                                                className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    handleChange('linkedinUrl', '');
+                                                    toggleSocialInput('linkedin');
+                                                }}
+                                                className="text-gray-600 hover:text-rose-400 p-1"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* Quick actions chips - REINSTATED BY USER REQUEST */}
                     <div className="flex flex-wrap justify-center gap-3 mt-8">

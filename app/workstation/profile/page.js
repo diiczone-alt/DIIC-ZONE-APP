@@ -46,21 +46,8 @@ const SidebarMap = {
 };
 
 const promiseTimeout = (promise, ms) => {
-    return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-            reject(new Error("Tiempo de espera de base de datos agotado (5s)"));
-        }, ms);
-        promise.then(
-            (res) => {
-                clearTimeout(timer);
-                resolve(res);
-            },
-            (err) => {
-                clearTimeout(timer);
-                reject(err);
-            }
-        );
-    });
+    // Pass promise through directly to disable artificial database timeouts.
+    return promise;
 };
 
 const getAgeAndBirthday = (birthday) => {
@@ -149,16 +136,16 @@ export default function ProfilePage() {
                 if (!activeProfile) {
                     activeProfile = {
                         id: user.id,
-                        full_name: user.user_metadata?.full_name || user.full_name || 'Dicson',
+                        full_name: user.full_name || user.user_metadata?.full_name || 'Dicson',
                         role: user.role || user.user_metadata?.role || 'FILMMAKER',
-                        location: user.user_metadata?.location || '',
-                        whatsapp: '',
-                        cv_url: '',
-                        cv_summary: '',
-                        skills: [],
-                        xp: 0,
-                        level: 1,
-                        rank: 'Talento en Ascenso'
+                        location: user.location || user.user_metadata?.location || '',
+                        whatsapp: user.whatsapp || '',
+                        cv_url: user.cv_url || '',
+                        cv_summary: user.cv_summary || '',
+                        skills: user.skills || [],
+                        xp: user.xp || 0,
+                        level: user.level || 1,
+                        rank: user.rank || 'Talento en Ascenso'
                     };
                     
                     // Try to insert in background, don't block
@@ -251,16 +238,16 @@ export default function ProfilePage() {
                 
                 // Sync Form
                 setFormData({
-                    full_name: activeProfile.full_name || user.user_metadata?.full_name || '',
-                    role: activeProfile.role || (team?.role) || 'CREATIVE',
-                    location: activeProfile.location || team?.city || '',
-                    whatsapp: activeProfile.whatsapp || team?.whatsapp || '',
-                    cv_url: activeProfile.cv_url || team?.cv_url || '',
-                    cv_summary: activeProfile.cv_summary || team?.cv_summary || '',
-                    skills: activeProfile.skills || team?.skills || [],
-                    birth_date: activeProfile.birth_date || team?.birth_date || '',
-                    availability: team?.availability || 'full-time',
-                    specialty: activeProfile.specialty || ''
+                    full_name: activeProfile.full_name || user.full_name || user.user_metadata?.full_name || '',
+                    role: activeProfile.role || (team?.role) || user.role || 'CREATIVE',
+                    location: activeProfile.location || team?.city || user.location || user.user_metadata?.location || '',
+                    whatsapp: activeProfile.whatsapp || team?.whatsapp || user.whatsapp || '',
+                    cv_url: activeProfile.cv_url || team?.cv_url || user.cv_url || '',
+                    cv_summary: activeProfile.cv_summary || team?.cv_summary || user.cv_summary || '',
+                    skills: activeProfile.skills || team?.skills || user.skills || [],
+                    birth_date: activeProfile.birth_date || team?.birth_date || user.birth_date || user.user_metadata?.birth_date || '',
+                    availability: team?.availability || user.availability || 'full-time',
+                    specialty: activeProfile.specialty || user.specialty || ''
                 });
 
             } catch (err) {
