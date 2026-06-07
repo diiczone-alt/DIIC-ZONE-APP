@@ -115,8 +115,7 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
         try {
             toast.info('Iniciando conexión segura con Google...');
             
-            // Sincronizamos con el Wizard antes de salir a Google
-            updateData({ 
+            const newWizardData = { 
                 name: formData.full_name || 'Usuario Google',
                 brand: formData.brand,
                 city: formData.city,
@@ -125,7 +124,20 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
                 birth_date: formData.birth_date,
                 website: formData.website,
                 auth: { method: 'google', timestamp: new Date().toISOString() } 
-            });
+            };
+
+            // Sincronizamos con el Wizard antes de salir a Google
+            updateData(newWizardData);
+
+            // Persistencia síncrona inmediata en localStorage para prevenir pérdida de datos por redirección
+            try {
+                const savedState = localStorage.getItem('diic_onboarding_progress');
+                let parsed = savedState ? JSON.parse(savedState) : { currentStep: 3, formData: {} };
+                parsed.formData = { ...parsed.formData, ...newWizardData };
+                localStorage.setItem('diic_onboarding_progress', JSON.stringify(parsed));
+            } catch (localErr) {
+                console.warn('[AuthStep] Error guardando progreso síncrono:', localErr);
+            }
 
             const finalRole = type === 'creative' 
                 ? mapSpecialtyToRole(formData.brand) 

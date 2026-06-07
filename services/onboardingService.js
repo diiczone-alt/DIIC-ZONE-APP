@@ -103,6 +103,36 @@ export const onboardingService = {
                     else console.warn('[OnboardingService] Error en upsert de cliente:', clientError);
 
                 } else if (profileType === 'creative') {
+                    // --- LÓGICA DE RECONCILIACIÓN PARA CREATIVOS EXISTENTES ---
+                    if (!teamId) {
+                        // 1. Intentar buscar por email en la tabla 'team'
+                        const { data: existingByEmail } = await supabase
+                            .from('team')
+                            .select('id')
+                            .eq('email', user.email)
+                            .maybeSingle();
+
+                        if (existingByEmail) {
+                            teamId = existingByEmail.id;
+                        } else {
+                            // 2. Intentar buscar por nombre normalizado (para vincular cuentas previamente creadas por admin sin email)
+                            const { data: allTeam } = await supabase
+                                .from('team')
+                                .select('id, name');
+                            
+                            const normalizeName = (n) => (n || '').toLowerCase()
+                                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                                .replace(/[^\w]/g, '')
+                                .trim();
+
+                            const pNameNorm = normalizeName(fullName);
+                            const matched = allTeam?.find(t => normalizeName(t.name) === pNameNorm);
+                            if (matched) {
+                                teamId = matched.id;
+                            }
+                        }
+                    }
+
                     const targetTeamId = teamId || `TEAM-${Math.floor(1000 + Math.random() * 9000)}`;
                     
                     const mapRoleToDb = (role) => {
@@ -110,7 +140,7 @@ export const onboardingService = {
                         const r = role.toLowerCase().trim();
                         if (r === 'editor') return 'Editor de Video';
                         if (r === 'filmmaker') return 'Filmmaker';
-                        if (r === 'designer' || r === 'designer') return 'Diseñador';
+                        if (r === 'designer' || r === 'diseñador') return 'Diseñador';
                         if (r === 'audio') return 'Ingeniería de Audio';
                         if (r === 'community') return 'Community Manager';
                         if (r === 'photo') return 'Fotografía';
@@ -155,6 +185,7 @@ export const onboardingService = {
             try {
                 const profileUpdate = {
                     full_name: fullName,
+                    email: user.email, // Guardar email en profiles para reconciliaciones futuras
                     role: profileType === 'creative' ? (formData.role || 'CREATIVE').toUpperCase() : profileType.toUpperCase(),
                     client_id: clientId,
                     team_id: teamId,

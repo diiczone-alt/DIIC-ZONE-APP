@@ -10,10 +10,21 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CapacityBar } from '@/components/capacity/CapacityComponents';
+import { useAuth } from '@/context/AuthContext';
 
 export default function CMSidebar() {
     const [collapsed, setCollapsed] = useState(true);
     const pathname = usePathname();
+    const { logout } = useAuth();
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } catch (error) {
+            console.error('Error logging out:', error);
+            window.location.href = '/';
+        }
+    };
 
     const menuItems = [
         { icon: LayoutGrid, label: 'Centro de Mando', path: '/workstation/community-manager' },
@@ -113,15 +124,15 @@ export default function CMSidebar() {
                     <Settings className="w-5 h-5 shrink-0" />
                     {!collapsed && <span className="ml-3 text-sm font-medium">Ajustes</span>}
                 </button>
-                <Link href="/login">
-                    <button className={`
+                <button 
+                    onClick={handleLogout}
+                    className={`
                         w-full flex items-center p-3 rounded-xl text-red-500/70 hover:text-red-400 hover:bg-red-500/10 transition-all mt-1
                         ${collapsed ? 'justify-center' : ''}
                     `}>
-                        <LogOut className="w-5 h-5 shrink-0" />
-                        {!collapsed && <span className="ml-3 text-sm font-medium">Cerrar Sesión</span>}
-                    </button>
-                </Link>
+                    <LogOut className="w-5 h-5 shrink-0" />
+                    {!collapsed && <span className="ml-3 text-sm font-medium">Cerrar Sesión</span>}
+                </button>
             </div>
         </motion.aside>
     );

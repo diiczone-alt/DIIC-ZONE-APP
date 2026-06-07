@@ -1142,7 +1142,7 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                     </div>
                                 </div>
                                 <button 
-                                    onClick={handleExportPDF}
+                                    onClick={handleDownloadReport}
                                     className="px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-3xl font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_rgba(79,70,229,0.3)] transition-all flex items-center gap-3 active:scale-95 group"
                                 >
                                     <FileUp className="w-5 h-5 group-hover:scale-110 transition-transform" />

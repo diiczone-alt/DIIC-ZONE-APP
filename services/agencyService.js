@@ -210,20 +210,34 @@ export const agencyService = {
             
             if (!existingClient) throw new Error("Client not found for sync");
 
+            // Resolve fields dynamically from either Client fields, Profile fields, or existing database records
+            const resolvedName = updates.name || updates.full_name || updates.brand_name || existingClient.name;
+            const resolvedCity = updates.city || updates.location || existingClient.city;
+            const resolvedWhatsapp = updates.whatsapp_number || updates.whatsapp || updates.phone || existingClient.whatsapp_number;
+            const resolvedIndustry = updates.industry || updates.marketing_type || existingClient.industry;
+            const resolvedSpecialty = updates.specialty || existingClient.specialty;
+            const resolvedPlan = updates.plan || existingClient.plan;
+            const resolvedBusinessType = updates.business_type || existingClient.business_type;
+            const resolvedCountry = updates.country || existingClient.country;
+            const resolvedAddress = updates.address || existingClient.address;
+            const resolvedWebsite = updates.website || existingClient.website;
+            const resolvedGoals = updates.goals || existingClient.goals;
+            const resolvedBrochureUrl = updates.brochure_url || existingClient.brochure_url;
+
             // 1. Update Profile (User-facing side)
             const profileUpdates = {
-                full_name: updates.name || existingClient.name,
-                location: updates.city || existingClient.city,
-                whatsapp: updates.whatsapp_number || existingClient.whatsapp_number,
-                industry: updates.industry || existingClient.industry,
-                specialty: updates.specialty || existingClient.specialty,
-                plan: updates.plan || existingClient.plan,
-                business_type: updates.business_type || existingClient.business_type,
-                country: updates.country || existingClient.country,
-                address: updates.address || existingClient.address,
-                website: updates.website || existingClient.website,
-                goals: updates.goals || existingClient.goals,
-                brochure_url: updates.brochure_url || existingClient.brochure_url
+                full_name: resolvedName,
+                location: resolvedCity,
+                whatsapp: resolvedWhatsapp,
+                industry: resolvedIndustry,
+                specialty: resolvedSpecialty,
+                plan: resolvedPlan,
+                business_type: resolvedBusinessType,
+                country: resolvedCountry,
+                address: resolvedAddress,
+                website: resolvedWebsite,
+                goals: resolvedGoals,
+                brochure_url: resolvedBrochureUrl
             };
             
             // Clean undefined fields
@@ -238,24 +252,48 @@ export const agencyService = {
 
             if (pError) console.warn("⚠️ Profile sync warning:", pError.message);
 
-            // 2. Update Client Brand Data (merge color/logo updates if provided)
+            // 2. Sync fields to clients table to keep both sides completely aligned
+            const clientUpdates = {
+                name: resolvedName,
+                city: resolvedCity,
+                whatsapp_number: resolvedWhatsapp,
+                industry: resolvedIndustry,
+                specialty: resolvedSpecialty,
+                plan: resolvedPlan,
+                business_type: resolvedBusinessType,
+                country: resolvedCountry,
+                address: resolvedAddress,
+                website: resolvedWebsite,
+                goals: resolvedGoals,
+                brochure_url: resolvedBrochureUrl
+            };
+
+            // Clean undefined fields
+            Object.keys(clientUpdates).forEach(key => 
+                clientUpdates[key] === undefined && delete clientUpdates[key]
+            );
+
+            // Update Client Brand Data (merge color/logo updates if provided)
             if (updates.primary_color || updates.secondary_color || updates.accent_color || updates.logo_url) {
                 const existingOnboarding = existingClient.onboarding_data || {};
-                const clientUpdates = {
-                    onboarding_data: {
-                        ...existingOnboarding,
-                        brand: {
-                            ...(existingOnboarding.brand || {}),
-                            primaryColor: updates.primary_color || existingOnboarding.brand?.primaryColor,
-                            secondaryColor: updates.secondary_color || existingOnboarding.brand?.secondaryColor,
-                            accentColor: updates.accent_color || existingOnboarding.brand?.accentColor,
-                            logo: updates.logo_url || existingOnboarding.brand?.logo
-                        }
+                clientUpdates.onboarding_data = {
+                    ...existingOnboarding,
+                    brand: {
+                        ...(existingOnboarding.brand || {}),
+                        primaryColor: updates.primary_color || existingOnboarding.brand?.primaryColor,
+                        secondaryColor: updates.secondary_color || existingOnboarding.brand?.secondaryColor,
+                        accentColor: updates.accent_color || existingOnboarding.brand?.accentColor,
+                        logo: updates.logo_url || existingOnboarding.brand?.logo
                     }
                 };
-
-                await supabase.from('clients').update(clientUpdates).eq('id', clientId);
             }
+
+            const { error: cError } = await supabase
+                .from('clients')
+                .update(clientUpdates)
+                .eq('id', clientId);
+
+            if (cError) console.warn("⚠️ Client sync warning:", cError.message);
 
             toast.success("Perfiles sincronizados", { id: 'debug-profile' });
             return { success: true };

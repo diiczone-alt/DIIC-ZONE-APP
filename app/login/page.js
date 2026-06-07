@@ -105,7 +105,7 @@ export default function LoginPage() {
                     <div className="w-16 h-16 mx-auto bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/20">
                         <ShieldCheck className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-3xl font-black text-white mb-2 tracking-tight">DIIC ZONE OS</h1>
+                    <h1 className="text-3xl font-black text-white mb-2 tracking-tight">DIIC ZONE</h1>
                     <p className="text-gray-400 text-sm">Ingreso Seguro a tu Plataforma de Monitoreo</p>
                 </div>
 
@@ -204,15 +204,6 @@ export default function LoginPage() {
                                 className="text-gray-500 hover:text-indigo-400 text-xs font-black uppercase tracking-widest transition-all"
                             >
                                 ¿Sin cuenta? Crear Nueva Identidad
-                            </button>
-
-                            {/* Únete como Talento Button */}
-                            <button
-                                type="button"
-                                onClick={() => router.push('/onboarding?type=creative')}
-                                className="text-[10px] text-gray-500 hover:text-indigo-400 font-bold uppercase tracking-widest transition-all"
-                            >
-                                Únete como Talento 🎥
                             </button>
                         </div>
                     </form>

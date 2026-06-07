@@ -8,9 +8,21 @@ import {
     CalendarDays, Package, MessageSquare
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 
 export default function HQSidebar() {
     const pathname = usePathname();
+    const { logout } = useAuth();
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } catch (error) {
+            console.error('Error logging out:', error);
+            localStorage.clear();
+            window.location.href = '/';
+        }
+    };
 
     const menuItems = [
         { icon: Layout, label: 'HQ CENTRAL', href: '/dashboard/hq', color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
@@ -89,10 +101,7 @@ export default function HQSidebar() {
                 </div>
 
                 <button
-                    onClick={() => {
-                        localStorage.clear();
-                        window.location.href = '/';
-                    }}
+                    onClick={handleLogout}
                     className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all group font-black uppercase text-[10px] tracking-[0.2em] border border-rose-500/20"
                 >
                     <Settings className="w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />

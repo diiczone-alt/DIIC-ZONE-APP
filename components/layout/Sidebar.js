@@ -74,8 +74,18 @@ export default function Sidebar() {
     const { setIsExpanded } = useSidebar();
     const searchParams = useSearchParams();
     const clientId = searchParams.get('client');
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [hasConnectivity, setHasConnectivity] = useState(true);
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } catch (error) {
+            console.error('Error logging out:', error);
+            localStorage.clear();
+            window.location.href = '/';
+        }
+    };
 
     // Helper to preserve client context across navigation
     const getScopedHref = (baseHref) => {
@@ -313,8 +323,7 @@ export default function Sidebar() {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                localStorage.clear();
-                                window.location.href = '/';
+                                handleLogout();
                             }}
                             className="w-full h-11 flex items-center gap-4 px-3 rounded-2xl bg-rose-500/5 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 transition-all group/logout active:scale-95 shadow-xl"
                         >

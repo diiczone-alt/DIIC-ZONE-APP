@@ -366,6 +366,8 @@ export const AuthProvider = ({ children }) => {
         if (error) {
             console.warn('Logout error (might be already signed out):', error.message);
         }
+        setUser(null);
+        setSession(null);
         localStorage.clear();
         localStorage.removeItem('diic_god_mode');
         router.push('/');
