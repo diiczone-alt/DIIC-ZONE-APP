@@ -83,12 +83,12 @@ export default function StrategyTopBar({
 
                     <div className="flex flex-col gap-1.5">
                         <div className="flex items-center gap-4">
-                            <h1 className={`text-3xl font-[1000] italic uppercase tracking-[-0.05em] leading-none flex items-center gap-1 transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                                MASTER <span className="text-indigo-500">ADMIN</span>
+                            <h1 className={`text-2xl font-[1000] italic uppercase tracking-[-0.05em] leading-none flex items-center gap-1 transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                DIIC <span className="text-indigo-500">ZONE</span>
                             </h1>
                             <div className="flex flex-col">
-                                <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(16,185,129,0.15)] leading-none">
-                                    ONLINE HUB
+                                <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(99,102,241,0.15)] leading-none">
+                                    {projectName || 'Master Hub'}
                                 </span>
                             </div>
                         </div>
@@ -127,15 +127,15 @@ export default function StrategyTopBar({
                             exit={{ opacity: 0, scale: 1.05 }}
                             className="flex flex-col items-center pointer-events-auto"
                         >
-                            <h2 className={`text-xl font-black italic uppercase tracking-[0.2em] relative transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                                {activeFlow === 'campañas' && 'Mis Estrategias de Negocio'}
+                            <h2 className={`text-base font-black italic uppercase tracking-[0.3em] relative transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                {activeFlow === 'campañas' && 'Búnker de Contenidos'}
                                 {activeFlow === 'analitica' && 'Inteligencia Estratégica'}
                                 {activeFlow === 'nodos' && 'Librería de Componentes'}
                                 {activeFlow === 'planner' && 'Planificador de Objetivos'}
                                 {activeFlow === 'tablero' && 'Pizarra Operativa'}
                                 <div className={`absolute -bottom-2 left-0 w-full h-px opacity-30 ${theme === 'dark' ? 'bg-gradient-to-r from-transparent via-indigo-500 to-transparent' : 'bg-gradient-to-r from-transparent via-indigo-600 to-transparent'}`} />
                             </h2>
-                            <span className={`text-[8px] font-black uppercase tracking-[0.5em] mt-2 transition-colors duration-500 ${theme === 'dark' ? 'text-indigo-400/60' : 'text-slate-400/80'}`}>Diiczone Architecture Engine</span>
+                            <span className={`text-[7px] font-black uppercase tracking-[0.6em] mt-2 transition-colors duration-500 ${theme === 'dark' ? 'text-indigo-400/60' : 'text-slate-400/80'}`}>Diiczone Architecture Engine</span>
                         </motion.div>
                     </AnimatePresence>
                 </div>
