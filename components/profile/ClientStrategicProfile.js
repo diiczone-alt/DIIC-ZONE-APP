@@ -394,6 +394,36 @@ const RecordingFormatsModal = ({ isOpen, onClose, profile }) => {
     );
 };
 
+const isValidSocialUrl = (url) => {
+    if (!url) return false;
+    const cleanUrl = url.trim();
+    if (cleanUrl.length < 3) return false;
+    
+    // Check if it's a handle starting with @
+    if (cleanUrl.startsWith('@') && cleanUrl.length >= 3) return true;
+    
+    // Check if it is a standard URL or has a slash and domain
+    const socialDomains = ['facebook.com', 'instagram.com', 'tiktok.com', 'youtube.com', 'linkedin.com', 'fb.com', 'youtu.be'];
+    const hasSocialDomain = socialDomains.some(domain => cleanUrl.toLowerCase().includes(domain));
+    if (hasSocialDomain && cleanUrl.includes('/')) return true;
+    
+    try {
+        if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+            new URL(cleanUrl);
+            return true;
+        }
+        if (cleanUrl.startsWith('www.')) {
+            new URL('https://' + cleanUrl);
+            return true;
+        }
+    } catch (_) {
+        return false;
+    }
+    
+    const domainRegex = /^[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+(\/[a-zA-Z0-9-._~:/?#[\]@!$&'()*+,;=]*)?$/;
+    return domainRegex.test(cleanUrl);
+};
+
 export default function ClientStrategicProfile({ forcedViewMode }) {
     const { user } = useAuth();
     const [activeClientId, setActiveClientId] = useState(user?.client_id || null);
@@ -1538,11 +1568,11 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                             {(() => {
                                 const activeScanChannels = [];
                                 if (profile.websiteUrl) activeScanChannels.push('WEB');
-                                if (profile.facebookUrl) activeScanChannels.push('FB');
-                                if (profile.instagramUrl) activeScanChannels.push('IG');
-                                if (profile.tiktokUrl) activeScanChannels.push('TK');
-                                if (profile.youtubeUrl) activeScanChannels.push('YT');
-                                if (profile.linkedinUrl) activeScanChannels.push('IN');
+                                if (isValidSocialUrl(profile.facebookUrl)) activeScanChannels.push('FB');
+                                if (isValidSocialUrl(profile.instagramUrl)) activeScanChannels.push('IG');
+                                if (isValidSocialUrl(profile.tiktokUrl)) activeScanChannels.push('TK');
+                                if (isValidSocialUrl(profile.youtubeUrl)) activeScanChannels.push('YT');
+                                if (isValidSocialUrl(profile.linkedinUrl)) activeScanChannels.push('IN');
                                 const buttonLabel = isSimulatingScrape 
                                     ? 'INVESTIGANDO...' 
                                     : (activeScanChannels.length > 1 
@@ -1700,7 +1730,9 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
                                                 profile.facebookUrl 
-                                                    ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                    ? (isValidSocialUrl(profile.facebookUrl)
+                                                        ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                        : 'border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.06)]')
                                                     : 'border-blue-500/20'
                                             }`}
                                         >
@@ -1713,9 +1745,15 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                                 className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
                                             />
                                             {profile.facebookUrl && (
-                                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1 animate-pulse">
-                                                    <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
-                                                </span>
+                                                isValidSocialUrl(profile.facebookUrl) ? (
+                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1">
+                                                        <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 shrink-0 flex items-center gap-1 animate-pulse">
+                                                        <ShieldAlert size={10} className="text-rose-400" /> ENLACE INVÁLIDO
+                                                    </span>
+                                                )
                                             )}
                                             <button 
                                                 type="button"
@@ -1738,7 +1776,9 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
                                                 profile.instagramUrl 
-                                                    ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                    ? (isValidSocialUrl(profile.instagramUrl)
+                                                        ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                        : 'border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.06)]')
                                                     : 'border-pink-500/20'
                                             }`}
                                         >
@@ -1751,9 +1791,15 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                                 className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
                                             />
                                             {profile.instagramUrl && (
-                                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1 animate-pulse">
-                                                    <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
-                                                </span>
+                                                isValidSocialUrl(profile.instagramUrl) ? (
+                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1">
+                                                        <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 shrink-0 flex items-center gap-1 animate-pulse">
+                                                        <ShieldAlert size={10} className="text-rose-400" /> ENLACE INVÁLIDO
+                                                    </span>
+                                                )
                                             )}
                                             <button 
                                                 type="button"
@@ -1776,7 +1822,9 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
                                                 profile.tiktokUrl 
-                                                    ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                    ? (isValidSocialUrl(profile.tiktokUrl)
+                                                        ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                        : 'border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.06)]')
                                                     : 'border-teal-500/20'
                                             }`}
                                         >
@@ -1791,9 +1839,15 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                                 className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
                                             />
                                             {profile.tiktokUrl && (
-                                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1 animate-pulse">
-                                                    <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
-                                                </span>
+                                                isValidSocialUrl(profile.tiktokUrl) ? (
+                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1">
+                                                        <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 shrink-0 flex items-center gap-1 animate-pulse">
+                                                        <ShieldAlert size={10} className="text-rose-400" /> ENLACE INVÁLIDO
+                                                    </span>
+                                                )
                                             )}
                                             <button 
                                                 type="button"
@@ -1816,7 +1870,9 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
                                                 profile.youtubeUrl 
-                                                    ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                    ? (isValidSocialUrl(profile.youtubeUrl)
+                                                        ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                        : 'border-red-500/20')
                                                     : 'border-red-500/20'
                                             }`}
                                         >
@@ -1831,9 +1887,15 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                                 className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
                                             />
                                             {profile.youtubeUrl && (
-                                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1 animate-pulse">
-                                                    <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
-                                                </span>
+                                                isValidSocialUrl(profile.youtubeUrl) ? (
+                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1">
+                                                        <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 shrink-0 flex items-center gap-1 animate-pulse">
+                                                        <ShieldAlert size={10} className="text-rose-400" /> ENLACE INVÁLIDO
+                                                    </span>
+                                                )
                                             )}
                                             <button 
                                                 type="button"
@@ -1856,7 +1918,9 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
                                                 profile.linkedinUrl 
-                                                    ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                    ? (isValidSocialUrl(profile.linkedinUrl)
+                                                        ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
+                                                        : 'border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.06)]')
                                                     : 'border-sky-500/20'
                                             }`}
                                         >
@@ -1869,9 +1933,15 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                                                 className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
                                             />
                                             {profile.linkedinUrl && (
-                                                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1 animate-pulse">
-                                                    <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
-                                                </span>
+                                                isValidSocialUrl(profile.linkedinUrl) ? (
+                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1">
+                                                        <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 shrink-0 flex items-center gap-1 animate-pulse">
+                                                        <ShieldAlert size={10} className="text-rose-400" /> ENLACE INVÁLIDO
+                                                    </span>
+                                                )
                                             )}
                                             <button 
                                                 type="button"
@@ -1915,6 +1985,22 @@ export default function ClientStrategicProfile({ forcedViewMode }) {
                         >
                            {activeInsightBtn === 'traffic' ? <Activity size={14} className="text-emerald-400 animate-pulse" /> : <Activity size={14} className="text-gray-400" />}
                            Auditoría de Tráfico B2B
+                        </button>
+                        <button 
+                            disabled={activeInsightBtn === 'social_audit'}
+                            onClick={() => handleQuickInsight('social_audit', 'Auditoría de Redes Sociales')}
+                            className="px-5 py-2.5 rounded-full border border-white/10 bg-white/5 text-gray-300 text-xs font-black hover:bg-white/10 hover:border-indigo-500/50 transition-all uppercase tracking-[0.15em] flex items-center gap-2 disabled:opacity-50"
+                        >
+                           {activeInsightBtn === 'social_audit' ? <Activity size={14} className="text-indigo-400 animate-pulse" /> : <Bot size={14} className="text-gray-400" />}
+                           {activeInsightBtn === 'social_audit' ? 'Investigando...' : 'Auditoría de Redes'}
+                        </button>
+                        <button 
+                            disabled={activeInsightBtn === 'improvement_plan'}
+                            onClick={() => handleQuickInsight('improvement_plan', 'Plan de Mejora Estratégico')}
+                            className="px-5 py-2.5 rounded-full border border-white/10 bg-white/5 text-gray-300 text-xs font-black hover:bg-white/10 hover:border-amber-500/50 transition-all uppercase tracking-[0.15em] flex items-center gap-2 disabled:opacity-50"
+                        >
+                           {activeInsightBtn === 'improvement_plan' ? <Activity size={14} className="text-amber-400 animate-pulse" /> : <Wand2 size={14} className="text-gray-400" />}
+                           {activeInsightBtn === 'improvement_plan' ? 'Diseñando...' : 'Plan de Mejora'}
                         </button>
                     </div>
                 </div>

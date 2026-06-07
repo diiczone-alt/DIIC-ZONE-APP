@@ -53,6 +53,24 @@ export async function POST(req) {
                 tacticalPrompt = `AUDITA LAS POSIBLES RUTAS DE TRÁFICO B2B PARA ${url}. ${ignoreNameNote}
                 ¿De dónde vienen sus clientes? (LinkedIn Ads, Google Search, Referidos, etc). Sé específico.`;
                 break;
+            case 'social_audit':
+                tacticalPrompt = `REALIZA UNA AUDITORÍA PROFESIONAL DE REDES SOCIALES EN TIEMPO REAL PARA LA MARCA EN: ${url}. ${ignoreNameNote}
+                Busca de manera individual sus perfiles de Instagram, Facebook, TikTok, YouTube y LinkedIn en Google. Detalla para cada uno:
+                1. Su nivel de actividad actual, consistencia y frecuencia de publicaciones.
+                2. Calidad visual, marca, valor del contenido y consistencia visual en general.
+                3. Engagement con la comunidad y respuestas a comentarios.
+                4. Oportunidades estratégicas críticas de mejora y crecimiento en cada plataforma.
+                Escribe un diagnóstico sumamente analítico, crítico y constructivo al estilo de un experto y empresario digital en formato Markdown estructurado.`;
+                break;
+            case 'improvement_plan':
+                tacticalPrompt = `DISEÑA UN PLAN DE CRECIMIENTO Y MEJORA ESTRATÉGICO INTEGRAL PARA EL ECOSISTEMA EN: ${url}. ${ignoreNameNote}
+                Basándote en su presencia web y redes sociales reales encontradas en la búsqueda, diseña un plan táctico de crecimiento:
+                1. Objetivos estratégicos SMART a corto y mediano plazo (ej. branding, captación, retención).
+                2. Plan de optimización de la web / landing page para aumentar conversión (CRO y diseño de oferta de valor).
+                3. Plan de contenidos estratégico para redes sociales (pilares de contenido, ganchos y distribución).
+                4. Recomendaciones específicas de tráfico pago (Facebook/Google Ads) y automatización con IA.
+                Devuelve una propuesta ejecutable, sumamente detallada, profesional y convincente en formato Markdown con negritas y listas.`;
+                break;
             case 'refine':
                 tacticalPrompt = `INVESTIGA EXHAUSTIVAMENTE EN LA WEB (incluyendo redes sociales como Instagram, Facebook, LinkedIn y listados locales) información real sobre la marca "${brandName}" (basándote en ${url}) para el campo "${field}".
                 Si ya existe este texto: "${currentText}", mejóralo y compleméntalo con los nuevos datos reales encontrados.
