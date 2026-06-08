@@ -6,7 +6,7 @@ import { ChevronRight, ChevronLeft, Layout, Target, Network, Search } from 'luci
 import ClientStrategicProfile from './ClientStrategicProfile';
 import ClientGrowthLevel from './ClientGrowthLevel';
 
-export default function ClientIdentityWrapper() {
+export default function ClientIdentityWrapper({ clientId }) {
     const [layer, setLayer] = useState(1); // 1: Búsqueda Estratégica, 2: Perfil Estratégico, 3: Nivel de Crecimiento
 
     return (
@@ -61,7 +61,7 @@ export default function ClientIdentityWrapper() {
                 >
                     {layer === 1 && (
                         <div className="space-y-8">
-                            <ClientStrategicProfile forcedViewMode="edit" />
+                            <ClientStrategicProfile forcedViewMode="edit" clientId={clientId} />
                             <div className="flex justify-end pt-8">
                                 <button 
                                     onClick={() => setLayer(2)}
@@ -74,7 +74,7 @@ export default function ClientIdentityWrapper() {
                     )}
                     {layer === 2 && (
                         <div className="space-y-8">
-                            <ClientStrategicProfile forcedViewMode="report" />
+                            <ClientStrategicProfile forcedViewMode="report" clientId={clientId} />
                             <div className="flex justify-between pt-8">
                                 <button 
                                     onClick={() => setLayer(1)}
@@ -93,7 +93,7 @@ export default function ClientIdentityWrapper() {
                     )}
                     {layer === 3 && (
                         <div className="space-y-8">
-                            <ClientGrowthLevel />
+                            <ClientGrowthLevel clientId={clientId} />
                             <div className="flex justify-between pt-8">
                                 <button 
                                     onClick={() => setLayer(2)}

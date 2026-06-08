@@ -95,21 +95,22 @@ const LEVELS = [
     }
 ];
 
-export default function ClientGrowthLevel({ initialLevel = 'presencia' }) {
+export default function ClientGrowthLevel({ initialLevel = 'presencia', clientId: propClientId }) {
     const { user } = useAuth();
-    const clientId = user?.client_id || 1;
+    const clientId = propClientId || user?.client_id || 1;
     const [currentLevel, setCurrentLevel] = useState(initialLevel);
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         const loadLevel = async () => {
+            if (!clientId) return;
             const client = await agencyService.getClientById(clientId);
             if (client?.metadata?.maturity_level) {
                 setCurrentLevel(client.metadata.maturity_level);
             }
         };
         loadLevel();
-    }, []);
+    }, [clientId]);
 
     const handleSelect = async (id) => {
         setCurrentLevel(id);

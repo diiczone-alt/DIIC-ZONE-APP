@@ -424,15 +424,17 @@ const isValidSocialUrl = (url) => {
     return domainRegex.test(cleanUrl);
 };
 
-export default function ClientStrategicProfile({ forcedViewMode }) {
+export default function ClientStrategicProfile({ forcedViewMode, clientId: propClientId }) {
     const { user } = useAuth();
-    const [activeClientId, setActiveClientId] = useState(user?.client_id || null);
+    const [activeClientId, setActiveClientId] = useState(propClientId || user?.client_id || null);
 
     useEffect(() => {
-        if (user?.client_id) {
+        if (propClientId) {
+            setActiveClientId(propClientId);
+        } else if (user?.client_id) {
             setActiveClientId(user.client_id);
         }
-    }, [user?.client_id]);
+    }, [propClientId, user?.client_id]);
 
     // Basic state for the profile
     const [profile, setProfile] = useState({

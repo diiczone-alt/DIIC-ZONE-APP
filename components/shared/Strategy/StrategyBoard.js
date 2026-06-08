@@ -25,6 +25,7 @@ import StrategyPlanner from './StrategyPlanner';
 import StrategyContentParrilla from './StrategyContentParrilla';
 import UnifiedCalendar from '../../calendar/UnifiedCalendar';
 import StrategySelectionGrid from './StrategySelectionGrid';
+import StrategicProfileManager from './StrategicProfileManager';
 import { STRATEGIC_COLUMNS, NODE_TYPES, NODE_CATEGORIES, MASTER_CONTENT_TYPES, NODE_CONTENT_SUBTYPES, STRATEGIC_RAILS, getNodeLaneId } from './StrategyConstants';
 
 import {
@@ -465,6 +466,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
 
 
     const menuItems = [
+        { id: 'perfil', icon: Target, label: 'Perfil Estratégico' },
         { id: 'campañas', icon: Layers, label: 'Mis Estrategias' },
         { id: 'tablero', icon: Maximize2, label: 'Pizarra de Flujo' },
         { id: 'parrilla', icon: Table, label: 'Producción (Parrilla/Kanban)' },
@@ -1085,6 +1087,8 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
         }
     }, [setDrawings]);
 
+    const activeClientId = propClientId || clientId || user?.client_id || discoveredClientId;
+
     return (
         <div className={`${isSubcomponent ? 'relative flex-1' : 'relative h-full z-[50]'} w-full flex flex-col overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-[#F1F5F9]'}`}>
             {/* 1. TOP BAR */}
@@ -1162,6 +1166,10 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                     />}
 
                     <div className={`flex-1 flex flex-col min-h-0 relative overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-[#F1F5F9]'}`}>
+                        {activeFlow === 'perfil' && (
+                            <StrategicProfileManager clientId={activeClientId} theme={theme} />
+                        )}
+
                         {activeFlow === 'campañas' && (
                             <StrategyFlowCampanas 
                                 strategyData={strategyData} 
