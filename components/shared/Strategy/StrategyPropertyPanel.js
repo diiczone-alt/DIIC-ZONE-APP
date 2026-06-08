@@ -68,7 +68,7 @@ export default function StrategyPropertyPanel({
         { id: 'Caliente', label: 'Caliente', color: '#f43f5e', icon: Flame }
     ];
 
-    const CustomSelect = ({ value, onChange, options, label, icon: Icon, color }) => {
+    const CustomSelect = ({ value, onChange, options, label, icon: Icon, color, align = 'full' }) => {
         const [isOpen, setIsOpen] = useState(false);
         const selectedOption = options.find(o => o.id === value) || options[0];
 
@@ -78,19 +78,19 @@ export default function StrategyPropertyPanel({
                 <div className="relative group/sel">
                     <button 
                         onClick={() => setIsOpen(!isOpen)}
-                        className={`w-full border rounded-2xl px-4 py-3.5 text-[10px] font-black flex items-center justify-between transition-all duration-300 ${
+                        className={`w-full border rounded-xl px-3 py-2.5 text-[9px] font-black flex items-center justify-between transition-all duration-300 ${
                             theme === 'dark' 
                             ? 'bg-white/[0.04] border-white/5 text-white hover:bg-white/[0.07] hover:border-white/20' 
                             : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-white hover:border-indigo-300 shadow-sm'
                         }`}
                     >
-                        <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${selectedOption.color || '#6366f1'}15` }}>
+                        <div className="flex items-center gap-2 min-w-0">
+                            <div className="p-1 rounded-lg shrink-0" style={{ backgroundColor: `${selectedOption.color || '#6366f1'}15` }}>
                                 {selectedOption.icon ? <selectedOption.icon className="w-3.5 h-3.5" style={{ color: selectedOption.color || '#6366f1' }} /> : <Icon className="w-3.5 h-3.5" style={{ color: selectedOption.color || '#6366f1' }} />}
                             </div>
-                            <span className="uppercase tracking-widest">{selectedOption.label}</span>
+                            <span className="uppercase tracking-wider truncate">{selectedOption.label}</span>
                         </div>
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-500 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-300'} ${isOpen ? 'rotate-180 text-indigo-500' : ''}`} />
+                        <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform duration-500 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-300'} ${isOpen ? 'rotate-180 text-indigo-500' : ''}`} />
                     </button>
 
                     <AnimatePresence>
@@ -101,9 +101,11 @@ export default function StrategyPropertyPanel({
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className={`absolute left-0 right-0 top-full mt-2 border rounded-[2rem] p-3 z-[120] shadow-2xl overflow-hidden ring-1 transition-all duration-500 ${
+                                    className={`absolute mt-2 border rounded-[2rem] p-3 z-[120] shadow-2xl overflow-y-auto max-h-[220px] custom-scrollbar ring-1 transition-all duration-500 ${
+                                        align === 'right' ? 'right-0 w-[260px]' : align === 'left' ? 'left-0 w-[260px]' : 'left-0 right-0'
+                                    } ${
                                         theme === 'dark' 
-                                        ? 'bg-[#0A0A14]/90 backdrop-blur-3xl border-white/10 ring-white/5' 
+                                        ? 'bg-[#0A0A14]/95 backdrop-blur-3xl border-white/10 ring-white/5' 
                                         : 'bg-white border-slate-200 ring-slate-100 shadow-xl shadow-slate-200/50'
                                     }`}
                                 >
@@ -116,21 +118,21 @@ export default function StrategyPropertyPanel({
                                                     onChange(opt.id);
                                                     setIsOpen(false);
                                                 }}
-                                                className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group ${
+                                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group text-left ${
                                                     value === opt.id 
                                                     ? (theme === 'dark' ? 'bg-white/[0.08] border border-white/10 shadow-lg' : 'bg-indigo-50 border border-indigo-100 shadow-sm') 
                                                     : (theme === 'dark' ? 'hover:bg-white/[0.04] border border-transparent opacity-60 hover:opacity-100' : 'hover:bg-slate-50 border border-transparent opacity-70 hover:opacity-100')
                                                 }`}
                                             >
-                                                <div className="p-1.5 rounded-lg transition-transform group-hover:scale-110" style={{ backgroundColor: `${opt.color || '#6366f1'}15` }}>
+                                                <div className="p-1.5 rounded-lg transition-transform group-hover:scale-110 shrink-0" style={{ backgroundColor: `${opt.color || '#6366f1'}15` }}>
                                                     {opt.icon ? <opt.icon className="w-3.5 h-3.5" style={{ color: opt.color || '#6366f1' }} /> : <Icon className="w-3.5 h-3.5" style={{ color: opt.color || '#6366f1' }} />}
                                                 </div>
-                                                <div className="flex flex-col items-start translate-y-[1px]">
-                                                    <span className={`text-[10px] font-black uppercase tracking-widest ${value === opt.id ? (theme === 'dark' ? 'text-white' : 'text-slate-900') : (theme === 'dark' ? 'text-gray-400' : 'text-slate-500')}`}>{opt.label}</span>
-                                                    {opt.desc && <span className={`text-[7px] font-bold uppercase tracking-tighter ${theme === 'dark' ? 'text-gray-700' : 'text-slate-300'}`}>{opt.desc}</span>}
+                                                <div className="flex flex-col items-start min-w-0 flex-1">
+                                                    <span className={`text-[9.5px] font-black uppercase tracking-wider truncate w-full ${value === opt.id ? (theme === 'dark' ? 'text-white' : 'text-slate-900') : (theme === 'dark' ? 'text-gray-300' : 'text-slate-500')}`}>{opt.label}</span>
+                                                    {opt.desc && <span className={`text-[8px] font-bold uppercase tracking-tight text-left leading-normal mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{opt.desc}</span>}
                                                 </div>
                                                 {value === opt.id && (
-                                                    <motion.div layoutId="selActive" className="ml-auto w-1.5 h-1.5 rounded-full" style={{ backgroundColor: opt.color || '#6366f1', boxShadow: `0 0 10px ${opt.color || '#6366f1'}` }} />
+                                                    <motion.div layoutId="selActive" className="ml-auto w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: opt.color || '#6366f1', boxShadow: `0 0 10px ${opt.color || '#6366f1'}` }} />
                                                 )}
                                             </button>
                                         ))}
@@ -154,61 +156,67 @@ export default function StrategyPropertyPanel({
             <div className={`p-6 pt-8 border-b relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[60px] rounded-full -translate-y-1/2 translate-x-1/2" />
                 
-                <div className="flex items-center justify-between mb-8 relative z-10">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl border shadow-inner group transition-all" style={{ borderColor: `${accentColor}20`, backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
-                                <Settings className="w-4 h-4 text-gray-500 group-hover:rotate-90 transition-transform duration-700" style={{ color: accentColor }} />
+                <div className="flex flex-col gap-4 mb-6 relative z-10">
+                    {/* Row 1: Header Title & Window Controls */}
+                    <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-xl border shadow-inner group transition-all" style={{ borderColor: `${accentColor}20`, backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
+                                <Settings className="w-3.5 h-3.5 text-gray-500 group-hover:rotate-90 transition-transform duration-700" style={{ color: accentColor }} />
                             </div>
-                            <div className="flex flex-col">
-                                <h2 className={`text-[10px] font-[900] uppercase tracking-[0.4em] italic leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>NODE SETTINGS</h2>
-                                {isNode && (
-                                    <div className={`flex items-center gap-2 mt-1.5 px-2 py-1 rounded-full border transition-all duration-500 w-fit ${theme === 'dark' ? 'bg-white/[0.03] border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-                                        <div className={`w-1.5 h-1.5 rounded-full ${selectedNode.data?.status === 'aprobado' ? 'bg-emerald-500' : 'bg-indigo-500 animate-pulse'}`} />
-                                        <span className={`text-[7.5px] font-black uppercase tracking-widest leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-gray-600' : 'text-slate-400'}`}>{selectedNode.data?.status || 'Borrador'}</span>
-                                    </div>
-                                )}
-                            </div>
+                            <h2 className={`text-[9.5px] font-[900] uppercase tracking-[0.3em] italic leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>NODE SETTINGS</h2>
                         </div>
 
+                        <div className="flex items-center gap-1.5">
+                            {onCollapse && (
+                                <button 
+                                    onClick={onCollapse} 
+                                    className={`p-2 rounded-full transition-all group ${theme === 'dark' ? 'hover:bg-white/5 text-gray-600 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-900'}`}
+                                    title="Colapsar Panel"
+                                >
+                                    <ChevronLeft className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                </button>
+                            )}
+                            <button onClick={onClose} className={`p-2 rounded-full transition-all group ${theme === 'dark' ? 'hover:bg-white/5 text-gray-600 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-900'}`}>
+                                <X className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Row 2: Node Status & Node Actions */}
+                    <div className="flex items-center justify-between w-full gap-2">
+                        {isNode && (
+                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all duration-500 w-fit shrink-0 ${theme === 'dark' ? 'bg-white/[0.03] border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${selectedNode.data?.status === 'aprobado' ? 'bg-emerald-500' : 'bg-indigo-500 animate-pulse'}`} />
+                                <span className={`text-[7px] font-black uppercase tracking-widest leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{selectedNode.data?.status || 'Borrador'}</span>
+                            </div>
+                        )}
+
                         {/* Minimalist Top Actions */}
-                        <div className={`flex items-center gap-1.5 p-1.5 rounded-2xl border transition-all duration-500 ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className={`flex items-center gap-1 p-1 rounded-xl border transition-all duration-500 ml-auto shrink-0 ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                             <button 
                                 onClick={() => onDuplicateNode(selectedNode?.id)}
-                                className="p-2.5 rounded-xl hover:bg-white/5 text-gray-600 hover:text-white transition-all group/act"
+                                className="p-2 rounded-lg hover:bg-white/5 text-gray-600 hover:text-white transition-all group/act"
                                 title="Clonar Nodo"
                             >
-                                <Copy className="w-3.5 h-3.5 group-hover/act:scale-110" />
+                                <Copy className="w-3 h-3 group-hover/act:scale-110" />
                             </button>
                             <button 
                                 onClick={() => onSendToPlanner(selectedNode?.id)}
-                                className="p-2.5 rounded-xl hover:bg-indigo-500/10 text-indigo-500/60 hover:text-indigo-400 transition-all group/act"
+                                className="p-2 rounded-lg hover:bg-indigo-500/10 text-indigo-500/60 hover:text-indigo-400 transition-all group/act"
                                 title="Sync Planner"
                             >
-                                <Send className="w-3.5 h-3.5 group-hover/act:translate-x-0.5 group-hover/act:-translate-y-0.5" />
+                                <Send className="w-3 h-3 group-hover/act:translate-x-0.5 group-hover/act:-translate-y-0.5" />
                             </button>
-                            <div className="w-px h-4 bg-white/5 mx-0.5" />
+                            <div className="w-px h-3.5 bg-white/5 mx-0.5" />
                             <button 
                                 onClick={() => onDeleteNode(selectedNode?.id)}
-                                className="p-2.5 rounded-xl hover:bg-rose-500/10 text-rose-500/40 hover:text-rose-500 transition-all group/act"
+                                className="p-2 rounded-lg hover:bg-rose-500/10 text-rose-500/40 hover:text-rose-500 transition-all group/act"
                                 title="Borrar Nodo"
                             >
-                                <Trash2 className="w-3.5 h-3.5 group-hover/act:scale-110" />
+                                <Trash2 className="w-3 h-3 group-hover/act:scale-110" />
                             </button>
                         </div>
-
-                        {onCollapse && (
-                            <button 
-                                onClick={onCollapse} 
-                                className={`p-2 rounded-full transition-all group ${theme === 'dark' ? 'hover:bg-white/5 text-gray-600 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-900'}`}
-                                title="Colapsar Panel"
-                            >
-                                <ChevronLeft className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                            </button>
-                        )}
-
-                        <button onClick={onClose} className={`p-2 rounded-full transition-all group ${theme === 'dark' ? 'hover:bg-white/5 text-gray-600 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-900'}`}>
-                            <X className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                        </button>
+                    </div>
                 </div>
 
                 {/* 🧭 Tabs Modernas - 6 Categorías */}
@@ -259,7 +267,7 @@ export default function StrategyPropertyPanel({
             </div>
 
             {/* 🧊 Content Area */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar relative px-6 py-6">
+            <div className="flex-1 overflow-y-auto custom-scrollbar relative px-6 pt-6 pb-36">
                 <AnimatePresence mode="wait">
                     {activeTab === 'estratégica' && (
                         <motion.div 
@@ -303,6 +311,7 @@ export default function StrategyPropertyPanel({
                                             });
                                         }}
                                         icon={Layers}
+                                        align="full"
                                     />
 
                                     <div className="grid grid-cols-2 gap-4">
@@ -318,6 +327,7 @@ export default function StrategyPropertyPanel({
                                             }))}
                                             onChange={(val) => onUpdateNode(selectedNode.id, { ...selectedNode.data, funnelLevel: val })}
                                             icon={Target}
+                                            align="left"
                                         />
                                         <CustomSelect 
                                             label="TEMPERATURA AUD."
@@ -325,6 +335,7 @@ export default function StrategyPropertyPanel({
                                             options={TEMPS}
                                             onChange={(val) => onUpdateNode(selectedNode.id, { ...selectedNode.data, customerTemp: val })}
                                             icon={Thermometer}
+                                            align="right"
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
@@ -519,6 +530,7 @@ export default function StrategyPropertyPanel({
                                                     productionInfo: { ...(selectedNode.data?.productionInfo || {}), format: val } 
                                                 })}
                                                 icon={Video}
+                                                align="right"
                                             />
                                         </div>
                                     ) : (
@@ -946,6 +958,7 @@ export default function StrategyPropertyPanel({
                                             outputInfo: { ...(selectedNode.data?.outputInfo || {}), finalFormat: val } 
                                         })}
                                         icon={Layout}
+                                        align="full"
                                     />
                                 </div>
                             </div>
