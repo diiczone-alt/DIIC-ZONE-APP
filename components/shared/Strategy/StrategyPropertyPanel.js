@@ -40,7 +40,8 @@ export default function StrategyPropertyPanel({
     onDuplicateNode,
     onSendToPlanner,
     onOpenMemoryPicker,
-    theme = 'dark'
+    theme = 'dark',
+    dragControls
 }) {
     const [isGeneratingAI, setIsGeneratingAI] = useState(null); // 'script', 'objective', etc.
     const [showZonePicker, setShowZonePicker] = useState(false);
@@ -147,13 +148,21 @@ export default function StrategyPropertyPanel({
     };
 
     return (
-        <aside className={`w-[320px] border-r flex flex-col h-full z-[100] overflow-hidden ring-1 group/panel transition-all duration-700 ${
+        <aside className={`w-[320px] border flex flex-col h-[750px] max-h-[82vh] z-[100] overflow-hidden rounded-[2.5rem] ring-1 group/panel transition-all duration-700 ${
             theme === 'dark' 
-            ? 'bg-[#050511]/95 backdrop-blur-3xl border-white/5 shadow-[0_0_50px_rgba(0,0,0,0.8)] ring-white/5' 
-            : 'bg-white/95 backdrop-blur-3xl border-slate-200 shadow-xl shadow-slate-200/50 ring-slate-100'
+            ? 'bg-[#050511]/50 backdrop-blur-xl border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.6)] ring-white/5' 
+            : 'bg-white/50 backdrop-blur-xl border-slate-200 shadow-2xl shadow-slate-200/50 ring-slate-100'
         }`}>
             {/* 🛡️ Header Premium */}
-            <div className={`p-6 pt-8 border-b relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
+            <div 
+                onPointerDown={(e) => {
+                    const isInteractive = e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea') || e.target.closest('select') || e.target.closest('.relative.group\\/zone');
+                    if (!isInteractive && dragControls) {
+                        dragControls.start(e);
+                    }
+                }}
+                className={`p-6 pt-8 border-b relative overflow-hidden transition-colors duration-500 cursor-grab active:cursor-grabbing select-none ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}
+            >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[60px] rounded-full -translate-y-1/2 translate-x-1/2" />
                 
                 <div className="flex flex-col gap-4 mb-6 relative z-10">

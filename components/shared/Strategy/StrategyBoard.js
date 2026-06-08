@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import StrategyTopBar from './StrategyTopBar';
@@ -84,6 +84,8 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     const [strategyData, setStrategyData] = useState(initialStrategyData);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [discoveredClientId, setDiscoveredClientId] = useState(null);
+    const dragControls = useDragControls();
+    const boardContainerRef = useRef(null);
 
     // --- RECOVERY ON MOUNT (DEATH TO DATA LOSS) ---
     useEffect(() => {
@@ -1240,7 +1242,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                     <h2 className={`text-xl font-bold mb-2 transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Pizarra No Disponible</h2>
                                 </div>
                             ) : (
-                                <div className="flex-1 flex overflow-hidden relative">
+                                <div ref={boardContainerRef} className="flex-1 flex overflow-hidden relative">
                                     {!isOutlinerCollapsed && (
                                         <StrategicOutliner 
                                             nodes={activeCampaign.nodes} 
@@ -1255,11 +1257,17 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                     <AnimatePresence>
                                         {(selectedNodeId || selectedEdgeId) && !isPropertyPanelCollapsed && (
                                             <motion.div
-                                                initial={{ x: -320, opacity: 0 }}
+                                                drag
+                                                dragControls={dragControls}
+                                                dragListener={false}
+                                                dragMomentum={false}
+                                                dragElastic={0}
+                                                dragConstraints={boardContainerRef}
+                                                initial={{ x: -350, opacity: 0 }}
                                                 animate={{ x: 0, opacity: 1 }}
-                                                exit={{ x: -320, opacity: 0 }}
+                                                exit={{ x: -350, opacity: 0 }}
                                                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                                                className="z-[90]"
+                                                className={`absolute z-[95] top-6 ${isOutlinerCollapsed ? 'left-6' : 'left-[256px]'}`}
                                             >
                                                 <StrategyPropertyPanel
                                                     selectedNode={selectedNode}
@@ -1275,6 +1283,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                                     onSendToPlanner={handleGeneratePlanner}
                                                     onOpenMemoryPicker={handleOpenMemoryPicker}
                                                     theme={theme}
+                                                    dragControls={dragControls}
                                                 />
                                             </motion.div>
                                         )}
