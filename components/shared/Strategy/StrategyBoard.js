@@ -376,6 +376,28 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     // Helper state for connection
     const [connectionStart, setConnectionStart] = useState(null);
 
+    const [squadMembers, setSquadMembers] = useState([]);
+
+    // Fetch squad members or fallback to full team
+    useEffect(() => {
+        const loadSquad = async () => {
+            try {
+                let data = [];
+                if (user?.id) {
+                    const leadId = user.team_id || user.id;
+                    data = await agencyService.getTeamByLead(leadId);
+                }
+                if (!data || data.length === 0) {
+                    data = await agencyService.getTeam();
+                }
+                setSquadMembers(data || []);
+            } catch (e) {
+                console.error("Error loading squad members in StrategyBoard:", e);
+            }
+        };
+        loadSquad();
+    }, [user]);
+
 
     const handleGenerateReport = async () => {
         setIsGeneratingReport(true);
@@ -1287,6 +1309,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                                     dragControls={dragControls}
                                                     panelSize={propertyPanelSize}
                                                     setPanelSize={setPropertyPanelSize}
+                                                    squadMembers={squadMembers}
                                                 />
                                             </motion.div>
                                         )}

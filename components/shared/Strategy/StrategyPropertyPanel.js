@@ -43,10 +43,12 @@ export default function StrategyPropertyPanel({
     theme = 'dark',
     dragControls,
     panelSize,
-    setPanelSize
+    setPanelSize,
+    squadMembers = []
 }) {
     const [isGeneratingAI, setIsGeneratingAI] = useState(null); // 'script', 'objective', etc.
     const [showZonePicker, setShowZonePicker] = useState(false);
+    const [showTalentPicker, setShowTalentPicker] = useState(false);
     const [isConnectingCloud, setIsConnectingCloud] = useState(false);
     const router = useRouter();
     
@@ -148,6 +150,14 @@ export default function StrategyPropertyPanel({
             </div>
         );
     };
+
+    const sortedSquad = [...(squadMembers || [])].sort((a, b) => {
+        const isADesigner = (a.role || '').toLowerCase().includes('diseñador') || (a.role || '').toLowerCase().includes('design');
+        const isBDesigner = (b.role || '').toLowerCase().includes('diseñador') || (b.role || '').toLowerCase().includes('design');
+        if (isADesigner && !isBDesigner) return -1;
+        if (!isADesigner && isBDesigner) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+    });
 
     return (
         <aside 
@@ -346,136 +356,13 @@ export default function StrategyPropertyPanel({
                                         <CustomSelect 
                                             label="TEMPERATURA AUD."
                                             value={selectedNode?.data?.customerTemp || 'Tibio'}
-                                            options={TEMPS}
-                                            onChange={(val) => onUpdateNode(selectedNode.id, { ...selectedNode.data, customerTemp: val })}
+                                                                      onChange={(val) => onUpdateNode(selectedNode.id, { ...selectedNode.data, customerTemp: val })}
                                             icon={Thermometer}
                                             align="right"
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {/* 1. BOTÓN RESPONSABLE (MULTI-SELECT) */}
-                                            <div className="space-y-2">
-                                                <label className={`text-[8px] font-black uppercase tracking-[0.2em] pl-1 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>RESPONSABLE(S)</label>
-                                                <div className="relative group/zone">
-                                                    <button 
-                                                        onClick={() => setShowZonePicker(!showZonePicker)}
-                                                        className={`w-full flex items-center justify-between border rounded-xl px-4 py-3 transition-all active:scale-95 min-h-[50px] ${
-                                                            theme === 'dark' 
-                                                            ? 'bg-white/[0.02] border-white/5 text-white hover:bg-white/5' 
-                                                            : 'bg-white border-slate-200 text-slate-900 shadow-sm'
-                                                        }`}
-                                                    >
-                                                        <div className="flex flex-wrap gap-1.5 max-w-[120px]">
-                                                            {(() => {
-                                                                const zones = selectedNode.data?.responsibleZones || (selectedNode.data?.responsibleZone ? [selectedNode.data.responsibleZone] : []);
-                                                                if (zones.length === 0) return <span className="text-[9px] font-black tracking-widest text-gray-500">SIN ASIGNAR</span>;
-                                                                
-                                                                return zones.map(zoneId => {
-                                                                    const zone = CREATIVE_ZONES.find(z => z.id === zoneId);
-                                                                    if (!zone) return null;
-                                                                    return (
-                                                                        <div key={zone.id} className="flex items-center gap-1.5 bg-white/5 px-1.5 py-0.5 rounded-md border border-white/5">
-                                                                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: zone.color }} />
-                                                                            <span className="text-[7px] font-black uppercase tracking-tighter text-gray-300">{zone.label}</span>
-                                                                        </div>
-                                                                    );
-                                                                });
-                                                            })()}
-                                                        </div>
-                                                        <Users className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                                                    </button>
-
-                                                    {/* Dropdown Picker Multi-Select */}
-                                                    <AnimatePresence>
-                                                        {showZonePicker && (
-                                                            <>
-                                                                <div className="fixed inset-0 z-[90]" onClick={() => setShowZonePicker(false)} />
-                                                                <motion.div 
-                                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                                    className="absolute left-0 right-0 top-full mt-2 bg-[#0A0A1F] border border-white/10 rounded-2xl shadow-2xl z-[100] p-2 overflow-hidden w-[360px]"
-                                                                >
-                                                                    <div className="grid grid-cols-2 gap-1">
-                                                                        {CREATIVE_ZONES.map(z => {
-                                                                            const currentZones = selectedNode.data?.responsibleZones || (selectedNode.data?.responsibleZone ? [selectedNode.data.responsibleZone] : []);
-                                                                            const isSelected = currentZones.includes(z.id);
-                                                                            
-                                                                            return (
-                                                                                <button 
-                                                                                    key={z.id}
-                                                                                    onClick={() => {
-                                                                                        const newZones = isSelected 
-                                                                                            ? currentZones.filter(id => id !== z.id)
-                                                                                            : [...currentZones, z.id];
-                                                                                        onUpdateNode(selectedNode.id, { 
-                                                                                            ...selectedNode.data, 
-                                                                                            responsibleZones: newZones,
-                                                                                            responsibleZone: newZones[0] || null // Maintain legacy
-                                                                                        });
-                                                                                    }}
-                                                                                    className={`flex items-center justify-between w-full p-3 rounded-xl transition-all hover:bg-white/5 group ${isSelected ? 'bg-indigo-600/10' : ''}`}
-                                                                                >
-                                                                                    <div className="flex items-center gap-3">
-                                                                                        <z.icon className={`w-3.5 h-3.5 ${isSelected ? 'text-indigo-400' : 'text-gray-500'}`} />
-                                                                                        <span className={`text-[9px] font-black tracking-widest uppercase ${isSelected ? 'text-white' : 'text-gray-400'}`}>{z.label}</span>
-                                                                                    </div>
-                                                                                    {isSelected && <CheckCircle2 className="w-3 h-3 text-indigo-400" />}
-                                                                                </button>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                </motion.div>
-                                                            </>
-                                                        )}
-                                                    </AnimatePresence>
-                                                </div>
-                                            </div>
-
-                                            {/* 2. BOTÓN GUÍAS / GUIONES */}
-                                            <div className="space-y-2">
-                                                <label className={`text-[8px] font-black uppercase tracking-[0.2em] pl-1 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>GUÍA / GUIONES</label>
-                                                <button 
-                                                    onClick={() => {
-                                                        toast.success('Abriendo Estudio Creativo 3D...');
-                                                        router.push(`/dashboard/creative-3d?nodeId=${selectedNode.id}`);
-                                                    }}
-                                                    className={`w-full flex flex-col justify-center gap-1 border rounded-xl px-4 py-3 transition-all group overflow-hidden relative min-h-[50px] ${
-                                                        theme === 'dark' 
-                                                        ? 'bg-indigo-600/10 border-indigo-500/20 text-white hover:bg-indigo-600/20' 
-                                                        : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
-                                                    }`}
-                                                >
-                                                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-white/5 to-indigo-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                                                    <div className="flex items-center justify-between w-full">
-                                                        <div className="flex items-center gap-2">
-                                                            <FileText className="w-3.5 h-3.5 text-indigo-400" />
-                                                            <span className="text-[10px] font-black tracking-widest">VER GUIÓN</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1 bg-indigo-500/20 px-1.5 py-0.5 rounded-full border border-indigo-500/10">
-                                                            <div className="w-1 h-1 rounded-full bg-indigo-400 animate-pulse" />
-                                                            <span className="text-[6px] font-black text-indigo-300">LINK</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-[7px] font-bold text-gray-500 uppercase tracking-tighter text-left">ESTUDIO CREATIVO 3D</div>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className={`text-[8px] font-black uppercase tracking-[0.2em] pl-1 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>MENSAJE CLAVE (HOOK)</label>
-                                        <textarea 
-                                            value={selectedNode?.data?.strategicInfo?.keyMessage || ''}
-                                            onChange={(e) => onUpdateNode(selectedNode.id, { 
-                                                ...selectedNode.data, 
-                                                strategicInfo: { ...(selectedNode.data?.strategicInfo || {}), keyMessage: e.target.value } 
-                                            })}
-                                            placeholder="Idea principal o gancho..."
-                                            className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs font-bold text-white h-20 resize-none focus:border-indigo-500/20 border-dashed"
-                                        />
-                                    </div>
                                 </div>
+                            </div>
                         </motion.div>
                     )}
                     
@@ -486,14 +373,146 @@ export default function StrategyPropertyPanel({
                             className="space-y-8 pb-10"
                         >
                              <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-[10px] font-black text-purple-500 italic">02.</span>
-                                    <h4 className="text-[9px] font-black text-gray-700 uppercase tracking-[0.3em]">REQUERIMIENTOS TÉCNICOS</h4>
-                                </div>
+                                 <div className="flex items-center gap-3">
+                                     <span className="text-[10px] font-black text-purple-500 italic">02.</span>
+                                     <h4 className="text-[9px] font-black text-gray-700 uppercase tracking-[0.3em]">PRODUCCIÓN Y ASIGNACIÓN</h4>
+                                 </div>
 
-                                <div className="space-y-5">
-                                    <div className="space-y-2">
-                                        <label className="text-[8px] font-black text-gray-800 uppercase tracking-widest pl-1">ESTADO DEL CONTENIDO</label>
+                                 <div className="space-y-5">
+                                     <div className="grid grid-cols-2 gap-4">
+                                         {/* TALENTO ZONA CREATIVA */}
+                                         <div className="space-y-2">
+                                             <label className={`text-[8px] font-black uppercase tracking-[0.2em] pl-1 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>TALENTO ZONA CREATIVA</label>
+                                             <div className="relative group/talent">
+                                                 <button 
+                                                     onClick={() => setShowTalentPicker(!showTalentPicker)}
+                                                     className={`w-full flex items-center justify-between border rounded-xl px-4 py-3 transition-all active:scale-95 min-h-[50px] ${
+                                                         theme === 'dark' 
+                                                         ? 'bg-white/[0.02] border-white/5 text-white hover:bg-white/5' 
+                                                         : 'bg-white border-slate-200 text-slate-900 shadow-sm'
+                                                     }`}
+                                                 >
+                                                     <div className="flex items-center gap-2">
+                                                         {selectedNode.data?.assignedMemberName ? (
+                                                             <>
+                                                                 <div className="w-6 h-6 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-[10px] font-black text-indigo-400">
+                                                                     {selectedNode.data.assignedMemberName.charAt(0)}
+                                                                 </div>
+                                                                 <div className="text-left">
+                                                                     <span className="text-xs font-bold block leading-none">{selectedNode.data.assignedMemberName}</span>
+                                                                     <span className="text-[7.5px] font-bold text-gray-500 uppercase tracking-wider block mt-0.5">{selectedNode.data.assignedMemberRole || 'Equipo'}</span>
+                                                                 </div>
+                                                             </>
+                                                         ) : (
+                                                             <span className="text-[9px] font-black tracking-widest text-gray-500">SIN ASIGNAR</span>
+                                                         )}
+                                                     </div>
+                                                     <Users className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                                                 </button>
+
+                                                 <AnimatePresence>
+                                                     {showTalentPicker && (
+                                                         <>
+                                                             <div className="fixed inset-0 z-[120]" onClick={() => setShowTalentPicker(false)} />
+                                                             <motion.div 
+                                                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                                 className="absolute left-0 right-0 top-full mt-2 bg-[#0A0A1F]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl z-[130] p-2 max-h-[250px] overflow-y-auto custom-scrollbar w-[360px]"
+                                                             >
+                                                                 <div className="space-y-1">
+                                                                     {sortedSquad.length === 0 ? (
+                                                                         <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest p-3 text-center">No hay miembros disponibles</p>
+                                                                     ) : (
+                                                                         sortedSquad.map(m => {
+                                                                             const isSelected = selectedNode.data?.assignedMemberId === m.id;
+                                                                             const isDesigner = (m.role || '').toLowerCase().includes('diseñador') || (m.role || '').toLowerCase().includes('design');
+                                                                             
+                                                                             return (
+                                                                                 <button 
+                                                                                     key={m.id}
+                                                                                     onClick={() => {
+                                                                                         onUpdateNode(selectedNode.id, { 
+                                                                                             ...selectedNode.data, 
+                                                                                             assignedMemberId: m.id,
+                                                                                             assignedMemberName: m.name,
+                                                                                             assignedMemberRole: m.role
+                                                                                         });
+                                                                                         setShowTalentPicker(false);
+                                                                                     }}
+                                                                                     className={`flex items-center justify-between w-full p-2.5 rounded-xl transition-all hover:bg-white/5 group text-left ${isSelected ? 'bg-indigo-600/10 border border-indigo-500/20' : 'border border-transparent'}`}
+                                                                                 >
+                                                                                     <div className="flex items-center gap-2.5">
+                                                                                         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${isDesigner ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400' : 'bg-white/5 border border-white/10 text-gray-400'}`}>
+                                                                                             {m.name?.charAt(0) || 'U'}
+                                                                                         </div>
+                                                                                         <div>
+                                                                                             <span className={`text-[10px] font-black block leading-none ${isSelected ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>{m.name}</span>
+                                                                                             <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest block mt-0.5">{m.role}</span>
+                                                                                         </div>
+                                                                                     </div>
+                                                                                     {isDesigner && (
+                                                                                         <span className="text-[6.5px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/10">DISEÑADOR</span>
+                                                                                     )}
+                                                                                 </button>
+                                                                             );
+                                                                         })
+                                                                     )}
+                                                                 </div>
+                                                             </motion.div>
+                                                         </>
+                                                     )}
+                                                 </AnimatePresence>
+                                             </div>
+                                         </div>
+
+                                         {/* GUÍA / GUIONES */}
+                                         <div className="space-y-2">
+                                             <label className={`text-[8px] font-black uppercase tracking-[0.2em] pl-1 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>GUÍA / GUIONES</label>
+                                             <button 
+                                                 onClick={() => {
+                                                     toast.success('Abriendo Estudio Creativo 3D...');
+                                                     router.push(`/dashboard/creative-3d?nodeId=${selectedNode.id}`);
+                                                 }}
+                                                 className={`w-full flex flex-col justify-center gap-1 border rounded-xl px-4 py-3 transition-all group overflow-hidden relative min-h-[50px] ${
+                                                     theme === 'dark' 
+                                                     ? 'bg-indigo-600/10 border-indigo-500/20 text-white hover:bg-indigo-600/20' 
+                                                     : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                                                 }`}
+                                             >
+                                                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-white/5 to-indigo-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                                 <div className="flex items-center justify-between w-full">
+                                                     <div className="flex items-center gap-2">
+                                                         <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                                                         <span className="text-[10px] font-black tracking-widest">VER GUIÓN</span>
+                                                     </div>
+                                                     <div className="flex items-center gap-1 bg-indigo-500/20 px-1.5 py-0.5 rounded-full border border-indigo-500/10">
+                                                         <div className="w-1 h-1 rounded-full bg-indigo-400 animate-pulse" />
+                                                         <span className="text-[6px] font-black text-indigo-300">LINK</span>
+                                                     </div>
+                                                 </div>
+                                                 <div className="text-[7px] font-bold text-gray-500 uppercase tracking-tighter text-left">ESTUDIO CREATIVO 3D</div>
+                                             </button>
+                                         </div>
+                                     </div>
+
+                                     {/* MENSAJE CLAVE (HOOK) */}
+                                     <div className="space-y-2">
+                                         <label className={`text-[8px] font-black uppercase tracking-[0.2em] pl-1 ${theme === 'dark' ? 'text-gray-700' : 'text-slate-400'}`}>MENSAJE CLAVE (HOOK)</label>
+                                         <textarea 
+                                             value={selectedNode?.data?.strategicInfo?.keyMessage || ''}
+                                             onChange={(e) => onUpdateNode(selectedNode.id, { 
+                                                 ...selectedNode.data, 
+                                                 strategicInfo: { ...(selectedNode.data?.strategicInfo || {}), keyMessage: e.target.value } 
+                                             })}
+                                             placeholder="Idea principal o gancho..."
+                                             className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-xs font-bold text-white h-20 resize-none focus:border-indigo-500/20 border-dashed"
+                                         />
+                                     </div>
+
+                                     {/* ESTADO DEL CONTENIDO */}
+                                     <div className="space-y-2">
+                                         <label className="text-[8px] font-black text-gray-800 uppercase tracking-widest pl-1">ESTADO DEL CONTENIDO</label>
                                         <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
                                             {Object.entries(CONTENT_STATUS).map(([id, s]) => (
                                                 <button 
