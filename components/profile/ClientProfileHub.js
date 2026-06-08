@@ -2,21 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Zap, Gift, User, Settings, Network, TrendingUp } from 'lucide-react';
+import { Zap, Gift, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ClientLevelSystem from './ClientLevelSystem';
 import ClientRewards from './ClientRewards';
 import ClientAccountSettings from './ClientAccountSettings';
-import ClientIdentityWrapper from './ClientIdentityWrapper';
-import ClientServiceCatalog from './ClientServiceCatalog';
 import { useAuth } from '@/context/AuthContext';
-// ...
 
 export default function ClientProfileHub() {
     const [isMounted, setIsMounted] = useState(false);
     const { user } = useAuth();
     const searchParams = useSearchParams();
-    const [subTab, setSubTab] = useState('identity'); // 'identity', 'catalog', 'progress', 'rewards', 'settings'
+    const [subTab, setSubTab] = useState('progress'); // 'progress', 'rewards', 'settings'
 
     useEffect(() => {
         setIsMounted(true);
@@ -24,7 +21,7 @@ export default function ClientProfileHub() {
 
     useEffect(() => {
         const tabParam = searchParams.get('tab');
-        if (tabParam && ['identity', 'catalog', 'progress', 'rewards', 'settings'].includes(tabParam)) {
+        if (tabParam && ['progress', 'rewards', 'settings'].includes(tabParam)) {
             setSubTab(tabParam);
         }
     }, [searchParams]);
@@ -36,20 +33,6 @@ export default function ClientProfileHub() {
             {/* Sub-Navigation */}
             <div className="flex justify-center mb-12 pt-8">
                 <div className="inline-flex p-1.5 bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[28px] overflow-x-auto max-w-full shadow-2xl premium-shadow">
-                    <TabButton
-                        id="identity"
-                        label="Identidad"
-                        icon={Network}
-                        active={subTab === 'identity'}
-                        onClick={() => setSubTab('identity')}
-                    />
-                    <TabButton
-                        id="catalog"
-                        label="Catálogo"
-                        icon={TrendingUp}
-                        active={subTab === 'catalog'}
-                        onClick={() => setSubTab('catalog')}
-                    />
                     <TabButton
                         id="progress"
                         label="Mi Progreso"
@@ -84,8 +67,6 @@ export default function ClientProfileHub() {
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
                     >
-                        {subTab === 'identity' && <ClientIdentityWrapper />}
-                        {subTab === 'catalog' && <ClientServiceCatalog clientId={user?.client_id} />}
                         {subTab === 'progress' && <ClientLevelSystem />}
                         {subTab === 'rewards' && <ClientRewards />}
                         {subTab === 'settings' && <ClientAccountSettings />}
