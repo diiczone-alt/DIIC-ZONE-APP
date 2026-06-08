@@ -8,7 +8,7 @@ import {
     Calendar, Users, Type, Video, Link, MessageSquare,
     CheckCircle2, AlertCircle, TrendingUp, Sparkles, Pencil, Search, Box,
     Zap, Globe, Database, Cpu, Flame, Snowflake, Thermometer, Palette,
-    Layers, Mic, Film, Camera, FileText, UploadCloud
+    Layers, Mic, Film, Camera, FileText, UploadCloud, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NODE_TYPES, NODE_CATEGORIES, STRATEGIC_COLUMNS, CONTENT_STATUS, STRATEGIC_FORMATS } from './StrategyConstants';
@@ -51,6 +51,48 @@ export default function StrategyPropertyPanel({
     const [showTalentPicker, setShowTalentPicker] = useState(false);
     const [isConnectingCloud, setIsConnectingCloud] = useState(false);
     const router = useRouter();
+
+    const handleGenerateAI = (field) => {
+        if (!selectedNode) return;
+        setIsGeneratingAI(field);
+        toast.info('Generando estructura con Inteligencia Artificial...');
+        setTimeout(() => {
+            setIsGeneratingAI(null);
+            if (field === 'script') {
+                onUpdateNode(selectedNode.id, {
+                    ...selectedNode.data,
+                    productionInfo: {
+                        ...(selectedNode.data?.productionInfo || {}),
+                        script: `[ESTRUCTURA DE GUION GENERADA POR IA]
+1. GANCHO (0-3s): ¿Sabías que el 90% de los emprendedores fallan en...?
+2. PROBLEMA (3-15s): Explicación del dolor principal del cliente...
+3. SOLUCIÓN (15-30s): Cómo nuestro producto/servicio resuelve esto...
+4. LLAMADO A LA ACCIÓN (30-45s): Comenta la palabra CLAVE para recibir más información.`
+                    }
+                });
+                toast.success('Guion/escaleta generado con éxito.');
+            }
+        }, 1500);
+    };
+
+    const handleCloudConnect = () => {
+        if (!selectedNode) return;
+        setIsConnectingCloud(true);
+        toast.info('Conectando con Diiczone Cloud...');
+        setTimeout(() => {
+            setIsConnectingCloud(false);
+            const newLinks = [
+                ...(selectedNode?.data?.memoryLinks || []),
+                { name: 'Paleta_Identidad_Marca.pdf', size: '2.4 MB', type: 'document', path: 'Drive/Assets' },
+                { name: 'Video_Referencia_Inspiracion.mp4', size: '14.2 MB', type: 'video', path: 'Drive/Video' }
+            ];
+            onUpdateNode(selectedNode.id, {
+                ...selectedNode.data,
+                memoryLinks: newLinks
+            });
+            toast.success('Conexión exitosa. Assets vinculados.');
+        }, 2000);
+    };
     
     if (!selectedNode && !selectedEdge) return null;
 
@@ -187,7 +229,7 @@ export default function StrategyPropertyPanel({
                             <div className="p-1.5 rounded-xl border shadow-inner group transition-all" style={{ borderColor: `${accentColor}20`, backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
                                 <Settings className="w-3.5 h-3.5 text-gray-500 group-hover:rotate-90 transition-transform duration-700" style={{ color: accentColor }} />
                             </div>
-                            <h2 className={`text-[9.5px] font-[900] uppercase tracking-[0.3em] italic leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>NODE SETTINGS</h2>
+                            <h2 className={`text-[9.5px] font-[900] uppercase tracking-[0.3em] italic leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{isNode ? 'NODE SETTINGS' : 'CONNECTOR SETTINGS'}</h2>
                         </div>
 
                         <div className="flex items-center gap-1.5">
@@ -210,89 +252,136 @@ export default function StrategyPropertyPanel({
                     <div className="flex items-center justify-between w-full gap-2">
                         {isNode && (
                             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all duration-500 w-fit shrink-0 ${theme === 'dark' ? 'bg-white/[0.03] border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-                                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${selectedNode.data?.status === 'aprobado' ? 'bg-emerald-500' : 'bg-indigo-500 animate-pulse'}`} />
-                                <span className={`text-[7px] font-black uppercase tracking-widest leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{selectedNode.data?.status || 'Borrador'}</span>
+                                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${selectedNode?.data?.status === 'aprobado' ? 'bg-emerald-500' : 'bg-indigo-500 animate-pulse'}`} />
+                                <span className={`text-[7px] font-black uppercase tracking-widest leading-none transition-colors duration-500 ${theme === 'dark' ? 'text-gray-500' : 'text-slate-400'}`}>{selectedNode?.data?.status || 'Borrador'}</span>
                             </div>
                         )}
 
                         {/* Minimalist Top Actions */}
                         <div className={`flex items-center gap-1 p-1 rounded-xl border transition-all duration-500 ml-auto shrink-0 ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
-                            <button 
-                                onClick={() => onDuplicateNode(selectedNode?.id)}
-                                className="p-2 rounded-lg hover:bg-white/5 text-gray-600 hover:text-white transition-all group/act"
-                                title="Clonar Nodo"
-                            >
-                                <Copy className="w-3 h-3 group-hover/act:scale-110" />
-                            </button>
-                            <button 
-                                onClick={() => onSendToPlanner(selectedNode?.id)}
-                                className="p-2 rounded-lg hover:bg-indigo-500/10 text-indigo-500/60 hover:text-indigo-400 transition-all group/act"
-                                title="Sync Planner"
-                            >
-                                <Send className="w-3 h-3 group-hover/act:translate-x-0.5 group-hover/act:-translate-y-0.5" />
-                            </button>
-                            <div className="w-px h-3.5 bg-white/5 mx-0.5" />
-                            <button 
-                                onClick={() => onDeleteNode(selectedNode?.id)}
-                                className="p-2 rounded-lg hover:bg-rose-500/10 text-rose-500/40 hover:text-rose-500 transition-all group/act"
-                                title="Borrar Nodo"
-                            >
-                                <Trash2 className="w-3 h-3 group-hover/act:scale-110" />
-                            </button>
+                            {isNode ? (
+                                <>
+                                    <button 
+                                        onClick={() => onDuplicateNode(selectedNode?.id)}
+                                        className="p-2 rounded-lg hover:bg-white/5 text-gray-600 hover:text-white transition-all group/act"
+                                        title="Clonar Nodo"
+                                    >
+                                        <Copy className="w-3 h-3 group-hover/act:scale-110" />
+                                    </button>
+                                    <button 
+                                        onClick={() => onSendToPlanner(selectedNode?.id)}
+                                        className="p-2 rounded-lg hover:bg-indigo-500/10 text-indigo-500/60 hover:text-indigo-400 transition-all group/act"
+                                        title="Sync Planner"
+                                    >
+                                        <Send className="w-3 h-3 group-hover/act:translate-x-0.5 group-hover/act:-translate-y-0.5" />
+                                    </button>
+                                    <div className="w-px h-3.5 bg-white/5 mx-0.5" />
+                                    <button 
+                                        onClick={() => onDeleteNode(selectedNode?.id)}
+                                        className="p-2 rounded-lg hover:bg-rose-500/10 text-rose-500/40 hover:text-rose-500 transition-all group/act"
+                                        title="Borrar Nodo"
+                                    >
+                                        <Trash2 className="w-3 h-3 group-hover/act:scale-110" />
+                                    </button>
+                                </>
+                            ) : (
+                                <button 
+                                    onClick={() => onDeleteEdge(selectedEdge?.id)}
+                                    className="p-2 rounded-lg hover:bg-rose-500/10 text-rose-500/40 hover:text-rose-500 transition-all group/act"
+                                    title="Borrar Conector"
+                                >
+                                    <Trash2 className="w-3 h-3 group-hover/act:scale-110" />
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 {/* 🧭 Tabs Modernas - 6 Categorías */}
-                <div className={`flex gap-1 p-1 border rounded-2xl relative z-10 overflow-x-auto no-scrollbar transition-all duration-500 ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200 shadow-inner'}`}>
-                    {[
-                        { id: 'estratégica', label: 'Estratégica', icon: Target, color: 'text-indigo-400' },
-                        { id: 'producción', label: 'Producción', icon: Video, color: 'text-purple-400' },
-                        // DYNAMIC ROLE TABS
-                        ...(selectedNode.data?.responsibleZones || []).map(zoneId => {
-                            const zone = CREATIVE_ZONES.find(z => z.id === zoneId);
-                            if (!zone) return null;
-                            return {
-                                id: `role_${zoneId}`,
-                                label: zone.label.split(' ')[0], // Short label
-                                icon: zone.icon,
-                                color: zone.color
-                            };
-                        }).filter(Boolean),
-                        { id: 'output', label: 'Output', icon: Layout, color: 'text-amber-400' },
-                        { id: 'estilo', label: 'Estilo', icon: Palette, color: 'text-sky-400' },
-                        { id: 'distribución', label: 'Distribución', icon: Globe, color: 'text-emerald-400' },
-                        { id: 'automatización', label: 'Automatización', icon: Zap, color: 'text-rose-400' }
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => onTabChange && onTabChange(tab.id)}
-                            className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-all relative z-10 min-w-[70px] ${
-                                activeTab === tab.id ? (theme === 'dark' ? 'text-white' : 'text-indigo-600') : (theme === 'dark' ? 'text-gray-600 hover:text-gray-400' : 'text-slate-400 hover:text-slate-600')
-                            }`}
-                        >
-                            <div className="transition-all duration-300">
-                                <tab.icon 
-                                    className={`w-3.5 h-3.5 ${activeTab === tab.id ? (tab.id.startsWith('role_') ? '' : tab.color) : ''}`} 
-                                    style={activeTab === tab.id && tab.id.startsWith('role_') ? { color: tab.color } : {}}
-                                />
-                            </div>
-                            <span className="text-[7px] font-black uppercase tracking-[0.1em]">{tab.label}</span>
-                             {activeTab === tab.id && (
-                                <motion.div 
-                                    layoutId="activeTabProp"
-                                    className={`absolute inset-0 border rounded-xl -z-10 shadow-lg ${theme === 'dark' ? 'bg-white/[0.03] border-white/10' : 'bg-white border-slate-200'}`}
-                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                />
-                            )}
-                        </button>
-                    ))}
-                </div>
+                {isNode && (
+                    <div className={`flex gap-1 p-1 border rounded-2xl relative z-10 overflow-x-auto no-scrollbar transition-all duration-500 ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200 shadow-inner'}`}>
+                        {[
+                            { id: 'estratégica', label: 'Estratégica', icon: Target, color: 'text-indigo-400' },
+                            { id: 'producción', label: 'Producción', icon: Video, color: 'text-purple-400' },
+                            // DYNAMIC ROLE TABS
+                            ...(selectedNode?.data?.responsibleZones || []).map(zoneId => {
+                                const zone = CREATIVE_ZONES.find(z => z.id === zoneId);
+                                if (!zone) return null;
+                                return {
+                                    id: `role_${zoneId}`,
+                                    label: zone.label.split(' ')[0], // Short label
+                                    icon: zone.icon,
+                                    color: zone.color
+                                };
+                            }).filter(Boolean),
+                            { id: 'output', label: 'Output', icon: Layout, color: 'text-amber-400' },
+                            { id: 'estilo', label: 'Estilo', icon: Palette, color: 'text-sky-400' },
+                            { id: 'distribución', label: 'Distribución', icon: Globe, color: 'text-emerald-400' },
+                            { id: 'automatización', label: 'Automatización', icon: Zap, color: 'text-rose-400' }
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => onTabChange && onTabChange(tab.id)}
+                                className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-all relative z-10 min-w-[70px] ${
+                                    activeTab === tab.id ? (theme === 'dark' ? 'text-white' : 'text-indigo-600') : (theme === 'dark' ? 'text-gray-600 hover:text-gray-400' : 'text-slate-400 hover:text-slate-600')
+                                }`}
+                            >
+                                <div className="transition-all duration-300">
+                                    <tab.icon 
+                                        className={`w-3.5 h-3.5 ${activeTab === tab.id ? (tab.id.startsWith('role_') ? '' : tab.color) : ''}`} 
+                                        style={activeTab === tab.id && tab.id.startsWith('role_') ? { color: tab.color } : {}}
+                                    />
+                                </div>
+                                <span className="text-[7px] font-black uppercase tracking-[0.1em]">{tab.label}</span>
+                                 {activeTab === tab.id && (
+                                    <motion.div 
+                                        layoutId="activeTabProp"
+                                        className={`absolute inset-0 border rounded-xl -z-10 shadow-lg ${theme === 'dark' ? 'bg-white/[0.03] border-white/10' : 'bg-white border-slate-200'}`}
+                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                    />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* 🧊 Content Area */}
             <div className="flex-1 overflow-y-auto custom-scrollbar relative px-6 pt-6 pb-36">
-                <AnimatePresence mode="wait">
+                {!isNode ? (
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-xl border border-indigo-500/20 bg-indigo-500/10 text-indigo-400">
+                                <Link className="w-4 h-4" />
+                            </div>
+                            <h4 className="text-[10px] font-black text-white/90 uppercase tracking-[0.3em]">CONEXIÓN ESTRATÉGICA</h4>
+                        </div>
+                        <div className="p-5 rounded-[2rem] bg-[#0A0A14]/95 backdrop-blur-3xl border border-white/5 space-y-5">
+                            <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
+                                Este conector representa el flujo estratégico entre dos nodos en la pizarra operativa.
+                            </p>
+                            <div className="space-y-2">
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block pl-1">ID DEL CONECTOR</span>
+                                <div className="p-3 bg-black/40 border border-white/5 rounded-xl text-[9.5px] font-mono text-gray-400 uppercase select-all">
+                                    {selectedEdge?.id}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block pl-1">ID DE ORIGEN (SOURCE)</span>
+                                <div className="p-3 bg-black/40 border border-white/5 rounded-xl text-[9.5px] font-mono text-gray-400 uppercase">
+                                    {selectedEdge?.source}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block pl-1">ID DE DESTINO (TARGET)</span>
+                                <div className="p-3 bg-black/40 border border-white/5 rounded-xl text-[9.5px] font-mono text-gray-400 uppercase">
+                                    {selectedEdge?.target}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <AnimatePresence mode="wait">
                     {activeTab === 'estratégica' && (
                         <motion.div 
                             key="estratégica"
@@ -1470,6 +1559,7 @@ export default function StrategyPropertyPanel({
                         </motion.div>
                     )}
                 </AnimatePresence>
+                )}
             </div>
 
             {/* Custom Resizing Handle */}
