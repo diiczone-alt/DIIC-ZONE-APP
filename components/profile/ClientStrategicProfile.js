@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 // Helper to decode HTML entities from titles
 const decodeEntities = (text) => {
     if (!text) return '';
+    if (typeof window === 'undefined') return text;
     const temp = document.createElement('textarea');
     temp.innerHTML = text;
     return temp.value;
