@@ -41,7 +41,9 @@ export default function StrategyPropertyPanel({
     onSendToPlanner,
     onOpenMemoryPicker,
     theme = 'dark',
-    dragControls
+    dragControls,
+    panelSize,
+    setPanelSize
 }) {
     const [isGeneratingAI, setIsGeneratingAI] = useState(null); // 'script', 'objective', etc.
     const [showZonePicker, setShowZonePicker] = useState(false);
@@ -148,11 +150,14 @@ export default function StrategyPropertyPanel({
     };
 
     return (
-        <aside className={`w-[320px] border flex flex-col h-[750px] max-h-[82vh] z-[100] overflow-hidden rounded-[2.5rem] ring-1 group/panel transition-all duration-700 ${
-            theme === 'dark' 
-            ? 'bg-[#050511]/50 backdrop-blur-xl border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.6)] ring-white/5' 
-            : 'bg-white/50 backdrop-blur-xl border-slate-200 shadow-2xl shadow-slate-200/50 ring-slate-100'
-        }`}>
+        <aside 
+            style={{ width: panelSize?.width || 320, height: panelSize?.height || 750 }}
+            className={`border flex flex-col max-h-[85vh] max-w-[95vw] min-w-[300px] min-h-[400px] z-[100] overflow-hidden rounded-[2.5rem] ring-1 group/panel relative ${
+                theme === 'dark' 
+                ? 'bg-[#050511]/50 backdrop-blur-xl border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.6)] ring-white/5' 
+                : 'bg-white/50 backdrop-blur-xl border-slate-200 shadow-2xl shadow-slate-200/50 ring-slate-100'
+            }`}
+        >
             {/* 🛡️ Header Premium */}
             <div 
                 onPointerDown={(e) => {
@@ -1276,6 +1281,37 @@ export default function StrategyPropertyPanel({
                         </motion.div>
                     )}
                 </AnimatePresence>
+            </div>
+
+            {/* Custom Resizing Handle */}
+            <div 
+                className="absolute bottom-3 right-3 w-5 h-5 cursor-se-resize flex items-end justify-end select-none pointer-events-auto z-[200] group-hover:opacity-100 opacity-60 transition-opacity"
+                onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const startWidth = panelSize?.width || 320;
+                    const startHeight = panelSize?.height || 750;
+
+                    const onMouseMove = (moveEvent) => {
+                        const newWidth = Math.max(300, Math.min(800, startWidth + (moveEvent.clientX - startX)));
+                        const newHeight = Math.max(400, Math.min(1000, startHeight + (moveEvent.clientY - startY)));
+                        setPanelSize({ width: newWidth, height: newHeight });
+                    };
+
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                }}
+            >
+                <svg width="12" height="12" viewBox="0 0 12 12" className="text-gray-500 hover:text-indigo-400 transition-colors pointer-events-none mr-0.5 mb-0.5">
+                    <path d="M12,0 L0,12 M12,4 L4,12 M12,8 L8,12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
             </div>
 
         </aside>

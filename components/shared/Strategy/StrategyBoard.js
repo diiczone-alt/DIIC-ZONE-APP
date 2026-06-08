@@ -371,6 +371,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     const [isFunnelOpen, setIsFunnelOpen] = useState(false);
     const [isAuditorActive, setIsAuditorActive] = useState(false);
     const [activePropertyTab, setActivePropertyTab] = useState('general');
+    const [propertyPanelSize, setPropertyPanelSize] = useState({ width: 320, height: 750 });
     
     // Helper state for connection
     const [connectionStart, setConnectionStart] = useState(null);
@@ -1267,7 +1268,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                                 animate={{ x: 0, opacity: 1 }}
                                                 exit={{ x: -350, opacity: 0 }}
                                                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                                                className={`absolute z-[95] top-6 ${isOutlinerCollapsed ? 'left-6' : 'left-[256px]'}`}
+                                                className="absolute z-[95] top-6 left-[256px]"
                                             >
                                                 <StrategyPropertyPanel
                                                     selectedNode={selectedNode}
@@ -1284,6 +1285,8 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                                                     onOpenMemoryPicker={handleOpenMemoryPicker}
                                                     theme={theme}
                                                     dragControls={dragControls}
+                                                    panelSize={propertyPanelSize}
+                                                    setPanelSize={setPropertyPanelSize}
                                                 />
                                             </motion.div>
                                         )}
