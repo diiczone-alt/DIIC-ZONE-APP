@@ -8,7 +8,7 @@ import {
     Calendar, Users, Type, Video, Link, MessageSquare,
     CheckCircle2, AlertCircle, TrendingUp, Sparkles, Pencil, Search, Box,
     Zap, Globe, Database, Cpu, Flame, Snowflake, Thermometer, Palette,
-    Layers, Mic, Film, Camera, FileText
+    Layers, Mic, Film, Camera, FileText, UploadCloud
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NODE_TYPES, NODE_CATEGORIES, STRATEGIC_COLUMNS, CONTENT_STATUS, STRATEGIC_FORMATS } from './StrategyConstants';
@@ -151,12 +151,12 @@ export default function StrategyPropertyPanel({
         );
     };
 
-    const sortedSquad = [...(squadMembers || [])].sort((a, b) => {
-        const isADesigner = (a.role || '').toLowerCase().includes('diseñador') || (a.role || '').toLowerCase().includes('design');
-        const isBDesigner = (b.role || '').toLowerCase().includes('diseñador') || (b.role || '').toLowerCase().includes('design');
+    const sortedSquad = (Array.isArray(squadMembers) ? squadMembers : []).filter(Boolean).sort((a, b) => {
+        const isADesigner = ((a?.role || '') + '').toLowerCase().includes('diseñador') || ((a?.role || '') + '').toLowerCase().includes('design');
+        const isBDesigner = ((b?.role || '') + '').toLowerCase().includes('diseñador') || ((b?.role || '') + '').toLowerCase().includes('design');
         if (isADesigner && !isBDesigner) return -1;
         if (!isADesigner && isBDesigner) return 1;
-        return (a.name || '').localeCompare(b.name || '');
+        return ((a?.name || '') + '').localeCompare((b?.name || '') + '');
     });
 
     return (
@@ -393,14 +393,14 @@ export default function StrategyPropertyPanel({
                                                      }`}
                                                  >
                                                      <div className="flex items-center gap-2">
-                                                         {selectedNode.data?.assignedMemberName ? (
+                                                         {selectedNode?.data?.assignedMemberName ? (
                                                              <>
                                                                  <div className="w-6 h-6 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-[10px] font-black text-indigo-400">
-                                                                     {selectedNode.data.assignedMemberName.charAt(0)}
+                                                                     {selectedNode?.data?.assignedMemberName.charAt(0)}
                                                                  </div>
                                                                  <div className="text-left">
-                                                                     <span className="text-xs font-bold block leading-none">{selectedNode.data.assignedMemberName}</span>
-                                                                     <span className="text-[7.5px] font-bold text-gray-500 uppercase tracking-wider block mt-0.5">{selectedNode.data.assignedMemberRole || 'Equipo'}</span>
+                                                                     <span className="text-xs font-bold block leading-none">{selectedNode?.data?.assignedMemberName}</span>
+                                                                     <span className="text-[7.5px] font-bold text-gray-500 uppercase tracking-wider block mt-0.5">{selectedNode?.data?.assignedMemberRole || 'Equipo'}</span>
                                                                  </div>
                                                              </>
                                                          ) : (
@@ -942,6 +942,176 @@ export default function StrategyPropertyPanel({
                                 </div>
 
                                 <div className="space-y-5">
+                                    {/* 📦 VISUAL DELIVERABLE VIEWER (IMAGE / VIDEO / LINK) */}
+                                    <div className="space-y-3">
+                                        <label className="text-[8px] font-black text-gray-700 uppercase tracking-[0.2em] pl-1">VISTA PREVIA DEL ENTREGABLE</label>
+                                        
+                                        {selectedNode?.data?.outputInfo?.fileUrl ? (
+                                            <div className="space-y-4">
+                                                {/* Asset container */}
+                                                <div className="relative group/preview rounded-2xl overflow-hidden border border-white/10 bg-black/60 shadow-inner flex items-center justify-center p-2 min-h-[150px]">
+                                                    {(() => {
+                                                        const url = selectedNode?.data?.outputInfo?.fileUrl || '';
+                                                        const isImage = typeof url === 'string' && (url.startsWith('data:image') || /\.(png|jpg|jpeg|gif|webp|svg)/i.test(url));
+                                                        const isVideo = typeof url === 'string' && (url.startsWith('data:video') || /\.(mp4|webm|mov|ogg)/i.test(url));
+
+                                                        if (isImage) {
+                                                            return (
+                                                                <img 
+                                                                    src={url} 
+                                                                    alt="Entregable" 
+                                                                    className="w-full max-h-[220px] object-contain rounded-xl"
+                                                                />
+                                                            );
+                                                        } else if (isVideo) {
+                                                            return (
+                                                                <video 
+                                                                    src={url} 
+                                                                    controls 
+                                                                    className="w-full max-h-[220px] rounded-xl"
+                                                                />
+                                                            );
+                                                        } else {
+                                                            return (
+                                                                <div className="flex flex-col items-center justify-center p-6 text-center">
+                                                                    <FileText className="w-10 h-10 text-amber-500 mb-3" />
+                                                                    <span className="text-[10px] font-black text-white uppercase tracking-widest block truncate max-w-[200px]">
+                                                                        {url.includes('drive.google.com') ? 'Google Drive Link' : 'Enlace del Entregable'}
+                                                                    </span>
+                                                                    <a 
+                                                                        href={url} 
+                                                                        target="_blank" 
+                                                                        rel="noopener noreferrer" 
+                                                                        className="mt-3 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-black uppercase tracking-widest text-[8px] rounded-lg border border-amber-500/10 transition-all inline-flex items-center gap-1.5"
+                                                                    >
+                                                                        Abrir Enlace <ExternalLink className="w-3 h-3" />
+                                                                    </a>
+                                                                </div>
+                                                            );
+                                                        }
+                                                    })()}
+                                                    
+                                                    {/* Quick actions overlay */}
+                                                    <div className="absolute top-3 right-3 opacity-0 group-hover/preview:opacity-100 transition-opacity">
+                                                        <button 
+                                                            onClick={() => {
+                                                                onUpdateNode(selectedNode?.id, {
+                                                                    ...selectedNode?.data,
+                                                                    outputInfo: {
+                                                                        ...(selectedNode?.data?.outputInfo || {}),
+                                                                        fileUrl: null
+                                                                    }
+                                                                });
+                                                                toast.info("Enlace de entregable removido.");
+                                                            }}
+                                                            className="p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-xl transition-all shadow-lg"
+                                                            title="Eliminar Entregable"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Adjustments & Feedback card */}
+                                                <div className="space-y-3 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                                    <div className="flex items-center justify-between">
+                                                        <label className="text-[8px] font-black text-amber-500 uppercase tracking-[0.2em] pl-1">AJUSTES & RETROALIMENTACIÓN</label>
+                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${selectedNode.data?.status === 'aprobado' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                                                            <span className="text-[6px] font-black text-gray-500 uppercase tracking-widest">{selectedNode.data?.status || 'Pendiente'}</span>
+                                                        </div>
+                                                    </div>
+                                                    <textarea 
+                                                        value={selectedNode?.data?.outputInfo?.feedback || ''}
+                                                        onChange={(e) => onUpdateNode(selectedNode.id, {
+                                                            ...selectedNode.data,
+                                                            outputInfo: { ...(selectedNode.data?.outputInfo || {}), feedback: e.target.value }
+                                                        })}
+                                                        placeholder="Describe detalladamente los cambios o correcciones requeridas para el creativo..."
+                                                        className="w-full bg-[#050511]/60 border border-white/5 rounded-xl px-4 py-3 text-[10px] font-bold text-white h-24 resize-none focus:border-amber-500/20 leading-relaxed placeholder:text-gray-800"
+                                                    />
+                                                    <div className="grid grid-cols-2 gap-3 pt-1">
+                                                        <button 
+                                                            onClick={() => {
+                                                                onUpdateNode(selectedNode.id, {
+                                                                    ...selectedNode.data,
+                                                                    status: 'produccion'
+                                                                });
+                                                                toast.success("Solicitud de cambios enviada al equipo creativo.");
+                                                            }}
+                                                            className="py-2.5 px-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-black uppercase tracking-widest text-[8px] hover:bg-red-500/20 active:scale-95 transition-all text-center"
+                                                        >
+                                                            Solicitar Ajustes
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                onUpdateNode(selectedNode.id, {
+                                                                    ...selectedNode.data,
+                                                                    status: 'aprobado'
+                                                                });
+                                                                toast.success("¡Entregable aprobado con éxito!");
+                                                            }}
+                                                            className="py-2.5 px-4 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black uppercase tracking-widest text-[8px] hover:bg-emerald-500/30 active:scale-95 transition-all text-center"
+                                                        >
+                                                            Aprobar Pieza
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="border border-dashed border-white/10 bg-white/[0.01] rounded-2xl p-6 text-center hover:bg-white/[0.02] hover:border-amber-500/30 transition-all cursor-pointer relative group">
+                                                <UploadCloud className="w-8 h-8 text-gray-700 group-hover:text-amber-500 mx-auto mb-2 transition-colors" />
+                                                <h5 className="text-[10px] font-black text-gray-300 uppercase tracking-widest">SUBIR PIEZA FINAL</h5>
+                                                <p className="text-[8.5px] text-gray-600 font-bold uppercase tracking-wider mt-1">Arrastra o haz clic para subir imagen o video de prueba</p>
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*,video/*"
+                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            const reader = new FileReader();
+                                                            reader.onload = (event) => {
+                                                                onUpdateNode(selectedNode?.id, {
+                                                                    ...selectedNode?.data,
+                                                                    outputInfo: {
+                                                                        ...(selectedNode?.data?.outputInfo || {}),
+                                                                        fileUrl: event.target.result
+                                                                    }
+                                                                });
+                                                                toast.success("Archivo de vista previa subido.");
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }
+                                                    }}
+                                                />
+                                                <div className="mt-4 pt-4 border-t border-white/5">
+                                                    <span className="text-[7.5px] font-black text-gray-600 uppercase tracking-widest block mb-2">O VINCULAR ENLACE DIRECTO (DRIVE / WEB)</span>
+                                                    <input 
+                                                        type="text"
+                                                        placeholder="Pega la URL y presiona Enter..."
+                                                        className="w-full bg-[#050511] border border-white/5 rounded-xl px-4 py-2.5 text-[9px] font-bold text-white outline-none focus:border-amber-500/30 placeholder:text-gray-800"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                onUpdateNode(selectedNode?.id, {
+                                                                    ...selectedNode?.data,
+                                                                    outputInfo: {
+                                                                        ...(selectedNode?.data?.outputInfo || {}),
+                                                                        fileUrl: e.target.value
+                                                                    }
+                                                                });
+                                                                toast.success("Enlace de entregable vinculado.");
+                                                                e.target.value = '';
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="w-full h-px bg-white/5 my-4" />
+
                                     <div className="space-y-2">
                                         <label className="text-[8px] font-black text-gray-700 uppercase tracking-[0.2em] pl-1">COPYWRITING DE POST</label>
                                         <textarea 
