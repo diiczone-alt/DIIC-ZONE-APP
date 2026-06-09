@@ -8,7 +8,7 @@ import {
     Trophy, BookOpen, Layers, CheckSquare, Square
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ACADEMY_COURSES, FILMMAKER_ACADEMY_COURSES } from '@/data/academyCourses';
+import { ACADEMY_COURSES, FILMMAKER_ACADEMY_COURSES, DESIGNER_ACADEMY_COURSES } from '@/data/academyCourses';
 import { toast } from 'sonner';
 
 const getThemeColors = (role) => {
@@ -117,7 +117,12 @@ export default function UnifiedCoursePlayer({ params }) {
     // Load course, modules, and progress
     useEffect(() => {
         const isFilmmakerRoute = pathname.split('/').includes('filmmaker');
-        const coursesList = isFilmmakerRoute ? FILMMAKER_ACADEMY_COURSES : ACADEMY_COURSES;
+        const isDesignerRoute = pathname.split('/').includes('designer');
+        const coursesList = isFilmmakerRoute 
+            ? FILMMAKER_ACADEMY_COURSES 
+            : isDesignerRoute 
+                ? DESIGNER_ACADEMY_COURSES 
+                : ACADEMY_COURSES;
         const foundCourse = coursesList.find(c => c.id === parseInt(id)) || coursesList[0];
 
         // Progressive lock check

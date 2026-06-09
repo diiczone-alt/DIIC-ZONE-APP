@@ -435,3 +435,199 @@ export const FILMMAKER_ACADEMY_COURSES = [
         progress: 0
     }
 ];
+
+export const DESIGNER_ACADEMY_COURSES = [
+    {
+        id: 201,
+        title: "Fundamentos del Diseño Gráfico",
+        level: "Básico",
+        focus: "Teoría del Diseño",
+        description: "Aprende los principios fundamentales del diseño: composición, balance, contraste, alineación y espacio negativo.",
+        icon: Palette,
+        topics: [
+            "Introducción al lenguaje visual",
+            "Principios de composición y equilibrio",
+            "Contraste, jerarquía y legibilidad",
+            "El espacio negativo y la retícula básica",
+            "Crítica de diseño: Identificar aciertos y errores"
+        ],
+        target: ["Principiantes", "Creadores de Contenido", "Nuevos Diseñadores"],
+        color: "text-blue-400",
+        bgColor: "bg-blue-500/10",
+        borderColor: "border-blue-500/20",
+        progress: 0
+    },
+    {
+        id: 202,
+        title: "Teoría y Psicología del Color",
+        level: "Básico",
+        focus: "Teoría del Color",
+        description: "El color comunica antes que el texto. Domina círculos cromáticos, armonías y psicología del color en branding.",
+        icon: Paintbrush,
+        topics: [
+            "Modelos de color: RGB vs CMYK vs Pantones",
+            "Armonías cromáticas (Análogos, Complementarios, Tríadas)",
+            "Psicología del color y emociones",
+            "Creación de paletas de color consistentes",
+            "Accesibilidad y contraste en entornos digitales"
+        ],
+        target: ["Marcas", "Ilustradores", "Diseñadores Web"],
+        color: "text-orange-400",
+        bgColor: "bg-orange-500/10",
+        borderColor: "border-orange-500/20",
+        progress: 0
+    },
+    {
+        id: 203,
+        title: "Tipografía y Jerarquía Visual",
+        level: "Básico",
+        focus: "Tipografía",
+        description: "Aprende a elegir y combinar fuentes para guiar la lectura y transmitir la personalidad adecuada de la marca.",
+        icon: FileText,
+        topics: [
+            "Clasificación tipográfica: Serif, Sans Serif, Slab, Script",
+            "Anatomía de la letra y espaciados (Kerning, Tracking, Leading)",
+            "Combinación de fuentes tipográficas con éxito",
+            "Establecer una escala tipográfica clara",
+            "Tipografía responsiva para pantallas"
+        ],
+        color: "text-cyan-400",
+        bgColor: "bg-cyan-500/10",
+        borderColor: "border-cyan-500/20",
+        progress: 0
+    },
+    {
+        id: 204,
+        title: "Adobe Illustrator: Vectorización Profesional",
+        level: "Intermedio",
+        focus: "Software vectorial",
+        description: "Domina la herramienta reina de la vectorización. De bocetos simples a logotipos e ilustraciones complejas.",
+        icon: PenTool,
+        topics: [
+            "Interfaz y flujo de trabajo vectorial",
+            "Dominio de la Herramienta Pluma (Pen Tool)",
+            "Buscatrazos y creador de formas",
+            "Efectos vectoriales y deformación controlada",
+            "Exportación óptima para imprenta y web"
+        ],
+        color: "text-purple-400",
+        bgColor: "bg-purple-500/10",
+        borderColor: "border-purple-500/20",
+        progress: 0
+    },
+    {
+        id: 205,
+        title: "Adobe Photoshop: Edición & Fotocomposición",
+        level: "Intermedio",
+        focus: "Retoque Digital",
+        description: "Edita fotos de alta calidad, crea recortes limpios y fusiona imágenes con luces y sombras realistas.",
+        icon: ImageIcon,
+        topics: [
+            "Flujo no destructivo: Capas y Máscaras",
+            "Herramientas de selección avanzada y pluma",
+            "Ajustes de color, curvas y revelado de fotos",
+            "Fotocomposición y técnicas de iluminación artificial",
+            "Filtros inteligentes y retoque de retratos"
+        ],
+        color: "text-pink-400",
+        bgColor: "bg-pink-500/10",
+        borderColor: "border-pink-500/20",
+        progress: 0
+    },
+    {
+        id: 206,
+        title: "Diseño de Identidad de Marca (Branding)",
+        level: "Intermedio",
+        focus: "Branding",
+        description: "Diseña marcas completas. Desde el logotipo principal hasta el manual de identidad y sus aplicaciones reales.",
+        icon: Layers,
+        topics: [
+            "Fase de investigación y Briefing creativo",
+            "Conceptualización de logotipos (Isotipo, Imagotipo, Isologo)",
+            "Diseño de papelería corporativa y merchandising",
+            "Creación del Manual de Identidad Visual",
+            "Presentación de propuestas y Mockups realistas"
+        ],
+        color: "text-yellow-400",
+        bgColor: "bg-yellow-500/10",
+        borderColor: "border-yellow-500/20",
+        progress: 0
+    },
+    {
+        id: 207,
+        title: "Diseño Editorial y Diagramación",
+        level: "Intermedio",
+        focus: "InDesign",
+        description: "Aprende a estructurar libros, revistas, dossieres y catálogos digitales interactivos utilizando retículas avanzadas.",
+        icon: Move,
+        topics: [
+            "Retículas editoriales complejas",
+            "Estilos de párrafo y de carácter en InDesign",
+            "Manejo de grandes volúmenes de texto y saltos",
+            "Diseño de portadas que llaman la atención",
+            "Preparación de PDFs interactivos y artes finales"
+        ],
+        color: "text-emerald-400",
+        bgColor: "bg-emerald-500/10",
+        borderColor: "border-emerald-500/20",
+        progress: 0
+    },
+    {
+        id: 208,
+        title: "Diseño de Interfaces (UI) con Figma",
+        level: "Avanzado",
+        focus: "UI/UX Design",
+        description: "Diseña interfaces limpias, funcionales y modernas. Domina componentes, auto-layout y prototipos interactivos.",
+        icon: Bot,
+        topics: [
+            "Estructura del lienzo en Figma e interfaz",
+            "Auto Layout avanzado para layouts responsivos",
+            "Componentes, variantes y propiedades de componente",
+            "Sistemas de Diseño: Colores, Tipografías y Espaciado",
+            "Prototipado interactivo y transiciones inteligentes"
+        ],
+        color: "text-indigo-400",
+        bgColor: "bg-indigo-500/10",
+        borderColor: "border-indigo-500/20",
+        progress: 0
+    },
+    {
+        id: 209,
+        title: "Dirección de Arte y Campañas Visuales",
+        level: "Avanzado",
+        focus: "Dirección de Arte",
+        description: "El paso de diseñador a director creativo. Lidera el concepto visual, la narrativa y la consistencia en campañas multiplataforma.",
+        icon: Rocket,
+        topics: [
+            "Qué hace un Director de Arte",
+            "Conceptualización de campañas y Moodboards",
+            "Coherencia visual en fotografía, video e ilustración",
+            "Dirección de sesiones fotográficas y de rodaje",
+            "Presentación de pitches de alto nivel a marcas globales"
+        ],
+        color: "text-red-400",
+        bgColor: "bg-red-500/10",
+        borderColor: "border-red-500/20",
+        progress: 0
+    },
+    {
+        id: 210,
+        title: "Modelado y Composición 3D en Blender",
+        level: "Avanzado",
+        focus: "3D Design",
+        description: "Introduce volumen 3D en tus piezas. Crea objetos, iluminación dramática y renderizados fotorrealistas para branding.",
+        icon: Scissors,
+        topics: [
+            "Navegación espacial e interfaz de Blender",
+            "Modelado poligonal básico y curvas",
+            "Creación de materiales realistas (Shaders PBR)",
+            "Configuración de cámaras e iluminación de estudio",
+            "Renderizado en Cycles e integración en Photoshop"
+        ],
+        color: "text-white",
+        bgColor: "bg-white/5",
+        borderColor: "border-white/10",
+        progress: 0
+    }
+];
+

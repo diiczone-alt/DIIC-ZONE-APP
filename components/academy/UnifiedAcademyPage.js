@@ -8,7 +8,7 @@ import {
     Award, Brain, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ACADEMY_COURSES, FILMMAKER_ACADEMY_COURSES } from '@/data/academyCourses';
+import { ACADEMY_COURSES, FILMMAKER_ACADEMY_COURSES, DESIGNER_ACADEMY_COURSES } from '@/data/academyCourses';
 import { toast } from 'sonner';
 
 const getThemeColors = (role) => {
@@ -103,6 +103,7 @@ export default function UnifiedAcademyPage() {
     const isCentral = pathParts[2] === 'academy';
     const currentRole = isCentral ? 'workstation' : pathParts[2];
     const isFilmmakerRoute = currentRole === 'filmmaker';
+    const isDesignerRoute = currentRole === 'designer';
     
     const theme = getThemeColors(currentRole);
     
@@ -127,7 +128,11 @@ export default function UnifiedAcademyPage() {
     // Load progress from localStorage on mount
     useEffect(() => {
         try {
-            const baseCourses = isFilmmakerRoute ? FILMMAKER_ACADEMY_COURSES : ACADEMY_COURSES;
+            const baseCourses = isFilmmakerRoute 
+                ? FILMMAKER_ACADEMY_COURSES 
+                : isDesignerRoute 
+                    ? DESIGNER_ACADEMY_COURSES 
+                    : ACADEMY_COURSES;
             const loadedCourses = baseCourses.map(course => {
                 let savedProgress = null;
                 try {
@@ -376,7 +381,7 @@ export default function UnifiedAcademyPage() {
                         {filteredCourses.map((course, idx) => {
                             const isCompleted = course.progress === 100;
                             
-                            // Progressive unlock logic for Filmmaker
+                            // Progressive unlock logic for Filmmaker and Designer
                             let isLocked = false;
                             if (isFilmmakerRoute) {
                                 const courseIdx = FILMMAKER_ACADEMY_COURSES.findIndex(c => c.id === course.id);
@@ -384,6 +389,8 @@ export default function UnifiedAcademyPage() {
                                     const prevCourse = courses.find(c => c.id === FILMMAKER_ACADEMY_COURSES[courseIdx - 1].id);
                                     isLocked = !prevCourse || prevCourse.progress < 100;
                                 }
+                            } else if (isDesignerRoute) {
+                                isLocked = course.level === 'Avanzado' && (course.id === 209 || course.id === 210);
                             } else {
                                 isLocked = course.level === 'Avanzado' && course.id === 6;
                             }
