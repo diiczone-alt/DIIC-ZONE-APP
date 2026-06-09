@@ -594,11 +594,11 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     }, []);
 
     const selectedNode = useMemo(() =>
-        activeCampaign?.nodes.find(n => n.id === selectedNodeId),
+        activeCampaign?.nodes?.find(n => n.id === selectedNodeId),
         [activeCampaign, selectedNodeId]);
 
     const selectedEdge = useMemo(() =>
-        activeCampaign?.edges.find(e => e.id === selectedEdgeId),
+        activeCampaign?.edges?.find(e => e.id === selectedEdgeId),
         [activeCampaign, selectedEdgeId]);
 
     // --- TOP BAR ACTIONS ---

@@ -115,9 +115,9 @@ export default function StrategyPropertyPanel({
         { id: 'Caliente', label: 'Caliente', color: '#f43f5e', icon: Flame }
     ];
 
-    const CustomSelect = ({ value, onChange, options, label, icon: Icon, color, align = 'full' }) => {
+    const CustomSelect = ({ value, onChange, options = [], label, icon: Icon, color, align = 'full' }) => {
         const [isOpen, setIsOpen] = useState(false);
-        const selectedOption = options.find(o => o.id === value) || options[0];
+        const selectedOption = (options || []).find(o => o.id === value) || (options || [])[0] || { id: '', label: '', color: '#6366f1' };
 
         return (
             <div className="space-y-2 relative">
@@ -445,7 +445,8 @@ export default function StrategyPropertyPanel({
                                         <CustomSelect 
                                             label="TEMPERATURA AUD."
                                             value={selectedNode?.data?.customerTemp || 'Tibio'}
-                                                                      onChange={(val) => onUpdateNode(selectedNode.id, { ...selectedNode.data, customerTemp: val })}
+                                            options={TEMPS}
+                                            onChange={(val) => onUpdateNode(selectedNode.id, { ...selectedNode.data, customerTemp: val })}
                                             icon={Thermometer}
                                             align="right"
                                         />
