@@ -18,10 +18,9 @@ import GrowthAlertSystem from '../connectivity/GrowthAlertSystem';
 import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
 
-export default function ClientLevelSystem({ initialLevel = 1 }) {
+export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
-    const clientId = 1;
     const [level, setLevel] = useState(initialLevel);
     const [activeLevel, setActiveLevel] = useState(initialLevel);
 
@@ -39,20 +38,20 @@ export default function ClientLevelSystem({ initialLevel = 1 }) {
 
     useEffect(() => {
         const loadClientData = async () => {
+            if (!clientId) return;
             const client = await agencyService.getClientById(clientId);
             if (client) {
-                // Map maturity level string to number
-                const levelMap = { 'presencia': 2, 'estrategia': 3, 'marca': 4, 'automatizacion': 5, 'escala': 6 };
-                const numericLevel = levelMap[client.metadata?.maturity_level] || 1;
+                const numericLevel = client.growth_level || 1;
                 setLevel(numericLevel);
+                setActiveLevel(numericLevel);
                 
-                if (client.metadata?.completedMetas) {
-                    setCompletedMetas(client.metadata.completedMetas);
+                if (client.onboarding_data?.completedMetas) {
+                    setCompletedMetas(client.onboarding_data.completedMetas);
                 }
             }
         };
         loadClientData();
-    }, []);
+    }, [clientId]);
 
     const levels = [
         {

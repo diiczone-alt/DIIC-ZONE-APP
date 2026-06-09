@@ -67,7 +67,7 @@ export default function ClientProfileHub() {
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
                     >
-                        {subTab === 'progress' && <ClientLevelSystem />}
+                        {subTab === 'progress' && <ClientLevelSystem clientId={user?.client_id} />}
                         {subTab === 'rewards' && <ClientRewards />}
                         {subTab === 'settings' && <ClientAccountSettings />}
                     </motion.div>
