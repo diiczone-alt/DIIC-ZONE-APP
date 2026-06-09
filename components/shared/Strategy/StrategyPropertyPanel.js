@@ -8,7 +8,8 @@ import {
     Calendar, Users, Type, Video, Link, MessageSquare,
     CheckCircle2, AlertCircle, TrendingUp, Sparkles, Pencil, Search, Box,
     Zap, Globe, Database, Cpu, Flame, Snowflake, Thermometer, Palette,
-    Layers, Mic, Film, Camera, FileText, UploadCloud, RefreshCw
+    Layers, Mic, Film, Camera, FileText, UploadCloud, RefreshCw,
+    Instagram, Facebook, Youtube, Music
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NODE_TYPES, NODE_CATEGORIES, STRATEGIC_COLUMNS, CONTENT_STATUS, STRATEGIC_FORMATS } from './StrategyConstants';
@@ -1369,29 +1370,85 @@ export default function StrategyPropertyPanel({
                                 </div>
 
                                 <div className="space-y-4">
-                                    <label className="text-[8px] font-black text-gray-800 uppercase tracking-widest pl-1">PLATAFORMAS DE DIFUSIÓN</label>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="flex flex-col space-y-1">
+                                        <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest pl-1">COMPARTIR EN redes sociales</label>
+                                        <span className="text-[9px] font-bold text-gray-400 pl-1 uppercase">Selecciona las plataformas de difusión y programa su fecha</span>
+                                    </div>
+                                    
+                                    <div className="space-y-3.5">
                                         {[
-                                            { id: 'instagram', label: 'Instagram', icon: Share2, color: '#E1306C' },
-                                            { id: 'tiktok', label: 'TikTok', icon: Video, color: '#000000' },
-                                            { id: 'youtube', label: 'YouTube', icon: Video, color: '#FF0000' },
-                                            { id: 'facebook', label: 'Facebook', icon: Layout, color: '#1877F2' }
-
+                                            { id: 'instagram', label: 'Instagram', icon: Instagram, color: '#E1306C' },
+                                            { id: 'tiktok', label: 'TikTok', icon: Music, color: '#00F2FE' },
+                                            { id: 'youtube', label: 'YouTube', icon: Youtube, color: '#FF0000' },
+                                            { id: 'facebook', label: 'Facebook', icon: Facebook, color: '#1877F2' }
                                         ].map(plat => {
                                             const isActive = (selectedNode.data?.distribution || []).includes(plat.id);
+                                            const scheduleDate = selectedNode.data?.distributionDates?.[plat.id] || '';
                                             return (
-                                                <button 
+                                                <div 
                                                     key={plat.id}
-                                                    onClick={() => {
-                                                        const current = selectedNode.data?.distribution || [];
-                                                        const next = isActive ? current.filter(id => id !== plat.id) : [...current, plat.id];
-                                                        onUpdateNode(selectedNode.id, { ...selectedNode.data, distribution: next });
-                                                    }}
-                                                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isActive ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/[0.02] border-white/5 opacity-40 grayscale'}`}
+                                                    className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                                                        isActive 
+                                                        ? 'bg-emerald-500/[0.04] border-emerald-500/20 shadow-[0_4px_20px_rgba(16,185,129,0.05)]' 
+                                                        : 'bg-white/[0.02] border-white/5 opacity-50'
+                                                    }`}
                                                 >
-                                                    <plat.icon className="w-4 h-4" style={{ color: isActive ? plat.color : 'inherit' }} />
-                                                    <span className={`text-[9px] font-black uppercase tracking-tight ${isActive ? 'text-white' : 'text-gray-600'}`}>{plat.label}</span>
-                                                </button>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div 
+                                                                className="p-2 rounded-lg" 
+                                                                style={{ backgroundColor: isActive ? `${plat.color}15` : 'rgba(255,255,255,0.03)' }}
+                                                            >
+                                                                <plat.icon className="w-4 h-4" style={{ color: isActive ? plat.color : '#64748b' }} />
+                                                            </div>
+                                                            <span className={`text-[10px] font-black uppercase tracking-wider ${isActive ? 'text-white' : 'text-gray-500'}`}>{plat.label}</span>
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => {
+                                                                const current = selectedNode.data?.distribution || [];
+                                                                const next = isActive ? current.filter(id => id !== plat.id) : [...current, plat.id];
+                                                                onUpdateNode(selectedNode.id, { 
+                                                                    ...selectedNode.data, 
+                                                                    distribution: next 
+                                                                });
+                                                            }}
+                                                            className={`w-9 h-5 rounded-full relative transition-all ${isActive ? 'bg-emerald-500' : 'bg-white/10'}`}
+                                                        >
+                                                            <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${isActive ? 'right-1' : 'left-1'}`} />
+                                                        </button>
+                                                    </div>
+
+                                                    <AnimatePresence>
+                                                        {isActive && (
+                                                            <motion.div 
+                                                                initial={{ opacity: 0, height: 0 }} 
+                                                                animate={{ opacity: 1, height: 'auto' }} 
+                                                                exit={{ opacity: 0, height: 0 }}
+                                                                className="overflow-hidden space-y-1.5 pt-1"
+                                                            >
+                                                                <label className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1 pl-1">
+                                                                    <Clock className="w-3 h-3 text-emerald-400" />
+                                                                    Fecha y Hora de Publicación
+                                                                </label>
+                                                                <input 
+                                                                    type="datetime-local"
+                                                                    value={scheduleDate}
+                                                                    onChange={(e) => {
+                                                                        const currentDates = selectedNode.data?.distributionDates || {};
+                                                                        onUpdateNode(selectedNode.id, {
+                                                                            ...selectedNode.data,
+                                                                            distributionDates: {
+                                                                                ...currentDates,
+                                                                                [plat.id]: e.target.value
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white focus:outline-none focus:border-emerald-500/50 transition-colors font-mono cursor-pointer"
+                                                                />
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
                                             )
                                         })}
                                     </div>
