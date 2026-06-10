@@ -77,6 +77,8 @@ const NICHE_DETAILS = {
         plans: {
             presence: {
                 name: 'PRESENCIA MÉDICA',
+                price: '250',
+                originalPrice: '300',
                 narrative: 'Promo Activa: Impulsa tu imagen profesional. Ecosistema digital clínico con gestión de redes y fotografía en consultorio.',
                 features: [
                     'Gestión de Redes (Creación y optimización de perfiles)',
@@ -377,6 +379,8 @@ export default function HQServicesPage() {
                                 ...service,
                                 name: nichePlan.name,
                                 narrative: nichePlan.narrative,
+                                price: nichePlan.price || service.price,
+                                originalPrice: nichePlan.originalPrice || null,
                                 features: nichePlan.features || service.features,
                                 enfoque: nichePlan.enfoque || service.enfoque,
                                 filmmaker: nichePlan.filmmaker || service.filmmaker
@@ -404,6 +408,7 @@ export default function HQServicesPage() {
             
             {/* New Sections */}
             <ServiceDetails />
+            {selectedNiche === 'medical' && <MedicalRoadmap />}
             <PaidAdvertising />
 
             {/* Individual Services Catalog - Point 3 of User Request */}
@@ -753,7 +758,10 @@ function PricingCard({ service, index, onSelect }) {
 
             {/* Price Main */}
             <div className="mb-6">
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                    {service.originalPrice && (
+                        <span className="text-xl font-bold text-gray-500 line-through mr-2">${service.originalPrice}</span>
+                    )}
                     <span className="text-6xl font-black text-white tracking-tighter">${service.price}</span>
                     <span className={`text-[10px] font-bold ${isPopular ? 'text-white/40' : 'text-gray-700'}`}>/MES</span>
                 </div>
@@ -1119,6 +1127,113 @@ function PaidAdvertising() {
                     </div>
 
                 </div>
+            </div>
+        </div>
+    );
+}
+
+function MedicalRoadmap() {
+    const steps = [
+        {
+            month: "Mes 1",
+            title: "Cimiento & Confianza",
+            objective: "Objetivo: Diseñar y estructurar la identidad digital del médico, eliminando la desconfianza del paciente.",
+            details: [
+                "Sesión fotográfica premium en consultorio (médico, equipo e instalaciones).",
+                "Optimización completa de perfiles (bio clínica y diseño de Grid Estético).",
+                "Estrategia de contenidos y copywriting enfocado en empatía y profesionalismo.",
+                "Creación del manual de identidad de marca para redes sociales."
+            ],
+            metric: "Calidad de Imagen & Optimización de Bio",
+            icon: Shield,
+            color: "from-blue-500/20 to-indigo-500/20 border-indigo-500/30 text-indigo-400"
+        },
+        {
+            month: "Mes 2",
+            title: "Crecimiento & Tráfico",
+            objective: "Objetivo: Generar un flujo constante de consultas activando anuncios y produciendo video de valor.",
+            details: [
+                "Edición de videos profesionales en formato vertical (información y tips médicos).",
+                "Puesta en marcha de campañas Meta Ads segmentadas a pacientes ideales de la zona.",
+                "Grabación y edición de procedimientos clínicos y testimonios en consultorio.",
+                "Configuración de respuestas rápidas y canalización directa a WhatsApp."
+            ],
+            metric: "Costo por Consulta en WhatsApp (CPL)",
+            icon: Target,
+            color: "from-purple-500/20 to-pink-500/20 border-purple-500/30 text-purple-400"
+        },
+        {
+            month: "Mes 3",
+            title: "Autoridad & Posicionamiento",
+            objective: "Objetivo: Consolidar al médico como el referente #1 de su especialidad en la región.",
+            details: [
+                "Producción de testimonios detallados de pacientes recuperados (casos complejos).",
+                "Campañas de Google Ads de alta intención (búsqueda activa de cirugías/procedimientos).",
+                "Automatización del embudo de agendamiento y recordatorios automáticos de citas.",
+                "Lanzamiento de minidocumental sobre la trayectoria y profesionalismo del médico."
+            ],
+            metric: "Tasa de Agendamiento Final & ROAS",
+            icon: Crown,
+            color: "from-orange-500/20 to-yellow-500/20 border-orange-500/30 text-orange-400"
+        }
+    ];
+
+    return (
+        <div className="space-y-12 relative z-10 pt-10">
+            <div className="flex items-center gap-4">
+                <div className="h-px flex-1 bg-white/5" />
+                <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] whitespace-nowrap">Ruta Crítica de Crecimiento</h2>
+                <div className="h-px flex-1 bg-white/5" />
+            </div>
+
+            <div className="mb-10 text-center md:text-left">
+                <h3 className="text-3xl font-black text-white tracking-tighter mb-4">¿Cómo construimos tu marca sólida en 3 meses?</h3>
+                <p className="text-sm text-gray-500 font-medium max-w-2xl leading-relaxed">
+                    Un plan estructurado diseñado específicamente para el sector salud. Cada mes tiene metas claras para transformar tu reputación digital en consultas y cirugías reales.
+                </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {steps.map((step, i) => {
+                    const Icon = step.icon;
+                    return (
+                        <motion.div
+                            key={i}
+                            whileHover={{ y: -5 }}
+                            className="p-8 rounded-[2.5rem] bg-[#0E0E18] border border-white/5 flex flex-col justify-between h-full relative overflow-hidden group hover:border-white/10 transition-all duration-300"
+                        >
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-start">
+                                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] bg-indigo-500/10 px-4 py-2 rounded-xl">
+                                        {step.month}
+                                    </span>
+                                    <div className={`p-4 rounded-2xl bg-gradient-to-br ${step.color} border`}>
+                                        <Icon className="w-6 h-6" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-xl font-black text-white uppercase tracking-wider mb-2">{step.title}</h4>
+                                    <p className="text-xs font-bold text-gray-400 italic mb-4 leading-relaxed">{step.objective}</p>
+                                    <div className="h-px bg-white/5 w-full my-4" />
+                                    <ul className="space-y-3">
+                                        {step.details.map((detail, idx) => (
+                                            <li key={idx} className="flex items-start gap-3 text-xs text-gray-500 leading-relaxed font-medium">
+                                                <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                                <span>{detail}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 pt-6 border-t border-white/5 flex flex-col gap-1">
+                                <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Métrica de Éxito Clave</span>
+                                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">{step.metric}</span>
+                            </div>
+                        </motion.div>
+                    );
+                })}
             </div>
         </div>
     );
