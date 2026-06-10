@@ -15,6 +15,36 @@ import PremiumDropdown from '@/components/shared/PremiumDropdown';
 import GlassInput from '@/components/shared/GlassInput';
 import AdminClientAIHub from '@/components/admin/AdminClientAIHub';
 
+const getIndustryStyle = (industry) => {
+    const ind = (industry || '').toLowerCase().trim();
+    if (ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor')) {
+        return {
+            bg: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
+            dot: 'bg-cyan-400',
+            label: 'Salud / Médico'
+        };
+    }
+    if (ind.includes('hospitality') || ind.includes('restaurant') || ind.includes('comida') || ind.includes('gastronom')) {
+        return {
+            bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+            dot: 'bg-amber-400',
+            label: 'Gastronomía'
+        };
+    }
+    if (ind.includes('realestate') || ind.includes('construc') || ind.includes('inmobil') || ind.includes('construccion')) {
+        return {
+            bg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+            dot: 'bg-emerald-400',
+            label: 'Inmobiliaria'
+        };
+    }
+    return {
+        bg: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
+        dot: 'bg-indigo-400',
+        label: 'General'
+    };
+};
+
 export default function HQClientsPage() {
     const [activeMenu, setActiveMenu] = useState(null);
     const [activeFilter, setActiveFilter] = useState('all');
@@ -499,7 +529,7 @@ export default function HQClientsPage() {
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Plan Actual</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Nicho / Estrategia</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Community</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Ingreso Mensual</th>
+                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Inversión / Facturación</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Estado</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-right">Acciones</th>
                         </tr>
@@ -513,42 +543,56 @@ export default function HQClientsPage() {
                                 return (
                                     <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={client.id} className="hover:bg-white/[0.01] transition-colors group">
                                         <td className="px-6 py-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-bold">
-                                                    {client?.name?.[0] || '?'}
-                                                </div>
-                                                <div>
-                                                    <div className="text-white font-bold flex items-center gap-2">
-                                                        <span>{client?.name || 'Cliente sin nombre'}</span>
-                                                        {isBirthday && (
-                                                            <motion.span 
-                                                                animate={{ scale: [1, 1.2, 1] }} 
-                                                                transition={{ repeat: Infinity, duration: 1.5 }}
-                                                                className="text-indigo-400"
-                                                                title="¡Hoy es su Cumpleaños!"
-                                                            >
-                                                                🎂
-                                                            </motion.span>
-                                                        )}
-                                                        {isBirthdayWeek && !isBirthday && (
-                                                            <span className="text-yellow-500 text-xs" title="Cumpleaños esta semana">🎉</span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5 mt-0.5">
-                                                        <span>Ubicación: {client?.city || '-'}</span>
-                                                        {client.birth_date && (
-                                                            <>
-                                                                <span className="text-gray-700">•</span>
-                                                                <span className="flex items-center gap-1 text-indigo-500/60" title={`Fecha de nacimiento: ${client.birth_date}`}>
-                                                                    <Cake className="w-3 h-3 text-indigo-500/40" />
-                                                                    {new Date(client.birth_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                                                                    {age ? ` (${age} años)` : ''}
+                                            {(() => {
+                                                const rawName = client?.name || 'Cliente sin nombre';
+                                                let cleanName = rawName;
+                                                let brandName = client.onboarding_data?.strategic?.brandName || '';
+                                                
+                                                if (rawName.includes('(')) {
+                                                    const parts = rawName.split('(');
+                                                    cleanName = parts[0].trim();
+                                                    if (!brandName) {
+                                                        brandName = parts[1].replace(')', '').trim();
+                                                    }
+                                                }
+                                                const indStyle = getIndustryStyle(client.industry);
+
+                                                return (
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${indStyle.bg} border`}>
+                                                            {cleanName[0] || '?'}
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <span className="text-white font-black text-sm tracking-tight">{cleanName}</span>
+                                                                {brandName && (
+                                                                    <span className="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                                                                        {brandName}
+                                                                    </span>
+                                                                )}
+                                                                {isBirthday && (
+                                                                    <motion.span 
+                                                                        animate={{ scale: [1, 1.2, 1] }} 
+                                                                        transition={{ repeat: Infinity, duration: 1.5 }}
+                                                                        className="text-indigo-400"
+                                                                        title="¡Hoy es su Cumpleaños!"
+                                                                    >
+                                                                        🎂
+                                                                    </motion.span>
+                                                                )}
+                                                                {isBirthdayWeek && !isBirthday && (
+                                                                    <span className="text-yellow-500 text-xs" title="Cumpleaños esta semana">🎉</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-[10px] text-gray-500 font-medium flex items-center gap-2 mt-1.5 flex-wrap">
+                                                                <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[9px] font-bold text-gray-400">
+                                                                    📍 {client?.city || 'HQ'}
                                                                 </span>
-                                                            </>
-                                                        )}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </div>
+                                                );
+                                            })()}
                                         </td>
                                     <td className="px-6 py-6">
                                         <button onClick={() => handleCyclePlan(client.id, client.plan)} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-gray-300 hover:border-indigo-500/50 hover:text-white transition-all active:scale-95">
@@ -556,9 +600,9 @@ export default function HQClientsPage() {
                                         </button>
                                     </td>
                                     <td className="px-6 py-6">
-                                        <button onClick={() => handleCycleIndustry(client.id, client.industry)} className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-full text-xs font-bold hover:bg-indigo-600 hover:text-white hover:border-transparent transition-all active:scale-95 capitalize">
+                                        <div className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-full text-xs font-bold capitalize select-none inline-block">
                                             {INDUSTRY_OPTIONS.find(i => i.value === client?.industry)?.label || client?.industry || 'General'}
-                                        </button>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-6 font-medium">
                                         <button onClick={() => handleToggleCM(client.id, client.cm)} className="flex items-center gap-2 hover:bg-white/5 p-2 rounded-xl transition-all active:scale-95 group/cm">
@@ -569,10 +613,19 @@ export default function HQClientsPage() {
                                         </button>
                                     </td>
                                     <td className="px-6 py-6">
-                                        <div className="font-bold text-white">${client?.price || 0}</div>
-                                        <div className="text-[10px] text-gray-500 mt-0.5">
-                                            + ${client?.app_fee !== undefined ? client.app_fee : 100} App (Corte: día {client?.cutoff_day !== undefined ? client.cutoff_day : 5})
+                                        <div className="flex flex-col gap-1">
+                                            <div className="font-black text-white text-base leading-none">${client?.price || 0}<span className="text-[10px] font-bold text-gray-500">/mes</span></div>
+                                            <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">
+                                                Corte: Día {client?.cutoff_day !== undefined ? client.cutoff_day : 5}
+                                            </div>
+                                            <div className="text-[9px] text-gray-500 font-medium">
+                                                Inicio: {client?.start_date ? new Date(client.start_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                                            </div>
+                                            <div className="text-[9px] text-gray-600 font-bold">
+                                                +${client?.app_fee !== undefined ? client.app_fee : 100} App Fee
+                                            </div>
                                         </div>
+                                    </td>             </div>
                                     </td>
                                     <td className="px-6 py-6">
                                         <button
@@ -629,7 +682,11 @@ export default function HQClientsPage() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => {
                                                 const plan = PLAN_OPTIONS.find(p => p.value === val);
-                                                setNewClient({ ...newClient, plan: val, price: plan ? plan.price : newClient.price });
+                                                let price = plan ? plan.price : newClient.price;
+                                                if (newClient.industry === 'medico' && val === 'Presencia') {
+                                                    price = 250;
+                                                }
+                                                setNewClient({ ...newClient, plan: val, price: price });
                                             }} options={PLAN_OPTIONS} />
                                             <PremiumDropdown label="CM" value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
                                         </div>
@@ -657,7 +714,7 @@ export default function HQClientsPage() {
                                             <PremiumDropdown 
                                                 label="Sector / Industria" 
                                                 value={newClient.industry} 
-                                                onChange={(val) => setNewClient({ ...newClient, industry: val, specialty: '' })} 
+                                                onChange={(val) => setNewClient({ ...newClient, industry: val, specialty: '', price: (val === 'medico' && newClient.plan === 'Presencia') ? 250 : newClient.price })} 
                                                 options={INDUSTRY_OPTIONS} 
                                                 icon={Briefcase}
                                             />
@@ -975,14 +1032,14 @@ export default function HQClientsPage() {
                                                                 searchable={true}
                                                                 icon={Globe}
                                                             />
-                                                            <PremiumDropdown 
-                                                                label="Industria / Sector" 
-                                                                value={newClient.industry} 
-                                                                onChange={(val) => setNewClient({ ...newClient, industry: val })} 
-                                                                options={INDUSTRY_OPTIONS}
-                                                                icon={Shield}
-                                                                searchable={true}
-                                                            />
+                                                            <div className="space-y-3">
+                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
+                                                                    <Shield className="w-3 h-3 text-indigo-400" /> Industria / Sector (No modificable)
+                                                                </label>
+                                                                <div className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-gray-400 font-bold text-sm select-none uppercase tracking-wider">
+                                                                    {INDUSTRY_OPTIONS.find(i => i.value === newClient.industry)?.label || newClient.industry || 'General'}
+                                                                </div>
+                                                            </div>
                                                             {newClient.industry?.toLowerCase().includes('médico') && (
                                                                 <PremiumDropdown 
                                                                     label="Especialidad Médica" 
@@ -1137,7 +1194,11 @@ export default function HQClientsPage() {
                                                         <PremiumDropdown label="Filmmaker / Videógrafo" icon={Zap} value={newClient.filmmaker} onChange={(val) => setNewClient({ ...newClient, filmmaker: val })} options={filmmakerOptions} />
                                                         <PremiumDropdown label="Plan Estratégico" icon={Shield} value={newClient.plan} onChange={(val) => {
                                                             const planDef = PLAN_OPTIONS.find(p => p.value === val);
-                                                            setNewClient({ ...newClient, plan: val, price: planDef ? planDef.price : newClient.price });
+                                                            let price = planDef ? planDef.price : newClient.price;
+                                                            if (newClient.industry === 'medico' && val === 'Presencia') {
+                                                                price = 250;
+                                                            }
+                                                            setNewClient({ ...newClient, plan: val, price: price });
                                                         }} options={PLAN_OPTIONS} />
                                                     </div>
 
