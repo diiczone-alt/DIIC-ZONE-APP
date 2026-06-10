@@ -185,23 +185,23 @@ const NICHE_LEVELS = {
             mainGoal: "Existir éticamente en redes y mapas",
             indicator: "Consultorio Configurado",
             status: "El doctor apenas comienza.",
-            suggestedContent: "Grid Estético, Información de Especialidades, Ficha Maps",
+            suggestedContent: "Grid Estético, Sesión de Fotos en Consultorio, Bio Configurada",
             complexity: "BAJA",
             fullDescription: "Establecemos tu perfil profesional y ficha de Google Maps cumpliendo normativas éticas de salud y ganando visibilidad local.",
             technicalTasks: [
-                "Configuración de Ficha de Google Maps (Local SEO)",
-                "Diseño de Grid Base (Servicios / Especialidad)",
-                "Optimización de Biografía con Link a Citas",
-                "Revisión Ética de Copies y Promesas Médicas"
+                "Gestión de Redes: Creación y optimización de perfiles sociales",
+                "Estrategia mensual + copywriting especializado",
+                "Fotografía Profesional: Médico en consultorio, equipo e instalaciones",
+                "Diseño de posts y stories base (Grid Estético)"
             ],
             coachTip: "El paciente busca autoridad y empatía. Empieza educando sobre prevención, no vendiendo tratamientos.",
             metas: [
-                { id: 'logo', label: "Logo o foto profesional de perfil", service: "Diseño Base" },
-                { id: 'colors', label: "Paleta de colores limpia (Salud)", service: "Diseño Base" },
-                { id: 'bio', label: "Biografía con especialidad y registro", service: "Configuración Redes" },
-                { id: 'photo', label: "Fotos profesionales de consultorio", service: "Fotografía" },
-                { id: 'socials', label: "Ficha de Google Maps activa", service: "Configuración Redes" },
-                { id: 'posts6', label: "6 contenidos informativos base", service: "Primeros Posts" }
+                { id: 'logo', label: "Redes creadas y optimizadas", service: "Social Media" },
+                { id: 'colors', label: "Paleta de colores clínica definida", service: "Diseño Base" },
+                { id: 'bio', label: "Biografía médica configurada (SEO)", service: "Configuración Redes" },
+                { id: 'photo', label: "Fotografías de médico e instalaciones", service: "Fotografía Profesional" },
+                { id: 'socials', label: "Estrategia de contenido unificada", service: "Estrategia" },
+                { id: 'posts6', label: "6 publicaciones e historias iniciales", service: "Primeros Posts" }
             ],
             rewards: [
                 { id: 'tips', label: "Tips IA Personalizados", icon: Sparkles },
@@ -217,22 +217,22 @@ const NICHE_LEVELS = {
             mainGoal: "Ser constante educando al paciente",
             indicator: "Especialista Activo en Redes",
             status: "Ya se ve, pero aún no vende de forma automática.",
-            suggestedContent: "12 Posts al mes, Reels Cortos explicativos, FAQ en Stories",
+            suggestedContent: "12 Posts al mes, Reels de tips médicos, respuestas rápidas",
             complexity: "MEDIA",
             fullDescription: "Creamos un calendario constante enfocado en resolver dudas frecuentes y educar sobre patologías comunes en tu área.",
             technicalTasks: [
-                "Ejecución de Calendario con 12 Posts Informativos",
-                "Grabación de 2-4 Reels (Preguntas Frecuentes)",
-                "Optimización del Botón de Contacto (WhatsApp/Doctoralia)",
-                "Monitoreo Semanal de Consultas Recibidas"
+                "Producción Audiovisual: Videos informativos y tips médicos",
+                "Grabación de procedimientos y resultados (Consultorio)",
+                "Automatización y configuración básica de respuestas",
+                "Lanzamiento de campañas Meta Ads para captar pacientes"
             ],
             coachTip: "Un paciente informado es un paciente decidido. Explica términos complejos en palabras sencillas.",
             metas: [
-                { id: 'calendar', label: "Calendario de contenido activo", service: "Community Manager" },
-                { id: 'posts12', label: "12 publicaciones de valor al mes", service: "Community Manager" },
-                { id: 'reels2', label: "2 videos educativos profesionales", service: "Edición de Video / Reels" },
-                { id: 'profile', label: "Perfil optimizado para consultas", service: "Community Manager" },
-                { id: 'message', label: "Mensaje claro de agendamiento", service: "Estrategia" }
+                { id: 'calendar', label: "Calendario editorial especializado activo", service: "Community Manager" },
+                { id: 'posts12', label: "12 publicaciones de valor y tips al mes", service: "Community Manager" },
+                { id: 'reels2', label: "2 videos informativos / tips profesionales", service: "Edición de Video / Reels" },
+                { id: 'profile', label: "Automatización de respuestas activa", service: "Community Manager" },
+                { id: 'message', label: "Funnels de mensajes en Meta Ads", service: "Estrategia" }
             ],
             rewards: [
                 { id: 'priority', label: "Prioridad Media", icon: Activity },
@@ -248,21 +248,21 @@ const NICHE_LEVELS = {
             mainGoal: "Generar confianza con casos y testimonios",
             indicator: "Especialista Recomendado",
             status: "La gente confía, pero el proceso de agendamiento es manual.",
-            suggestedContent: "Testimonios de Pacientes, House Tour Clínico, Historia del Doctor",
+            suggestedContent: "Videos de testimoniales, Grabaciones en Quirófano, Dossier de Tratamientos",
             complexity: "ALTA",
             fullDescription: "Validamos tu reputación médica mediante testimonios permitidos, casos de éxito anónimos y tu historia profesional.",
             technicalTasks: [
-                "Grabación de Video de Trayectoria Médica",
-                "Recopilación de Testimonios Éticos de Pacientes",
-                "Refuerzo de Marca (Diseño Gráfico Premium)",
-                "Creación de Página de Presentación o Dossier de Servicios"
+                "Producción de videos testimoniales de pacientes",
+                "Grabaciones y fotos premium en quirófanos y cirugías",
+                "Refuerzo luxury de identidad de marca del doctor",
+                "Diseño de dossier digital de tratamientos y servicios"
             ],
             coachTip: "El mayor obstáculo en medicina es el miedo. Tus testimonios de pacientes recuperados curan ese miedo.",
             metas: [
-                { id: 'testimonio3', label: "3 opiniones positivas verificadas", service: "Videos Testimoniales" },
-                { id: 'corpvideo', label: "Video de trayectoria médica", service: "Edición Profesional" },
-                { id: 'solidbrand', label: "Estética clínica premium", service: "Diseño Avanzado" },
-                { id: 'educontent', label: "Carruseles de patologías complejas", service: "Community Manager" },
+                { id: 'testimonio3', label: "3 videos de testimoniales de pacientes", service: "Videos Testimoniales" },
+                { id: 'corpvideo', label: "Video de trayectoria o quirófano premium", service: "Edición Profesional" },
+                { id: 'solidbrand', label: "Estética clínica unificada premium", service: "Diseño Avanzado" },
+                { id: 'educontent', label: "Carruseles explicativos de cirugías", service: "Community Manager" },
                 { id: 'digitalport', label: "Dossier digital de tratamientos", service: "Fotografía Profesional" }
             ],
             rewards: [

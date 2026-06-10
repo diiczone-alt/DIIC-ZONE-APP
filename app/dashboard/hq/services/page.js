@@ -77,51 +77,55 @@ const NICHE_DETAILS = {
         plans: {
             presence: {
                 name: 'PRESENCIA MÉDICA',
-                narrative: 'Perfecto para consultorios nuevos. Construimos tu reputación ética y posicionamiento local desde el primer día.',
+                narrative: 'Promo Activa: Impulsa tu imagen profesional. Ecosistema digital clínico con gestión de redes y fotografía en consultorio.',
                 features: [
-                    'Estrategia de educación en salud',
-                    'Ficha de Google Maps (SEO Local)',
-                    'Revisión de ética médica en copies',
-                    'Respuestas profesionales automatizadas'
+                    'Gestión de Redes (Creación y optimización de perfiles)',
+                    'Diseño de posts y stories base (Grid Estético)',
+                    'Estrategia mensual + copywriting especializado',
+                    'Fotografía Profesional (Médico, equipo e instalaciones)',
+                    'Contrato mínimo de 3 meses (Campaña)'
                 ],
                 enfoque: 'Confianza y Bio base',
-                filmmaker: 'Filmmaker en consultorio (1/mes)'
+                filmmaker: 'Filmmaker en consultorio (1 Sesión / Mes)'
             },
             growth: {
                 name: 'CRECIMIENTO MÉDICO',
-                narrative: 'Atrae pacientes calificados de forma constante directamente a tu agenda de Doctoralia o WhatsApp.',
+                narrative: 'Atrae pacientes de forma constante con pauta publicitaria segmentada y videos explicativos del especialista.',
                 features: [
-                    'Campañas de captación de pacientes',
-                    'Optimización de Doctoralia / Agendamiento',
-                    'Videos educativos de patologías comunes',
-                    'Filtro previo de pacientes vía chat'
+                    'Todo lo de Presencia Médica',
+                    'Producción Audiovisual (Videos informativos y tips médicos)',
+                    'Grabación de procedimientos y resultados',
+                    'Campañas Meta Ads (Captación de pacientes)',
+                    'Automatización y Configuración básica'
                 ],
                 enfoque: 'Funnels de Citas Médicas',
-                filmmaker: 'Filmmaker en consultorio (1.5h/mes)'
+                filmmaker: 'Filmmaker en consultorio (1.5h / Mes)'
             },
             authority: {
                 name: 'AUTORIDAD ESPECIALISTA',
-                narrative: 'Conviértete en el referente indiscutible de tu especialidad en la ciudad. Atrae casos de alta complejidad.',
+                narrative: 'Conviértete en el referente de tu especialidad. Grabaciones detalladas y testimonios para captar casos de alta complejidad.',
                 features: [
-                    'Estrategia de casos de éxito y testimonios',
-                    'Videos corporativos del consultorio / clínica',
-                    'Pauta publicitaria de alta conversión',
-                    'Artículos o carruseles informativos Pro'
+                    'Todo lo de Crecimiento Médico',
+                    'Videos testimoniales de pacientes',
+                    'Grabaciones y fotos en quirófanos y cirugías',
+                    'Ebook de Salud (Lead Magnet)',
+                    'Campañas Google Ads de Alta Intención'
                 ],
                 enfoque: 'Posicionamiento del Especialista',
-                filmmaker: 'Filmmaker en consultorio (2/mes)'
+                filmmaker: 'Filmmaker en consultorio y quirófano (2/mes)'
             },
             elite: {
                 name: 'MONOPOLIO CLÍNICO',
-                narrative: 'Dominio total para clínicas o grupos médicos. Embudo avanzado multiespecialidad y escala nacional.',
+                narrative: 'Dominio total para clínicas. Automatización integral de citas, triaje inteligente en WhatsApp y escala nacional.',
                 features: [
-                    'Funnels automatizados para múltiples médicos',
-                    'Producción de documentales / casos complejos',
-                    'Full Google Ads (Búsqueda de Urgencias) + Meta',
-                    'Automatización de recordatorio de citas'
+                    'Todo lo de Autoridad Especialista',
+                    'Funnels avanzados de agendamiento y recordatorios',
+                    'Producción de minidocumentales clínicos',
+                    'Triaje IA en WhatsApp para filtrar pacientes',
+                    'Dashboard analítico de costo por paciente (CPA)'
                 ],
                 enfoque: 'Escala e Integración Clínica',
-                filmmaker: 'Filmmaker dedicado (Sesiones Pro)'
+                filmmaker: 'Filmmaker dedicado (Sesiones ilimitadas)'
             }
         }
     },
