@@ -40,7 +40,13 @@ export default function ClientAccountSettings() {
         goals: [],
         drive_root_link: '',
         drive_root_id: '',
-        brochure_url: ''
+        brochure_url: '',
+        start_date: '',
+        cutoff_day: 5,
+        app_fee: 100,
+        has_crm: true,
+        has_agents: true,
+        price: '0'
     });
 
     const fileInputRef = useRef(null);
@@ -142,7 +148,13 @@ export default function ClientAccountSettings() {
                     goals: clientRecord?.goals || profile?.goals || [],
                     drive_root_link: profile?.drive_root_link || '',
                     drive_root_id: profile?.drive_root_id || '',
-                    brochure_url: clientRecord?.brochure_url || profile?.brochure_url || ''
+                    brochure_url: clientRecord?.brochure_url || profile?.brochure_url || '',
+                    start_date: clientRecord?.start_date || profile?.start_date || '',
+                    cutoff_day: clientRecord?.cutoff_day !== undefined ? clientRecord.cutoff_day : (profile?.cutoff_day !== undefined ? profile.cutoff_day : 5),
+                    app_fee: clientRecord?.app_fee !== undefined ? clientRecord.app_fee : (profile?.app_fee !== undefined ? profile.app_fee : 100),
+                    has_crm: clientRecord?.has_crm !== undefined ? clientRecord.has_crm : (profile?.has_crm !== undefined ? profile.has_crm : true),
+                    has_agents: clientRecord?.has_agents !== undefined ? clientRecord.has_agents : (profile?.has_agents !== undefined ? profile.has_agents : true),
+                    price: clientRecord?.price || profile?.price || '300'
                 });
             } catch (error) {
                 console.error("Error fetching sync data:", error);
@@ -995,39 +1007,99 @@ export default function ClientAccountSettings() {
                     <div className="space-y-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="border-b border-white/5 pb-6">
                             <h2 className="text-2xl font-bold text-white mb-2">Plan y Facturación</h2>
-                            <p className="text-gray-400 text-sm">Gestiona tu suscripción y métodos de pago.</p>
+                            <p className="text-gray-400 text-sm">Transparencia en tu suscripción y licenciamiento de la plataforma.</p>
                         </div>
 
-                        <div className="bg-gradient-to-r from-blue-900/20 to-indigo-900/20 rounded-2xl p-6 border border-blue-500/20 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 bg-blue-500 text-white text-xs font-bold rounded-bl-xl shadow-lg">PLAN ACTUAL</div>
-                            <div className="relative z-10">
-                                <h3 className="text-xl font-bold text-white mb-1">Plan Business</h3>
-                                <p className="text-blue-200 text-sm mb-4">$499.00 USD / mes</p>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setShowPlans(true)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-blue-600/20 active:scale-95">
-                                        Cambiar Plan
-                                    </button>
-                                    <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-xs font-bold rounded-lg border border-white/10 transition-colors active:scale-95">
-                                        Cancelar Suscripción
-                                    </button>
-                                </div>
+                        {/* Subscription Summary Box */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 space-y-2 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-10 -mt-10" />
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block">Estrategia Activa</span>
+                                <span className="text-white font-bold text-lg block capitalize">{profileData.plan || 'Presencia'}</span>
+                                <span className="text-indigo-400 text-xs font-medium block">Nicho: {
+                                    profileData.marketing_type === 'medico' ? 'Médicos / Salud' :
+                                    profileData.marketing_type === 'hospitality' || profileData.marketing_type === 'gastronomia' ? 'Gastronomía / Restaurantes' :
+                                    profileData.marketing_type === 'realestate' || profileData.marketing_type === 'inmobiliaria' ? 'Inmobiliario' :
+                                    profileData.marketing_type ? profileData.marketing_type.toUpperCase() : 'General'
+                                }</span>
+                            </div>
+
+                            <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 space-y-2 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-10 -mt-10" />
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block">Fecha de Inicio</span>
+                                <span className="text-white font-bold text-lg block">
+                                    {profileData.start_date ? new Date(profileData.start_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Pendiente'}
+                                </span>
+                                <span className="text-emerald-400 text-xs font-medium block">Socio Activo</span>
+                            </div>
+
+                            <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-6 space-y-2 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl -mr-10 -mt-10" />
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block">Día de Corte de Pago</span>
+                                <span className="text-white font-bold text-lg block">Día {profileData.cutoff_day || 5} de cada mes</span>
+                                <span className="text-rose-400 text-xs font-medium block">Próxima renovación mensual</span>
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <h3 className="text-white font-bold text-sm">Método de Pago</h3>
-                            <div className="bg-white/5 rounded-xl p-4 flex items-center justify-between border border-white/5 opacity-50 cursor-not-allowed">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
-                                        <CreditCard className="w-5 h-5 text-gray-400" />
-                                    </div>
+                        {/* Cost Breakdown */}
+                        <div className="bg-gradient-to-br from-[#0b0c16] to-[#121324] border border-white/10 rounded-[32px] p-8 space-y-6 relative overflow-hidden shadow-2xl">
+                            <div className="absolute top-0 right-0 p-4 bg-indigo-500 text-white text-[9px] font-black tracking-widest rounded-bl-2xl uppercase">Desglose de Pago</div>
+                            
+                            <h3 className="text-white font-black uppercase tracking-widest text-xs italic mb-4">Detalle de Inversión Mensual</h3>
+
+                            <div className="space-y-4">
+                                {/* Service Fee */}
+                                <div className="flex justify-between items-center py-3 border-b border-white/5">
                                     <div>
-                                        <h4 className="text-white font-bold text-sm">•••• •••• •••• 4242</h4>
-                                        <p className="text-xs text-gray-400">Expira 12/28</p>
+                                        <h4 className="text-white font-bold text-sm">Servicio de Marketing</h4>
+                                        <p className="text-gray-500 text-xs">Propuesta y plan de marketing adaptado a tu nivel de crecimiento</p>
                                     </div>
+                                    <span className="text-white font-bold text-lg">${profileData.price || '0.00'} USD</span>
                                 </div>
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">Visa</span>
+
+                                {/* App License Fee */}
+                                <div className="flex justify-between items-center py-3 border-b border-white/5">
+                                    <div>
+                                        <h4 className="text-white font-bold text-sm">Licencia de Plataforma (Uso de la App)</h4>
+                                        <p className="text-gray-500 text-xs">Ecosistema digital completo para control y optimización</p>
+                                        <div className="flex gap-2 mt-2">
+                                            {profileData.has_crm ? (
+                                                <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded text-[9px] font-black text-indigo-400 uppercase tracking-wider animate-pulse">CRM Incluido</span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 bg-white/5 border border-white/5 rounded text-[9px] font-medium text-gray-500 uppercase tracking-wider">Sin CRM</span>
+                                            )}
+                                            {profileData.has_agents ? (
+                                                <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded text-[9px] font-black text-indigo-400 uppercase tracking-wider animate-pulse">Agentes IA Incluidos</span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 bg-white/5 border border-white/5 rounded text-[9px] font-medium text-gray-500 uppercase tracking-wider">Sin Agentes IA</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-white font-bold text-lg">${profileData.app_fee || '0.00'} USD</span>
+                                </div>
+
+                                {/* Total */}
+                                <div className="flex justify-between items-center pt-4">
+                                    <div>
+                                        <h4 className="text-white font-black uppercase tracking-widest text-xs italic">Total Inversión Mensual</h4>
+                                        <p className="text-gray-500 text-xs">Suma de marketing digital y acceso SaaS integral</p>
+                                    </div>
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 font-black text-3xl italic">
+                                        ${(Number(profileData.price) || 0) + (Number(profileData.app_fee) || 0)} USD
+                                    </span>
+                                </div>
                             </div>
+                        </div>
+
+                        {/* Interactive actions for clients */}
+                        <div className="flex justify-between items-center p-6 bg-white/5 rounded-[24px] border border-white/5">
+                            <div>
+                                <h4 className="text-white font-bold text-sm">¿Deseas escalar tu estrategia o cambiar de plan?</h4>
+                                <p className="text-gray-400 text-xs">Puedes solicitar una revisión estratégica con tu CM asignado.</p>
+                            </div>
+                            <button onClick={() => setShowPlans(true)} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black rounded-xl uppercase tracking-widest transition-all active:scale-95">
+                                Ver Catálogo de Planes
+                            </button>
                         </div>
                     </div>
                 )}

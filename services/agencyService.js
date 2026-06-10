@@ -169,7 +169,8 @@ export const agencyService = {
                 'password_initial', 'whatsapp_number', 'google_drive_folder_id',
                 'onboarding_data', 'notes', 'created_at',
                 'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty',
-                'birth_date', 'country', 'address', 'website', 'goals', 'brochure_url'
+                'birth_date', 'country', 'address', 'website', 'goals', 'brochure_url',
+                'start_date', 'cutoff_day', 'app_fee', 'has_crm', 'has_agents'
             ];
             
             const sanitizedData = {};
@@ -232,7 +233,8 @@ export const agencyService = {
                 'password_initial', 'whatsapp_number', 'google_drive_folder_id',
                 'onboarding_data', 'notes',
                 'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty',
-                'birth_date', 'country', 'address', 'website', 'goals', 'brochure_url'
+                'birth_date', 'country', 'address', 'website', 'goals', 'brochure_url',
+                'start_date', 'cutoff_day', 'app_fee', 'has_crm', 'has_agents'
             ];
             const sanitizedUpdates = {};
             validFields.forEach(field => {
@@ -321,6 +323,11 @@ export const agencyService = {
             const resolvedWebsite = updates.website || existingClient.website;
             const resolvedGoals = updates.goals || existingClient.goals;
             const resolvedBrochureUrl = updates.brochure_url || existingClient.brochure_url;
+            const resolvedStartDate = updates.start_date !== undefined ? updates.start_date : existingClient.start_date;
+            const resolvedCutoffDay = updates.cutoff_day !== undefined ? updates.cutoff_day : existingClient.cutoff_day;
+            const resolvedAppFee = updates.app_fee !== undefined ? updates.app_fee : existingClient.app_fee;
+            const resolvedHasCrm = updates.has_crm !== undefined ? updates.has_crm : existingClient.has_crm;
+            const resolvedHasAgents = updates.has_agents !== undefined ? updates.has_agents : existingClient.has_agents;
 
             // 1. Update Profile (User-facing side)
             const profileUpdates = {
@@ -335,7 +342,12 @@ export const agencyService = {
                 address: resolvedAddress,
                 website: resolvedWebsite,
                 goals: resolvedGoals,
-                brochure_url: resolvedBrochureUrl
+                brochure_url: resolvedBrochureUrl,
+                start_date: resolvedStartDate,
+                cutoff_day: resolvedCutoffDay,
+                app_fee: resolvedAppFee,
+                has_crm: resolvedHasCrm,
+                has_agents: resolvedHasAgents
             };
             
             // Clean undefined fields
@@ -363,7 +375,12 @@ export const agencyService = {
                 address: resolvedAddress,
                 website: resolvedWebsite,
                 goals: resolvedGoals,
-                brochure_url: resolvedBrochureUrl
+                brochure_url: resolvedBrochureUrl,
+                start_date: resolvedStartDate,
+                cutoff_day: resolvedCutoffDay,
+                app_fee: resolvedAppFee,
+                has_crm: resolvedHasCrm,
+                has_agents: resolvedHasAgents
             };
 
             // Clean undefined fields

@@ -54,7 +54,12 @@ export default function HQClientsPage() {
         specialty: '',
         business_type: 'Servicios',
         birth_date: '',
-        onboarding_data: {}
+        onboarding_data: {},
+        start_date: new Date().toISOString().split('T')[0],
+        cutoff_day: 5,
+        app_fee: 100,
+        has_crm: true,
+        has_agents: true
     });
 
     const fetchClients = async (isBackground = false) => {
@@ -303,7 +308,12 @@ export default function HQClientsPage() {
             growth_level: client.growth_level || 1,
             business_type: client.business_type || '',
             industry: client.industry || '',
-            city: client.city || ''
+            city: client.city || '',
+            start_date: client.start_date ? client.start_date.split('T')[0] : new Date().toISOString().split('T')[0],
+            cutoff_day: client.cutoff_day !== undefined && client.cutoff_day !== null ? client.cutoff_day : 5,
+            app_fee: client.app_fee !== undefined && client.app_fee !== null ? client.app_fee : 100,
+            has_crm: client.has_crm !== undefined && client.has_crm !== null ? client.has_crm : true,
+            has_agents: client.has_agents !== undefined && client.has_agents !== null ? client.has_agents : true
         });
         setActiveEditTab('operative');
         setIsEditModalOpen(true);
@@ -544,7 +554,12 @@ export default function HQClientsPage() {
                                             <span className="text-gray-400 text-sm group-hover/cm:text-white">{client?.cm || 'Sin asignar'}</span>
                                         </button>
                                     </td>
-                                    <td className="px-6 py-6 font-bold text-white">${client?.price || 0}</td>
+                                    <td className="px-6 py-6">
+                                        <div className="font-bold text-white">${client?.price || 0}</div>
+                                        <div className="text-[10px] text-gray-500 mt-0.5">
+                                            + ${client?.app_fee !== undefined ? client.app_fee : 100} App (Corte: día {client?.cutoff_day !== undefined ? client.cutoff_day : 5})
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-6">
                                         <button
                                             onClick={() => handleToggleStatus(client.id, client.status)}
@@ -670,6 +685,51 @@ export default function HQClientsPage() {
                                                 icon={GraduationCap}
                                             />
                                         )}
+                                        <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Fecha de Inicio / Pago</label>
+                                                <input type="date" value={newClient.start_date || ''} onChange={(e) => setNewClient({ ...newClient, start_date: e.target.value })} className="w-full bg-[#1c1c2e] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all text-sm" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Día de Corte (1-31)</label>
+                                                <input type="number" min="1" max="31" value={newClient.cutoff_day || 5} onChange={(e) => setNewClient({ ...newClient, cutoff_day: parseInt(e.target.value) || 5 })} className="w-full bg-[#1c1c2e] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all text-sm" />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Costo Uso App (USD)</label>
+                                                <input type="number" value={newClient.app_fee || 100} onChange={(e) => setNewClient({ ...newClient, app_fee: parseInt(e.target.value) || 0 })} className="w-full bg-[#1c1c2e] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all text-sm" />
+                                            </div>
+                                            <div className="space-y-2 flex flex-col justify-end">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Servicios SaaS Incluidos</label>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setNewClient({ ...newClient, has_crm: !newClient.has_crm })}
+                                                        className={`flex-1 py-3.5 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all text-center ${
+                                                            newClient.has_crm 
+                                                                ? 'bg-indigo-600/20 border-indigo-500 text-indigo-400' 
+                                                                : 'bg-white/5 border-white/5 text-gray-500'
+                                                        }`}
+                                                    >
+                                                        CRM
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setNewClient({ ...newClient, has_agents: !newClient.has_agents })}
+                                                        className={`flex-1 py-3.5 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all text-center ${
+                                                            newClient.has_agents 
+                                                                ? 'bg-indigo-600/20 border-indigo-500 text-indigo-400' 
+                                                                : 'bg-white/5 border-white/5 text-gray-500'
+                                                        }`}
+                                                    >
+                                                        Agentes
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="flex gap-4 pt-4">
                                             <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-gray-500 font-black uppercase tracking-widest text-xs">Cancelar</button>
                                             <button type="submit" disabled={isSubmitting} className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-xl shadow-indigo-600/20 active:scale-95 transition-all">{isSubmitting ? 'Registrando...' : 'Confirmar Registro'}</button>
@@ -974,6 +1034,69 @@ export default function HQClientsPage() {
                                                                 ]} 
                                                                 icon={Zap}
                                                             />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* SaaS & Billing Configuration */}
+                                                    <div className="border-t border-white/5 pt-8 mt-8">
+                                                        <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                                            <DollarSign className="w-4 h-4" /> Suscripción & Licencia App (SaaS)
+                                                        </h4>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                                            <div className="space-y-10">
+                                                                <GlassInput 
+                                                                    label="Fecha de Inicio / Ingreso" 
+                                                                    value={newClient.start_date || ''} 
+                                                                    onChange={(e) => setNewClient({ ...newClient, start_date: e.target.value })} 
+                                                                    icon={Clock}
+                                                                    type="date"
+                                                                />
+                                                                <GlassInput 
+                                                                    label="Día de Corte de Facturación (1-31)" 
+                                                                    value={newClient.cutoff_day || 5} 
+                                                                    onChange={(e) => setNewClient({ ...newClient, cutoff_day: parseInt(e.target.value) || 5 })} 
+                                                                    icon={Calendar}
+                                                                    type="number"
+                                                                    min="1"
+                                                                    max="31"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-10">
+                                                                <GlassInput 
+                                                                    label="Costo Licencia Uso App (USD)" 
+                                                                    value={newClient.app_fee || 100} 
+                                                                    onChange={(e) => setNewClient({ ...newClient, app_fee: parseInt(e.target.value) || 0 })} 
+                                                                    icon={DollarSign}
+                                                                    type="number"
+                                                                />
+                                                                <div className="space-y-2">
+                                                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Módulos SaaS Incluidos</label>
+                                                                    <div className="flex gap-4">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setNewClient({ ...newClient, has_crm: !newClient.has_crm })}
+                                                                            className={`flex-1 py-3.5 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                                                                                newClient.has_crm 
+                                                                                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.15)]' 
+                                                                                    : 'bg-white/5 border-white/5 text-gray-500'
+                                                                            }`}
+                                                                        >
+                                                                            {newClient.has_crm ? '✓ CRM Activo' : '✗ CRM Inactivo'}
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setNewClient({ ...newClient, has_agents: !newClient.has_agents })}
+                                                                            className={`flex-1 py-3.5 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                                                                                newClient.has_agents 
+                                                                                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.15)]' 
+                                                                                    : 'bg-white/5 border-white/5 text-gray-500'
+                                                                            }`}
+                                                                        >
+                                                                            {newClient.has_agents ? '✓ Agentes Activos' : '✗ Agentes Inactivos'}
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
 
