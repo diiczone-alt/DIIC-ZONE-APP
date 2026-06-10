@@ -18,6 +18,104 @@ export const agencyService = {
                 console.error(`❌ [${timestamp}] Supabase Error:`, error.message);
                 throw error;
             }
+
+            // --- AUTO SYNC CLIENTS FROM PROFILES ---
+            const { data: unlinkedProfiles, error: pError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('role', 'CLIENT')
+                .is('client_id', null);
+
+            if (!pError && Array.isArray(unlinkedProfiles) && unlinkedProfiles.length > 0) {
+                console.log(`✨ [${timestamp}] Found ${unlinkedProfiles.length} unlinked client profiles. Auto-syncing to clients table...`);
+                
+                const clientInserts = [];
+                const profileUpdates = [];
+
+                for (const p of unlinkedProfiles) {
+                    if (!p.full_name) continue;
+                    
+                    const clientSlugClean = (p.client_slug || p.full_name.toLowerCase().trim().replace(/[^a-z0-9]/g, ''));
+                    const cleanSlug = clientSlugClean.substring(0, 6).toUpperCase();
+                    const newId = `C-${cleanSlug}-${Math.floor(100 + Math.random() * 900)}`;
+
+                    const clientRecord = {
+                        id: newId,
+                        name: p.full_name.trim() + (p.client_slug ? ` (${p.client_slug})` : ''),
+                        city: p.location || 'Santo Domingo',
+                        type: p.specialty || 'General',
+                        status: 'active',
+                        cm: 'Leslie', // default CM assignment
+                        priority: 'Media',
+                        plan: p.plan || 'Basic',
+                        projects: 0,
+                        price: '300',
+                        target: '500',
+                        email: p.email || '',
+                        whatsapp_number: p.whatsapp || '',
+                        sync_active: false,
+                        onboarding_data: {
+                            brand: {
+                                logo: '',
+                                accentColor: '#6366f1',
+                                primaryColor: '#6366f1',
+                                secondaryColor: '#ec4899'
+                            },
+                            strategic: {
+                                cm: 'Leslie',
+                                city: p.location || 'Santo Domingo',
+                                name: p.full_name.trim(),
+                                brandName: p.client_slug || p.full_name.trim()
+                            }
+                        },
+                        notes: 'Creado automáticamente por auto-sincronización de perfiles.',
+                        editor: '',
+                        filmmaker: 'Sin asignar',
+                        growth_level: p.level || 1,
+                        business_type: p.business_type || 'Personal',
+                        industry: p.industry || 'General',
+                        specialty: p.specialty || '',
+                        birth_date: p.birth_date || null,
+                        country: p.country || 'Ecuador',
+                        address: p.address || '',
+                        website: p.website || '',
+                        goals: p.goals || []
+                    };
+
+                    clientInserts.push(clientRecord);
+                    profileUpdates.push({ profileId: p.id, clientId: newId });
+                }
+
+                if (clientInserts.length > 0) {
+                    const { data: insertedClients, error: insertErr } = await supabase
+                        .from('clients')
+                        .insert(clientInserts)
+                        .select();
+
+                    if (!insertErr && Array.isArray(insertedClients)) {
+                        console.log(`✅ [${timestamp}] Inserted ${insertedClients.length} clients in auto-sync`);
+                        
+                        // Update the profile client_ids
+                        for (const up of profileUpdates) {
+                            const { error: updErr } = await supabase
+                                .from('profiles')
+                                .update({ client_id: up.clientId })
+                                .eq('id', up.profileId);
+                            if (updErr) {
+                                console.warn(`⚠️ [${timestamp}] Failed to update profile client_id for ${up.profileId}:`, updErr.message);
+                            }
+                        }
+
+                        // Add new clients to the main data array returned
+                        if (data) {
+                            data.push(...insertedClients);
+                            data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                        }
+                    } else {
+                        console.warn(`⚠️ [${timestamp}] Client auto-sync insert failed:`, insertErr?.message || insertErr);
+                    }
+                }
+            }
  
             // SYNC CACHE (Clean & Overwrite)
             if (typeof window !== 'undefined' && Array.isArray(data)) {

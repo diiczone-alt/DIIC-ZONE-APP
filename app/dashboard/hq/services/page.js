@@ -9,10 +9,227 @@ import {
     Building2, MapPin, Briefcase, FileText,
     Shield, Crown, Star,
     ClipboardList, Scissors, MessageCircle, BarChart2,
-    Film, ImageIcon, Megaphone, Target, DollarSign, Settings, PieChart
+    Film, ImageIcon, Megaphone, Target, DollarSign, Settings, PieChart,
+    Stethoscope, Utensils, Home
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
+
+const NICHE_DETAILS = {
+    general: {
+        plans: {
+            presence: {
+                name: 'NIVEL PRESENCIA',
+                narrative: 'Ideal para empezar. Deja de ser invisible. Construimos tu autoridad digital con contenido profesional desde el primer día.',
+                features: [
+                    'Estrategia de contenido',
+                    'Calendario editorial',
+                    'Community mgmt',
+                    'Reporte mensual de métricas'
+                ],
+                enfoque: 'Contenido orgánico base',
+                filmmaker: 'Filmmaker remoto'
+            },
+            growth: {
+                name: 'NIVEL CRECIMIENTO',
+                narrative: 'Ideal para posicionamiento. Creamos el sistema que atrae clientes calificados a tu WhatsApp 24/7.',
+                features: [
+                    'Estrategia de captación',
+                    'Calendario editorial',
+                    'Community mgmt',
+                    'Monitoreo semanal',
+                    'Publicidad pagada básica'
+                ],
+                enfoque: 'Estrategia de captación',
+                filmmaker: 'Filmmaker presencial (1/mes)'
+            },
+            authority: {
+                name: 'NIVEL AUTORIDAD',
+                narrative: 'Conviértete en el referente #1. Producción y narrativa de marca para cobrar lo que realmente vales.',
+                features: [
+                    'Narrativa de marca',
+                    'Calendario editorial',
+                    'Community mgmt',
+                    'Producción de contenido',
+                    'Embudo de ventas',
+                    'Gestión de Ads profesional'
+                ],
+                enfoque: 'Narrativa de marca',
+                filmmaker: 'Filmmaker presencial (2/mes)'
+            },
+            elite: {
+                name: 'NIVEL CONTROL',
+                narrative: 'Dominio total del mercado y viralidad agresiva con producción completa.',
+                features: [
+                    'Estrategia B2B / High-ticket',
+                    'Calendario editorial',
+                    'Community mgmt',
+                    'Producción de contenido',
+                    'Sistemas automatizados',
+                    'Full Ads + Retargeting'
+                ],
+                enfoque: 'Estrategia B2B',
+                filmmaker: 'Filmmaker ilimitado o dedicado'
+            }
+        }
+    },
+    medical: {
+        plans: {
+            presence: {
+                name: 'PRESENCIA MÉDICA',
+                narrative: 'Perfecto para consultorios nuevos. Construimos tu reputación ética y posicionamiento local desde el primer día.',
+                features: [
+                    'Estrategia de educación en salud',
+                    'Ficha de Google Maps (SEO Local)',
+                    'Revisión de ética médica en copies',
+                    'Respuestas profesionales automatizadas'
+                ],
+                enfoque: 'Confianza y Bio base',
+                filmmaker: 'Filmmaker en consultorio (1/mes)'
+            },
+            growth: {
+                name: 'CRECIMIENTO MÉDICO',
+                narrative: 'Atrae pacientes calificados de forma constante directamente a tu agenda de Doctoralia o WhatsApp.',
+                features: [
+                    'Campañas de captación de pacientes',
+                    'Optimización de Doctoralia / Agendamiento',
+                    'Videos educativos de patologías comunes',
+                    'Filtro previo de pacientes vía chat'
+                ],
+                enfoque: 'Funnels de Citas Médicas',
+                filmmaker: 'Filmmaker en consultorio (1.5h/mes)'
+            },
+            authority: {
+                name: 'AUTORIDAD ESPECIALISTA',
+                narrative: 'Conviértete en el referente indiscutible de tu especialidad en la ciudad. Atrae casos de alta complejidad.',
+                features: [
+                    'Estrategia de casos de éxito y testimonios',
+                    'Videos corporativos del consultorio / clínica',
+                    'Pauta publicitaria de alta conversión',
+                    'Artículos o carruseles informativos Pro'
+                ],
+                enfoque: 'Posicionamiento del Especialista',
+                filmmaker: 'Filmmaker en consultorio (2/mes)'
+            },
+            elite: {
+                name: 'MONOPOLIO CLÍNICO',
+                narrative: 'Dominio total para clínicas o grupos médicos. Embudo avanzado multiespecialidad y escala nacional.',
+                features: [
+                    'Funnels automatizados para múltiples médicos',
+                    'Producción de documentales / casos complejos',
+                    'Full Google Ads (Búsqueda de Urgencias) + Meta',
+                    'Automatización de recordatorio de citas'
+                ],
+                enfoque: 'Escala e Integración Clínica',
+                filmmaker: 'Filmmaker dedicado (Sesiones Pro)'
+            }
+        }
+    },
+    hospitality: {
+        plans: {
+            presence: {
+                name: 'PRESENCIA FOODIE',
+                narrative: 'Muestra tu menú y el alma de tu cocina. Garantizamos antojo visual desde la primera publicación.',
+                features: [
+                    'Fotografía y diseño del menú',
+                    'Configuración de Google Maps / TripAdvisor',
+                    'Historias diarias de ambiente e insumos',
+                    'Respuestas rápidas de horarios y carta'
+                ],
+                enfoque: 'Estética Visual y Menú',
+                filmmaker: 'Filmmaker en local (1/mes)'
+            },
+            growth: {
+                name: 'CRECIMIENTO DE MESAS',
+                narrative: 'Llena tu restaurante durante los días lentos y potencia las reservas del fin de semana.',
+                features: [
+                    'Pauta segmentada a 5km a la redonda',
+                    'Campañas específicas de fin de semana',
+                    'Reels de preparación (Food Porn) e ingredientes',
+                    'Automatización de link de reservas'
+                ],
+                enfoque: 'Tráfico al Local y Delivery',
+                filmmaker: 'Filmmaker en local (1.5h/mes)'
+            },
+            authority: {
+                name: 'AUTORIDAD GASTRONÓMICA',
+                narrative: 'Posiciona a tu Chef o marca como una parada obligatoria en la ciudad. Experiencia y reputación Premium.',
+                features: [
+                    'Videos de experiencia del cliente e historia',
+                    'Estrategia con micro-influencers locales',
+                    'Campañas de conversión para eventos privados',
+                    'Gestión reputacional de Google/TripAdvisor'
+                ],
+                enfoque: 'Branding de Experiencia',
+                filmmaker: 'Filmmaker en local (2/mes)'
+            },
+            elite: {
+                name: 'IMPERIO CULINARIO',
+                narrative: 'Para franquicias o múltiples sucursales. Estrategia omnicanal de captación de comensales y franquiciados.',
+                features: [
+                    'Campañas multilocación con presupuestos divididos',
+                    'Fórmula de viralidad para lanzamientos de platos',
+                    'Funnels para captación de franquicias',
+                    'Automatizaciones CRM para fidelización y cumpleaños'
+                ],
+                enfoque: 'Fidelización y Multilocación',
+                filmmaker: 'Filmmaker dedicado (Sesiones Pro)'
+            }
+        }
+    },
+    realestate: {
+        plans: {
+            presence: {
+                name: 'PRESENCIA INMOBILIARIA',
+                narrative: 'Destaca tus propiedades en cartera con una estética moderna. Confianza y profesionalismo visual.',
+                features: [
+                    'Grid profesional de propiedades destacadas',
+                    'Plantillas premium para fichas técnicas',
+                    'Optimización de perfil de Realtor experto',
+                    'Respuestas pregrabadas de listings'
+                ],
+                enfoque: 'Catálogo de Propiedades',
+                filmmaker: 'Filmmaker de propiedades (1/mes)'
+            },
+            growth: {
+                name: 'CAPTACIÓN DE PROPIETARIOS',
+                narrative: 'Atrae leads de personas que buscan vender o comprar propiedades en tu zona de enfoque.',
+                features: [
+                    'Anuncios segmentados por zonas de interés',
+                    'Embudos de captación de propietarios exclusivos',
+                    'Videos tipo "House Tour" dinámicos',
+                    'Filtro automático de presupuesto del cliente'
+                ],
+                enfoque: 'Generación de Leads Inmobiliarios',
+                filmmaker: 'Filmmaker de propiedades (1.5h/mes)'
+            },
+            authority: {
+                name: 'AUTORIDAD INMOBILIARIA',
+                narrative: 'Conviértete en el referente de Bienes Raíces de tu ciudad. Cinematic tours de propiedades de alta gama.',
+                features: [
+                    'Cinematic House Tours detallados',
+                    'Estrategia de marca personal del Broker/Realtor',
+                    'Campañas para inversionistas nacionales/extranjeros',
+                    'Digital Portfolio Premium'
+                ],
+                enfoque: 'Posicionamiento High-ticket',
+                filmmaker: 'Filmmaker de propiedades (2/mes)'
+            },
+            elite: {
+                name: 'DESARROLLO & ESCALA',
+                narrative: 'Estrategia integral para constructoras, desarrolladoras o agencias inmobiliarias consolidadas.',
+                features: [
+                    'Embudos para proyectos de planos (Pre-venta)',
+                    'Producción de renders animados y documentales del proyecto',
+                    'Publicidad internacional para inversionistas',
+                    'Automatización de agendamiento de visitas guiadas'
+                ],
+                enfoque: 'Pre-ventas y Proyectos Grandes',
+                filmmaker: 'Filmmaker dedicado (Sesiones Pro)'
+            }
+        }
+    }
+};
 
 export default function HQServicesPage() {
     const [services, setServices] = useState([]);
@@ -29,6 +246,7 @@ export default function HQServicesPage() {
         businessType: ''
     });
     const [activeCategory, setActiveCategory] = useState('plan'); // 'plan' or 'pack'
+    const [selectedNiche, setSelectedNiche] = useState('general');
 
     const loadData = async (silent = false) => {
         if (!silent) setLoading(true);
@@ -64,6 +282,16 @@ export default function HQServicesPage() {
 
     const handleSelectPlan = (plan) => {
         setSelectedPlan(plan);
+        const nicheNames = {
+            general: 'General / Comercial',
+            medical: 'Salud / Médico',
+            hospitality: 'Gastronomía / Restaurantes',
+            realestate: 'Bienes Raíces / Inmobiliaria'
+        };
+        setClientProfile(prev => ({
+            ...prev,
+            businessType: nicheNames[selectedNiche] || 'General'
+        }));
         setWizardStep(2);
     };
 
@@ -80,6 +308,35 @@ export default function HQServicesPage() {
                 <div>
                     <h1 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter italic">DIIC <span className="text-indigo-500">MONETIZACIÓN</span></h1>
                     <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.3em]">God Mode Dashboard v5.0 — Estrategia de Precios 2026</p>
+                </div>
+            </div>
+
+            {/* Niche Selector - Premium Custom Branding */}
+            <div className="flex justify-center -mb-4">
+                <div className="bg-[#0E0E18]/60 backdrop-blur-xl p-2 rounded-[2rem] flex flex-wrap gap-2 border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
+                    {[
+                        { id: 'general', label: 'Estrategia General', icon: Briefcase },
+                        { id: 'medical', label: 'Marketing Médico', icon: Stethoscope },
+                        { id: 'hospitality', label: 'Marketing para Restaurantes', icon: Utensils },
+                        { id: 'realestate', label: 'Marketing Inmobiliario', icon: Home }
+                    ].map((niche) => {
+                        const Icon = niche.icon;
+                        const isActive = selectedNiche === niche.id;
+                        return (
+                            <button
+                                key={niche.id}
+                                onClick={() => setSelectedNiche(niche.id)}
+                                className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border ${
+                                    isActive
+                                        ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/30 scale-105'
+                                        : 'bg-white/5 border-transparent text-gray-400 hover:text-white hover:bg-white/10'
+                                }`}
+                            >
+                                <Icon className="w-4 h-4" />
+                                {niche.label}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -110,13 +367,23 @@ export default function HQServicesPage() {
                 <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 relative z-10">
                     {services
                         .filter(s => s.category === activeCategory)
-                        .map((service, index) => (
-                            activeCategory === 'plan' ? (
+                        .map((service, index) => {
+                            const nichePlan = NICHE_DETAILS[selectedNiche]?.plans[service.id];
+                            const customizedService = nichePlan ? {
+                                ...service,
+                                name: nichePlan.name,
+                                narrative: nichePlan.narrative,
+                                features: nichePlan.features || service.features,
+                                enfoque: nichePlan.enfoque || service.enfoque,
+                                filmmaker: nichePlan.filmmaker || service.filmmaker
+                            } : service;
+
+                            return activeCategory === 'plan' ? (
                                 <PricingCard
                                     key={service.id}
-                                    service={service}
+                                    service={customizedService}
                                     index={index}
-                                    onSelect={() => handleSelectPlan(service)}
+                                    onSelect={() => handleSelectPlan(customizedService)}
                                 />
                             ) : (
                                 <PackCard 
@@ -125,8 +392,8 @@ export default function HQServicesPage() {
                                     index={index}
                                     onSelect={() => handleSelectPlan(service)}
                                 />
-                            )
-                        ))
+                            );
+                        })
                     }
                 </div>
             )}

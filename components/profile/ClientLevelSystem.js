@@ -10,7 +10,7 @@ import {
     ChevronRight, Info, TrendingUp,
     LayoutGrid, Video, Globe, Lock,
     Camera, Palette, Type, CheckCircle,
-    Gift
+    Gift, Stethoscope, Utensils
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -18,42 +18,8 @@ import GrowthAlertSystem from '../connectivity/GrowthAlertSystem';
 import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
 
-export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
-    const router = useRouter();
-    const [isMounted, setIsMounted] = useState(false);
-    const [level, setLevel] = useState(initialLevel);
-    const [activeLevel, setActiveLevel] = useState(initialLevel);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    // Checkbox states for demo simulation
-    const [completedMetas, setCompletedMetas] = useState({
-        // L1
-        'logo': true, 'colors': true, 'bio': true, 'photo': true, 'socials': true, 'posts6': true,
-        // L2
-        'calendar': true, 'posts12': true, 'reels2': false, 'profile': true, 'message': false,
-    });
-
-    useEffect(() => {
-        const loadClientData = async () => {
-            if (!clientId) return;
-            const client = await agencyService.getClientById(clientId);
-            if (client) {
-                const numericLevel = client.growth_level || 1;
-                setLevel(numericLevel);
-                setActiveLevel(numericLevel);
-                
-                if (client.onboarding_data?.completedMetas) {
-                    setCompletedMetas(client.onboarding_data.completedMetas);
-                }
-            }
-        };
-        loadClientData();
-    }, [clientId]);
-
-    const levels = [
+const NICHE_LEVELS = {
+    general: [
         {
             id: 1,
             name: "Presencia Digital",
@@ -210,7 +176,534 @@ export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
             ],
             icon: Rocket
         }
-    ];
+    ],
+    medical: [
+        {
+            id: 1,
+            name: "Presencia Médica",
+            color: "emerald",
+            mainGoal: "Existir éticamente en redes y mapas",
+            indicator: "Consultorio Configurado",
+            status: "El doctor apenas comienza.",
+            suggestedContent: "Grid Estético, Información de Especialidades, Ficha Maps",
+            complexity: "BAJA",
+            fullDescription: "Establecemos tu perfil profesional y ficha de Google Maps cumpliendo normativas éticas de salud y ganando visibilidad local.",
+            technicalTasks: [
+                "Configuración de Ficha de Google Maps (Local SEO)",
+                "Diseño de Grid Base (Servicios / Especialidad)",
+                "Optimización de Biografía con Link a Citas",
+                "Revisión Ética de Copies y Promesas Médicas"
+            ],
+            coachTip: "El paciente busca autoridad y empatía. Empieza educando sobre prevención, no vendiendo tratamientos.",
+            metas: [
+                { id: 'logo', label: "Logo o foto profesional de perfil", service: "Diseño Base" },
+                { id: 'colors', label: "Paleta de colores limpia (Salud)", service: "Diseño Base" },
+                { id: 'bio', label: "Biografía con especialidad y registro", service: "Configuración Redes" },
+                { id: 'photo', label: "Fotos profesionales de consultorio", service: "Fotografía" },
+                { id: 'socials', label: "Ficha de Google Maps activa", service: "Configuración Redes" },
+                { id: 'posts6', label: "6 contenidos informativos base", service: "Primeros Posts" }
+            ],
+            rewards: [
+                { id: 'tips', label: "Tips IA Personalizados", icon: Sparkles },
+                { id: 'templates', label: "Plantillas Básicas", icon: LayoutGrid },
+                { id: 'support', label: "Soporte Base", icon: Info }
+            ],
+            icon: Globe
+        },
+        {
+            id: 2,
+            name: "Estrategia Educativa",
+            color: "yellow",
+            mainGoal: "Ser constante educando al paciente",
+            indicator: "Especialista Activo en Redes",
+            status: "Ya se ve, pero aún no vende de forma automática.",
+            suggestedContent: "12 Posts al mes, Reels Cortos explicativos, FAQ en Stories",
+            complexity: "MEDIA",
+            fullDescription: "Creamos un calendario constante enfocado en resolver dudas frecuentes y educar sobre patologías comunes en tu área.",
+            technicalTasks: [
+                "Ejecución de Calendario con 12 Posts Informativos",
+                "Grabación de 2-4 Reels (Preguntas Frecuentes)",
+                "Optimización del Botón de Contacto (WhatsApp/Doctoralia)",
+                "Monitoreo Semanal de Consultas Recibidas"
+            ],
+            coachTip: "Un paciente informado es un paciente decidido. Explica términos complejos en palabras sencillas.",
+            metas: [
+                { id: 'calendar', label: "Calendario de contenido activo", service: "Community Manager" },
+                { id: 'posts12', label: "12 publicaciones de valor al mes", service: "Community Manager" },
+                { id: 'reels2', label: "2 videos educativos profesionales", service: "Edición de Video / Reels" },
+                { id: 'profile', label: "Perfil optimizado para consultas", service: "Community Manager" },
+                { id: 'message', label: "Mensaje claro de agendamiento", service: "Estrategia" }
+            ],
+            rewards: [
+                { id: 'priority', label: "Prioridad Media", icon: Activity },
+                { id: 'review', label: "Revisión Mensual", icon: CheckCircle2 },
+                { id: 'auto-suggest', label: "Sugerencias Auto", icon: Zap }
+            ],
+            icon: Target
+        },
+        {
+            id: 3,
+            name: "Autoridad Especialista",
+            color: "orange",
+            mainGoal: "Generar confianza con casos y testimonios",
+            indicator: "Especialista Recomendado",
+            status: "La gente confía, pero el proceso de agendamiento es manual.",
+            suggestedContent: "Testimonios de Pacientes, House Tour Clínico, Historia del Doctor",
+            complexity: "ALTA",
+            fullDescription: "Validamos tu reputación médica mediante testimonios permitidos, casos de éxito anónimos y tu historia profesional.",
+            technicalTasks: [
+                "Grabación de Video de Trayectoria Médica",
+                "Recopilación de Testimonios Éticos de Pacientes",
+                "Refuerzo de Marca (Diseño Gráfico Premium)",
+                "Creación de Página de Presentación o Dossier de Servicios"
+            ],
+            coachTip: "El mayor obstáculo en medicina es el miedo. Tus testimonios de pacientes recuperados curan ese miedo.",
+            metas: [
+                { id: 'testimonio3', label: "3 opiniones positivas verificadas", service: "Videos Testimoniales" },
+                { id: 'corpvideo', label: "Video de trayectoria médica", service: "Edición Profesional" },
+                { id: 'solidbrand', label: "Estética clínica premium", service: "Diseño Avanzado" },
+                { id: 'educontent', label: "Carruseles de patologías complejas", service: "Community Manager" },
+                { id: 'digitalport', label: "Dossier digital de tratamientos", service: "Fotografía Profesional" }
+            ],
+            rewards: [
+                { id: 'audit', label: "Auditoría de Marca", icon: ShieldCheck },
+                { id: 'bio-opt', label: "Optimización Bio", icon: Type },
+                { id: 'early', label: "Acceso Anticipado", icon: Rocket }
+            ],
+            icon: Star
+        },
+        {
+            id: 4,
+            name: "Consultorio Automatizado",
+            color: "blue",
+            mainGoal: "Agendar citas de forma automática 24/7",
+            indicator: "Embudo de Pacientes Activo",
+            status: "Es referencia nacional. El CRM ya captura leads.",
+            suggestedContent: "Funnels de Agendamiento, Campañas de Google Ads para Urgencias",
+            complexity: "AVANZADA",
+            fullDescription: "Instalamos campañas publicitarias locales y sistemas de agendamiento automático para tu secretaria o Doctoralia.",
+            technicalTasks: [
+                "Integración de Agenda Online (Doctoralia / Calendly)",
+                "Lanzamiento de Meta Ads (Captación de Citas)",
+                "Configuración de Campañas Google Ads de Urgencias",
+                "CRM Básico para seguimiento de pacientes"
+            ],
+            coachTip: "Tu tiempo en consultorio es oro. Automatiza el agendamiento y enfócate en atender a tus pacientes.",
+            metas: [
+                { id: 'proweb', label: "Página de agendamiento online", service: "Desarrollo Web" },
+                { id: 'schedu', label: "Sistema de citas automatizado", service: "SaaS / Chatbot" },
+                { id: 'autobasic', label: "Filtro inicial en chatbot de WhatsApp", service: "Automatizaciones" },
+                { id: 'crmactive', label: "CRM de pacientes activo", service: "CRM DIIC" },
+                { id: 'ads', label: "Campañas de Google & Meta Ads activas", service: "Pauta Publicitaria" }
+            ],
+            rewards: [
+                { id: 'extra-strat', label: "Sesión Estratégica Extra", icon: Target },
+                { id: 'competitors', label: "Análisis Competencia", icon: TrendingUp },
+                { id: 'premium-rev', label: "Review Premium", icon: Video }
+            ],
+            icon: Zap
+        },
+        {
+            id: 5,
+            name: "Escala Clínica",
+            color: "purple",
+            mainGoal: "Crecimiento de centro médico y multiespecialidad",
+            indicator: "Marca Médica Consolidada",
+            status: "Negocio estructurado. Operatividad delegada a IA.",
+            suggestedContent: "Campañas Multiespecialidad, Documentales de Casos Complejos",
+            complexity: "CRÍTICA",
+            fullDescription: "Escalamos el ROI de tus campañas y posicionamos a tu centro médico con múltiples profesionales e inteligencia artificial.",
+            technicalTasks: [
+                "Desarrollo de IA para clasificación inicial de pacientes",
+                "Campañas Masivas de Posicionamiento de la Clínica",
+                "Escalado de Marca a Nivel Regional o Nacional",
+                "Embudo de Retención (Revisiones Médicas Recurrentes)"
+            ],
+            coachTip: "Deja de ser un consultorio individual. Convierte tu apellido o marca en una institución.",
+            metas: [
+                { id: 'stableflow', label: "Flujo constante de cirugías/procedimientos", service: "Marketing Escala" },
+                { id: 'roipos', label: "ROI medible y altamente positivo", service: "Optimización Campañas" },
+                { id: 'advauto', label: "WhatsApp IA para triaje básico", service: "IA / Custom Dev" },
+                { id: 'funnels', label: "Embudos activos multiespecialidad", service: "Estrategia de Ventas" },
+                { id: 'contentpro', label: "Producción audiovisual corporativa constante", service: "Full Production" }
+            ],
+            rewards: [
+                { id: 'expansion', label: "Plan Expansión", icon: Globe },
+                { id: 'vip-ia', label: "Automatización IA VIP", icon: Zap },
+                { id: 'vip-support', label: "Soporte Prioritario", icon: ShieldCheck }
+            ],
+            icon: Rocket
+        }
+    ],
+    hospitality: [
+        {
+            id: 1,
+            name: "Presencia Foodie",
+            color: "emerald",
+            mainGoal: "Antojar a primera vista",
+            indicator: "Menú y Local Digital Listo",
+            status: "El local apenas comienza.",
+            suggestedContent: "Diseño de Carta, Grid 'Food Porn', Historias de Ambiente",
+            complexity: "BAJA",
+            fullDescription: "Creamos un perfil visualmente delicioso que muestre tu menú, dirección y ambiente con total claridad.",
+            technicalTasks: [
+                "Configuración e indexación en Google Maps y TripAdvisor",
+                "Diseño de Grid Visual del Menú Destacado",
+                "Optimización de Enlace en Bio (Menú Digital / Reservas)",
+                "Sesión Fotográfica Inicial de Platos Estrella"
+            ],
+            coachTip: "En gastronomía, el amor entra por los ojos. Fotos caseras y pixeladas alejan clientes. Invierte en estética.",
+            metas: [
+                { id: 'logo', label: "Logo o isotipo de restaurante", service: "Diseño Base" },
+                { id: 'colors', label: "Colores que estimulen el apetito (Cálidos)", service: "Diseño Base" },
+                { id: 'bio', label: "Bio con dirección, horario y link de menú", service: "Configuración Redes" },
+                { id: 'photo', label: "Fotos reales de alta calidad de platos", service: "Fotografía" },
+                { id: 'socials', label: "TripAdvisor / Google Maps activo", service: "Configuración Redes" },
+                { id: 'posts6', label: "6 publicaciones de menú y ambiente", service: "Primeros Posts" }
+            ],
+            rewards: [
+                { id: 'tips', label: "Tips IA Personalizados", icon: Sparkles },
+                { id: 'templates', label: "Plantillas Básicas", icon: LayoutGrid },
+                { id: 'support', label: "Soporte Base", icon: Info }
+            ],
+            icon: Globe
+        },
+        {
+            id: 2,
+            name: "Estrategia de Antojo",
+            color: "yellow",
+            mainGoal: "Construir antojo diario y constante",
+            indicator: "Restaurante Activo en Redes",
+            status: "Ya se ve, pero aún no vende de forma automática.",
+            suggestedContent: "12 Publicaciones, Reels de Cocina, Promociones Especiales",
+            complexity: "MEDIA",
+            fullDescription: "Mantener al algoritmo recomendando tus reels de cocina y preparaciones especiales para generar visitas constantes.",
+            technicalTasks: [
+                "Ejecución de Calendario (12 Posts Gastronómicos)",
+                "Producción de 2-4 Reels (Preparaciones, 'Detrás de Escena')",
+                "Interacción Diaria en Comentarios y Mensajes de Clientes",
+                "Análisis Semanal de Alcance Local"
+            ],
+            coachTip: "Muestra el humo de la parrilla, el queso derretirse. Ese contenido genera antojo y visitas ese mismo día.",
+            metas: [
+                { id: 'calendar', label: "Calendario de contenido activo", service: "Community Manager" },
+                { id: 'posts12', label: "12 posts con Reels de antojo al mes", service: "Community Manager" },
+                { id: 'reels2', label: "2 videos profesionales de platillos estrella", service: "Edición de Video / Reels" },
+                { id: 'profile', label: "Perfil optimizado con botón de Reservas", service: "Community Manager" },
+                { id: 'message', label: "Fácil acceso a WhatsApp de Delivery / Reserva", service: "Estrategia" }
+            ],
+            rewards: [
+                { id: 'priority', label: "Prioridad Media", icon: Activity },
+                { id: 'review', label: "Revisión Mensual", icon: CheckCircle2 },
+                { id: 'auto-suggest', label: "Sugerencias Auto", icon: Zap }
+            ],
+            icon: Target
+        },
+        {
+            id: 3,
+            name: "Autoridad Gastronómica",
+            color: "orange",
+            mainGoal: "Posicionar la experiencia y el Chef",
+            indicator: "Lugar de Moda y Recomendado",
+            status: "La gente confía, pero el proceso de reserva es manual.",
+            suggestedContent: "Videos de la Experiencia, Detrás de la Cocina, Historias del Chef",
+            complexity: "ALTA",
+            fullDescription: "Diferenciamos tu marca de la competencia mostrando tu historia, la técnica del chef y reseñas de comensales reales.",
+            technicalTasks: [
+                "Producción de Video Documental de la Cocina/Chef",
+                "Recopilación de Reseñas de Influencers o Clientes Reales",
+                "Actualización Estética Premium de Carta / Menú",
+                "Estrategia de Promoción para Días Lentos (Martes/Miércoles)"
+            ],
+            coachTip: "La gente no solo compra comida, compra estatus y experiencias. Haz que tu local sea instagrameable.",
+            metas: [
+                { id: 'testimonio3', label: "3 testimonios en video de clientes", service: "Videos Testimoniales" },
+                { id: 'corpvideo', label: "Video historia de la marca o Chef", service: "Edición Profesional" },
+                { id: 'solidbrand', label: "Identidad visual de menú unificada", service: "Diseño Avanzado" },
+                { id: 'educontent', label: "Videos explicando ingredientes / origen", service: "Community Manager" },
+                { id: 'digitalport', label: "Fotos de alta calidad del local y ambiente", service: "Fotografía Profesional" }
+            ],
+            rewards: [
+                { id: 'audit', label: "Auditoría de Marca", icon: ShieldCheck },
+                { id: 'bio-opt', label: "Optimización Bio", icon: Type },
+                { id: 'early', label: "Acceso Anticipado", icon: Rocket }
+            ],
+            icon: Star
+        },
+        {
+            id: 4,
+            name: "Mesas Automatizadas",
+            color: "blue",
+            mainGoal: "Automatizar reservas y pauta local",
+            indicator: "Reservas de Fin de Semana Llenas",
+            status: "Es referencia nacional. El CRM ya captura leads.",
+            suggestedContent: "Anuncios Segmentados Locales, Chatbots de Reservas",
+            complexity: "AVANZADA",
+            fullDescription: "Establecemos un chatbot que entregue el menú y gestione reservas automáticamente, potenciado con pauta local a 5km.",
+            technicalTasks: [
+                "Integración de Sistema de Reservas (Otter / WhatsApp Chatbot)",
+                "Lanzamiento de Meta Ads geolocalizados a la redonda",
+                "Campañas Automáticas para Cumpleañeros de la Semana",
+                "CRM de Clientes para remarketing (Fidelización)"
+            ],
+            coachTip: "Vender a un cliente que ya te visitó es 5 veces más barato. Pídeles su WhatsApp y envíales promociones semanales.",
+            metas: [
+                { id: 'proweb', label: "Menú digital interactivo propio", service: "Desarrollo Web" },
+                { id: 'schedu', label: "Sistema de reserva de mesas online", service: "SaaS / Chatbot" },
+                { id: 'autobasic', label: "Chatbot para enviar menú y dirección", service: "Automatizaciones" },
+                { id: 'crmactive', label: "Base de datos de clientes activa", service: "CRM DIIC" },
+                { id: 'ads', label: "Anuncios locales en Meta activos", service: "Pauta Publicitaria" }
+            ],
+            rewards: [
+                { id: 'extra-strat', label: "Sesión Estratégica Extra", icon: Target },
+                { id: 'competitors', label: "Análisis Competencia", icon: TrendingUp },
+                { id: 'premium-rev', label: "Review Premium", icon: Video }
+            ],
+            icon: Zap
+        },
+        {
+            id: 5,
+            name: "Imperio Gastronómico",
+            color: "purple",
+            mainGoal: "Escalar a franquicias o múltiples locales",
+            indicator: "Marca Reconocida a Nivel Nacional",
+            status: "Negocio estructurado. Operatividad delegada a IA.",
+            suggestedContent: "Campañas de Lanzamiento, Embudos de Franquicia",
+            complexity: "CRÍTICA",
+            fullDescription: "Utilizamos inteligencia artificial para analizar preferencias y optimizar presupuestos masivos en múltiples sucursales.",
+            technicalTasks: [
+                "Segmentación de campañas por múltiples zonas / sucursales",
+                "Funnels automáticos para captación de inversionistas/franquiciados",
+                "Estrategia Omnicanal Masiva de Contenido y Delivery",
+                "Análisis de ROI de publicidad vs. tickets promedio de compra"
+            ],
+            coachTip: "El negocio no es la comida, son los procesos. Escala tu marca sistematizando cada plato y cada anuncio.",
+            metas: [
+                { id: 'stableflow', label: "Tráfico lleno garantizado cada semana", service: "Marketing Escala" },
+                { id: 'roipos', label: "ROI publicitario medible en ventas de caja", service: "Optimización Campañas" },
+                { id: 'advauto', label: "IA CRM para sugerencias y fidelización", service: "IA / Custom Dev" },
+                { id: 'funnels', label: "Funnels para abrir nuevos locales activos", service: "Estrategia de Ventas" },
+                { id: 'contentpro', label: "Producción a escala para múltiples sedes", service: "Full Production" }
+            ],
+            rewards: [
+                { id: 'expansion', label: "Plan Expansión", icon: Globe },
+                { id: 'vip-ia', label: "Automatización IA VIP", icon: Zap },
+                { id: 'vip-support', label: "Soporte Prioritario", icon: ShieldCheck }
+            ],
+            icon: Rocket
+        }
+    ],
+    realestate: [
+        {
+            id: 1,
+            name: "Presencia Inmobiliaria",
+            color: "emerald",
+            mainGoal: "Generar confianza y profesionalismo",
+            indicator: "Catálogo Inmobiliario Configurado",
+            status: "El realtor apenas comienza.",
+            suggestedContent: "Diseño de Grid, Plantillas de Listings, Bio Profesional",
+            complexity: "BAJA",
+            fullDescription: "Diseñamos un grid limpio y profesional para Realtor con propiedades destacadas y plantillas de fichas técnicas.",
+            technicalTasks: [
+                "Configuración de Perfiles Profesionales de Realtor en Portales y Redes",
+                "Diseño de Plantillas para Presentación de Propiedades",
+                "Optimización de Bio con Enlaces a Cartera de Propiedades",
+                "Fotografía Profesional del Realtor (Marca Personal)"
+            ],
+            coachTip: "En bienes raíces vendes seguridad. Un grid desordenado o fotos borrosas de casas destruyen tu credibilidad de inmediato.",
+            metas: [
+                { id: 'logo', label: "Logo personal o de agencia", service: "Diseño Base" },
+                { id: 'colors', label: "Colores corporativos elegantes (Azules/Negros)", service: "Diseño Base" },
+                { id: 'bio', label: "Bio con zona de enfoque y licencia", service: "Configuración Redes" },
+                { id: 'photo', label: "Foto de retrato corporativo premium", service: "Fotografía" },
+                { id: 'socials', label: "Presencia en portales inmobiliarios clave", service: "Configuración Redes" },
+                { id: 'posts6', label: "6 publicaciones de propiedades destacadas", service: "Primeros Posts" }
+            ],
+            rewards: [
+                { id: 'tips', label: "Tips IA Personalizados", icon: Sparkles },
+                { id: 'templates', label: "Plantillas Básicas", icon: LayoutGrid },
+                { id: 'support', label: "Soporte Base", icon: Info }
+            ],
+            icon: Globe
+        },
+        {
+            id: 2,
+            name: "Estrategia de Captación",
+            color: "yellow",
+            mainGoal: "Atracción constante de interesados",
+            indicator: "Realtor Activo y Visibilizado",
+            status: "Ya se ve, pero aún no vende de forma automática.",
+            suggestedContent: "12 Publicaciones, House Tours en Reels, Historias Diarias de Visitas",
+            complexity: "MEDIA",
+            fullDescription: "Mantener constancia mostrando listings, consejos de compra/venta y house tours cortos para generar leads inmobiliarios.",
+            technicalTasks: [
+                "Ejecución de Calendario (12 Publicaciones Inmobiliarias)",
+                "Producción de 2-4 Reels (Tours Rápidos y Consejos Financieros)",
+                "Gestión y Respuesta Rápida a Leads de Compradores",
+                "Monitoreo Semanal de Interesados y Mensajes"
+            ],
+            coachTip: "No solo subas fotos de casas. Muestra tu cara explicando por qué es una buena inversión. La gente le compra a personas.",
+            metas: [
+                { id: 'calendar', label: "Calendario de listings activo", service: "Community Manager" },
+                { id: 'posts12', label: "12 publicaciones informativas al mes", service: "Community Manager" },
+                { id: 'reels2', label: "2 videos en formato tour vertical", service: "Edición de Video / Reels" },
+                { id: 'profile', label: "Perfil optimizado para captación de leads", service: "Community Manager" },
+                { id: 'message', label: "Llamados a la acción claros para cotizar", service: "Estrategia" }
+            ],
+            rewards: [
+                { id: 'priority', label: "Prioridad Media", icon: Activity },
+                { id: 'review', label: "Revisión Mensual", icon: CheckCircle2 },
+                { id: 'auto-suggest', label: "Sugerencias Auto", icon: Zap }
+            ],
+            icon: Target
+        },
+        {
+            id: 3,
+            name: "Autoridad del Broker",
+            color: "orange",
+            mainGoal: "Posicionar propiedades High-Ticket",
+            indicator: "Agente de Confianza en la Zona",
+            status: "La gente confía, pero el filtrado es manual.",
+            suggestedContent: "Cinematic House Tours, Testimonios de Firmas, Análisis de Mercado",
+            complexity: "ALTA",
+            fullDescription: "Posicionamos tu estatus de Broker experto en propiedades de alto valor mediante cinematic house tours e historias de éxito.",
+            technicalTasks: [
+                "Producción de House Tours Cinemáticos (Dron/Estabilizador)",
+                "Recopilación de Testimonios de Propietarios Felices",
+                "Actualización de Identidad Visual a Nivel Luxury",
+                "Creación de Ebook/Guía de Inversión Local como Gancho"
+            ],
+            coachTip: "El comprador de lujo busca discreción y excelencia técnica. Habla de plusvalía y retorno de inversión en tus videos.",
+            metas: [
+                { id: 'testimonio3', label: "3 testimonios de clientes de compra/venta", service: "Videos Testimoniales" },
+                { id: 'corpvideo', label: "Video cinematic de presentación de tu marca", service: "Edición Profesional" },
+                { id: 'solidbrand', label: "Fichas técnicas y folletos luxury", service: "Diseño Avanzado" },
+                { id: 'educontent', label: "Contenido educativo sobre créditos e impuestos", service: "Community Manager" },
+                { id: 'digitalport', label: "Dossier premium de propiedades activas", service: "Fotografía Profesional" }
+            ],
+            rewards: [
+                { id: 'audit', label: "Auditoría de Marca", icon: ShieldCheck },
+                { id: 'bio-opt', label: "Optimización Bio", icon: Type },
+                { id: 'early', label: "Acceso Anticipado", icon: Rocket }
+            ],
+            icon: Star
+        },
+        {
+            id: 4,
+            name: "Embudo Inmobiliario",
+            color: "blue",
+            mainGoal: "Filtrar e interesados calificados automáticamente",
+            indicator: "Funnels de Captación Funcionando",
+            status: "Es referencia nacional. El CRM ya captura leads.",
+            suggestedContent: "Campañas de Captación de Propietarios, Embudos de Inversión",
+            complexity: "AVANZADA",
+            fullDescription: "Instalamos campañas con formularios automáticos en Meta Ads y WhatsApp Chatbots para perfilar presupuestos antes de llamar.",
+            technicalTasks: [
+                "Integración de CRM Inmobiliario (ActiveCampaign / HubSpot / Salesforce)",
+                "Lanzamiento de Meta Ads con Formularios de Captación",
+                "Chatbot de Calificación (Filtro de presupuesto e ingresos)",
+                "Automatización de agendamiento para visitas a propiedades"
+            ],
+            coachTip: "El 80% del tiempo de un Realtor se pierde con curiosos sin presupuesto. Filtra a tus leads automáticamente con un chatbot.",
+            metas: [
+                { id: 'proweb', label: "Landing page de captación de propietarios", service: "Desarrollo Web" },
+                { id: 'schedu', label: "Agenda online para visitas guiadas", service: "SaaS / Chatbot" },
+                { id: 'autobasic', label: "WhatsApp bot de filtrado de presupuesto", service: "Automatizaciones" },
+                { id: 'crmactive', label: "CRM inmobiliario activo", service: "CRM DIIC" },
+                { id: 'ads', label: "Campañas activas en Meta Ads para propiedades", service: "Pauta Publicitaria" }
+            ],
+            rewards: [
+                { id: 'extra-strat', label: "Sesión Estratégica Extra", icon: Target },
+                { id: 'competitors', label: "Análisis Competencia", icon: TrendingUp },
+                { id: 'premium-rev', label: "Review Premium", icon: Video }
+            ],
+            icon: Zap
+        },
+        {
+            id: 5,
+            name: "Desarrollo & Escala",
+            color: "purple",
+            mainGoal: "Preventa de desarrollos y proyectos en planos",
+            indicator: "Venta de Proyectos Masivos",
+            status: "Negocio estructurado. Operatividad delegada a IA.",
+            suggestedContent: "Campañas Internacionales, Renders y Avances de Obra Cinemáticos",
+            complexity: "CRÍTICA",
+            fullDescription: "Escalamos el sistema para constructoras o grandes agencias, automatizando pre-ventas de edificios y atrayendo inversionistas internacionales.",
+            technicalTasks: [
+                "Embudo de Ventas Internacional (Targeting de migrantes/inversionistas)",
+                "Producción de Renders Cinemáticos y Avances de Obra en Video",
+                "Estrategia de Email Marketing Automático para Inversionistas",
+                "Análisis de ROI por costo de adquisición de cliente (CAC)"
+            ],
+            coachTip: "La pre-venta de planos se vende con renders emocionales y números fríos de plusvalía. Atrae a los inversionistas con datos.",
+            metas: [
+                { id: 'stableflow', label: "Flujo constante de visitas semanales", service: "Marketing Escala" },
+                { id: 'roipos', label: "ROI medible en ventas de unidades", service: "Optimización Campañas" },
+                { id: 'advauto', label: "Integración de CRM + Chatbot IA + Brokers", service: "IA / Custom Dev" },
+                { id: 'funnels', label: "Funnels internacionales de inversión activos", service: "Estrategia de Ventas" },
+                { id: 'contentpro', label: "Producción constante de avances de obra y tours", service: "Full Production" }
+            ],
+            rewards: [
+                { id: 'expansion', label: "Plan Expansión", icon: Globe },
+                { id: 'vip-ia', label: "Automatización IA VIP", icon: Zap },
+                { id: 'vip-support', label: "Soporte Prioritario", icon: ShieldCheck }
+            ],
+            icon: Rocket
+        }
+    ]
+};
+
+export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
+    const router = useRouter();
+    const [isMounted, setIsMounted] = useState(false);
+    const [level, setLevel] = useState(initialLevel);
+    const [activeLevel, setActiveLevel] = useState(initialLevel);
+    const [clientNiche, setClientNiche] = useState('general');
+    const [clientName, setClientName] = useState('Cliente');
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // Checkbox states for demo simulation
+    const [completedMetas, setCompletedMetas] = useState({
+        // L1
+        'logo': true, 'colors': true, 'bio': true, 'photo': true, 'socials': true, 'posts6': true,
+        // L2
+        'calendar': true, 'posts12': true, 'reels2': false, 'profile': true, 'message': false,
+    });
+
+    useEffect(() => {
+        const loadClientData = async () => {
+            if (!clientId) return;
+            const client = await agencyService.getClientById(clientId);
+            if (client) {
+                const numericLevel = client.growth_level || 1;
+                setLevel(numericLevel);
+                setActiveLevel(numericLevel);
+                setClientName(client.name || 'Cliente');
+
+                // Determine Niche
+                const rawIndustry = (client.industry || '').toLowerCase().trim();
+                let determinedNiche = 'general';
+                if (rawIndustry.includes('medico') || rawIndustry.includes('health') || rawIndustry.includes('doctor') || rawIndustry.includes('salud') || rawIndustry.includes('urología') || rawIndustry.includes('urologia')) {
+                    determinedNiche = 'medical';
+                } else if (rawIndustry.includes('horeca') || rawIndustry.includes('restaurant') || rawIndustry.includes('gastronom') || rawIndustry.includes('comida') || rawIndustry.includes('restaurante')) {
+                    determinedNiche = 'hospitality';
+                } else if (rawIndustry.includes('realestate') || rawIndustry.includes('construccion') || rawIndustry.includes('inmobiliaria') || rawIndustry.includes('bienes raíces') || rawIndustry.includes('bienes raices') || rawIndustry.includes('realtor')) {
+                    determinedNiche = 'realestate';
+                }
+                setClientNiche(determinedNiche);
+                
+                if (client.onboarding_data?.completedMetas) {
+                    setCompletedMetas(client.onboarding_data.completedMetas);
+                }
+            }
+        };
+        loadClientData();
+    }, [clientId]);
+
+    const levels = NICHE_LEVELS[clientNiche] || NICHE_LEVELS.general;
 
     const currentLevelData = levels[activeLevel - 1];
     const userActualLevelData = levels[level - 1];
@@ -219,6 +712,19 @@ export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
     const userLevelMetas = userActualLevelData.metas;
     const completedCount = userLevelMetas.filter(m => completedMetas[m.id]).length;
     const progress = Math.round((completedCount / userLevelMetas.length) * 100);
+
+    const getCoachFeedback = () => {
+        const namePart = clientName.split(' ')[0];
+        const levelName = userActualLevelData?.name || 'Presencia Digital';
+        
+        const nicheFeedbacks = {
+            general: `Hola ${namePart}, vas por buen camino en tu nivel de ${levelName}. Para consolidar esta fase, asegúrate de completar las metas de desarrollo pendientes y coordinar con tu estratega.`,
+            medical: `Estimado Dr. ${namePart}, tu estrategia de ${levelName} avanza con éxito. Para captar más pacientes, enfoquémonos en resolver sus dudas y simplificar el agendamiento.`,
+            hospitality: `Hola equipo de ${namePart}, vuestra presencia en la fase de ${levelName} es clave. Potenciemos el antojo visual con reels dinámicos y facilitemos las reservas en línea.`,
+            realestate: `Estimado broker ${namePart}, en esta etapa de ${levelName} la confianza es todo. Asegúrate de mostrar tu experiencia local y de segmentar bien tus leads inmobiliarios.`
+        };
+        return nicheFeedbacks[clientNiche] || nicheFeedbacks.general;
+    };
 
     if (!isMounted) return null;
 
@@ -451,7 +957,7 @@ export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
                         </h4>
                         <div className="p-6 bg-black/40 rounded-3xl border border-white/5 mb-8 backdrop-blur-sm relative z-10 shadow-inner">
                             <p className="text-xs text-gray-300 font-bold italic leading-relaxed">
-                                "Mike, vas por buen camino con tu <span className="text-indigo-400 font-black">PRESENCIA (LVL 2)</span>, pero para escalar necesitamos que tus <span className="text-white">REELS PROFESSIONAL</span> y el <span className="text-white">MENSAJE CLARO</span> estén terminados. ¿Vemos el flujo de guiones?"
+                                "{getCoachFeedback()}"
                             </p>
                         </div>
                         <button 
