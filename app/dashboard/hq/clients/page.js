@@ -224,6 +224,14 @@ export default function HQClientsPage() {
         await handleUpdateClient(id, { plan: nextPlan, price: planDef ? planDef.price : 0 });
     };
 
+    const handleCycleIndustry = async (id, currentIndustry) => {
+        const industries = INDUSTRY_OPTIONS.map(i => i.value);
+        const currentIdx = industries.indexOf(currentIndustry);
+        const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % industries.length;
+        const nextIndustry = industries[nextIdx];
+        await handleUpdateClient(id, { industry: nextIndustry });
+    };
+
     const cmOptions = useMemo(() => {
         const staff = team.filter(m => {
             const role = m.role?.toLowerCase() || '';
@@ -489,6 +497,7 @@ export default function HQClientsPage() {
                         <tr className="border-b border-white/5 bg-white/[0.02]">
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Cliente / Marca</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Plan Actual</th>
+                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Nicho / Estrategia</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Community</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Ingreso Mensual</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Estado</th>
@@ -544,6 +553,11 @@ export default function HQClientsPage() {
                                     <td className="px-6 py-6">
                                         <button onClick={() => handleCyclePlan(client.id, client.plan)} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-gray-300 hover:border-indigo-500/50 hover:text-white transition-all active:scale-95">
                                             {client?.plan || 'Presencia'}
+                                        </button>
+                                    </td>
+                                    <td className="px-6 py-6">
+                                        <button onClick={() => handleCycleIndustry(client.id, client.industry)} className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-full text-xs font-bold hover:bg-indigo-600 hover:text-white hover:border-transparent transition-all active:scale-95 capitalize">
+                                            {INDUSTRY_OPTIONS.find(i => i.value === client?.industry)?.label || client?.industry || 'General'}
                                         </button>
                                     </td>
                                     <td className="px-6 py-6 font-medium">
@@ -1407,7 +1421,7 @@ function StatCard({ title, value, icon: Icon, color, isActive, onClick }) {
 function SkeletonRow() {
     return (
         <tr className="border-b border-white/5 animate-pulse">
-            <td className="px-6 py-6" colSpan={6}>
+            <td className="px-6 py-6" colSpan={7}>
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-white/5" />
                     <div className="h-4 w-1/4 bg-white/5 rounded-full" />
