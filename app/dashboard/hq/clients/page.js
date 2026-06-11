@@ -84,20 +84,25 @@ const getPlanPrice = (plan, industry) => {
     const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor');
     const isHospital = ind.includes('hospital') || ind.includes('clinica') || ind.includes('clínica');
     
+    let normalizedPlan = plan;
+    if (plan === 'Basic') normalizedPlan = 'Presencia';
+    if (plan === 'Estrategia') normalizedPlan = 'Crecimiento';
+    if (plan === 'Premium') normalizedPlan = 'Autoridad';
+    
     if (isMedical && !isHospital) {
-        if (plan === 'Presencia') return 250;
-        if (plan === 'Crecimiento') return 500;
-        if (plan === 'Autoridad') return 700;
-        if (plan === 'Control') return 999;
+        if (normalizedPlan === 'Presencia') return 250;
+        if (normalizedPlan === 'Crecimiento') return 500;
+        if (normalizedPlan === 'Autoridad') return 700;
+        if (normalizedPlan === 'Control') return 999;
         return 0;
     } else if (isHospital) {
-        if (plan === 'Presencia') return 300;
-        if (plan === 'Crecimiento') return 500;
-        if (plan === 'Autoridad') return 700;
-        if (plan === 'Control') return 999;
+        if (normalizedPlan === 'Presencia') return 300;
+        if (normalizedPlan === 'Crecimiento') return 500;
+        if (normalizedPlan === 'Autoridad') return 700;
+        if (normalizedPlan === 'Control') return 999;
         return 0;
     } else {
-        const planDef = PLAN_OPTIONS.find(p => p.value === plan);
+        const planDef = PLAN_OPTIONS.find(p => p.value === normalizedPlan);
         return planDef ? planDef.price : 0;
     }
 };
@@ -1160,14 +1165,40 @@ export default function HQClientsPage() {
                                                                 placeholder="+593 ..."
                                                                 className="font-mono"
                                                             />
-                                                            <GlassInput 
-                                                                label="Inversión Mensual (USD)" 
-                                                                value={newClient.price} 
-                                                                onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })} 
-                                                                icon={DollarSign}
-                                                                type="number"
-                                                                placeholder="0.00"
+                                                            <PremiumDropdown 
+                                                                label="Plan Estratégico" 
+                                                                icon={Shield} 
+                                                                value={newClient.plan} 
+                                                                onChange={(val) => {
+                                                                    const price = getPlanPrice(val, newClient.industry);
+                                                                    setNewClient({ ...newClient, plan: val, price: price });
+                                                                }} 
+                                                                options={PLAN_OPTIONS} 
                                                             />
+                                                            <div className="space-y-1">
+                                                                <GlassInput 
+                                                                    label="Inversión Mensual (USD)" 
+                                                                    value={newClient.price} 
+                                                                    onChange={(e) => setNewClient({ ...newClient, price: parseInt(e.target.value) || 0 })} 
+                                                                    icon={DollarSign}
+                                                                    type="number"
+                                                                    placeholder="0.00"
+                                                                />
+                                                                {getPlanPrice(newClient.plan, newClient.industry) > 0 && (
+                                                                    <div className="text-[10px] font-bold text-indigo-400 mt-2 flex items-center justify-between px-2">
+                                                                        <span>Precio designado ({newClient.plan}): ${getPlanPrice(newClient.plan, newClient.industry)}</span>
+                                                                        {newClient.price !== getPlanPrice(newClient.plan, newClient.industry) && (
+                                                                            <button 
+                                                                                type="button"
+                                                                                onClick={() => setNewClient({ ...newClient, price: getPlanPrice(newClient.plan, newClient.industry) })}
+                                                                                className="text-[9px] bg-indigo-500/20 hover:bg-indigo-500 text-indigo-300 hover:text-white px-2 py-1 rounded-xl transition-all uppercase tracking-widest font-black"
+                                                                            >
+                                                                                Aplicar
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                             <GlassInput 
                                                                 label="Email Sync" 
                                                                 value={newClient.email} 

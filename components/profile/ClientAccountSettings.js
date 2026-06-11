@@ -17,20 +17,25 @@ const getPlanPrice = (plan, industry) => {
     const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor');
     const isHospital = ind.includes('hospital') || ind.includes('clinica') || ind.includes('clínica');
     
+    let normalizedPlan = plan;
+    if (plan === 'Basic') normalizedPlan = 'Presencia';
+    if (plan === 'Estrategia') normalizedPlan = 'Crecimiento';
+    if (plan === 'Premium') normalizedPlan = 'Autoridad';
+    
     if (isMedical && !isHospital) {
-        if (plan === 'Presencia') return 250;
-        if (plan === 'Crecimiento') return 500;
-        if (plan === 'Autoridad') return 700;
-        if (plan === 'Control') return 999;
+        if (normalizedPlan === 'Presencia') return 250;
+        if (normalizedPlan === 'Crecimiento') return 500;
+        if (normalizedPlan === 'Autoridad') return 700;
+        if (normalizedPlan === 'Control') return 999;
         return 0;
     } else if (isHospital) {
-        if (plan === 'Presencia') return 300;
-        if (plan === 'Crecimiento') return 500;
-        if (plan === 'Autoridad') return 700;
-        if (plan === 'Control') return 999;
+        if (normalizedPlan === 'Presencia') return 300;
+        if (normalizedPlan === 'Crecimiento') return 500;
+        if (normalizedPlan === 'Autoridad') return 700;
+        if (normalizedPlan === 'Control') return 999;
         return 0;
     } else {
-        const planDef = PLAN_OPTIONS.find(p => p.value === plan);
+        const planDef = PLAN_OPTIONS.find(p => p.value === normalizedPlan);
         return planDef ? planDef.price : 0;
     }
 };
