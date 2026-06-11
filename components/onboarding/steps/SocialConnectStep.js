@@ -11,6 +11,7 @@ import {
 import { socialService } from '@/services/socialService';
 import { adsService } from '@/services/adsService';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 const platforms = [
     { id: 'instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-500', glow: 'shadow-pink-500/20', bg: 'bg-pink-500/5', border: 'border-pink-500/20', provider: 'facebook', ads: true },
@@ -19,7 +20,11 @@ const platforms = [
     { id: 'youtube', label: 'YouTube', icon: Youtube, color: 'text-red-500', glow: 'shadow-red-500/20', bg: 'bg-red-500/5', border: 'border-red-500/20', provider: 'google', ads: false }
 ];
 
-// ... (extraPlatforms)
+const extraPlatforms = [
+    { id: 'twitter', label: 'Twitter / X', icon: Twitter, color: 'text-sky-400', glow: 'shadow-sky-400/20', bg: 'bg-sky-400/5', border: 'border-sky-400/20', provider: 'twitter', ads: false },
+    { id: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: 'text-blue-700', glow: 'shadow-blue-700/20', bg: 'bg-blue-700/5', border: 'border-blue-700/20', provider: 'linkedin', ads: false },
+    { id: 'twitch', label: 'Twitch', icon: Twitch, color: 'text-purple-500', glow: 'shadow-purple-500/20', bg: 'bg-purple-500/5', border: 'border-purple-500/20', provider: 'twitch', ads: false }
+];
 
 export default function SocialConnectStep({ onNext, updateData }) {
     const [connected, setConnected] = useState({});
@@ -27,11 +32,6 @@ export default function SocialConnectStep({ onNext, updateData }) {
     const [showExtras, setShowExtras] = useState(false);
     const [showSkipConfirm, setShowSkipConfirm] = useState(false);
     
-    // Connection choice state
-    const [showConnectModalFor, setShowConnectModalFor] = useState(null);
-    const [isConnectingSandbox, setIsConnectingSandbox] = useState(false);
-    const [sandboxStep, setSandboxStep] = useState(0);
-
     // Ads selection state
     const [selectingAccountsFor, setSelectingAccountsFor] = useState(null);
     const [availableAccounts, setAvailableAccounts] = useState([]);
@@ -42,6 +42,98 @@ export default function SocialConnectStep({ onNext, updateData }) {
     useEffect(() => {
         const checkConnections = async () => {
             try {
+                // Check if we were waiting for an OAuth redirect callback
+                const waitingProvider = localStorage.getItem('diic_waiting_provider');
+                let token = null;
+
+                const hash = window.location.hash || window.location.search;
+                if (hash && hash.includes('provider_token')) {
+                    const params = new URLSearchParams(hash.replace('#', '?'));
+                    token = params.get('provider_token');
+                }
+
+                // If token is not in the URL parameters, retrieve it from the session
+                if (!token) {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session && session.provider_token) {
+                        const sessionProvider = session.user?.app_metadata?.provider;
+                        // Google provider is returned as google, facebook as facebook, etc.
+                        if (sessionProvider === waitingProvider) {
+                            token = session.provider_token;
+                        }
+                    }
+                }
+                
+                if (waitingProvider && token) {
+                    toast.loading(`Sincronizando conexión real con ${waitingProvider === 'facebook' ? 'Meta' : waitingProvider}...`);
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        let externalId = `real_${waitingProvider}_id`;
+                        let metadata = {};
+
+                        // Call Meta Graph API to fetch real account details
+                        if (waitingProvider === 'facebook') {
+                            try {
+                                const fbResponse = await fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${token}`);
+                                const fbData = await fbResponse.json();
+                                if (fbData && fbData.id) {
+                                    externalId = fbData.id;
+                                    metadata = { name: fbData.name, email: fbData.email };
+                                }
+                            } catch (e) {
+                                console.warn('[SocialConnectStep] Failed to fetch Facebook profile:', e);
+                            }
+                        }
+
+                        await supabase
+                            .from('social_connections')
+                            .upsert({
+                                user_id: user.id,
+                                platform: waitingProvider,
+                                external_id: externalId,
+                                access_token: token,
+                                metadata: metadata,
+                                updated_at: new Date().toISOString()
+                            }, { onConflict: 'user_id,platform' });
+                            
+                        const displayName = metadata.name || (waitingProvider === 'facebook' ? 'Meta' : waitingProvider);
+                        toast.success(`Conexión real con ${displayName} establecida.`);
+
+                        // Set connected state
+                        if (waitingProvider === 'facebook') {
+                            setConnected(prev => ({
+                                ...prev,
+                                facebook: true,
+                                instagram: true
+                            }));
+                            
+                            // Automatically trigger ad account selector for Facebook
+                            const fbPlatform = platforms.find(p => p.id === 'facebook');
+                            if (fbPlatform) {
+                                setTimeout(() => {
+                                    openAccountSelector(fbPlatform);
+                                }, 800);
+                            }
+                        } else {
+                            const targetPlatform = platforms.concat(extraPlatforms).find(p => p.provider === waitingProvider);
+                            if (targetPlatform) {
+                                setConnected(prev => ({
+                                    ...prev,
+                                    [targetPlatform.id]: true
+                                }));
+                                if (targetPlatform.ads) {
+                                    setTimeout(() => {
+                                        openAccountSelector(targetPlatform);
+                                    }, 800);
+                                }
+                            }
+                        }
+                    }
+                    localStorage.removeItem('diic_waiting_provider');
+                    // Clean URL hash/search so it doesn't trigger again on reload
+                    window.history.replaceState(null, null, window.location.pathname);
+                }
+
                 const identities = await socialService.getLinkedAccounts();
                 const connectedMap = {};
                 platforms.concat(extraPlatforms).forEach(p => {
@@ -61,7 +153,7 @@ export default function SocialConnectStep({ onNext, updateData }) {
                 setSavedAdAccounts(savedMap);
 
             } catch (err) {
-                console.error('[SocialConnectStep] Failed to check identities');
+                console.error('[SocialConnectStep] Failed to check identities', err);
             }
         };
         checkConnections();
@@ -75,70 +167,15 @@ export default function SocialConnectStep({ onNext, updateData }) {
             }
             return;
         }
-        setShowConnectModalFor(platform);
-    };
-
-    const handleRealConnect = async () => {
-        const platform = showConnectModalFor;
-        setShowConnectModalFor(null);
+        
         setLoading(true);
         try {
-            toast.info(`Iniciando conexión segura con ${platform.label}...`);
+            toast.info(`Redirigiendo a ${platform.label} para iniciar vinculación real...`);
+            localStorage.setItem('diic_waiting_provider', platform.provider);
             await socialService.connect(platform.provider);
         } catch (err) {
-            toast.error(`Error al conectar ${platform.label}`);
+            toast.error(`Error al iniciar conexión con ${platform.label}: ${err.message || err}`);
             setLoading(false);
-        }
-    };
-
-    const handleSandboxConnect = async () => {
-        const platform = showConnectModalFor;
-        setIsConnectingSandbox(true);
-        setSandboxStep(0);
-        
-        // Simular flujo animado de conexión
-        const steps = [
-            "Estableciendo canal cifrado con API Sandbox...",
-            "Sincronizando Business Manager de Sebas Tiano...",
-            "Validando permisos de publicación y anuncios (Meta Ads)...",
-            "¡Conexión establecida con éxito!"
-        ];
-        
-        for (let i = 0; i < steps.length; i++) {
-            setSandboxStep(i);
-            await new Promise(r => setTimeout(r, 600));
-        }
-
-        try {
-            await socialService.connectSandbox(platform.provider);
-            
-            // Si el proveedor es 'facebook', marcar tanto facebook como instagram como conectados
-            if (platform.provider === 'facebook') {
-                setConnected(prev => ({
-                    ...prev,
-                    facebook: true,
-                    instagram: true
-                }));
-            } else {
-                setConnected(prev => ({
-                    ...prev,
-                    [platform.id]: true
-                }));
-            }
-            
-            toast.success(`Sandbox de ${platform.label} sincronizada con éxito.`);
-            setShowConnectModalFor(null);
-            
-            // Si tiene anuncios, abrir selector automáticamente para que seleccione sus cuentas publicitarias
-            if (platform.ads) {
-                setTimeout(() => {
-                    openAccountSelector(platform);
-                }, 400);
-            }
-        } catch (err) {
-            toast.error("Error al establecer conexión Sandbox");
-        } finally {
-            setIsConnectingSandbox(false);
         }
     };
 
@@ -427,116 +464,7 @@ export default function SocialConnectStep({ onNext, updateData }) {
                 )}
             </AnimatePresence>
 
-            {/* Connect Choice Modal */}
-            <AnimatePresence>
-                {showConnectModalFor && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[130] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl"
-                    >
-                        <motion.div 
-                            initial={{ scale: 0.9, y: 30 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 30 }}
-                            className="bg-[#0D0D15] border border-white/10 w-full max-w-xl rounded-[3.5rem] overflow-hidden shadow-[0_0_120px_rgba(79,70,229,0.15)] flex flex-col max-h-[90vh]"
-                        >
-                            {/* Modal Header */}
-                            <div className="p-10 border-b border-white/5 bg-gradient-to-b from-white/5 to-transparent relative">
-                                <div className="flex items-center gap-6">
-                                    <div className={`w-16 h-16 rounded-[1.8rem] flex items-center justify-center bg-indigo-500/10 border border-indigo-500/20`}>
-                                        <Cpu className={`w-7 h-7 text-indigo-400`} />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">Sincronización con {showConnectModalFor.label}</h3>
-                                        <p className="text-gray-500 text-[10px] font-mono tracking-widest uppercase">META_ADS_INTEGRATION_PROTOCOL</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Modal Content */}
-                            <div className="flex-1 overflow-y-auto p-10 space-y-6 custom-scrollbar">
-                                {isConnectingSandbox ? (
-                                    <div className="py-16 text-center space-y-6">
-                                        <RefreshCw className="w-12 h-12 text-orange-500 animate-spin mx-auto" />
-                                        <div className="space-y-2">
-                                            <p className="text-white font-black uppercase text-sm tracking-wider animate-pulse">
-                                                {sandboxStep === 0 && "Estableciendo canal cifrado con API Sandbox..."}
-                                                {sandboxStep === 1 && "Sincronizando Business Manager de Sebas Tiano..."}
-                                                {sandboxStep === 2 && "Validando permisos de pauta (Meta Ads)..."}
-                                                {sandboxStep === 3 && "Sincronización completa..."}
-                                            </p>
-                                            <p className="text-gray-500 text-[9px] font-mono uppercase tracking-widest">
-                                                SECURE_CONNECTION_ESTABLISHING
-                                            </p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <p className="text-gray-400 text-xs leading-relaxed font-medium">
-                                            Vence las limitaciones de Meta. Para publicar contenido, gestionar pauta publicitaria y visualizar métricas de seguimiento de forma inmediata, selecciona el método de vinculación:
-                                        </p>
-
-                                        <div className="space-y-4">
-                                            {/* Sandbox Mode Option */}
-                                            <div 
-                                                onClick={handleSandboxConnect}
-                                                className="p-6 rounded-3xl border border-orange-500/30 bg-orange-500/[0.02] hover:bg-orange-500/[0.05] transition-all cursor-pointer group flex gap-5 items-start relative overflow-hidden shadow-[0_0_20px_rgba(249,115,22,0.08)]"
-                                            >
-                                                <div className="absolute top-4 right-4 bg-orange-500 text-black text-[7px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">
-                                                    RECOMENDADO
-                                                </div>
-                                                <div className="p-4 bg-orange-500/10 rounded-2xl text-orange-400 flex-shrink-0 group-hover:scale-105 transition-transform">
-                                                    <ShieldCheck className="w-6 h-6" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-sm font-black text-white uppercase tracking-wider mb-1">
-                                                        Modo Sandbox (Simulado Inteligente)
-                                                    </h4>
-                                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">
-                                                        Sincroniza cuentas publicitarias y páginas para **Sebas Tiano** / **Vitor Pizza**. Habilita el control de pauta, agendamiento de contenido y reportes de métricas en tiempo real de forma instantánea.
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Real OAuth Option */}
-                                            <div 
-                                                onClick={handleRealConnect}
-                                                className="p-6 rounded-3xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-indigo-500/30 transition-all cursor-pointer group flex gap-5 items-start"
-                                            >
-                                                <div className="p-4 bg-indigo-500/10 rounded-2xl text-indigo-400 flex-shrink-0 group-hover:scale-105 transition-transform">
-                                                    <Link2 className="w-6 h-6" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-sm font-black text-white uppercase tracking-wider mb-1">
-                                                        Modo Producción (OAuth Real de Meta)
-                                                    </h4>
-                                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">
-                                                        Inicia sesión con tu cuenta de Facebook real. *Nota: Si tu aplicación de desarrollador de Meta está en modo desarrollo en el portal de Meta, verás la pantalla "La aplicación no está activa".*
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* Modal Footer */}
-                            {!isConnectingSandbox && (
-                                <div className="p-10 bg-white/[0.02] border-t border-white/5 flex justify-end">
-                                    <button 
-                                        onClick={() => setShowConnectModalFor(null)}
-                                        className="py-4 px-8 text-gray-500 hover:text-white font-black text-xs uppercase tracking-widest transition-colors"
-                                    >
-                                        Cerrar
-                                    </button>
-                                </div>
-                            )}
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Choice modal is completely disabled since real OAuth is now mandatory */}
 
             {/* Skip Confirmation Modal (Same as before) */}
             <AnimatePresence>
