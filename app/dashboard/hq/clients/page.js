@@ -45,6 +45,54 @@ const getIndustryStyle = (industry) => {
     };
 };
 
+const getBrandColorClass = (industry) => {
+    const ind = (industry || '').toLowerCase().trim();
+    if (ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor')) {
+        return 'text-cyan-400';
+    }
+    if (ind.includes('hospitality') || ind.includes('restaurant') || ind.includes('comida') || ind.includes('gastronom')) {
+        return 'text-amber-400';
+    }
+    if (ind.includes('realestate') || ind.includes('construc') || ind.includes('inmobil') || ind.includes('construccion')) {
+        return 'text-emerald-400';
+    }
+    return 'text-indigo-400';
+};
+
+const getPlanPrice = (plan, industry) => {
+    const ind = (industry || '').toLowerCase().trim();
+    const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor');
+    
+    if (isMedical) {
+        if (plan === 'Presencia') return 250;
+        if (plan === 'Crecimiento') return 500;
+        if (plan === 'Autoridad') return 800;
+        if (plan === 'Control') return 999;
+        return 0;
+    } else {
+        const planDef = PLAN_OPTIONS.find(p => p.value === plan);
+        return planDef ? planDef.price : 0;
+    }
+};
+
+const getNextCutoffDate = (cutoffDay) => {
+    if (cutoffDay === undefined || cutoffDay === null) cutoffDay = 5;
+    const today = new Date();
+    let year = today.getFullYear();
+    let month = today.getMonth(); // 0-indexed
+    
+    if (today.getDate() >= cutoffDay) {
+        month += 1;
+        if (month > 11) {
+            month = 0;
+            year += 1;
+        }
+    }
+    
+    const cutoffDate = new Date(year, month, cutoffDay);
+    return cutoffDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+};
+
 export default function HQClientsPage() {
     const [activeMenu, setActiveMenu] = useState(null);
     const [activeFilter, setActiveFilter] = useState('all');
@@ -247,11 +295,13 @@ export default function HQClientsPage() {
     };
 
     const handleCyclePlan = async (id, currentPlan) => {
+        const client = clients.find(c => c.id === id);
+        const industry = client?.industry || '';
         const plans = PLAN_OPTIONS.map(p => p.value);
         const nextIdx = (plans.indexOf(currentPlan) + 1) % plans.length;
         const nextPlan = plans[nextIdx];
-        const planDef = PLAN_OPTIONS.find(p => p.value === nextPlan);
-        await handleUpdateClient(id, { plan: nextPlan, price: planDef ? planDef.price : 0 });
+        const nextPrice = getPlanPrice(nextPlan, industry);
+        await handleUpdateClient(id, { plan: nextPlan, price: nextPrice });
     };
 
     const handleCycleIndustry = async (id, currentIndustry) => {
@@ -566,8 +616,8 @@ export default function HQClientsPage() {
                                                             <div className="flex items-center gap-2 flex-wrap">
                                                                 <span className="text-white font-black text-sm tracking-tight">{cleanName}</span>
                                                                 {brandName && (
-                                                                    <span className="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-                                                                        {brandName}
+                                                                    <span className={`${getBrandColorClass(client.industry)} font-bold text-xs ml-1.5`}>
+                                                                        ({brandName})
                                                                     </span>
                                                                 )}
                                                                 {isBirthday && (
@@ -618,6 +668,9 @@ export default function HQClientsPage() {
                                             <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">
                                                 Corte: Día {client?.cutoff_day !== undefined ? client.cutoff_day : 5}
                                             </div>
+                                            <div className="text-[9px] text-rose-400 font-bold uppercase tracking-wider">
+                                                Cierre Reporte: {getNextCutoffDate(client?.cutoff_day)}
+                                            </div>
                                             <div className="text-[9px] text-gray-500 font-medium">
                                                 Inicio: {client?.start_date ? new Date(client.start_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                                             </div>
@@ -625,7 +678,6 @@ export default function HQClientsPage() {
                                                 +${client?.app_fee !== undefined ? client.app_fee : 100} App Fee
                                             </div>
                                         </div>
-                                    </td>             </div>
                                     </td>
                                     <td className="px-6 py-6">
                                         <button
@@ -681,11 +733,7 @@ export default function HQClientsPage() {
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <PremiumDropdown label="Plan" value={newClient.plan} onChange={(val) => {
-                                                const plan = PLAN_OPTIONS.find(p => p.value === val);
-                                                let price = plan ? plan.price : newClient.price;
-                                                if (newClient.industry === 'medico' && val === 'Presencia') {
-                                                    price = 250;
-                                                }
+                                                const price = getPlanPrice(val, newClient.industry);
                                                 setNewClient({ ...newClient, plan: val, price: price });
                                             }} options={PLAN_OPTIONS} />
                                             <PremiumDropdown label="CM" value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
@@ -714,7 +762,10 @@ export default function HQClientsPage() {
                                             <PremiumDropdown 
                                                 label="Sector / Industria" 
                                                 value={newClient.industry} 
-                                                onChange={(val) => setNewClient({ ...newClient, industry: val, specialty: '', price: (val === 'medico' && newClient.plan === 'Presencia') ? 250 : newClient.price })} 
+                                                onChange={(val) => {
+                                                    const price = getPlanPrice(newClient.plan, val);
+                                                    setNewClient({ ...newClient, industry: val, specialty: '', price: price });
+                                                }} 
                                                 options={INDUSTRY_OPTIONS} 
                                                 icon={Briefcase}
                                             />
@@ -1032,14 +1083,27 @@ export default function HQClientsPage() {
                                                                 searchable={true}
                                                                 icon={Globe}
                                                             />
-                                                            <div className="space-y-3">
-                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
-                                                                    <Shield className="w-3 h-3 text-indigo-400" /> Industria / Sector (No modificable)
-                                                                </label>
-                                                                <div className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-gray-400 font-bold text-sm select-none uppercase tracking-wider">
-                                                                    {INDUSTRY_OPTIONS.find(i => i.value === newClient.industry)?.label || newClient.industry || 'General'}
+                                                            {(!editingClient?.industry || editingClient?.industry === '' || editingClient?.industry === 'Otro' || editingClient?.industry === 'General') ? (
+                                                                <PremiumDropdown 
+                                                                    label="Sector / Industria" 
+                                                                    value={newClient.industry} 
+                                                                    onChange={(val) => {
+                                                                        const price = getPlanPrice(newClient.plan, val);
+                                                                        setNewClient({ ...newClient, industry: val, specialty: '', price: price });
+                                                                    }} 
+                                                                    options={INDUSTRY_OPTIONS} 
+                                                                    icon={Briefcase}
+                                                                />
+                                                            ) : (
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-4 flex items-center gap-2">
+                                                                        <Shield className="w-3 h-3 text-indigo-400" /> Industria / Sector (No modificable)
+                                                                    </label>
+                                                                    <div className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-gray-400 font-bold text-sm select-none uppercase tracking-wider">
+                                                                        {INDUSTRY_OPTIONS.find(i => i.value === newClient.industry)?.label || newClient.industry || 'General'}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
+                                                            )}
                                                             {newClient.industry?.toLowerCase().includes('médico') && (
                                                                 <PremiumDropdown 
                                                                     label="Especialidad Médica" 
@@ -1193,11 +1257,7 @@ export default function HQClientsPage() {
                                                         <PremiumDropdown label="Editor Asignado" icon={Zap} value={newClient.editor} onChange={(val) => setNewClient({ ...newClient, editor: val })} options={editorOptions} />
                                                         <PremiumDropdown label="Filmmaker / Videógrafo" icon={Zap} value={newClient.filmmaker} onChange={(val) => setNewClient({ ...newClient, filmmaker: val })} options={filmmakerOptions} />
                                                         <PremiumDropdown label="Plan Estratégico" icon={Shield} value={newClient.plan} onChange={(val) => {
-                                                            const planDef = PLAN_OPTIONS.find(p => p.value === val);
-                                                            let price = planDef ? planDef.price : newClient.price;
-                                                            if (newClient.industry === 'medico' && val === 'Presencia') {
-                                                                price = 250;
-                                                            }
+                                                            const price = getPlanPrice(val, newClient.industry);
                                                             setNewClient({ ...newClient, plan: val, price: price });
                                                         }} options={PLAN_OPTIONS} />
                                                     </div>

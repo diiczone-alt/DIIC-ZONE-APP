@@ -12,11 +12,28 @@ import PremiumDropdown from '../shared/PremiumDropdown';
 import { motion } from 'framer-motion';
 import { ECUADOR_CITIES, INDUSTRY_OPTIONS, PLAN_OPTIONS, MEDICAL_SPECIALTIES, AGRO_SPECIALTIES, EDUCATION_SPECIALTIES } from '@/lib/constants';
 
+const getPlanPrice = (plan, industry) => {
+    const ind = (industry || '').toLowerCase().trim();
+    const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor');
+    
+    if (isMedical) {
+        if (plan === 'Presencia') return 250;
+        if (plan === 'Crecimiento') return 500;
+        if (plan === 'Autoridad') return 800;
+        if (plan === 'Control') return 999;
+        return 0;
+    } else {
+        const planDef = PLAN_OPTIONS.find(p => p.value === plan);
+        return planDef ? planDef.price : 0;
+    }
+};
+
 export default function ClientAccountSettings() {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [activeSection, setActiveSection] = useState('profile'); // profile, brand, security, billing, notifications
     const [showPlans, setShowPlans] = useState(false);
+    const [isNicheLocked, setIsNicheLocked] = useState(false);
     
     const [profileData, setProfileData] = useState({
         full_name: '',
@@ -156,6 +173,7 @@ export default function ClientAccountSettings() {
                     has_agents: clientRecord?.has_agents !== undefined ? clientRecord.has_agents : (profile?.has_agents !== undefined ? profile.has_agents : true),
                     price: clientRecord?.price || profile?.price || '300'
                 });
+                setIsNicheLocked(!!(clientRecord?.industry || profile?.industry));
             } catch (error) {
                 console.error("Error fetching sync data:", error);
             }
@@ -230,7 +248,8 @@ export default function ClientAccountSettings() {
                 address: profileData.address,
                 website: profileData.website,
                 goals: profileData.goals,
-                brochure_url: profileData.brochure_url
+                brochure_url: profileData.brochure_url,
+                price: profileData.price
             });
 
             // Update specific personal profile fields
@@ -249,7 +268,8 @@ export default function ClientAccountSettings() {
                     goals: profileData.goals,
                     brochure_url: profileData.brochure_url,
                     drive_root_link: profileData.drive_root_link,
-                    drive_root_id: profileData.drive_root_id
+                    drive_root_id: profileData.drive_root_id,
+                    price: profileData.price
                 })
                 .eq('id', user.id);
             
@@ -537,13 +557,24 @@ export default function ClientAccountSettings() {
                                 icon={MapPin}
                                 searchable={true}
                             />
-                            <PremiumDropdown 
-                                label="Industria / Sector"
-                                value={profileData.marketing_type}
-                                onChange={(val) => setProfileData({...profileData, marketing_type: val, specialty: ''})}
-                                options={INDUSTRY_OPTIONS}
-                                icon={Sparkles}
-                            />
+                            {isNicheLocked ? (
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest pl-2 flex items-center gap-1.5">
+                                        <Lock className="w-3.5 h-3.5 text-indigo-400" /> Industria / Sector (No modificable)
+                                    </label>
+                                    <div className="w-full bg-white/[0.02] border border-white/5 rounded-2xl py-3 px-4 text-gray-500 font-bold text-sm select-none uppercase tracking-wider">
+                                        {INDUSTRY_OPTIONS.find(i => i.value === profileData.marketing_type)?.label || profileData.marketing_type || 'General'}
+                                    </div>
+                                </div>
+                            ) : (
+                                <PremiumDropdown 
+                                    label="Industria / Sector"
+                                    value={profileData.marketing_type}
+                                    onChange={(val) => setProfileData({...profileData, marketing_type: val, specialty: ''})}
+                                    options={INDUSTRY_OPTIONS}
+                                    icon={Sparkles}
+                                />
+                            )}
                             
                             {/* Conditional Specialty field */}
                             {profileData.marketing_type === 'medico' && (
@@ -574,7 +605,10 @@ export default function ClientAccountSettings() {
                                 <PremiumDropdown 
                                     label="Plan Maestro"
                                     value={profileData.plan}
-                                    onChange={(val) => setProfileData({...profileData, plan: val})}
+                                    onChange={(val) => {
+                                        const price = getPlanPrice(val, profileData.marketing_type);
+                                        setProfileData({ ...profileData, plan: val, price: price });
+                                    }}
                                     options={PLAN_OPTIONS}
                                     icon={Zap}
                                 />

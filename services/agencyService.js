@@ -329,6 +329,8 @@ export const agencyService = {
             const resolvedHasCrm = updates.has_crm !== undefined ? updates.has_crm : existingClient.has_crm;
             const resolvedHasAgents = updates.has_agents !== undefined ? updates.has_agents : existingClient.has_agents;
 
+            const resolvedPrice = updates.price !== undefined ? updates.price : existingClient.price;
+
             // 1. Update Profile (User-facing side)
             const profileUpdates = {
                 full_name: resolvedName,
@@ -347,7 +349,8 @@ export const agencyService = {
                 cutoff_day: resolvedCutoffDay,
                 app_fee: resolvedAppFee,
                 has_crm: resolvedHasCrm,
-                has_agents: resolvedHasAgents
+                has_agents: resolvedHasAgents,
+                price: resolvedPrice
             };
             
             // Clean undefined fields
@@ -380,7 +383,8 @@ export const agencyService = {
                 cutoff_day: resolvedCutoffDay,
                 app_fee: resolvedAppFee,
                 has_crm: resolvedHasCrm,
-                has_agents: resolvedHasAgents
+                has_agents: resolvedHasAgents,
+                price: resolvedPrice
             };
 
             // Clean undefined fields
