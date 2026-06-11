@@ -64,6 +64,31 @@ export const socialService = {
     },
 
     /**
+     * Connect a simulated sandbox account for testing
+     * @param {string} provider - 'facebook', 'tiktok', 'google', etc.
+     */
+    connectSandbox: async (provider) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Sesión no válida");
+
+        // Insert or update simulated connection
+        const { data, error } = await supabase
+            .from('social_connections')
+            .upsert({
+                user_id: user.id,
+                platform: provider,
+                external_id: `sandbox_${provider}_id`,
+                access_token: 'sandbox_token',
+                refresh_token: 'sandbox_refresh',
+                expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id,platform' });
+
+        if (error) throw error;
+        return true;
+    },
+
+    /**
      * Get currently linked identities for the user
      */
     getLinkedAccounts: async () => {

@@ -22,6 +22,43 @@ export const adsService = {
                 return [];
             }
 
+            // Support sandbox/mock mode
+            if (connection.access_token === 'sandbox_token') {
+                if (platform === 'facebook' || platform === 'instagram') {
+                    return [
+                        {
+                            id: `act_${platform}_102839281`,
+                            account_id: '102839281',
+                            name: 'Sebas Tiano - Ads Manager Personal',
+                            currency: 'USD',
+                            status: 1,
+                            platform: 'facebook'
+                        },
+                        {
+                            id: `act_${platform}_94827163`,
+                            account_id: '94827163',
+                            name: 'Vitor Pizza - Cuenta de Pauta Comercial',
+                            currency: 'USD',
+                            status: 1,
+                            platform: 'facebook'
+                        }
+                    ];
+                }
+                if (platform === 'tiktok') {
+                    return [
+                        {
+                            id: 'act_tiktok_1029381',
+                            account_id: '1029381',
+                            name: 'Sebas Tiano - TikTok Business Account',
+                            currency: 'USD',
+                            status: 1,
+                            platform: 'tiktok'
+                        }
+                    ];
+                }
+                return [];
+            }
+
             // 2. Consultar la API de la plataforma
             if (platform === 'facebook' || platform === 'instagram') {
                 const response = await fetch(`https://graph.facebook.com/v19.0/me/adaccounts?fields=name,account_id,id,currency,account_status&access_token=${connection.access_token}`);

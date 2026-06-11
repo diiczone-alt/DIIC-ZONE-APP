@@ -27,6 +27,11 @@ export default function SocialConnectStep({ onNext, updateData }) {
     const [showExtras, setShowExtras] = useState(false);
     const [showSkipConfirm, setShowSkipConfirm] = useState(false);
     
+    // Connection choice state
+    const [showConnectModalFor, setShowConnectModalFor] = useState(null);
+    const [isConnectingSandbox, setIsConnectingSandbox] = useState(false);
+    const [sandboxStep, setSandboxStep] = useState(0);
+
     // Ads selection state
     const [selectingAccountsFor, setSelectingAccountsFor] = useState(null);
     const [availableAccounts, setAvailableAccounts] = useState([]);
@@ -70,7 +75,12 @@ export default function SocialConnectStep({ onNext, updateData }) {
             }
             return;
         }
+        setShowConnectModalFor(platform);
+    };
 
+    const handleRealConnect = async () => {
+        const platform = showConnectModalFor;
+        setShowConnectModalFor(null);
         setLoading(true);
         try {
             toast.info(`Iniciando conexión segura con ${platform.label}...`);
@@ -78,6 +88,57 @@ export default function SocialConnectStep({ onNext, updateData }) {
         } catch (err) {
             toast.error(`Error al conectar ${platform.label}`);
             setLoading(false);
+        }
+    };
+
+    const handleSandboxConnect = async () => {
+        const platform = showConnectModalFor;
+        setIsConnectingSandbox(true);
+        setSandboxStep(0);
+        
+        // Simular flujo animado de conexión
+        const steps = [
+            "Estableciendo canal cifrado con API Sandbox...",
+            "Sincronizando Business Manager de Sebas Tiano...",
+            "Validando permisos de publicación y anuncios (Meta Ads)...",
+            "¡Conexión establecida con éxito!"
+        ];
+        
+        for (let i = 0; i < steps.length; i++) {
+            setSandboxStep(i);
+            await new Promise(r => setTimeout(r, 600));
+        }
+
+        try {
+            await socialService.connectSandbox(platform.provider);
+            
+            // Si el proveedor es 'facebook', marcar tanto facebook como instagram como conectados
+            if (platform.provider === 'facebook') {
+                setConnected(prev => ({
+                    ...prev,
+                    facebook: true,
+                    instagram: true
+                }));
+            } else {
+                setConnected(prev => ({
+                    ...prev,
+                    [platform.id]: true
+                }));
+            }
+            
+            toast.success(`Sandbox de ${platform.label} sincronizada con éxito.`);
+            setShowConnectModalFor(null);
+            
+            // Si tiene anuncios, abrir selector automáticamente para que seleccione sus cuentas publicitarias
+            if (platform.ads) {
+                setTimeout(() => {
+                    openAccountSelector(platform);
+                }, 400);
+            }
+        } catch (err) {
+            toast.error("Error al establecer conexión Sandbox");
+        } finally {
+            setIsConnectingSandbox(false);
         }
     };
 
@@ -361,6 +422,117 @@ export default function SocialConnectStep({ onNext, updateData }) {
                                     Confirmar Selección
                                 </button>
                             </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Connect Choice Modal */}
+            <AnimatePresence>
+                {showConnectModalFor && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[130] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 30 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 30 }}
+                            className="bg-[#0D0D15] border border-white/10 w-full max-w-xl rounded-[3.5rem] overflow-hidden shadow-[0_0_120px_rgba(79,70,229,0.15)] flex flex-col max-h-[90vh]"
+                        >
+                            {/* Modal Header */}
+                            <div className="p-10 border-b border-white/5 bg-gradient-to-b from-white/5 to-transparent relative">
+                                <div className="flex items-center gap-6">
+                                    <div className={`w-16 h-16 rounded-[1.8rem] flex items-center justify-center bg-indigo-500/10 border border-indigo-500/20`}>
+                                        <Cpu className={`w-7 h-7 text-indigo-400`} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">Sincronización con {showConnectModalFor.label}</h3>
+                                        <p className="text-gray-500 text-[10px] font-mono tracking-widest uppercase">META_ADS_INTEGRATION_PROTOCOL</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Modal Content */}
+                            <div className="flex-1 overflow-y-auto p-10 space-y-6 custom-scrollbar">
+                                {isConnectingSandbox ? (
+                                    <div className="py-16 text-center space-y-6">
+                                        <RefreshCw className="w-12 h-12 text-orange-500 animate-spin mx-auto" />
+                                        <div className="space-y-2">
+                                            <p className="text-white font-black uppercase text-sm tracking-wider animate-pulse">
+                                                {sandboxStep === 0 && "Estableciendo canal cifrado con API Sandbox..."}
+                                                {sandboxStep === 1 && "Sincronizando Business Manager de Sebas Tiano..."}
+                                                {sandboxStep === 2 && "Validando permisos de pauta (Meta Ads)..."}
+                                                {sandboxStep === 3 && "Sincronización completa..."}
+                                            </p>
+                                            <p className="text-gray-500 text-[9px] font-mono uppercase tracking-widest">
+                                                SECURE_CONNECTION_ESTABLISHING
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <p className="text-gray-400 text-xs leading-relaxed font-medium">
+                                            Vence las limitaciones de Meta. Para publicar contenido, gestionar pauta publicitaria y visualizar métricas de seguimiento de forma inmediata, selecciona el método de vinculación:
+                                        </p>
+
+                                        <div className="space-y-4">
+                                            {/* Sandbox Mode Option */}
+                                            <div 
+                                                onClick={handleSandboxConnect}
+                                                className="p-6 rounded-3xl border border-orange-500/30 bg-orange-500/[0.02] hover:bg-orange-500/[0.05] transition-all cursor-pointer group flex gap-5 items-start relative overflow-hidden shadow-[0_0_20px_rgba(249,115,22,0.08)]"
+                                            >
+                                                <div className="absolute top-4 right-4 bg-orange-500 text-black text-[7px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">
+                                                    RECOMENDADO
+                                                </div>
+                                                <div className="p-4 bg-orange-500/10 rounded-2xl text-orange-400 flex-shrink-0 group-hover:scale-105 transition-transform">
+                                                    <ShieldCheck className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-black text-white uppercase tracking-wider mb-1">
+                                                        Modo Sandbox (Simulado Inteligente)
+                                                    </h4>
+                                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">
+                                                        Sincroniza cuentas publicitarias y páginas para **Sebas Tiano** / **Vitor Pizza**. Habilita el control de pauta, agendamiento de contenido y reportes de métricas en tiempo real de forma instantánea.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Real OAuth Option */}
+                                            <div 
+                                                onClick={handleRealConnect}
+                                                className="p-6 rounded-3xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-indigo-500/30 transition-all cursor-pointer group flex gap-5 items-start"
+                                            >
+                                                <div className="p-4 bg-indigo-500/10 rounded-2xl text-indigo-400 flex-shrink-0 group-hover:scale-105 transition-transform">
+                                                    <Link2 className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-black text-white uppercase tracking-wider mb-1">
+                                                        Modo Producción (OAuth Real de Meta)
+                                                    </h4>
+                                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">
+                                                        Inicia sesión con tu cuenta de Facebook real. *Nota: Si tu aplicación de desarrollador de Meta está en modo desarrollo en el portal de Meta, verás la pantalla "La aplicación no está activa".*
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Modal Footer */}
+                            {!isConnectingSandbox && (
+                                <div className="p-10 bg-white/[0.02] border-t border-white/5 flex justify-end">
+                                    <button 
+                                        onClick={() => setShowConnectModalFor(null)}
+                                        className="py-4 px-8 text-gray-500 hover:text-white font-black text-xs uppercase tracking-widest transition-colors"
+                                    >
+                                        Cerrar
+                                    </button>
+                                </div>
+                            )}
                         </motion.div>
                     </motion.div>
                 )}
