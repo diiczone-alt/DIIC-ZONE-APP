@@ -90,7 +90,7 @@ export const onboardingService = {
                             specialty: formData.niche || 'General',
                             status: 'ONBOARDING_COMPLETED',
                             priority: 'MEDIUM',
-                            plan: 'Basic',
+                            plan: formData.selectedPlan?.name || 'Basic',
                             birth_date: birthDate,
                             website: formData.website || user.user_metadata?.website || '',
                             goals: formData.goals || [],

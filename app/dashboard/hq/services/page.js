@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Tag, Plus, Edit2, Trash2,
@@ -10,355 +10,14 @@ import {
     Shield, Crown, Star,
     ClipboardList, Scissors, MessageCircle, BarChart2,
     Film, ImageIcon, Megaphone, Target, DollarSign, Settings, PieChart,
-    Stethoscope, Utensils, Home, GraduationCap, HeartPulse
+    Stethoscope, Utensils, Home, GraduationCap, HeartPulse,
+    HardHat, Coins, Landmark, UtensilsCrossed, Cpu, Gavel, Factory, 
+    HeartHandshake, Store, Truck, Plane, MoreHorizontal, Mic, Sprout, ShoppingBag
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 
-const NICHE_DETAILS = {
-    general: {
-        plans: {
-            presence: {
-                name: 'NIVEL PRESENCIA',
-                narrative: 'Ideal para empezar. Deja de ser invisible. Construimos tu autoridad digital con contenido profesional desde el primer día.',
-                features: [
-                    'Estrategia de contenido',
-                    'Calendario editorial',
-                    'Community mgmt',
-                    'Reporte mensual de métricas'
-                ],
-                enfoque: 'Contenido orgánico base',
-                filmmaker: 'Filmmaker remoto'
-            },
-            growth: {
-                name: 'NIVEL CRECIMIENTO',
-                narrative: 'Ideal para posicionamiento. Creamos el sistema que atrae clientes calificados a tu WhatsApp 24/7.',
-                features: [
-                    'Estrategia de captación',
-                    'Calendario editorial',
-                    'Community mgmt',
-                    'Monitoreo semanal',
-                    'Publicidad pagada básica'
-                ],
-                enfoque: 'Estrategia de captación',
-                filmmaker: 'Filmmaker presencial (1/mes)'
-            },
-            authority: {
-                name: 'NIVEL AUTORIDAD',
-                narrative: 'Conviértete en el referente #1. Producción y narrativa de marca para cobrar lo que realmente vales.',
-                features: [
-                    'Narrativa de marca',
-                    'Calendario editorial',
-                    'Community mgmt',
-                    'Producción de contenido',
-                    'Embudo de ventas',
-                    'Gestión de Ads profesional'
-                ],
-                enfoque: 'Narrativa de marca',
-                filmmaker: 'Filmmaker presencial (2/mes)'
-            },
-            elite: {
-                name: 'NIVEL CONTROL',
-                narrative: 'Dominio total del mercado y viralidad agresiva con producción completa.',
-                features: [
-                    'Estrategia B2B / High-ticket',
-                    'Calendario editorial',
-                    'Community mgmt',
-                    'Producción de contenido',
-                    'Sistemas automatizados',
-                    'Full Ads + Retargeting'
-                ],
-                enfoque: 'Estrategia B2B',
-                filmmaker: 'Filmmaker ilimitado o dedicado'
-            }
-        }
-    },
-    medical: {
-        plans: {
-            presence: {
-                name: 'PRESENCIA MÉDICA',
-                price: '250',
-                originalPrice: '300',
-                narrative: 'Promo Activa: Impulsa tu imagen profesional. Ecosistema digital clínico con gestión de redes y fotografía en consultorio.',
-                features: [
-                    'Gestión de Redes (Creación y optimización de perfiles)',
-                    'Diseño de posts y stories base (Grid Estético)',
-                    'Estrategia mensual + copywriting especializado',
-                    'Fotografía Profesional (Médico, equipo e instalaciones)',
-                    'Contrato mínimo de 3 meses (Campaña)'
-                ],
-                enfoque: 'Confianza y Bio base',
-                filmmaker: 'Filmmaker en consultorio (1 Sesión / Mes)'
-            },
-            growth: {
-                name: 'CRECIMIENTO MÉDICO',
-                price: '500',
-                narrative: 'Atrae pacientes de forma constante con pauta publicitaria segmentada y videos explicativos del especialista.',
-                features: [
-                    'Todo lo de Presencia Médica',
-                    'Producción Audiovisual (Videos informativos y tips médicos)',
-                    'Grabación de procedimientos y resultados',
-                    'Campañas Meta Ads (Captación de pacientes)',
-                    'Automatización y Configuración básica'
-                ],
-                enfoque: 'Funnels de Citas Médicas',
-                filmmaker: 'Filmmaker en consultorio (1.5h / Mes)'
-            },
-            authority: {
-                name: 'AUTORIDAD ESPECIALISTA',
-                price: '700',
-                narrative: 'Conviértete en el referente de tu especialidad. Grabaciones detalladas y testimonios para captar casos de alta complejidad.',
-                features: [
-                    'Todo lo de Crecimiento Médico',
-                    'Videos testimoniales de pacientes',
-                    'Grabaciones y fotos en quirófanos y cirugías',
-                    'Ebook de Salud (Lead Magnet)',
-                    'Campañas Google Ads de Alta Intención'
-                ],
-                enfoque: 'Posicionamiento del Especialista',
-                filmmaker: 'Filmmaker en consultorio y quirófano (2/mes)'
-            },
-            elite: {
-                name: 'MONOPOLIO CLÍNICO',
-                price: '999',
-                narrative: 'Dominio total para clínicas. Automatización integral de citas, triaje inteligente en WhatsApp y escala nacional.',
-                features: [
-                    'Todo lo de Autoridad Especialista',
-                    'Funnels avanzados de agendamiento y recordatorios',
-                    'Producción de minidocumentales clínicos',
-                    'Triaje IA en WhatsApp para filtrar pacientes',
-                    'Dashboard analítico de costo por paciente (CPA)'
-                ],
-                enfoque: 'Escala e Integración Clínica',
-                filmmaker: 'Filmmaker dedicado (Sesiones ilimitadas)'
-            }
-        }
-    },
-    hospital: {
-        plans: {
-            presence: {
-                name: 'SISTEMA PRESENCIA',
-                price: '300',
-                narrative: 'Cimiento de confianza institucional. Identidad digital del hospital, directorio de especialidades y atención al paciente base.',
-                features: [
-                    'Estructuración del Directorio Médico digital',
-                    'Gestión reputacional e institucional de la clínica/hospital',
-                    'Diseño estético y uniforme para todas las áreas',
-                    'Fotografía profesional de instalaciones y quirófanos',
-                    'Campañas de branding local y emergencias'
-                ],
-                enfoque: 'Reputación & Directorio Médico',
-                filmmaker: 'Filmmaker en hospital (1 Sesión/Mes)'
-            },
-            growth: {
-                name: 'SISTEMA DE CAPTACIÓN',
-                price: '500',
-                narrative: 'Sistema activo de captación de pacientes. Funnels dedicados a las especialidades más rentables del hospital.',
-                features: [
-                    'Todo lo de Sistema Presencia',
-                    'Funnels de captación para Especialidades Clave',
-                    'Producción de videos explicativos con el staff de médicos',
-                    'Campañas Meta & Google Ads para agendas médicas',
-                    'Sistema de pre-calificación de pacientes en WhatsApp'
-                ],
-                enfoque: 'Captación de Especialidades',
-                filmmaker: 'Filmmaker en hospital (1.5h/Mes)'
-            },
-            authority: {
-                name: 'SISTEMA DE AUTORIDAD',
-                price: '700',
-                narrative: 'Posiciona al hospital como el centro médico referente. Cobertura de cirugías complejas y testimonios reales de alto impacto.',
-                features: [
-                    'Todo lo de Sistema de Captación',
-                    'Cobertura audiovisual premium de cirugías y tecnología médica',
-                    'Videos de testimonios y casos de éxito de pacientes',
-                    'Google Ads avanzado (Búsqueda activa de cirugías de alta gama)',
-                    'Estrategia de relaciones públicas digitales e hitos clínicos'
-                ],
-                enfoque: 'Tecnología y Casos Complejos',
-                filmmaker: 'Filmmaker en quirófanos y hospital (2/mes)'
-            },
-            elite: {
-                name: 'SISTEMA MONOPOLIO',
-                price: '999',
-                narrative: 'El sistema definitivo de marketing hospitalario. Triaje automatizado con Inteligencia Artificial, telemedicina y automatización total.',
-                features: [
-                    'Todo lo de Sistema de Autoridad',
-                    'Triaje y agendamiento IA en WhatsApp integrado al software médico',
-                    'Funnels de fidelización de pacientes post-consulta',
-                    'Producción de minidocumentales institucionales y branding masivo',
-                    'Dashboard unificado de derivación de pacientes y coste de adquisición (CAC)'
-                ],
-                enfoque: 'Automatización & Escala Hospitalaria',
-                filmmaker: 'Filmmaker dedicado (Sesiones ilimitadas)'
-            }
-        }
-    },
-    educativo: {
-        plans: {
-            presence: {
-                name: 'PRESENCIA EDUCATIVA',
-                price: '300',
-                narrative: 'Establece tu autoridad docente. Grid estético y contenido educativo estructurado para vender tus conocimientos.',
-                features: [
-                    'Gestión y optimización de perfiles académicos',
-                    'Diseño de carruseles educativos explicativos',
-                    'Estrategia de marca personal para instructores',
-                    'Fotografía profesional en aula o estudio',
-                    '1 Video Corto Educativo (Reel/TikTok)'
-                ],
-                enfoque: 'Posicionamiento como Tutor/Experto',
-                filmmaker: 'Filmmaker en aula/estudio (1 Sesión/Mes)'
-            },
-            growth: {
-                name: 'CRECIMIENTO ACADÉMICO',
-                price: '500',
-                narrative: 'Lanza tus cursos y capacitaciones. Campañas de conversión para captar alumnos reales.',
-                features: [
-                    'Todo lo de Presencia Educativa',
-                    'Producción de videos explicativos y micro-lecciones',
-                    'Campañas de Meta Ads orientadas a inscripciones',
-                    'Configuración de enlaces a Hotmart/Teachable o web',
-                    'Automatización de respuestas con temarios en WhatsApp'
-                ],
-                enfoque: 'Conversión de Estudiantes',
-                filmmaker: 'Filmmaker en local (1.5h/Mes)'
-            },
-            authority: {
-                name: 'AUTORIDAD DOCENTE',
-                price: '700',
-                narrative: 'Estrategia completa de lanzamientos para seminarios y programas de certificación.',
-                features: [
-                    'Todo lo de Crecimiento Académico',
-                    'Embudo de webinars en vivo y masterclasses',
-                    'Videos testimoniales de alumnos graduados',
-                    'Campañas de remarketing y captación high-ticket',
-                    'Producción de intro de cursos con estética cinematográfica'
-                ],
-                enfoque: 'Lanzamientos y Webinars',
-                filmmaker: 'Filmmaker en estudio/aula (2 Sesiones/Mes)'
-            },
-            elite: {
-                name: 'IMPERIO EDUCATIVO',
-                price: '999',
-                narrative: 'Dominio y escala para institutos o academias consolidadas. Plataforma propia y automatizaciones avanzadas.',
-                features: [
-                    'Todo lo de Autoridad Docente',
-                    'Funnels automatizados de evergreen (ventas 24/7)',
-                    'Producción de minidocumentales del instituto',
-                    'Integración CRM para seguimiento de leads estudiantiles',
-                    'Soporte y diseño de material de apoyo en PDF para alumnos'
-                ],
-                enfoque: 'Escala e Integración Académica',
-                filmmaker: 'Filmmaker dedicado (Sesiones ilimitadas)'
-            }
-        }
-    },
-    hospitality: {
-        plans: {
-            presence: {
-                name: 'PRESENCIA FOODIE',
-                narrative: 'Muestra tu menú y el alma de tu cocina. Garantizamos antojo visual desde la primera publicación.',
-                features: [
-                    'Fotografía y diseño del menú',
-                    'Configuración de Google Maps / TripAdvisor',
-                    'Historias diarias de ambiente e insumos',
-                    'Respuestas rápidas de horarios y carta'
-                ],
-                enfoque: 'Estética Visual y Menú',
-                filmmaker: 'Filmmaker en local (1/mes)'
-            },
-            growth: {
-                name: 'CRECIMIENTO DE MESAS',
-                narrative: 'Llena tu restaurante durante los días lentos y potencia las reservas del fin de semana.',
-                features: [
-                    'Pauta segmentada a 5km a la redonda',
-                    'Campañas específicas de fin de semana',
-                    'Reels de preparación (Food Porn) e ingredientes',
-                    'Automatización de link de reservas'
-                ],
-                enfoque: 'Tráfico al Local y Delivery',
-                filmmaker: 'Filmmaker en local (1.5h/mes)'
-            },
-            authority: {
-                name: 'AUTORIDAD GASTRONÓMICA',
-                narrative: 'Posiciona a tu Chef o marca como una parada obligatoria en la ciudad. Experiencia y reputación Premium.',
-                features: [
-                    'Videos de experiencia del cliente e historia',
-                    'Estrategia con micro-influencers locales',
-                    'Campañas de conversión para eventos privados',
-                    'Gestión reputacional de Google/TripAdvisor'
-                ],
-                enfoque: 'Branding de Experiencia',
-                filmmaker: 'Filmmaker en local (2/mes)'
-            },
-            elite: {
-                name: 'IMPERIO CULINARIO',
-                narrative: 'Para franquicias o múltiples sucursales. Estrategia omnicanal de captación de comensales y franquiciados.',
-                features: [
-                    'Campañas multilocación con presupuestos divididos',
-                    'Fórmula de viralidad para lanzamientos de platos',
-                    'Funnels para captación de franquicias',
-                    'Automatizaciones CRM para fidelización y cumpleaños'
-                ],
-                enfoque: 'Fidelización y Multilocación',
-                filmmaker: 'Filmmaker dedicado (Sesiones Pro)'
-            }
-        }
-    },
-    realestate: {
-        plans: {
-            presence: {
-                name: 'PRESENCIA INMOBILIARIA',
-                narrative: 'Destaca tus propiedades en cartera con una estética moderna. Confianza y profesionalismo visual.',
-                features: [
-                    'Grid profesional de propiedades destacadas',
-                    'Plantillas premium para fichas técnicas',
-                    'Optimización de perfil de Realtor experto',
-                    'Respuestas pregrabadas de listings'
-                ],
-                enfoque: 'Catálogo de Propiedades',
-                filmmaker: 'Filmmaker de propiedades (1/mes)'
-            },
-            growth: {
-                name: 'CAPTACIÓN DE PROPIETARIOS',
-                narrative: 'Atrae leads de personas que buscan vender o comprar propiedades en tu zona de enfoque.',
-                features: [
-                    'Anuncios segmentados por zonas de interés',
-                    'Embudos de captación de propietarios exclusivos',
-                    'Videos tipo "House Tour" dinámicos',
-                    'Filtro automático de presupuesto del cliente'
-                ],
-                enfoque: 'Generación de Leads Inmobiliarios',
-                filmmaker: 'Filmmaker de propiedades (1.5h/mes)'
-            },
-            authority: {
-                name: 'AUTORIDAD INMOBILIARIA',
-                narrative: 'Conviértete en el referente de Bienes Raíces de tu ciudad. Cinematic tours de propiedades de alta gama.',
-                features: [
-                    'Cinematic House Tours detallados',
-                    'Estrategia de marca personal del Broker/Realtor',
-                    'Campañas para inversionistas nacionales/extranjeros',
-                    'Digital Portfolio Premium'
-                ],
-                enfoque: 'Posicionamiento High-ticket',
-                filmmaker: 'Filmmaker de propiedades (2/mes)'
-            },
-            elite: {
-                name: 'DESARROLLO & ESCALA',
-                narrative: 'Estrategia integral para constructoras, desarrolladoras o agencias inmobiliarias consolidadas.',
-                features: [
-                    'Embudos para proyectos de planos (Pre-venta)',
-                    'Producción de renders animados y documentales del proyecto',
-                    'Publicidad internacional para inversionistas',
-                    'Automatización de agendamiento de visitas guiadas'
-                ],
-                enfoque: 'Pre-ventas y Proyectos Grandes',
-                filmmaker: 'Filmmaker dedicado (Sesiones Pro)'
-            }
-        }
-    }
-};
+import { NICHE_DETAILS } from '@/lib/nicheDetails';
 
 export default function HQServicesPage() {
     const [services, setServices] = useState([]);
@@ -367,7 +26,7 @@ export default function HQServicesPage() {
     const [loading, setLoading] = useState(true);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [selectedExtras, setSelectedExtras] = useState([]);
-    const [wizardStep, setWizardStep] = useState(1); // 1: Cards, 2: Profile, 3: Agreement
+    const [wizardStep, setWizardStep] = useState(1); // 1: Cards, 2: Profile, 3: Agreement, 4: Payment, 5: Success
     const [clientProfile, setClientProfile] = useState({
         name: '',
         company: '',
@@ -376,6 +35,174 @@ export default function HQServicesPage() {
     });
     const [activeCategory, setActiveCategory] = useState('plan'); // 'plan' or 'pack'
     const [selectedNiche, setSelectedNiche] = useState('general');
+
+    // --- ESTADOS Y REFS PARA FIRMA DIGITAL & PAGO ---
+    const canvasRef = useRef(null);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [hasSignature, setHasSignature] = useState(false);
+    const [signatureImage, setSignatureImage] = useState(null);
+    const [paymentInfo, setPaymentInfo] = useState({ cardNumber: '', expiry: '', cvv: '', cardholderName: '' });
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+    const startDrawing = (e) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0]?.clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0]?.clientY);
+        if (clientX === undefined || clientY === undefined) return;
+        
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        setIsDrawing(true);
+    };
+
+    const draw = (e) => {
+        if (!isDrawing) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        
+        const clientX = e.clientX || (e.touches && e.touches[0]?.clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0]?.clientY);
+        if (clientX === undefined || clientY === undefined) return;
+        
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        setHasSignature(true);
+    };
+
+    const stopDrawing = () => {
+        setIsDrawing(false);
+        if (canvasRef.current) {
+            setSignatureImage(canvasRef.current.toDataURL());
+        }
+    };
+
+    const clearSignature = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setHasSignature(false);
+        setSignatureImage(null);
+    };
+
+    const handleDownloadContract = () => {
+        const docContent = `
+            <html>
+            <head>
+                <title>Contrato de Producción - DIIC ZONE</title>
+                <style>
+                    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #111; padding: 40px; max-width: 800px; margin: auto; line-height: 1.6; }
+                    .header { text-align: center; border-bottom: 2px solid #6366f1; padding-bottom: 20px; margin-bottom: 40px; }
+                    .header h1 { margin: 0; font-size: 28px; color: #111; text-transform: uppercase; letter-spacing: 2px; }
+                    .header p { margin: 5px 0 0 0; color: #666; font-size: 12px; font-weight: bold; }
+                    .section { margin-bottom: 30px; }
+                    .section-title { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #6366f1; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
+                    .grid { display: grid; grid-template-cols: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+                    .grid-item { background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+                    .grid-item label { font-size: 10px; font-weight: bold; color: #999; text-transform: uppercase; display: block; margin-bottom: 5px; }
+                    .grid-item p { margin: 0; font-size: 14px; font-weight: bold; }
+                    .clauses { font-size: 12px; color: #444; text-align: justify; }
+                    .signatures { display: flex; justify-content: space-between; margin-top: 60px; }
+                    .signature-box { text-align: center; width: 40%; }
+                    .signature-line { border-top: 1px solid #333; margin-top: 50px; padding-top: 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #555; }
+                    .signature-img { max-height: 60px; max-width: 100%; object-fit: contain; }
+                    .badge { display: inline-block; background: #10b981; color: white; font-size: 10px; font-weight: bold; padding: 5px 10px; border-radius: 20px; text-transform: uppercase; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>DIIC ZONE</h1>
+                    <p>ACUERDO ESTRATÉGICO DE PRODUCCIÓN & MARKETING DIGITAL</p>
+                    <div style="margin-top: 15px;"><span class="badge">Pago Verificado Online</span></div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">Detalles de la Suscripción</div>
+                    <div class="grid">
+                        <div class="grid-item">
+                            <label>Plan Adquirido</label>
+                            <p>${selectedPlan?.name}</p>
+                        </div>
+                        <div class="grid-item">
+                            <label>Inversión Mensual</label>
+                            <p>$${selectedPlan?.price} USD / mes</p>
+                        </div>
+                        <div class="grid-item">
+                            <label>Cliente Titular</label>
+                            <p>${clientProfile.name}</p>
+                        </div>
+                        <div class="grid-item">
+                            <label>Compañía / Marca</label>
+                            <p>${clientProfile.company}</p>
+                        </div>
+                        <div class="grid-item">
+                            <label>Ubicación</label>
+                            <p>${clientProfile.location}</p>
+                        </div>
+                        <div class="grid-item">
+                            <label>Nicho de Mercado</label>
+                            <p>${clientProfile.businessType}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">Cláusulas del Acuerdo</div>
+                    <div class="clauses">
+                        <p><strong>Primera: Objeto del Servicio.</strong> DIIC ZONE se compromete a prestar servicios de marketing estratégico y creación de contenido en base al nicho <strong>${clientProfile.businessType}</strong>, optimizando la parrilla de contenidos en los canales correspondientes según el nivel adquirido.</p>
+                        <p><strong>Segunda: Compromiso del Cliente.</strong> El cliente garantiza facilitar el acceso a locaciones comerciales y personal clave para las sesiones de rodaje programadas, así como el material necesario para la correcta ejecución de las campañas de pauta.</p>
+                        <p><strong>Tercera: Facturación y Pagos.</strong> La facturación se realizará de forma mensual recurrente por el monto de $${selectedPlan?.price} USD. Los cargos se debitarán automáticamente de la tarjeta autorizada por el titular.</p>
+                        <p><strong>Cuarta: Propiedad Intelectual.</strong> Todo el contenido final aprobado y entregado es propiedad del cliente para su uso comercial. Los brutos y archivos de edición del Studio pertenecen a DIIC ZONE hasta la finalización del contrato.</p>
+                    </div>
+                </div>
+                
+                <div class="signatures">
+                    <div class="signature-box">
+                        <div style="height: 60px; display: flex; align-items: center; justify-content: center; font-style: italic; font-weight: bold; color: #6366f1;">DIIC ZONE OS</div>
+                        <div class="signature-line">DIIC ZONE STRATEGIST</div>
+                    </div>
+                    <div class="signature-box">
+                        <div style="height: 60px; display: flex; align-items: center; justify-content: center;">
+                            ${signatureImage ? `<img src="${signatureImage}" class="signature-img" />` : '<span style="color: #ccc;">FIRMADO ELECTRÓNICAMENTE</span>'}
+                        </div>
+                        <div class="signature-line">EL CLIENTE (${clientProfile.name})</div>
+                    </div>
+                </div>
+                
+                <script>
+                    window.onload = function() {
+                        window.print();
+                    }
+                </script>
+            </body>
+            </html>
+        `;
+        const blob = new Blob([docContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `contrato_diic_${clientProfile.company.toLowerCase().replace(/\s+/g, '_')}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success('Contrato descargado exitosamente');
+    };
 
     const loadData = async (silent = false) => {
         if (!silent) setLoading(true);
@@ -412,12 +239,33 @@ export default function HQServicesPage() {
     const handleSelectPlan = (plan) => {
         setSelectedPlan(plan);
         const nicheNames = {
-            general: 'General / Comercial',
-            medical: 'Salud / Médico',
-            hospital: 'Sistema de Marketing / Hospitales',
+            general: 'Estrategia General',
+            personal: 'Marca Personal',
+            medical: 'Marketing Médico',
+            doctor: 'Marketing Médico',
+            hospital: 'Sistema de Hospitales',
+            health: 'Sistema de Hospitales',
             educativo: 'Capacitaciones / Cursos',
-            hospitality: 'Gastronomía / Restaurantes',
-            realestate: 'Bienes Raíces / Inmobiliaria'
+            education: 'Capacitaciones / Cursos',
+            hospitality: 'Marketing para Restaurantes',
+            horeca: 'Marketing para Restaurantes',
+            realestate: 'Marketing Inmobiliario',
+            agro: 'Marketing Agropecuario',
+            creator: 'Blog / Podcast',
+            marketing: 'Marketing Digital',
+            ecommerce: 'E-commerce',
+            finance: 'Finanzas / Seguros',
+            tech: 'Tecnología / SaaS',
+            legal: 'Legal / Abogados',
+            retail: 'Ventas Minoristas',
+            consulting: 'Consultoría / Asesores',
+            manufacturing: 'Manufactura / Industria',
+            construction: 'Construcción / Obra',
+            transport: 'Logística / Transporte',
+            travel: 'Viajes / Turismo',
+            ong: 'Sin Fines de Lucro',
+            government: 'Gubernamental',
+            other: 'Otro Sector'
         };
         setClientProfile(prev => ({
             ...prev,
@@ -430,6 +278,9 @@ export default function HQServicesPage() {
         setSelectedPlan(null);
         setWizardStep(1);
         setClientProfile({ name: '', company: '', location: '', businessType: '' });
+        setHasSignature(false);
+        setSignatureImage(null);
+        setPaymentInfo({ cardNumber: '', expiry: '', cvv: '', cardholderName: '' });
     };
 
     return (
@@ -443,15 +294,33 @@ export default function HQServicesPage() {
             </div>
 
             {/* Niche Selector - Premium Custom Branding */}
-            <div className="flex justify-center -mb-4">
-                <div className="bg-[#0E0E18]/60 backdrop-blur-xl p-2 rounded-[2rem] flex flex-wrap gap-2 border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.4)]">
+            <div className="flex flex-col items-center gap-4 w-full max-w-6xl mx-auto -mb-4">
+                <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.4em]">Filtrar por Nicho Estratégico</p>
+                <div className="bg-[#0E0E18]/60 backdrop-blur-xl p-4 rounded-[2.5rem] grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.4)] w-full">
                     {[
                         { id: 'general', label: 'Estrategia General', icon: Briefcase },
+                        { id: 'personal', label: 'Marca Personal', icon: User },
                         { id: 'medical', label: 'Marketing Médico', icon: Stethoscope },
-                        { id: 'hospital', label: 'Sistema de Hospitales', icon: HeartPulse },
-                        { id: 'educativo', label: 'Capacitaciones / Cursos', icon: GraduationCap },
-                        { id: 'hospitality', label: 'Marketing para Restaurantes', icon: Utensils },
-                        { id: 'realestate', label: 'Marketing Inmobiliario', icon: Home }
+                        { id: 'hospital', label: 'Sistema Hospitales', icon: HeartPulse },
+                        { id: 'educativo', label: 'Cursos / Talleres', icon: GraduationCap },
+                        { id: 'hospitality', label: 'Restaurantes', icon: Utensils },
+                        { id: 'realestate', label: 'Bienes Raíces', icon: Home },
+                        { id: 'agro', label: 'Agropecuario', icon: Sprout },
+                        { id: 'creator', label: 'Blog / Podcast', icon: Mic },
+                        { id: 'marketing', label: 'Marketing Digital', icon: Megaphone },
+                        { id: 'ecommerce', label: 'E-commerce', icon: ShoppingBag },
+                        { id: 'finance', label: 'Finanzas / Seguros', icon: Coins },
+                        { id: 'tech', label: 'Tecnología / SaaS', icon: Cpu },
+                        { id: 'legal', label: 'Legal / Abogados', icon: Gavel },
+                        { id: 'retail', label: 'Retail / Tiendas', icon: Store },
+                        { id: 'consulting', label: 'Consultoría', icon: Briefcase },
+                        { id: 'manufacturing', label: 'Manufactura', icon: Factory },
+                        { id: 'construction', label: 'Construcción', icon: HardHat },
+                        { id: 'transport', label: 'Logística', icon: Truck },
+                        { id: 'travel', label: 'Viajes / Turismo', icon: Plane },
+                        { id: 'ong', label: 'ONG / Sin Fines', icon: HeartHandshake },
+                        { id: 'government', label: 'Gubernamental', icon: Landmark },
+                        { id: 'other', label: 'Otro Sector', icon: MoreHorizontal }
                     ].map((niche) => {
                         const Icon = niche.icon;
                         const isActive = selectedNiche === niche.id;
@@ -459,14 +328,14 @@ export default function HQServicesPage() {
                             <button
                                 key={niche.id}
                                 onClick={() => setSelectedNiche(niche.id)}
-                                className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 border ${
+                                className={`px-4 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 border ${
                                     isActive
                                         ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/30 scale-105'
                                         : 'bg-white/5 border-transparent text-gray-400 hover:text-white hover:bg-white/10'
                                 }`}
                             >
-                                <Icon className="w-4 h-4" />
-                                {niche.label}
+                                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                                <span className="truncate">{niche.label}</span>
                             </button>
                         );
                     })}
@@ -501,7 +370,11 @@ export default function HQServicesPage() {
                     {services
                         .filter(s => s.category === activeCategory)
                         .map((service, index) => {
-                            const nichePlan = NICHE_DETAILS[selectedNiche]?.plans[service.id];
+                            const resolvedNiche = selectedNiche === 'doctor' ? 'medical' :
+                                                  selectedNiche === 'health' ? 'hospital' :
+                                                  selectedNiche === 'education' ? 'educativo' :
+                                                  selectedNiche === 'horeca' ? 'hospitality' : selectedNiche;
+                            const nichePlan = NICHE_DETAILS[resolvedNiche]?.plans[service.id];
                             const customizedService = nichePlan ? {
                                 ...service,
                                 name: nichePlan.name,
@@ -673,7 +546,9 @@ export default function HQServicesPage() {
                                         <Zap className="w-6 h-6 text-indigo-400" />
                                     </div>
                                     <h2 className="text-2xl font-black text-white uppercase tracking-[0.2em]">
-                                        {wizardStep === 2 ? 'Perfil Estratégico' : 'Acuerdo de Producción'}
+                                        {wizardStep === 2 ? 'Perfil Estratégico' : 
+                                         wizardStep === 3 ? 'Acuerdo de Producción' : 
+                                         wizardStep === 4 ? 'Pago Seguro en Línea' : 'Contrato Emitido'}
                                     </h2>
                                 </div>
                                 <button onClick={closeWizard} className="text-gray-500 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-xl">
@@ -799,16 +674,163 @@ export default function HQServicesPage() {
                                                     DIIC ZONE garantiza la entrega de las piezas descritas manteniendo los estándares de calidad cinemática.
                                                     El cliente asegura el acceso a locaciones y personal clave para las sesiones de rodaje programadas.
                                                 </p>
-                                                <div className="mt-12 flex justify-between">
+                                                <div className="mt-12 flex flex-col md:flex-row justify-between gap-8">
                                                     <div className="flex flex-col gap-4">
                                                         <div className="w-40 h-px bg-gray-800" />
-                                                        <span className="text-[8px] font-black uppercase tracking-[0.5em] text-gray-700 pl-2">DIIC ZONE</span>
+                                                        <span className="text-[8px] font-black uppercase tracking-[0.5em] text-gray-700 pl-2 text-center md:text-left">DIIC ZONE</span>
                                                     </div>
-                                                    <div className="flex flex-col gap-4">
-                                                        <div className="w-40 h-px bg-gray-800" />
-                                                        <span className="text-[8px] font-black uppercase tracking-[0.5em] text-gray-700 pl-2">EL CLIENTE</span>
+                                                    <div className="flex flex-col gap-3 w-full md:w-1/2">
+                                                        <div className="flex justify-between items-center px-1">
+                                                            <span className="text-[8px] font-black uppercase tracking-[0.5em] text-indigo-400">Firma del Cliente</span>
+                                                            {hasSignature && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={clearSignature}
+                                                                    className="text-[9px] text-red-500 hover:text-red-400 font-black uppercase tracking-wider"
+                                                                >
+                                                                    Limpiar
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <div className="border border-white/10 rounded-2xl bg-black/60 w-full h-32 relative overflow-hidden">
+                                                            <canvas
+                                                                ref={canvasRef}
+                                                                width={300}
+                                                                height={128}
+                                                                className="w-full h-full cursor-crosshair touch-none"
+                                                                onMouseDown={startDrawing}
+                                                                onMouseMove={draw}
+                                                                onMouseUp={stopDrawing}
+                                                                onMouseLeave={stopDrawing}
+                                                                onTouchStart={startDrawing}
+                                                                onTouchMove={draw}
+                                                                onTouchEnd={stopDrawing}
+                                                            />
+                                                            {!hasSignature && (
+                                                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-[10px] text-gray-600 font-mono tracking-widest uppercase">
+                                                                    Firma Aquí con el mouse o touch
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="w-full h-px bg-gray-800" />
+                                                        <span className="text-[8px] font-black uppercase tracking-[0.5em] text-gray-700 pl-2">EL CLIENTE: {clientProfile.name}</span>
                                                     </div>
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {wizardStep === 4 && (
+                                    <div className="space-y-8">
+                                        <div className="bg-[#05050C] border border-white/5 rounded-3xl p-8 space-y-6">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Suscripción Mensual</span>
+                                                <span className="text-xl font-black text-white">${selectedPlan?.price} USD</span>
+                                            </div>
+                                            <div className="h-px bg-white/5 w-full" />
+                                            <div className="flex justify-between items-center text-xs font-bold text-gray-400">
+                                                <span>Ecosistema DIIC ZONE OS v2</span>
+                                                <span className="text-emerald-400 uppercase tracking-widest">Activación Inmediata</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] px-1">Detalle de Pago Tarjeta de Crédito</h4>
+                                            
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">Nombre del Tarjetahabiente</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Como figura en la tarjeta"
+                                                        value={paymentInfo.cardholderName}
+                                                        onChange={(e) => setPaymentInfo({ ...paymentInfo, cardholderName: e.target.value })}
+                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 uppercase"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">Número de Tarjeta</label>
+                                                    <input
+                                                        type="text"
+                                                        maxLength="19"
+                                                        placeholder="4000 1234 5678 9010"
+                                                        value={paymentInfo.cardNumber}
+                                                        onChange={(e) => {
+                                                            const v = e.target.value.replace(/\s?/g, '').replace(/[^0-9]/g, '');
+                                                            const matches = v.match(/\d{4,16}/g);
+                                                            const match = matches && matches[0] || '';
+                                                            const parts = [];
+                                                            for (let i=0, len=match.length; i<len; i+=4) {
+                                                                parts.push(match.substring(i, i+4));
+                                                            }
+                                                            if (parts.length > 0) {
+                                                                setPaymentInfo({ ...paymentInfo, cardNumber: parts.join(' ') });
+                                                            } else {
+                                                                setPaymentInfo({ ...paymentInfo, cardNumber: v });
+                                                            }
+                                                        }}
+                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 font-mono tracking-widest"
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">Vencimiento (MM/AA)</label>
+                                                        <input
+                                                            type="text"
+                                                            maxLength="5"
+                                                            placeholder="MM/AA"
+                                                            value={paymentInfo.expiry}
+                                                            onChange={(e) => {
+                                                                let v = e.target.value.replace(/[^0-9]/g, '');
+                                                                if (v.length > 2) {
+                                                                    v = v.substring(0, 2) + '/' + v.substring(2, 4);
+                                                                }
+                                                                setPaymentInfo({ ...paymentInfo, expiry: v });
+                                                            }}
+                                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 font-mono text-center"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">CVV (Código Seguridad)</label>
+                                                        <input
+                                                            type="text"
+                                                            maxLength="3"
+                                                            placeholder="123"
+                                                            value={paymentInfo.cvv}
+                                                            onChange={(e) => setPaymentInfo({ ...paymentInfo, cvv: e.target.value.replace(/[^0-9]/g, '') })}
+                                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 font-mono text-center"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {wizardStep === 5 && (
+                                    <div className="space-y-8 text-center py-6">
+                                        <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/20">
+                                            <Check className="w-10 h-10 animate-bounce" />
+                                        </div>
+                                        
+                                        <div className="space-y-2">
+                                            <h3 className="text-2xl font-black text-white uppercase tracking-wider">¡Contratación Exitosa!</h3>
+                                            <p className="text-gray-400 text-sm max-w-md mx-auto">
+                                                El pago del plan se ha procesado correctamente. Tu contrato de producción digital con DIIC ZONE ha sido emitido y firmado.
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-[#05050C] border border-white/5 rounded-3xl p-6 text-left space-y-4 max-w-md mx-auto">
+                                            <h4 className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Resumen del Acuerdo</h4>
+                                            <div className="space-y-2 text-xs font-bold text-gray-400">
+                                                <div className="flex justify-between"><span>Socio:</span><span className="text-white">{clientProfile.name}</span></div>
+                                                <div className="flex justify-between"><span>Marca:</span><span className="text-white">{clientProfile.company}</span></div>
+                                                <div className="flex justify-between"><span>Nicho:</span><span className="text-indigo-400 uppercase">{clientProfile.businessType}</span></div>
+                                                <div className="flex justify-between"><span>Nivel/Plan:</span><span className="text-white">{selectedPlan?.name}</span></div>
+                                                <div className="flex justify-between"><span>Tarifa:</span><span className="text-white">${selectedPlan?.price} USD/mes</span></div>
                                             </div>
                                         </div>
                                     </div>
@@ -817,7 +839,7 @@ export default function HQServicesPage() {
 
                             {/* Modal Footer */}
                             <div className="p-10 border-t border-white/5 bg-white/[0.02] flex gap-4">
-                                {wizardStep === 2 ? (
+                                {wizardStep === 2 && (
                                     <button
                                         onClick={() => setWizardStep(3)}
                                         disabled={!clientProfile.name || !clientProfile.company}
@@ -825,7 +847,9 @@ export default function HQServicesPage() {
                                     >
                                         Generar Acuerdo
                                     </button>
-                                ) : (
+                                )}
+
+                                {wizardStep === 3 && (
                                     <>
                                         <button
                                             onClick={() => setWizardStep(2)}
@@ -834,13 +858,61 @@ export default function HQServicesPage() {
                                             Atrás
                                         </button>
                                         <button
-                                            onClick={() => {
-                                                alert('Acuerdo DIIC Emitido con Éxito. Iniciando Despliegue Estratégico.');
-                                                closeWizard();
-                                            }}
-                                            className="flex-1 py-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-xl shadow-emerald-500/20 uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-3"
+                                            onClick={() => setWizardStep(4)}
+                                            disabled={!hasSignature}
+                                            className="flex-1 py-6 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:grayscale text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-600/20 uppercase text-xs tracking-[0.3em]"
                                         >
-                                            <Check className="w-6 h-6" /> Confirmar Cierre
+                                            Confirmar Firma
+                                        </button>
+                                    </>
+                                )}
+
+                                {wizardStep === 4 && (
+                                    <>
+                                        <button
+                                            onClick={() => setWizardStep(3)}
+                                            disabled={isProcessingPayment}
+                                            className="px-10 py-6 bg-white/5 hover:bg-white/10 text-gray-500 font-black rounded-2xl transition-all uppercase text-xs tracking-widest"
+                                        >
+                                            Atrás
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setIsProcessingPayment(true);
+                                                setTimeout(() => {
+                                                    setIsProcessingPayment(false);
+                                                    setWizardStep(5);
+                                                    toast.success("Pago Procesado con Éxito. Contrato Activado.");
+                                                }, 1800);
+                                            }}
+                                            disabled={!paymentInfo.cardNumber || !paymentInfo.expiry || !paymentInfo.cvv || !paymentInfo.cardholderName || isProcessingPayment}
+                                            className="flex-1 py-6 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:grayscale text-white font-black rounded-2xl transition-all shadow-xl shadow-emerald-500/20 uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-3"
+                                        >
+                                            {isProcessingPayment ? (
+                                                <>
+                                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    Procesando Cobro...
+                                                </>
+                                            ) : (
+                                                "Proceder al Pago Seguro"
+                                            )}
+                                        </button>
+                                    </>
+                                )}
+
+                                {wizardStep === 5 && (
+                                    <>
+                                        <button
+                                            onClick={handleDownloadContract}
+                                            className="flex-1 py-6 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-600/20 uppercase text-xs tracking-widest flex items-center justify-center gap-3"
+                                        >
+                                            Descargar Contrato
+                                        </button>
+                                        <button
+                                            onClick={closeWizard}
+                                            className="px-10 py-6 bg-white/5 hover:bg-white/10 text-gray-500 font-black rounded-2xl transition-all uppercase text-xs tracking-widest"
+                                        >
+                                            Cerrar
                                         </button>
                                     </>
                                 )}

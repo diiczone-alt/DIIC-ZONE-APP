@@ -184,7 +184,7 @@ export default function OnboardingWizard({ initialType = 'client' }) {
             case 10: return <SocialConnectStep onNext={nextStep} updateData={(d) => handleUpdateData('social', d)} />;
             case 11: return <BrandIdentityStep onNext={nextStep} updateData={(d) => handleUpdateData('brandIdentity', d)} />;
             case 12: return <LevelCalculationStep onNext={nextStep} formData={formData} />;
-            case 13: return <SmartRecommendationStep onNext={nextStep} formData={formData} />;
+            case 13: return <SmartRecommendationStep onNext={nextStep} formData={formData} updateData={updateRoot} />;
             case 14: return <DriveSetupStep onNext={nextStep} updateData={(d) => handleUpdateData('driveData', d)} data={formData} />;
             case 15: return <EnvironmentSuccessStep onNext={nextStep} formData={formData} />;
             default: return <div className="text-white text-center p-10 font-bold">¡Flujo Completado! Generando tu entorno...</div>;
