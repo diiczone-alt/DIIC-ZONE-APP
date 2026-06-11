@@ -293,50 +293,69 @@ export default function HQServicesPage() {
                 </div>
             </div>
 
-            {/* Niche Selector - Premium Custom Branding */}
-            <div className="flex flex-col items-center gap-4 w-full max-w-6xl mx-auto -mb-4">
-                <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.4em]">Filtrar por Nicho Estratégico</p>
-                <div className="bg-[#0E0E18]/60 backdrop-blur-xl p-4 rounded-[2.5rem] grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.4)] w-full">
+            {/* Niche Selector */}
+            <div className="flex flex-col items-center gap-6 w-full max-w-[1600px] mx-auto -mb-2">
+                <div className="text-center space-y-2">
+                    <p className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.5em]">Filtrar por Nicho Estratégico</p>
+                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Selecciona tu nicho para personalizar los planes, enfoques y flujos de marketing específicos.</p>
+                </div>
+                <div className="bg-[#0E0E18]/80 backdrop-blur-2xl p-8 rounded-[3.5rem] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] w-full">
                     {[
-                        { id: 'general', label: 'Estrategia General', icon: Briefcase },
-                        { id: 'personal', label: 'Marca Personal', icon: User },
-                        { id: 'medical', label: 'Marketing Médico', icon: Stethoscope },
-                        { id: 'hospital', label: 'Sistema Hospitales', icon: HeartPulse },
-                        { id: 'educativo', label: 'Cursos / Talleres', icon: GraduationCap },
-                        { id: 'hospitality', label: 'Restaurantes', icon: Utensils },
-                        { id: 'realestate', label: 'Bienes Raíces', icon: Home },
-                        { id: 'agro', label: 'Agropecuario', icon: Sprout },
-                        { id: 'creator', label: 'Blog / Podcast', icon: Mic },
-                        { id: 'marketing', label: 'Marketing Digital', icon: Megaphone },
-                        { id: 'ecommerce', label: 'E-commerce', icon: ShoppingBag },
-                        { id: 'finance', label: 'Finanzas / Seguros', icon: Coins },
-                        { id: 'tech', label: 'Tecnología / SaaS', icon: Cpu },
-                        { id: 'legal', label: 'Legal / Abogados', icon: Gavel },
-                        { id: 'retail', label: 'Retail / Tiendas', icon: Store },
-                        { id: 'consulting', label: 'Consultoría', icon: Briefcase },
-                        { id: 'manufacturing', label: 'Manufactura', icon: Factory },
-                        { id: 'construction', label: 'Construcción', icon: HardHat },
-                        { id: 'transport', label: 'Logística', icon: Truck },
-                        { id: 'travel', label: 'Viajes / Turismo', icon: Plane },
-                        { id: 'ong', label: 'ONG / Sin Fines', icon: HeartHandshake },
-                        { id: 'government', label: 'Gubernamental', icon: Landmark },
-                        { id: 'other', label: 'Otro Sector', icon: MoreHorizontal }
+                        { id: 'general', label: 'Estrategia General', desc: 'Crecimiento estándar y marca', icon: Briefcase },
+                        { id: 'personal', label: 'Marca Personal', desc: 'Autoridad para profesionales', icon: User },
+                        { id: 'medical', label: 'Marketing Médico', desc: 'Funnels para médicos y especialistas', icon: Stethoscope },
+                        { id: 'hospital', label: 'Sistema Hospitales', desc: 'Reputación & directorio médico', icon: HeartPulse },
+                        { id: 'educativo', label: 'Cursos / Talleres', desc: 'Conversión para cursos y talleres', icon: GraduationCap },
+                        { id: 'hospitality', label: 'Restaurantes', desc: 'Atracción foodie & delivery', icon: Utensils },
+                        { id: 'realestate', label: 'Bienes Raíces', desc: 'Leads inmobiliarios de alta gama', icon: Home },
+                        { id: 'agro', label: 'Agropecuario', desc: 'Venta mayorista e insumos', icon: Sprout },
+                        { id: 'creator', label: 'Blog / Podcast', desc: 'Viralidad y monetización de marca', icon: Mic },
+                        { id: 'marketing', label: 'Marketing Digital', desc: 'Embudo de captación B2B', icon: Megaphone },
+                        { id: 'ecommerce', label: 'E-commerce', desc: 'Conversión y escala de ventas web', icon: ShoppingBag },
+                        { id: 'finance', label: 'Finanzas / Seguros', desc: 'Captación de capital e inversiones', icon: Coins },
+                        { id: 'tech', label: 'Tecnología / SaaS', desc: 'Adquisición de usuarios y SaaS', icon: Cpu },
+                        { id: 'legal', label: 'Legal / Abogados', desc: 'Posicionamiento y casos complejos', icon: Gavel },
+                        { id: 'retail', label: 'Retail / Tiendas', desc: 'Tráfico al punto de venta físico', icon: Store },
+                        { id: 'consulting', label: 'Consultoría', desc: 'Asesoría de negocio high-ticket', icon: Briefcase },
+                        { id: 'manufacturing', label: 'Manufactura', desc: 'Licitaciones y clientes corporativos', icon: Factory },
+                        { id: 'construction', label: 'Construcción', desc: 'Pre-ventas y portafolio de obra', icon: HardHat },
+                        { id: 'transport', label: 'Logística', desc: 'Logística y distribución B2B', icon: Truck },
+                        { id: 'travel', label: 'Viajes / Turismo', desc: 'Reservas y branding de turismo', icon: Plane },
+                        { id: 'ong', label: 'ONG / Sin Fines', desc: 'Recaudación y concientización social', icon: HeartHandshake },
+                        { id: 'government', label: 'Gubernamental', desc: 'Comunicación institucional', icon: Landmark },
+                        { id: 'other', label: 'Otro Sector', desc: 'Estrategias a la medida', icon: MoreHorizontal }
                     ].map((niche) => {
                         const Icon = niche.icon;
                         const isActive = selectedNiche === niche.id;
                         return (
-                            <button
+                            <motion.button
                                 key={niche.id}
                                 onClick={() => setSelectedNiche(niche.id)}
-                                className={`px-4 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 border ${
+                                whileHover={{ scale: 1.03, y: -2 }}
+                                whileTap={{ scale: 0.98 }}
+                                className={`p-5 rounded-2xl transition-all duration-300 flex items-start gap-4 border text-left w-full relative overflow-hidden group ${
                                     isActive
-                                        ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/30 scale-105'
-                                        : 'bg-white/5 border-transparent text-gray-400 hover:text-white hover:bg-white/10'
+                                        ? 'bg-gradient-to-br from-indigo-600/90 via-indigo-600 to-purple-600/90 border-indigo-400 text-white shadow-[0_15px_30px_rgba(99,102,241,0.3)]'
+                                        : 'bg-white/[0.02] border-white/5 text-gray-400 hover:text-white hover:bg-white/[0.06] hover:border-white/12'
                                 }`}
                             >
-                                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                                <span className="truncate">{niche.label}</span>
-                            </button>
+                                <div className={`p-3 rounded-xl flex-shrink-0 transition-all ${
+                                    isActive ? 'bg-white/20 text-white' : 'bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20'
+                                }`}>
+                                    <Icon className="w-5 h-5" />
+                                </div>
+                                <div className="flex flex-col pr-2">
+                                    <span className="font-black text-xs uppercase tracking-wider leading-tight">{niche.label}</span>
+                                    <span className={`text-[10px] mt-1 transition-colors leading-normal ${
+                                        isActive ? 'text-indigo-200' : 'text-gray-500 group-hover:text-gray-400'
+                                    }`}>
+                                        {niche.desc}
+                                    </span>
+                                </div>
+                                {isActive && (
+                                    <div className="absolute right-4 top-4 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#10b981]" />
+                                )}
+                            </motion.button>
                         );
                     })}
                 </div>
