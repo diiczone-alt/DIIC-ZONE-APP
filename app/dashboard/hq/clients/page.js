@@ -24,6 +24,20 @@ const getIndustryStyle = (industry) => {
             label: 'Salud / Médico'
         };
     }
+    if (ind.includes('hospital') || ind.includes('clinica') || ind.includes('clínica')) {
+        return {
+            bg: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+            dot: 'bg-blue-400',
+            label: 'Sistema Clínico / Hospital'
+        };
+    }
+    if (ind.includes('educativo') || ind.includes('curso') || ind.includes('capacitac') || ind.includes('academia') || ind.includes('formacion') || ind.includes('educación')) {
+        return {
+            bg: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+            dot: 'bg-purple-400',
+            label: 'Capacitaciones / Cursos'
+        };
+    }
     if (ind.includes('hospitality') || ind.includes('restaurant') || ind.includes('comida') || ind.includes('gastronom')) {
         return {
             bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
@@ -50,6 +64,12 @@ const getBrandColorClass = (industry) => {
     if (ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor')) {
         return 'text-cyan-400';
     }
+    if (ind.includes('hospital') || ind.includes('clinica') || ind.includes('clínica')) {
+        return 'text-blue-400';
+    }
+    if (ind.includes('educativo') || ind.includes('curso') || ind.includes('capacitac') || ind.includes('academia') || ind.includes('formacion') || ind.includes('educación')) {
+        return 'text-purple-400';
+    }
     if (ind.includes('hospitality') || ind.includes('restaurant') || ind.includes('comida') || ind.includes('gastronom')) {
         return 'text-amber-400';
     }
@@ -62,11 +82,18 @@ const getBrandColorClass = (industry) => {
 const getPlanPrice = (plan, industry) => {
     const ind = (industry || '').toLowerCase().trim();
     const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor');
+    const isHospital = ind.includes('hospital') || ind.includes('clinica') || ind.includes('clínica');
     
-    if (isMedical) {
+    if (isMedical && !isHospital) {
         if (plan === 'Presencia') return 250;
         if (plan === 'Crecimiento') return 500;
-        if (plan === 'Autoridad') return 800;
+        if (plan === 'Autoridad') return 700;
+        if (plan === 'Control') return 999;
+        return 0;
+    } else if (isHospital) {
+        if (plan === 'Presencia') return 300;
+        if (plan === 'Crecimiento') return 500;
+        if (plan === 'Autoridad') return 700;
         if (plan === 'Control') return 999;
         return 0;
     } else {
@@ -780,7 +807,7 @@ export default function HQClientsPage() {
                                         </div>
 
                                         {/* Specialty Logic for Unified Management */}
-                                        {newClient.industry === 'medico' && (
+                                        {(newClient.industry === 'medico' || newClient.industry === 'hospital') && (
                                             <PremiumDropdown 
                                                 label="Especialidad Médica" 
                                                 value={newClient.specialty} 
@@ -1104,7 +1131,7 @@ export default function HQClientsPage() {
                                                                     </div>
                                                                 </div>
                                                             )}
-                                                            {newClient.industry?.toLowerCase().includes('médico') && (
+                                                            {(newClient.industry?.toLowerCase().includes('medico') || newClient.industry?.toLowerCase().includes('médico') || newClient.industry?.toLowerCase().includes('hospital')) && (
                                                                 <PremiumDropdown 
                                                                     label="Especialidad Médica" 
                                                                     value={newClient.specialty} 

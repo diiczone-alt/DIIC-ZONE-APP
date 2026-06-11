@@ -10,7 +10,7 @@ import {
     Shield, Crown, Star,
     ClipboardList, Scissors, MessageCircle, BarChart2,
     Film, ImageIcon, Megaphone, Target, DollarSign, Settings, PieChart,
-    Stethoscope, Utensils, Home
+    Stethoscope, Utensils, Home, GraduationCap, HeartPulse
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
@@ -92,6 +92,7 @@ const NICHE_DETAILS = {
             },
             growth: {
                 name: 'CRECIMIENTO MÉDICO',
+                price: '500',
                 narrative: 'Atrae pacientes de forma constante con pauta publicitaria segmentada y videos explicativos del especialista.',
                 features: [
                     'Todo lo de Presencia Médica',
@@ -105,6 +106,7 @@ const NICHE_DETAILS = {
             },
             authority: {
                 name: 'AUTORIDAD ESPECIALISTA',
+                price: '700',
                 narrative: 'Conviértete en el referente de tu especialidad. Grabaciones detalladas y testimonios para captar casos de alta complejidad.',
                 features: [
                     'Todo lo de Crecimiento Médico',
@@ -118,6 +120,7 @@ const NICHE_DETAILS = {
             },
             elite: {
                 name: 'MONOPOLIO CLÍNICO',
+                price: '999',
                 narrative: 'Dominio total para clínicas. Automatización integral de citas, triaje inteligente en WhatsApp y escala nacional.',
                 features: [
                     'Todo lo de Autoridad Especialista',
@@ -127,6 +130,126 @@ const NICHE_DETAILS = {
                     'Dashboard analítico de costo por paciente (CPA)'
                 ],
                 enfoque: 'Escala e Integración Clínica',
+                filmmaker: 'Filmmaker dedicado (Sesiones ilimitadas)'
+            }
+        }
+    },
+    hospital: {
+        plans: {
+            presence: {
+                name: 'SISTEMA PRESENCIA',
+                price: '300',
+                narrative: 'Cimiento de confianza institucional. Identidad digital del hospital, directorio de especialidades y atención al paciente base.',
+                features: [
+                    'Estructuración del Directorio Médico digital',
+                    'Gestión reputacional e institucional de la clínica/hospital',
+                    'Diseño estético y uniforme para todas las áreas',
+                    'Fotografía profesional de instalaciones y quirófanos',
+                    'Campañas de branding local y emergencias'
+                ],
+                enfoque: 'Reputación & Directorio Médico',
+                filmmaker: 'Filmmaker en hospital (1 Sesión/Mes)'
+            },
+            growth: {
+                name: 'SISTEMA DE CAPTACIÓN',
+                price: '500',
+                narrative: 'Sistema activo de captación de pacientes. Funnels dedicados a las especialidades más rentables del hospital.',
+                features: [
+                    'Todo lo de Sistema Presencia',
+                    'Funnels de captación para Especialidades Clave',
+                    'Producción de videos explicativos con el staff de médicos',
+                    'Campañas Meta & Google Ads para agendas médicas',
+                    'Sistema de pre-calificación de pacientes en WhatsApp'
+                ],
+                enfoque: 'Captación de Especialidades',
+                filmmaker: 'Filmmaker en hospital (1.5h/Mes)'
+            },
+            authority: {
+                name: 'SISTEMA DE AUTORIDAD',
+                price: '700',
+                narrative: 'Posiciona al hospital como el centro médico referente. Cobertura de cirugías complejas y testimonios reales de alto impacto.',
+                features: [
+                    'Todo lo de Sistema de Captación',
+                    'Cobertura audiovisual premium de cirugías y tecnología médica',
+                    'Videos de testimonios y casos de éxito de pacientes',
+                    'Google Ads avanzado (Búsqueda activa de cirugías de alta gama)',
+                    'Estrategia de relaciones públicas digitales e hitos clínicos'
+                ],
+                enfoque: 'Tecnología y Casos Complejos',
+                filmmaker: 'Filmmaker en quirófanos y hospital (2/mes)'
+            },
+            elite: {
+                name: 'SISTEMA MONOPOLIO',
+                price: '999',
+                narrative: 'El sistema definitivo de marketing hospitalario. Triaje automatizado con Inteligencia Artificial, telemedicina y automatización total.',
+                features: [
+                    'Todo lo de Sistema de Autoridad',
+                    'Triaje y agendamiento IA en WhatsApp integrado al software médico',
+                    'Funnels de fidelización de pacientes post-consulta',
+                    'Producción de minidocumentales institucionales y branding masivo',
+                    'Dashboard unificado de derivación de pacientes y coste de adquisición (CAC)'
+                ],
+                enfoque: 'Automatización & Escala Hospitalaria',
+                filmmaker: 'Filmmaker dedicado (Sesiones ilimitadas)'
+            }
+        }
+    },
+    educativo: {
+        plans: {
+            presence: {
+                name: 'PRESENCIA EDUCATIVA',
+                price: '300',
+                narrative: 'Establece tu autoridad docente. Grid estético y contenido educativo estructurado para vender tus conocimientos.',
+                features: [
+                    'Gestión y optimización de perfiles académicos',
+                    'Diseño de carruseles educativos explicativos',
+                    'Estrategia de marca personal para instructores',
+                    'Fotografía profesional en aula o estudio',
+                    '1 Video Corto Educativo (Reel/TikTok)'
+                ],
+                enfoque: 'Posicionamiento como Tutor/Experto',
+                filmmaker: 'Filmmaker en aula/estudio (1 Sesión/Mes)'
+            },
+            growth: {
+                name: 'CRECIMIENTO ACADÉMICO',
+                price: '500',
+                narrative: 'Lanza tus cursos y capacitaciones. Campañas de conversión para captar alumnos reales.',
+                features: [
+                    'Todo lo de Presencia Educativa',
+                    'Producción de videos explicativos y micro-lecciones',
+                    'Campañas de Meta Ads orientadas a inscripciones',
+                    'Configuración de enlaces a Hotmart/Teachable o web',
+                    'Automatización de respuestas con temarios en WhatsApp'
+                ],
+                enfoque: 'Conversión de Estudiantes',
+                filmmaker: 'Filmmaker en local (1.5h/Mes)'
+            },
+            authority: {
+                name: 'AUTORIDAD DOCENTE',
+                price: '700',
+                narrative: 'Estrategia completa de lanzamientos para seminarios y programas de certificación.',
+                features: [
+                    'Todo lo de Crecimiento Académico',
+                    'Embudo de webinars en vivo y masterclasses',
+                    'Videos testimoniales de alumnos graduados',
+                    'Campañas de remarketing y captación high-ticket',
+                    'Producción de intro de cursos con estética cinematográfica'
+                ],
+                enfoque: 'Lanzamientos y Webinars',
+                filmmaker: 'Filmmaker en estudio/aula (2 Sesiones/Mes)'
+            },
+            elite: {
+                name: 'IMPERIO EDUCATIVO',
+                price: '999',
+                narrative: 'Dominio y escala para institutos o academias consolidadas. Plataforma propia y automatizaciones avanzadas.',
+                features: [
+                    'Todo lo de Autoridad Docente',
+                    'Funnels automatizados de evergreen (ventas 24/7)',
+                    'Producción de minidocumentales del instituto',
+                    'Integración CRM para seguimiento de leads estudiantiles',
+                    'Soporte y diseño de material de apoyo en PDF para alumnos'
+                ],
+                enfoque: 'Escala e Integración Académica',
                 filmmaker: 'Filmmaker dedicado (Sesiones ilimitadas)'
             }
         }
@@ -291,6 +414,8 @@ export default function HQServicesPage() {
         const nicheNames = {
             general: 'General / Comercial',
             medical: 'Salud / Médico',
+            hospital: 'Sistema de Marketing / Hospitales',
+            educativo: 'Capacitaciones / Cursos',
             hospitality: 'Gastronomía / Restaurantes',
             realestate: 'Bienes Raíces / Inmobiliaria'
         };
@@ -323,6 +448,8 @@ export default function HQServicesPage() {
                     {[
                         { id: 'general', label: 'Estrategia General', icon: Briefcase },
                         { id: 'medical', label: 'Marketing Médico', icon: Stethoscope },
+                        { id: 'hospital', label: 'Sistema de Hospitales', icon: HeartPulse },
+                        { id: 'educativo', label: 'Capacitaciones / Cursos', icon: GraduationCap },
                         { id: 'hospitality', label: 'Marketing para Restaurantes', icon: Utensils },
                         { id: 'realestate', label: 'Marketing Inmobiliario', icon: Home }
                     ].map((niche) => {

@@ -15,11 +15,18 @@ import { ECUADOR_CITIES, INDUSTRY_OPTIONS, PLAN_OPTIONS, MEDICAL_SPECIALTIES, AG
 const getPlanPrice = (plan, industry) => {
     const ind = (industry || '').toLowerCase().trim();
     const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor');
+    const isHospital = ind.includes('hospital') || ind.includes('clinica') || ind.includes('clínica');
     
-    if (isMedical) {
+    if (isMedical && !isHospital) {
         if (plan === 'Presencia') return 250;
         if (plan === 'Crecimiento') return 500;
-        if (plan === 'Autoridad') return 800;
+        if (plan === 'Autoridad') return 700;
+        if (plan === 'Control') return 999;
+        return 0;
+    } else if (isHospital) {
+        if (plan === 'Presencia') return 300;
+        if (plan === 'Crecimiento') return 500;
+        if (plan === 'Autoridad') return 700;
         if (plan === 'Control') return 999;
         return 0;
     } else {
@@ -173,7 +180,8 @@ export default function ClientAccountSettings() {
                     has_agents: clientRecord?.has_agents !== undefined ? clientRecord.has_agents : (profile?.has_agents !== undefined ? profile.has_agents : true),
                     price: clientRecord?.price || profile?.price || '300'
                 });
-                setIsNicheLocked(!!(clientRecord?.industry || profile?.industry));
+                const existingNiche = clientRecord?.industry || profile?.industry;
+                setIsNicheLocked(!!(existingNiche && existingNiche !== 'Otro' && existingNiche !== 'General' && existingNiche !== ''));
             } catch (error) {
                 console.error("Error fetching sync data:", error);
             }
@@ -577,7 +585,7 @@ export default function ClientAccountSettings() {
                             )}
                             
                             {/* Conditional Specialty field */}
-                            {profileData.marketing_type === 'medico' && (
+                            {(profileData.marketing_type === 'medico' || profileData.marketing_type === 'hospital') && (
                                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="md:col-span-2">
                                     <PremiumDropdown 
                                         label="Especialidad Médica"
@@ -937,13 +945,24 @@ export default function ClientAccountSettings() {
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-                                <PremiumDropdown 
-                                    label="Industria de Marketing"
-                                    value={profileData.marketing_type}
-                                    onChange={(val) => setProfileData({...profileData, marketing_type: val, specialty: ''})}
-                                    options={INDUSTRY_OPTIONS}
-                                    icon={Sparkles}
-                                />
+                                {isNicheLocked ? (
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest pl-2 flex items-center gap-1.5">
+                                            <Lock className="w-3.5 h-3.5 text-indigo-400" /> Industria de Marketing (No modificable)
+                                        </label>
+                                        <div className="w-full bg-white/[0.02] border border-white/5 rounded-2xl py-3 px-4 text-gray-500 font-bold text-sm select-none uppercase tracking-wider">
+                                            {INDUSTRY_OPTIONS.find(i => i.value === profileData.marketing_type)?.label || profileData.marketing_type || 'General'}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <PremiumDropdown 
+                                        label="Industria de Marketing"
+                                        value={profileData.marketing_type}
+                                        onChange={(val) => setProfileData({...profileData, marketing_type: val, specialty: ''})}
+                                        options={INDUSTRY_OPTIONS}
+                                        icon={Sparkles}
+                                    />
+                                )}
                                 {profileData.marketing_type === 'educativo' ? (
                                     <PremiumDropdown 
                                         label="Especialidad Educativa"
@@ -960,7 +979,7 @@ export default function ClientAccountSettings() {
                                         options={AGRO_SPECIALTIES}
                                         icon={Target}
                                     />
-                                ) : profileData.marketing_type === 'medico' ? (
+                                ) : (profileData.marketing_type === 'medico' || profileData.marketing_type === 'hospital') ? (
                                     <PremiumDropdown 
                                         label="Especialidad Médica"
                                         value={profileData.specialty}
