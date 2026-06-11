@@ -419,8 +419,30 @@ export default function HQClientsPage() {
 
     const handleOpenEdit = (client) => {
         setEditingClient(client);
+        
+        const calculatedPrice = getPlanPrice(client.plan, client.industry);
+        let initialPrice = client.price;
+        const isMedicalOrHospital = (client.industry || '').toLowerCase().includes('medico') || 
+                                    (client.industry || '').toLowerCase().includes('médico') ||
+                                    (client.industry || '').toLowerCase().includes('hospital') ||
+                                    (client.industry || '').toLowerCase().includes('clinica') ||
+                                    (client.industry || '').toLowerCase().includes('clínica');
+        
+        if (isMedicalOrHospital) {
+            if (client.price === 300 && calculatedPrice === 250) {
+                initialPrice = 250;
+            } else if (client.price === 800 && calculatedPrice === 700) {
+                initialPrice = 700;
+            } else if (!client.price) {
+                initialPrice = calculatedPrice;
+            }
+        } else if (!client.price) {
+            initialPrice = calculatedPrice;
+        }
+
         setNewClient({
             ...client,
+            price: initialPrice,
             birth_date: client.birth_date || '',
             onboarding_data: client.onboarding_data || {},
             editor: client.editor || '',
@@ -513,7 +535,23 @@ export default function HQClientsPage() {
         return matchesSearch;
     }) : [];
 
-    const mrr = Array.isArray(clients) ? clients.reduce((acc, c) => acc + (Number(c.price) || 0), 0) : 0;
+    const mrr = Array.isArray(clients) ? clients.reduce((acc, c) => {
+        let price = Number(c.price) || 0;
+        const isMedOrHosp = (c.industry || '').toLowerCase().includes('medico') || 
+                            (c.industry || '').toLowerCase().includes('médico') ||
+                            (c.industry || '').toLowerCase().includes('hospital') ||
+                            (c.industry || '').toLowerCase().includes('clinica') ||
+                            (c.industry || '').toLowerCase().includes('clínica');
+        if (isMedOrHosp) {
+            const calculated = getPlanPrice(c.plan, c.industry);
+            if (price === 300 && calculated === 250) {
+                price = 250;
+            } else if (price === 800 && calculated === 700) {
+                price = 700;
+            }
+        }
+        return acc + price;
+    }, 0) : 0;
     const riskCount = Array.isArray(clients) ? clients.filter(c => (c?.priority || '').toUpperCase() === 'ALTA').length : 0;
     const pendingCount = Array.isArray(clients) ? clients.filter(c => c?.status === 'paused').length : 0;
     const activeCount = Array.isArray(clients) ? clients.filter(c => c?.status === 'active').length : 0;
@@ -695,21 +733,39 @@ export default function HQClientsPage() {
                                         </button>
                                     </td>
                                     <td className="px-6 py-6">
-                                        <div className="flex flex-col gap-1">
-                                            <div className="font-black text-white text-base leading-none">${client?.price || 0}<span className="text-[10px] font-bold text-gray-500">/mes</span></div>
-                                            <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">
-                                                Corte: Día {client?.cutoff_day !== undefined ? client.cutoff_day : 5}
-                                            </div>
-                                            <div className="text-[9px] text-rose-400 font-bold uppercase tracking-wider">
-                                                Cierre Reporte: {getNextCutoffDate(client?.cutoff_day)}
-                                            </div>
-                                            <div className="text-[9px] text-gray-500 font-medium">
-                                                Inicio: {client?.start_date ? new Date(client.start_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
-                                            </div>
-                                            <div className="text-[9px] text-gray-600 font-bold">
-                                                +${client?.app_fee !== undefined ? client.app_fee : 100} App Fee
-                                            </div>
-                                        </div>
+                                        {(() => {
+                                            let displayPrice = client?.price || 0;
+                                            const isMedOrHosp = (client?.industry || '').toLowerCase().includes('medico') || 
+                                                                (client?.industry || '').toLowerCase().includes('médico') ||
+                                                                (client?.industry || '').toLowerCase().includes('hospital') ||
+                                                                (client?.industry || '').toLowerCase().includes('clinica') ||
+                                                                (client?.industry || '').toLowerCase().includes('clínica');
+                                            if (isMedOrHosp) {
+                                                const calculated = getPlanPrice(client?.plan, client?.industry);
+                                                if (client?.price === 300 && calculated === 250) {
+                                                    displayPrice = 250;
+                                                } else if (client?.price === 800 && calculated === 700) {
+                                                    displayPrice = 700;
+                                                }
+                                            }
+                                            return (
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="font-black text-white text-base leading-none">${displayPrice}<span className="text-[10px] font-bold text-gray-500">/mes</span></div>
+                                                    <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">
+                                                        Corte: Día {client?.cutoff_day !== undefined ? client.cutoff_day : 5}
+                                                    </div>
+                                                    <div className="text-[9px] text-rose-400 font-bold uppercase tracking-wider">
+                                                        Cierre Reporte: {getNextCutoffDate(client?.cutoff_day)}
+                                                    </div>
+                                                    <div className="text-[9px] text-gray-500 font-medium">
+                                                        Inicio: {client?.start_date ? new Date(client.start_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                                                    </div>
+                                                    <div className="text-[9px] text-gray-600 font-bold">
+                                                        +${client?.app_fee !== undefined ? client.app_fee : 100} App Fee
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </td>
                                     <td className="px-6 py-6">
                                         <button

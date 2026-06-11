@@ -183,7 +183,24 @@ export default function ClientAccountSettings() {
                     app_fee: clientRecord?.app_fee !== undefined ? clientRecord.app_fee : (profile?.app_fee !== undefined ? profile.app_fee : 100),
                     has_crm: clientRecord?.has_crm !== undefined ? clientRecord.has_crm : (profile?.has_crm !== undefined ? profile.has_crm : true),
                     has_agents: clientRecord?.has_agents !== undefined ? clientRecord.has_agents : (profile?.has_agents !== undefined ? profile.has_agents : true),
-                    price: clientRecord?.price || profile?.price || '300'
+                    price: (() => {
+                        let priceVal = clientRecord?.price || profile?.price || '300';
+                        const isMedOrHosp = (clientRecord?.industry || profile?.industry || '').toLowerCase().includes('medico') || 
+                                            (clientRecord?.industry || profile?.industry || '').toLowerCase().includes('médico') ||
+                                            (clientRecord?.industry || profile?.industry || '').toLowerCase().includes('hospital') ||
+                                            (clientRecord?.industry || profile?.industry || '').toLowerCase().includes('clinica') ||
+                                            (clientRecord?.industry || profile?.industry || '').toLowerCase().includes('clínica');
+                        if (isMedOrHosp) {
+                            const planVal = clientRecord?.plan || profile?.plan || 'Basic';
+                            const calculated = getPlanPrice(planVal, clientRecord?.industry || profile?.industry);
+                            if (Number(priceVal) === 300 && calculated === 250) {
+                                return '250';
+                            } else if (Number(priceVal) === 800 && calculated === 700) {
+                                return '700';
+                            }
+                        }
+                        return String(priceVal);
+                    })()
                 });
                 const existingNiche = clientRecord?.industry || profile?.industry;
                 setIsNicheLocked(!!(existingNiche && existingNiche !== 'Otro' && existingNiche !== 'General' && existingNiche !== ''));
