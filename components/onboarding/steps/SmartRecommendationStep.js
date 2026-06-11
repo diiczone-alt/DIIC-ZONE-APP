@@ -220,12 +220,14 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                 </div>
                 
                 <div class="section">
-                    <div class="section-title">Cláusulas del Acuerdo</div>
+                    <div class="section-title">Detalles y Entregables Incluidos en el Paquete</div>
                     <div class="clauses">
-                        <p><strong>Primera: Objeto del Servicio.</strong> DIIC ZONE se compromete a prestar servicios de marketing estratégico y creación de contenido en base al nicho <strong>${businessTypeLabel}</strong>, optimizando la parrilla de contenidos en los canales correspondientes según el nivel adquirido.</p>
-                        <p><strong>Segunda: Compromiso del Cliente.</strong> El cliente garantiza facilitar el acceso a locaciones comerciales y personal clave para las sesiones de rodaje programadas, así como el material necesario para la correcta ejecución de las campañas de pauta.</p>
-                        <p><strong>Tercera: Facturación y Pagos.</strong> La facturación se realizará de forma mensual recurrente por el monto de $${activePlan.price} USD. Los cargos se debitarán automáticamente de la tarjeta autorizada por el titular.</p>
-                        <p><strong>Cuarta: Propiedad Intelectual.</strong> Todo el contenido final aprobado y entregado es propiedad del cliente para su uso comercial. Los brutos y archivos de edición del Studio pertenecen a DIIC ZONE hasta la finalización del contrato.</p>
+                        <p>El plan estratégico adquirido incluye los siguientes servicios y entregables detallados para la optimización de los canales digitales:</p>
+                        <ul style="padding-left: 20px; line-height: 1.8; font-size: 13px;">
+                            ${activePlan.features ? activePlan.features.map(f => `<li><strong>${f}</strong></li>`).join('') : ''}
+                        </ul>
+                        <p style="margin-top: 15px; font-size: 13px;"><strong>Enfoque Estratégico principal:</strong> ${activePlan.enfoque}</p>
+                        <p style="font-size: 13px;"><strong>Cobertura Audiovisual (Filmmaker):</strong> ${activePlan.filmmaker}</p>
                     </div>
                 </div>
                 
@@ -377,13 +379,35 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
 
                             <div className="space-y-4">
                                 <p className="text-white font-black uppercase tracking-wider text-xs flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-indigo-400" />
-                                    Cláusulas del Contrato de Producción:
+                                    <Check className="w-4 h-4 text-indigo-400" />
+                                    Detalles y Entregables Incluidos en el Paquete:
                                 </p>
-                                <p><strong>1. Objeto del Acuerdo:</strong> DIIC ZONE se compromete a estructurar y administrar el nodo digital del Cliente en base a la industria <strong>{businessTypeLabel}</strong>, prestando los entregables audiovisuales y pautas de optimización indicados en el plan {activePlan.name}.</p>
-                                <p><strong>2. Sesiones de Grabación (Filmmaker):</strong> Se asigna un recurso de Filmmaker con cobertura de <strong>{activePlan.filmmaker}</strong>. El Cliente se compromete a coordinar locaciones idóneas y personal con 48 horas de anticipación.</p>
-                                <p><strong>3. Propiedad Intelectual:</strong> Todo el material final editado, aprobado y publicado es propiedad de la marca del Cliente. Los archivos brutos de grabación permanecen bajo custodia del DIIC ZONE Studio para resguardo de la línea estética.</p>
-                                <p><strong>4. Renovación Recurrente:</strong> El Cliente autoriza el cobro mensual automatizado de la tarifa correspondiente por el servicio recurrente contratado.</p>
+                                <div className="space-y-3 bg-white/[0.02] border border-white/5 rounded-2xl p-5 text-gray-300">
+                                    <p className="text-white font-bold text-xs uppercase tracking-wider">
+                                        Servicios y Entregables Activos:
+                                    </p>
+                                    <ul className="list-disc pl-5 space-y-2 text-xs">
+                                        {activePlan.features && activePlan.features.map((feature, i) => (
+                                            <li key={i} className="text-gray-300">
+                                                <strong className="text-white">{feature}</strong>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <div className="h-px bg-white/5 my-3" />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                        <div>
+                                            <span className="text-gray-500 uppercase text-[9px] font-bold block">Enfoque de Estrategia:</span>
+                                            <span className="text-white font-bold">{activePlan.enfoque}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-500 uppercase text-[9px] font-bold block">Recurso de Filmmaker:</span>
+                                            <span className="text-white font-bold">{activePlan.filmmaker}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p className="text-[8px] text-gray-600 font-mono uppercase tracking-widest mt-2">
+                                    * La firma de este acuerdo confirma la aceptación de los entregables y la tarifa recurrente del plan.
+                                </p>
                             </div>
 
                             {/* SIGNATURE PAD */}
