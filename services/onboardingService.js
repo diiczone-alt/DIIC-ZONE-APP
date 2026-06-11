@@ -50,7 +50,7 @@ export const onboardingService = {
                 'realestate': 'Bienes Raíces',
                 'tech': 'Tecnología / TI',
                 'education': 'Educación',
-                'horeca': 'Hostelería / HoReCa',
+                'horeca': 'Restaurantes',
                 'marketing': 'Marketing Digital'
             };
 

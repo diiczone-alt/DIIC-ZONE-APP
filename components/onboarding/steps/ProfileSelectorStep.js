@@ -20,7 +20,7 @@ export default function ProfileSelectorStep({ onNext, updateData }) {
         { id: 'education', label: 'Educación', desc: 'Conversión para cursos y talleres', icon: GraduationCap, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'hover:border-yellow-500' },
         { id: 'finance', label: 'Finanzas', desc: 'Captación de capital e inversiones', icon: Coins, color: 'text-green-400', bg: 'bg-green-500/10', border: 'hover:border-green-500' },
         { id: 'health', label: 'Servicios de Salud', desc: 'Reputación & directorio médico', icon: Stethoscope, color: 'text-red-400', bg: 'bg-red-500/10', border: 'hover:border-red-500' },
-        { id: 'horeca', label: 'Hostelería / HoReCa', desc: 'Atracción foodie & delivery', icon: UtensilsCrossed, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'hover:border-orange-500' },
+        { id: 'horeca', label: 'Restaurantes', desc: 'Atracción foodie & delivery', icon: UtensilsCrossed, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'hover:border-orange-500', featured: true },
         { id: 'tech', label: 'Tecnología / TI', desc: 'Adquisición de usuarios y SaaS', icon: Cpu, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'hover:border-cyan-500' },
         { id: 'legal', label: 'Legal / Abogados', desc: 'Posicionamiento y casos complejos', icon: Gavel, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'hover:border-amber-500' },
         { id: 'realestate', label: 'Bienes Raíces', desc: 'Leads inmobiliarios de alta gama', icon: Home, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'hover:border-indigo-500' },
@@ -31,7 +31,7 @@ export default function ProfileSelectorStep({ onNext, updateData }) {
         { id: 'transport', label: 'Logística / Transp.', desc: 'Logística y distribución B2B', icon: Truck, color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'hover:border-slate-500' },
         { id: 'travel', label: 'Viajes / Turismo', desc: 'Reservas y branding de turismo', icon: Plane, color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'hover:border-sky-500' },
         { id: 'ong', label: 'Sin fines de lucro', desc: 'Recaudación y concientización social', icon: HeartHandshake, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'hover:border-rose-500' },
-        { id: 'government', label: 'Gubernamental', desc: 'Comunicación institucional', icon: Landmark, color: 'text-blue-600', bg: 'bg-blue-600/10', border: 'hover:border-blue-600' },
+        { id: 'government', label: 'Gubernamental', desc: 'Communication institucional', icon: Landmark, color: 'text-blue-600', bg: 'bg-blue-600/10', border: 'hover:border-blue-600' },
         { id: 'other', label: 'Otro Sector', desc: 'Estrategias a la medida', icon: MoreHorizontal, color: 'text-gray-500', bg: 'bg-gray-500/5', border: 'hover:border-gray-500' }
     ];
 
@@ -77,11 +77,21 @@ export default function ProfileSelectorStep({ onNext, updateData }) {
                         key={p.id}
                         variants={itemVariants}
                         onClick={() => handleSelect(p.id)}
-                        className={`group relative p-5 rounded-[2rem] border border-white/5 bg-white/[0.02] transition-all hover:bg-white/[0.05] ${p.border} flex items-start gap-4 text-left backdrop-blur-sm overflow-hidden`}
+                        className={`group relative p-5 rounded-[2rem] border transition-all hover:bg-white/[0.05] ${p.border} flex items-start gap-4 text-left backdrop-blur-sm overflow-hidden ${
+                            p.featured 
+                                ? 'border-orange-500/30 bg-orange-500/[0.03] shadow-[0_0_25px_rgba(249,115,22,0.15)] ring-1 ring-orange-500/20' 
+                                : 'border-white/5 bg-white/[0.02]'
+                        }`}
                     >
                         {/* Background Glow on Hover */}
                         <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl ${p.bg} -z-10 scale-150`} />
                         
+                        {p.featured && (
+                            <div className="absolute top-3 right-3 px-2.5 py-0.5 bg-orange-500 text-black text-[8px] font-black uppercase tracking-widest rounded-full shadow-lg z-20">
+                                Popular
+                            </div>
+                        )}
+
                         <div className={`p-3.5 rounded-2xl ${p.bg} ${p.color} transition-all duration-300 group-hover:scale-105 group-hover:rotate-2 shadow-xl flex-shrink-0`}>
                             <p.icon className="w-6 h-6" />
                         </div>
