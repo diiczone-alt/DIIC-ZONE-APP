@@ -12,7 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function HQSidebar() {
     const pathname = usePathname();
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
 
     const handleLogout = async () => {
         try {
@@ -91,12 +91,16 @@ export default function HQSidebar() {
             {/* User Profile / Logout */}
             <div className="p-6 border-t border-white/5 bg-black/20 pb-10">
                 <div className="flex items-center gap-3 w-full px-4 py-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 border border-white/10 flex items-center justify-center font-black text-white shadow-lg">
-                        A
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 border border-white/10 flex items-center justify-center font-black text-white shadow-lg uppercase">
+                        {user?.full_name ? user.full_name[0] : (user?.email ? user.email[0] : 'A')}
                     </div>
-                    <div className="flex-1">
-                        <div className="text-xs font-black text-white uppercase tracking-widest">Admin</div>
-                        <div className="text-[9px] text-gray-500 uppercase font-black tracking-tighter">Director General</div>
+                    <div className="flex-1 min-w-0">
+                        <div className="text-xs font-black text-white uppercase tracking-widest truncate">
+                            {user?.full_name || 'Admin'}
+                        </div>
+                        <div className="text-[9px] text-gray-500 uppercase font-black tracking-tighter truncate">
+                            {user?.role === 'ADMIN' ? 'Director General' : (user?.role || 'Staff')}
+                        </div>
                     </div>
                 </div>
 
