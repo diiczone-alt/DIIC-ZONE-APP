@@ -684,13 +684,14 @@ export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
                 setClientName(client.name || 'Cliente');
 
                 // Determine Niche
-                const rawIndustry = (client.industry || '').toLowerCase().trim();
+                const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                const rawIndustry = cleanNiche(client.industry);
                 let determinedNiche = 'general';
-                if (rawIndustry.includes('medico') || rawIndustry.includes('health') || rawIndustry.includes('doctor') || rawIndustry.includes('salud') || rawIndustry.includes('urología') || rawIndustry.includes('urologia')) {
+                if (rawIndustry.includes('medico') || rawIndustry.includes('health') || rawIndustry.includes('doctor') || rawIndustry.includes('salud') || rawIndustry.includes('urologia')) {
                     determinedNiche = 'medical';
                 } else if (rawIndustry.includes('horeca') || rawIndustry.includes('restaurant') || rawIndustry.includes('gastronom') || rawIndustry.includes('comida') || rawIndustry.includes('restaurante')) {
                     determinedNiche = 'hospitality';
-                } else if (rawIndustry.includes('realestate') || rawIndustry.includes('construccion') || rawIndustry.includes('inmobiliaria') || rawIndustry.includes('bienes raíces') || rawIndustry.includes('bienes raices') || rawIndustry.includes('realtor')) {
+                } else if (rawIndustry.includes('realestate') || rawIndustry.includes('construccion') || rawIndustry.includes('inmobiliaria') || rawIndustry.includes('bienes raices') || rawIndustry.includes('realtor')) {
                     determinedNiche = 'realestate';
                 }
                 setClientNiche(determinedNiche);

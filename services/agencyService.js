@@ -2,6 +2,53 @@ import { supabase } from '@/lib/supabase';
 import { MOCK_DATA } from '@/lib/mockData';
 import { toast } from 'sonner';
 
+const cleanNicheString = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+const getPlanPrice = (plan, industry) => {
+    const ind = cleanNicheString(industry);
+    const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor');
+    const isHospital = ind.includes('hospital') || ind.includes('clinica');
+    const isHospitality = ind.includes('hospitality') || ind.includes('restaurante') || ind.includes('horeca');
+    
+    let normalizedPlan = plan || 'Presencia';
+    if (normalizedPlan === 'Basic') normalizedPlan = 'Presencia';
+    if (normalizedPlan === 'Estrategia') normalizedPlan = 'Crecimiento';
+    if (normalizedPlan === 'Premium') normalizedPlan = 'Autoridad';
+    if (normalizedPlan?.toUpperCase().includes('SOLO USO DE APP') || normalizedPlan?.toUpperCase().includes('SOLO APP')) {
+        normalizedPlan = 'Solo App';
+    }
+    
+    if (normalizedPlan === 'Solo App') {
+        return '70';
+    }
+    
+    if (isMedical && !isHospital) {
+        if (normalizedPlan === 'Presencia') return '250';
+        if (normalizedPlan === 'Crecimiento') return '500';
+        if (normalizedPlan === 'Autoridad') return '700';
+        if (normalizedPlan === 'Control') return '999';
+        return '250';
+    } else if (isHospital) {
+        if (normalizedPlan === 'Presencia') return '300';
+        if (normalizedPlan === 'Crecimiento') return '500';
+        if (normalizedPlan === 'Autoridad') return '700';
+        if (normalizedPlan === 'Control') return '999';
+        return '300';
+    } else if (isHospitality) {
+        if (normalizedPlan === 'Presencia') return '350';
+        if (normalizedPlan === 'Crecimiento') return '600';
+        if (normalizedPlan === 'Autoridad') return '850';
+        if (normalizedPlan === 'Control') return '1200';
+        return '350';
+    } else {
+        if (normalizedPlan === 'Presencia') return '300';
+        if (normalizedPlan === 'Crecimiento') return '500';
+        if (normalizedPlan === 'Autoridad') return '700';
+        if (normalizedPlan === 'Control') return '999';
+        return '300';
+    }
+};
+
 export const agencyService = {
     // --- CLIENTS (CONNECTED TO REAL DB) ---
     getClients: async () => {
@@ -39,6 +86,10 @@ export const agencyService = {
                     const cleanSlug = clientSlugClean.substring(0, 6).toUpperCase();
                     const newId = `C-${cleanSlug}-${Math.floor(100 + Math.random() * 900)}`;
 
+                    let initialPlan = p.plan || 'Presencia';
+                    if (initialPlan === 'Basic') initialPlan = 'Presencia';
+                    const calculatedPrice = getPlanPrice(initialPlan, p.industry);
+
                     const clientRecord = {
                         id: newId,
                         name: p.full_name.trim() + (p.client_slug ? ` (${p.client_slug})` : ''),
@@ -47,9 +98,9 @@ export const agencyService = {
                         status: 'active',
                         cm: 'Leslie', // default CM assignment
                         priority: 'Media',
-                        plan: p.plan || 'Basic',
+                        plan: initialPlan,
                         projects: 0,
-                        price: '300',
+                        price: String(calculatedPrice),
                         target: '500',
                         email: p.email || '',
                         whatsapp_number: p.whatsapp || '',
@@ -83,7 +134,7 @@ export const agencyService = {
                     };
 
                     clientInserts.push(clientRecord);
-                    profileUpdates.push({ profileId: p.id, clientId: newId });
+                    profileUpdates.push({ profileId: p.id, clientId: newId, plan: initialPlan, price: calculatedPrice });
                 }
 
                 if (clientInserts.length > 0) {
@@ -95,11 +146,15 @@ export const agencyService = {
                     if (!insertErr && Array.isArray(insertedClients)) {
                         console.log(`✅ [${timestamp}] Inserted ${insertedClients.length} clients in auto-sync`);
                         
-                        // Update the profile client_ids
+                        // Update the profile client_ids, plan and price
                         for (const up of profileUpdates) {
                             const { error: updErr } = await supabase
                                 .from('profiles')
-                                .update({ client_id: up.clientId })
+                                .update({ 
+                                    client_id: up.clientId,
+                                    plan: up.plan,
+                                    price: up.price
+                                })
                                 .eq('id', up.profileId);
                             if (updErr) {
                                 console.warn(`⚠️ [${timestamp}] Failed to update profile client_id for ${up.profileId}:`, updErr.message);
@@ -184,6 +239,13 @@ export const agencyService = {
                 status: clientData.status || 'active',
                 created_at: new Date().toISOString()
             };
+
+            if (!newClient.price) {
+                let planVal = newClient.plan || 'Presencia';
+                if (planVal === 'Basic') planVal = 'Presencia';
+                newClient.price = String(getPlanPrice(planVal, newClient.industry));
+                newClient.plan = planVal;
+            }
 
             // Safer timeout pattern using Promise.race
             const timeoutPromise = new Promise((_, reject) => 
@@ -316,7 +378,8 @@ export const agencyService = {
             const resolvedWhatsapp = updates.whatsapp_number || updates.whatsapp || updates.phone || existingClient.whatsapp_number;
             const resolvedIndustry = updates.industry || updates.marketing_type || existingClient.industry;
             const resolvedSpecialty = updates.specialty || existingClient.specialty;
-            const resolvedPlan = updates.plan || existingClient.plan;
+            let resolvedPlan = updates.plan || existingClient.plan;
+            if (resolvedPlan === 'Basic') resolvedPlan = 'Presencia';
             const resolvedBusinessType = updates.business_type || existingClient.business_type;
             const resolvedCountry = updates.country || existingClient.country;
             const resolvedAddress = updates.address || existingClient.address;
@@ -329,7 +392,12 @@ export const agencyService = {
             const resolvedHasCrm = updates.has_crm !== undefined ? updates.has_crm : existingClient.has_crm;
             const resolvedHasAgents = updates.has_agents !== undefined ? updates.has_agents : existingClient.has_agents;
 
-            const resolvedPrice = updates.price !== undefined ? updates.price : existingClient.price;
+            let resolvedPrice = updates.price !== undefined ? updates.price : existingClient.price;
+            if ((updates.plan && updates.plan !== existingClient.plan) || (updates.industry && updates.industry !== existingClient.industry)) {
+                let planVal = updates.plan || existingClient.plan || 'Presencia';
+                if (planVal === 'Basic') planVal = 'Presencia';
+                resolvedPrice = String(getPlanPrice(planVal, updates.industry || existingClient.industry));
+            }
 
             // 1. Update Profile (User-facing side)
             const profileUpdates = {

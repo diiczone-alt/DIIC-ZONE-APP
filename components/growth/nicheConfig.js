@@ -108,9 +108,10 @@ export const nicheConfig = {
  * Helper para obtener la configuración según el nicho
  */
 export const getNicheConfig = (userNiche = '') => {
-    const niche = userNiche.toLowerCase();
+    const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const niche = cleanNiche(userNiche);
     
-    if (['doctor', 'hospital', 'clinica', 'clínica', 'medico', 'médico', 'dentista', 'especialista'].some(k => niche.includes(k))) {
+    if (['doctor', 'hospital', 'clinica', 'medico', 'dentista', 'especialista'].some(k => niche.includes(k))) {
         return nicheConfig.medical;
     }
     

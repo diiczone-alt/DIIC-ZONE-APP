@@ -13,9 +13,10 @@ import { motion } from 'framer-motion';
 import { ECUADOR_CITIES, INDUSTRY_OPTIONS, PLAN_OPTIONS, MEDICAL_SPECIALTIES, AGRO_SPECIALTIES, EDUCATION_SPECIALTIES } from '@/lib/constants';
 
 const getPlanPrice = (plan, industry) => {
-    const ind = (industry || '').toLowerCase().trim();
+    const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const ind = cleanNiche(industry);
     const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor');
-    const isHospital = ind.includes('hospital') || ind.includes('clinica') || ind.includes('clínica');
+    const isHospital = ind.includes('hospital') || ind.includes('clinica');
     
     let normalizedPlan = plan;
     if (plan === 'Basic') normalizedPlan = 'Presencia';
@@ -185,11 +186,9 @@ export default function ClientAccountSettings() {
                     has_agents: clientRecord?.has_agents !== undefined ? clientRecord.has_agents : (profile?.has_agents !== undefined ? profile.has_agents : true),
                     price: (() => {
                         let priceVal = clientRecord?.price || profile?.price || '300';
-                        const isMedOrHosp = (clientRecord?.industry || profile?.industry || '').toLowerCase().includes('medico') || 
-                                            (clientRecord?.industry || profile?.industry || '').toLowerCase().includes('médico') ||
-                                            (clientRecord?.industry || profile?.industry || '').toLowerCase().includes('hospital') ||
-                                            (clientRecord?.industry || profile?.industry || '').toLowerCase().includes('clinica') ||
-                                            (clientRecord?.industry || profile?.industry || '').toLowerCase().includes('clínica');
+                        const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                        const normalizedInd = cleanNiche(clientRecord?.industry || profile?.industry);
+                        const isMedOrHosp = normalizedInd.includes('medico') || normalizedInd.includes('hospital') || normalizedInd.includes('clinica');
                         if (isMedOrHosp) {
                             const planVal = clientRecord?.plan || profile?.plan || 'Basic';
                             const calculated = getPlanPrice(planVal, clientRecord?.industry || profile?.industry);

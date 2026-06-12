@@ -16,7 +16,8 @@ import GlassInput from '@/components/shared/GlassInput';
 import AdminClientAIHub from '@/components/admin/AdminClientAIHub';
 
 const getIndustryStyle = (industry) => {
-    const ind = (industry || '').toLowerCase().trim();
+    const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const ind = cleanNiche(industry);
     if (ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor')) {
         return {
             bg: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
@@ -24,14 +25,14 @@ const getIndustryStyle = (industry) => {
             label: 'Salud / Médico'
         };
     }
-    if (ind.includes('hospital') || ind.includes('clinica') || ind.includes('clínica')) {
+    if (ind.includes('hospital') || ind.includes('clinica')) {
         return {
             bg: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
             dot: 'bg-blue-400',
             label: 'Sistema Clínico / Hospital'
         };
     }
-    if (ind.includes('educativo') || ind.includes('curso') || ind.includes('capacitac') || ind.includes('academia') || ind.includes('formacion') || ind.includes('educación')) {
+    if (ind.includes('educativo') || ind.includes('curso') || ind.includes('capacitac') || ind.includes('academia') || ind.includes('formacion') || ind.includes('educacion')) {
         return {
             bg: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
             dot: 'bg-purple-400',
@@ -60,14 +61,15 @@ const getIndustryStyle = (industry) => {
 };
 
 const getBrandColorClass = (industry) => {
-    const ind = (industry || '').toLowerCase().trim();
+    const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const ind = cleanNiche(industry);
     if (ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor')) {
         return 'text-cyan-400';
     }
-    if (ind.includes('hospital') || ind.includes('clinica') || ind.includes('clínica')) {
+    if (ind.includes('hospital') || ind.includes('clinica')) {
         return 'text-blue-400';
     }
-    if (ind.includes('educativo') || ind.includes('curso') || ind.includes('capacitac') || ind.includes('academia') || ind.includes('formacion') || ind.includes('educación')) {
+    if (ind.includes('educativo') || ind.includes('curso') || ind.includes('capacitac') || ind.includes('academia') || ind.includes('formacion') || ind.includes('educacion')) {
         return 'text-purple-400';
     }
     if (ind.includes('hospitality') || ind.includes('restaurant') || ind.includes('comida') || ind.includes('gastronom')) {
@@ -80,9 +82,10 @@ const getBrandColorClass = (industry) => {
 };
 
 const getPlanPrice = (plan, industry) => {
-    const ind = (industry || '').toLowerCase().trim();
+    const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const ind = cleanNiche(industry);
     const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor');
-    const isHospital = ind.includes('hospital') || ind.includes('clinica') || ind.includes('clínica');
+    const isHospital = ind.includes('hospital') || ind.includes('clinica');
     
     let normalizedPlan = plan;
     if (plan === 'Basic') normalizedPlan = 'Presencia';
@@ -428,12 +431,9 @@ export default function HQClientsPage() {
         setEditingClient(client);
         
         const calculatedPrice = getPlanPrice(client.plan, client.industry);
-        let initialPrice = client.price;
-        const isMedicalOrHospital = (client.industry || '').toLowerCase().includes('medico') || 
-                                    (client.industry || '').toLowerCase().includes('médico') ||
-                                    (client.industry || '').toLowerCase().includes('hospital') ||
-                                    (client.industry || '').toLowerCase().includes('clinica') ||
-                                    (client.industry || '').toLowerCase().includes('clínica');
+        const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const normalizedInd = cleanNiche(client.industry);
+        const isMedicalOrHospital = normalizedInd.includes('medico') || normalizedInd.includes('hospital') || normalizedInd.includes('clinica');
         
         if (isMedicalOrHospital) {
             if (client.price === 300 && calculatedPrice === 250) {
@@ -543,12 +543,9 @@ export default function HQClientsPage() {
     }) : [];
 
     const mrr = Array.isArray(clients) ? clients.reduce((acc, c) => {
-        let price = Number(c.price) || 0;
-        const isMedOrHosp = (c.industry || '').toLowerCase().includes('medico') || 
-                            (c.industry || '').toLowerCase().includes('médico') ||
-                            (c.industry || '').toLowerCase().includes('hospital') ||
-                            (c.industry || '').toLowerCase().includes('clinica') ||
-                            (c.industry || '').toLowerCase().includes('clínica');
+        const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const normalizedInd = cleanNiche(c.industry);
+        const isMedOrHosp = normalizedInd.includes('medico') || normalizedInd.includes('hospital') || normalizedInd.includes('clinica');
         if (isMedOrHosp) {
             const calculated = getPlanPrice(c.plan, c.industry);
             if (price === 300 && calculated === 250) {
@@ -746,12 +743,9 @@ export default function HQClientsPage() {
                                     </td>
                                     <td className="px-6 py-6">
                                         {(() => {
-                                            let displayPrice = client?.price || 0;
-                                            const isMedOrHosp = (client?.industry || '').toLowerCase().includes('medico') || 
-                                                                (client?.industry || '').toLowerCase().includes('médico') ||
-                                                                (client?.industry || '').toLowerCase().includes('hospital') ||
-                                                                (client?.industry || '').toLowerCase().includes('clinica') ||
-                                                                (client?.industry || '').toLowerCase().includes('clínica');
+                                            const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                            const normalizedInd = cleanNiche(client?.industry);
+                                            const isMedOrHosp = normalizedInd.includes('medico') || normalizedInd.includes('hospital') || normalizedInd.includes('clinica');
                                             if (isMedOrHosp) {
                                                 const calculated = getPlanPrice(client?.plan, client?.industry);
                                                 if (client?.price === 300 && calculated === 250) {
@@ -1204,7 +1198,11 @@ export default function HQClientsPage() {
                                                                     </div>
                                                                 </div>
                                                             )}
-                                                            {(newClient.industry?.toLowerCase().includes('medico') || newClient.industry?.toLowerCase().includes('médico') || newClient.industry?.toLowerCase().includes('hospital')) && (
+                                                            {(() => {
+                                                                const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                                                const normalizedInd = cleanNiche(newClient.industry);
+                                                                return normalizedInd.includes('medico') || normalizedInd.includes('hospital');
+                                                            })() && (
                                                                 <PremiumDropdown 
                                                                     label="Especialidad Médica" 
                                                                     value={newClient.specialty} 
