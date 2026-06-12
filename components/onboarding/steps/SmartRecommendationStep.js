@@ -46,6 +46,7 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
     const [localStep, setLocalStep] = useState(1);
     const [selectedPlanKey, setSelectedPlanKey] = useState('solo_app'); // 'presence', 'growth', 'authority', 'elite', 'solo_app'
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    const [paymentMode, setPaymentMode] = useState('trial'); // 'trial' or 'card'
     const [paymentInfo, setPaymentInfo] = useState({ cardNumber: '', expiry: '', cvv: '', cardholderName: '' });
 
     // --- ESTADOS Y REFS DE CANVAS PARA FIRMA ---
@@ -257,14 +258,18 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                     .signature-box { text-align: center; width: 40%; }
                     .signature-line { border-top: 1px solid #333; margin-top: 50px; padding-top: 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #555; }
                     .signature-img { max-height: 60px; max-width: 100%; object-fit: contain; }
-                    .badge { display: inline-block; background: #10b981; color: white; font-size: 10px; font-weight: bold; padding: 5px 10px; border-radius: 20px; text-transform: uppercase; }
+                    .badge { display: inline-block; color: white; font-size: 10px; font-weight: bold; padding: 5px 10px; border-radius: 20px; text-transform: uppercase; }
                 </style>
             </head>
             <body>
                 <div class="header">
                     <h1>DIIC ZONE</h1>
                     <p>ACUERDO ESTRATÉGICO DE PRODUCCIÓN & MARKETING DIGITAL</p>
-                    <div style="margin-top: 15px;"><span class="badge">Pago Verificado Online</span></div>
+                    <div style="margin-top: 15px;">
+                        <span class="badge" style="background: ${formData.isPaid ? '#10b981' : '#6366f1'};">
+                            ${formData.isPaid ? 'Pago Verificado Online' : 'Prueba 15 Días Gratis'}
+                        </span>
+                    </div>
                 </div>
                 
                 <div class="section">
@@ -641,7 +646,7 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                                 disabled={!hasSignature}
                                 className="flex-1 py-5 bg-white hover:bg-gray-100 disabled:opacity-30 disabled:grayscale text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
                             >
-                                Proceder al Pago Seguro
+                                Proceder a la Activación
                                 <ArrowRight className="w-4 h-4 text-indigo-600" />
                             </button>
                         </div>
@@ -657,17 +662,47 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                         className="space-y-6 flex-1 flex flex-col justify-center"
                     >
                         <div className="space-y-1 text-center">
-                            <span className="block text-[8px] font-black text-indigo-400 uppercase tracking-[0.4em]">Bóveda de Pagos Seguros</span>
+                            <span className="block text-[8px] font-black text-indigo-400 uppercase tracking-[0.4em]">Método de Activación</span>
                             <h2 className="text-2xl font-black tracking-tight uppercase italic text-white">
-                                Pago <span className="text-indigo-400">Seguro en Línea</span>
+                                {paymentMode === 'trial' ? 'Prueba de 15 Días Gratis' : 'Pago Seguro en Línea'}
                             </h2>
                             <p className="text-gray-400 text-xs max-w-md mx-auto">
-                                Ingresa la información de tu tarjeta de crédito o débito para activar la facturación recurrente de tu plan.
+                                {paymentMode === 'trial' 
+                                    ? 'Activa tu periodo de prueba de 15 días gratis de inmediato, sin ingresar datos bancarios.' 
+                                    : 'Registra tu tarjeta para asegurar la continuidad del servicio tras finalizar el periodo de prueba.'}
                             </p>
                         </div>
 
+                        {/* Premium Mode Tabs */}
+                        <div className="grid grid-cols-2 gap-2 bg-black/40 border border-white/5 p-1 rounded-2xl max-w-md mx-auto w-full backdrop-blur-md">
+                            <button
+                                type="button"
+                                onClick={() => setPaymentMode('trial')}
+                                className={`py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                                    paymentMode === 'trial'
+                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25'
+                                    : 'text-gray-400 hover:text-white hover:bg-white/[0.02]'
+                                }`}
+                            >
+                                <Zap className="w-3.5 h-3.5" />
+                                ⚡ Prueba 15 Días
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPaymentMode('card')}
+                                className={`py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                                    paymentMode === 'card'
+                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25'
+                                    : 'text-gray-400 hover:text-white hover:bg-white/[0.02]'
+                                }`}
+                            >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                💳 Registrar Tarjeta
+                            </button>
+                        </div>
+
                         {/* BILLING OVERVIEW */}
-                        <div className="bg-[#05050C] border border-white/5 rounded-3xl p-6 space-y-4">
+                        <div className="bg-[#05050C] border border-white/5 rounded-3xl p-6 space-y-4 max-w-md mx-auto w-full">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Plan Contratado</span>
@@ -699,116 +734,174 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                             )}
                         </div>
 
-                        {/* STRIPE-LIKE FORM */}
-                        <div className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 space-y-4 text-left">
-                            <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">Nombre del Tarjetahabiente</label>
-                                <div className="relative">
-                                    <User className="w-4 h-4 text-gray-600 absolute left-4 top-1/2 -translate-y-1/2" />
-                                    <input
-                                        type="text"
-                                        placeholder="COMO FIGURA EN LA TARJETA"
-                                        value={paymentInfo.cardholderName}
-                                        onChange={(e) => setPaymentInfo({ ...paymentInfo, cardholderName: e.target.value.toUpperCase() })}
-                                        className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-xs text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 uppercase"
-                                    />
+                        {paymentMode === 'trial' ? (
+                            /* CONDITIONAL TRIAL VIEW - NO CARD FORM */
+                            <div className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 space-y-6 text-center max-w-md mx-auto w-full">
+                                <div className="w-14 h-14 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center mx-auto">
+                                    <Shield className="w-6 h-6 text-indigo-400 animate-pulse" />
                                 </div>
-                            </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-sm font-black text-white uppercase tracking-wider">Activación de Garantía</h3>
+                                    <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
+                                        Accede de forma inmediata a la plataforma. No requieres registrar una tarjeta ahora. Podrás agregar tu método de pago preferido posteriormente en el panel de facturación.
+                                    </p>
+                                </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">Número de Tarjeta</label>
-                                <div className="relative">
-                                    <CreditCard className="w-4 h-4 text-gray-600 absolute left-4 top-1/2 -translate-y-1/2" />
-                                    <input
-                                        type="text"
-                                        maxLength="19"
-                                        placeholder="4000 1234 5678 9010"
-                                        value={paymentInfo.cardNumber}
-                                        onChange={(e) => {
-                                            const v = e.target.value.replace(/\s?/g, '').replace(/[^0-9]/g, '');
-                                            const matches = v.match(/\d{4,16}/g);
-                                            const match = matches && matches[0] || '';
-                                            const parts = [];
-                                            for (let i=0, len=match.length; i<len; i+=4) {
-                                                parts.push(match.substring(i, i+4));
-                                            }
-                                            setPaymentInfo({
-                                                ...paymentInfo,
-                                                cardNumber: parts.length > 0 ? parts.join(' ') : v
-                                            });
+                                <div className="flex gap-4 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLocalStep(2)}
+                                        disabled={isProcessingPayment}
+                                        className="px-8 py-5 border border-white/5 hover:border-white/15 bg-white/[0.01] text-gray-500 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
+                                    >
+                                        Atrás
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsProcessingPayment(true);
+                                            setTimeout(() => {
+                                                setIsProcessingPayment(false);
+                                                updateData({
+                                                    selectedPlan: activePlan,
+                                                    isPaid: false,
+                                                    signatureImage: signatureImage
+                                                });
+                                                setLocalStep(4);
+                                                toast.success("¡Prueba de 15 días activada con éxito!");
+                                            }, 1200);
                                         }}
-                                        className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-xs text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 font-mono tracking-widest"
-                                    />
+                                        disabled={isProcessingPayment}
+                                        className="flex-1 py-5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:grayscale text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-600/20 uppercase text-xs tracking-[0.15em] flex items-center justify-center gap-2"
+                                    >
+                                        {isProcessingPayment ? (
+                                            <>
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                Activando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Zap className="w-4 h-4 text-white" />
+                                                Activar Prueba de 15 Días
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
+                        ) : (
+                            /* CONDITIONAL CARD FORM */
+                            <div className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 space-y-4 text-left max-w-md mx-auto w-full">
                                 <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">Vencimiento</label>
-                                    <input
-                                        type="text"
-                                        maxLength="5"
-                                        placeholder="MM/AA"
-                                        value={paymentInfo.expiry}
-                                        onChange={(e) => {
-                                            let v = e.target.value.replace(/[^0-9]/g, '');
-                                            if (v.length > 2) {
-                                                v = v.substring(0, 2) + '/' + v.substring(2, 4);
-                                            }
-                                            setPaymentInfo({ ...paymentInfo, expiry: v });
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">Nombre del Tarjetahabiente</label>
+                                    <div className="relative">
+                                        <User className="w-4 h-4 text-gray-600 absolute left-4 top-1/2 -translate-y-1/2" />
+                                        <input
+                                            type="text"
+                                            placeholder="COMO FIGURA EN LA TARJETA"
+                                            value={paymentInfo.cardholderName}
+                                            onChange={(e) => setPaymentInfo({ ...paymentInfo, cardholderName: e.target.value.toUpperCase() })}
+                                            className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-xs text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 uppercase"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">Número de Tarjeta</label>
+                                    <div className="relative">
+                                        <CreditCard className="w-4 h-4 text-gray-600 absolute left-4 top-1/2 -translate-y-1/2" />
+                                        <input
+                                            type="text"
+                                            maxLength="19"
+                                            placeholder="4000 1234 5678 9010"
+                                            value={paymentInfo.cardNumber}
+                                            onChange={(e) => {
+                                                const v = e.target.value.replace(/\s?/g, '').replace(/[^0-9]/g, '');
+                                                const matches = v.match(/\d{4,16}/g);
+                                                const match = matches && matches[0] || '';
+                                                const parts = [];
+                                                for (let i=0, len=match.length; i<len; i+=4) {
+                                                    parts.push(match.substring(i, i+4));
+                                                }
+                                                setPaymentInfo({
+                                                    ...paymentInfo,
+                                                    cardNumber: parts.length > 0 ? parts.join(' ') : v
+                                                });
+                                            }}
+                                            className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-xs text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 font-mono tracking-widest"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">Vencimiento</label>
+                                        <input
+                                            type="text"
+                                            maxLength="5"
+                                            placeholder="MM/AA"
+                                            value={paymentInfo.expiry}
+                                            onChange={(e) => {
+                                                let v = e.target.value.replace(/[^0-9]/g, '');
+                                                if (v.length > 2) {
+                                                    v = v.substring(0, 2) + '/' + v.substring(2, 4);
+                                                }
+                                                setPaymentInfo({ ...paymentInfo, expiry: v });
+                                            }}
+                                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xs text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 font-mono text-center"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">CVV</label>
+                                        <input
+                                            type="text"
+                                            maxLength="4"
+                                            placeholder="123"
+                                            value={paymentInfo.cvv}
+                                            onChange={(e) => setPaymentInfo({ ...paymentInfo, cvv: e.target.value.replace(/[^0-9]/g, '') })}
+                                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xs text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 font-mono text-center"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 mt-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLocalStep(2)}
+                                        disabled={isProcessingPayment}
+                                        className="px-8 py-5 border border-white/5 hover:border-white/15 bg-white/[0.01] text-gray-500 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
+                                    >
+                                        Atrás
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsProcessingPayment(true);
+                                            setTimeout(() => {
+                                                setIsProcessingPayment(false);
+                                                updateData({
+                                                    selectedPlan: activePlan,
+                                                    isPaid: true,
+                                                    signatureImage: signatureImage
+                                                });
+                                                setLocalStep(4);
+                                                toast.success("Pago Procesado con Éxito. Acuerdo Activado.");
+                                            }, 1800);
                                         }}
-                                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xs text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 font-mono text-center"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block px-1">CVV</label>
-                                    <input
-                                        type="text"
-                                        maxLength="4"
-                                        placeholder="123"
-                                        value={paymentInfo.cvv}
-                                        onChange={(e) => setPaymentInfo({ ...paymentInfo, cvv: e.target.value.replace(/[^0-9]/g, '') })}
-                                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xs text-white font-bold focus:border-indigo-500 focus:outline-none transition-all placeholder:text-gray-700 font-mono text-center"
-                                    />
+                                        disabled={!paymentInfo.cardNumber || !paymentInfo.expiry || !paymentInfo.cvv || !paymentInfo.cardholderName || isProcessingPayment}
+                                        className="flex-1 py-5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:grayscale text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-500/20 uppercase text-xs tracking-[0.25em] flex items-center justify-center gap-3"
+                                    >
+                                        {isProcessingPayment ? (
+                                            <>
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                Verificando...
+                                            </>
+                                        ) : (
+                                            "Registrar Tarjeta"
+                                        )}
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="flex gap-4 mt-4">
-                            <button
-                                onClick={() => setLocalStep(2)}
-                                disabled={isProcessingPayment}
-                                className="px-8 py-5 border border-white/5 hover:border-white/15 bg-white/[0.01] text-gray-500 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
-                            >
-                                Atrás
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setIsProcessingPayment(true);
-                                    setTimeout(() => {
-                                        setIsProcessingPayment(false);
-                                        updateData({
-                                            selectedPlan: activePlan,
-                                            isPaid: true,
-                                            signatureImage: signatureImage
-                                        });
-                                        setLocalStep(4);
-                                        toast.success("Pago Procesado con Éxito. Acuerdo Activado.");
-                                    }, 1800);
-                                }}
-                                disabled={!paymentInfo.cardNumber || !paymentInfo.expiry || !paymentInfo.cvv || !paymentInfo.cardholderName || isProcessingPayment}
-                                className="flex-1 py-5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:grayscale text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-500/20 uppercase text-xs tracking-[0.25em] flex items-center justify-center gap-3"
-                            >
-                                {isProcessingPayment ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        Verificando Fondos...
-                                    </>
-                                ) : (
-                                    "Confirmar y Pagar"
-                                )}
-                            </button>
-                        </div>
+                        )}
                     </motion.div>
                 )}
 
@@ -826,13 +919,19 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
 
                         <div className="space-y-2 text-center">
                             <span className="block text-[8px] font-black text-emerald-400 uppercase tracking-[0.5em] leading-none animate-pulse">
-                                Factura Emitida • Contrato Firmado
+                                {formData.isPaid ? 'Factura Emitida • Contrato Firmado' : 'Prueba de 15 Días Activada • Contrato Firmado'}
                             </span>
                             <h2 className="text-3xl font-black text-white uppercase italic tracking-tight">
-                                ¡Contratación <span className="text-indigo-400">Exitosa!</span>
+                                {formData.isPaid ? (
+                                    <>¡Contratación <span className="text-indigo-400">Exitosa!</span></>
+                                ) : (
+                                    <>¡Prueba <span className="text-indigo-400">Activada!</span></>
+                                )}
                             </h2>
                             <p className="text-gray-400 text-xs max-w-sm mx-auto">
-                                El pago de la suscripción mensual se ha verificado. Tu contrato legal personalizado ha sido emitido.
+                                {formData.isPaid 
+                                    ? 'El pago de la suscripción mensual se ha verificado. Tu contrato legal personalizado ha sido emitido.'
+                                    : 'Tu periodo de prueba de 15 días gratis se ha activado de forma exitosa. Tu contrato legal personalizado ha sido emitido.'}
                             </p>
                         </div>
 
