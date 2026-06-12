@@ -8,3 +8,4 @@ build
 app/dashboard/styles/
 *.log
 scratch/
+.vercel
