@@ -11,7 +11,7 @@ export const onboardingService = {
 
         // 1. Preparar datos de Identidad
         const fullName = formData.name || user.user_metadata?.full_name || '';
-        const brandName = formData.brand || user.user_metadata?.brand || 'Sin Marca';
+        const brandName = formData.brand || user.user_metadata?.brand || (fullName ? `${fullName} Workspace` : 'Sin Marca');
         const city = formData.city || user.user_metadata?.city || 'Santo Domingo';
         const country = formData.country || user.user_metadata?.country || 'Ecuador';
         const address = formData.address || user.user_metadata?.address || '';
@@ -42,16 +42,15 @@ export const onboardingService = {
 
             // Mapping for human-readable industry names
             const industryMap = {
-                'doctor': 'Marketing para Médicos',
-                'agro': 'Marketing Agropecuario',
-                'legal': 'Marketing Jurídico',
-                'personal': 'Marca Personal',
-                'ecommerce': 'E-commerce',
-                'realestate': 'Bienes Raíces',
-                'tech': 'Tecnología / TI',
+                'doctor': 'Médico',
+                'health': 'Clínica / Hospital',
+                'agro': 'Agropecuario',
+                'horeca': 'Restaurante',
+                'legal': 'Jurídico',
+                'realestate': 'Inmobiliario',
                 'education': 'Educación',
-                'horeca': 'Restaurantes',
-                'marketing': 'Marketing Digital'
+                'tech': 'Empresa',
+                'other': 'Otro'
             };
 
             const industryName = industryMap[formData.profileType] || formData.profileType || 'General';

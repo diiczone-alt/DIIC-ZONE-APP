@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, Suspense, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,7 +10,8 @@ import {
   Layout, MessageCircle, MoreVertical, 
   ChevronRight, TrendingUp, PieChart, Video, 
   Palette, FileText, ArrowRight, Settings, LogOut, User, Shield,
-  Globe, UserPlus, Target, Fingerprint, Building2
+  Globe, UserPlus, Target, Fingerprint, Building2, Briefcase, Sparkles, MapPin, 
+  Upload, HelpCircle
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -22,6 +23,8 @@ import ActionProtocol from '../../components/growth/ActionProtocol';
 import { getNicheConfig } from '../../components/growth/nicheConfig';
 import GalleryPreview from '../../components/dashboard/GalleryPreview';
 import UnifiedMessagingCenter from '../../components/shared/Messaging/UnifiedMessagingCenter';
+import { driveService } from '@/services/driveService';
+import { toast } from 'sonner';
 
 // ─── Stat Card Component ─────────────────────────────────────────
 function StatCard({ title, value, delta, icon: Icon, color, chartData }) {
@@ -33,7 +36,6 @@ function StatCard({ title, value, delta, icon: Icon, color, chartData }) {
       whileHover={{ y: -5, scale: 1.02 }}
       className="relative bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 flex-1 min-w-[280px] group transition-all duration-500 overflow-hidden"
     >
-      {/* Background Ambient Glow */}
       <div 
         className="absolute -right-10 -bottom-10 w-32 h-32 blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none"
         style={{ backgroundColor: color }}
@@ -67,16 +69,13 @@ function StatCard({ title, value, delta, icon: Icon, color, chartData }) {
           </div>
         </div>
         
-        {/* Neon Sparkline Area */}
         <div className="w-28 h-14 relative group-hover:scale-110 transition-transform duration-500">
            <svg width="100%" height="100%" viewBox="0 0 100 40" className="overflow-visible">
-              {/* Shadow/Glow Path */}
               <motion.path 
                 d={chartData} fill="none" stroke={color} strokeWidth="5" strokeLinecap="round" 
                 className="opacity-20 blur-[6px]"
                 initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 2, delay: 0.5 }}
               />
-              {/* Solid Path */}
               <motion.path 
                 d={chartData} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" 
                 className="drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
@@ -85,8 +84,6 @@ function StatCard({ title, value, delta, icon: Icon, color, chartData }) {
            </svg>
         </div>
       </div>
-
-      {/* Shimmer Effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
     </motion.div>
   );
@@ -128,45 +125,12 @@ function ProductionItem({ title, type, progress, color, time, icon: Icon }) {
   );
 }
 
-// ─── Donut Chart Component ───────────────────────────────────────
-function DonutChart({ value, label, color, icon: Icon }) {
-  const radius = 32;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (value / 100) * circumference;
-
-  return (
-    <div className="flex flex-col items-center gap-3">
-       <div className="relative w-20 h-20">
-          <svg className="w-full h-full transform -rotate-90">
-             <circle cx="40" cy="40" r={radius} stroke="currentColor" strokeWidth="6" fill="transparent" className="text-white/5" />
-             <motion.circle 
-               cx="40" cy="40" r={radius} stroke={color} strokeWidth="6" strokeDasharray={circumference} 
-               initial={{ strokeDashoffset: circumference }}
-               animate={{ strokeDashoffset: offset }}
-               transition={{ duration: 1.5, ease: "easeOut" }}
-               fill="transparent" strokeLinecap="round"
-             />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-             <span className="text-xs font-black text-white">{value}%</span>
-          </div>
-       </div>
-       <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">{label}</span>
-    </div>
-  );
-}
-
-// ─── Brand Identity Sidebar (Client Version) ────────────────────
-
-
-
 // ─── Reverted Dashboard Content ──────────────────────────────────
 function DashboardContent() {
   const { user, loading: authLoading, getHomeRoute } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  
   const [clientData, setClientData] = useState(null);
   const [socialMetrics, setSocialMetrics] = useState(null);
   const [brandMetrics, setBrandMetrics] = useState(null);
@@ -174,93 +138,233 @@ function DashboardContent() {
   const [crmLeads, setCrmLeads] = useState([]);
   const [production, setProduction] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeDropdown, setActiveDropdown] = useState(null);
 
-    // Handle role-based redirection as soon as user is loaded
-    useEffect(() => {
-        if (!authLoading && user) {
-            const homeRoute = getHomeRoute(user.role);
-            // Only redirect if the current path is /dashboard and the home route is different
-            // We compare with '/dashboard' but also check if we are already where we need to be
-            if (homeRoute && homeRoute !== '/dashboard') {
-                console.log(`[Dashboard] Redirecting ${user.role} to ${homeRoute}`);
-                router.push(homeRoute);
-            }
+  // Activation Center state
+  const [activeDrawer, setActiveDrawer] = useState(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerSubTab, setDrawerSubTab] = useState('perfil'); // For Drawer 1: perfil / diagnostico
+
+  // Form states for modules
+  const [infoForm, setInfoForm] = useState({
+    company_name: '', country: 'Ecuador', city: '', address: '', website: '', email: '', phone: '', anniversary_date: '', description: '',
+    services_offered: '', main_product: '', time_in_market: '', clients_count: '', team_size: '', revenue: ''
+  });
+
+  const [brandForm, setBrandForm] = useState({
+    logo: '', primaryColor: '#6366f1', secondaryColor: '#ec4899', typography: 'Inter', brand_manual: ''
+  });
+
+  const [socialForm, setSocialForm] = useState({
+    facebook: '', instagram: '', tiktok: '', linkedin: '', whatsapp: '', youtube: ''
+  });
+
+  const logoInputRef = useRef(null);
+  const manualInputRef = useRef(null);
+
+  // Handle role-based redirection as soon as user is loaded
+  useEffect(() => {
+    if (!authLoading && user) {
+        const homeRoute = getHomeRoute(user.role);
+        if (homeRoute && homeRoute !== '/dashboard') {
+            console.log(`[Dashboard] Redirecting ${user.role} to ${homeRoute}`);
+            router.push(homeRoute);
         }
-    }, [user, authLoading, router, getHomeRoute]);
+    }
+  }, [user, authLoading, router, getHomeRoute]);
 
-    useEffect(() => {
-
-
-    const fetchData = async () => {
-        if (!user) return;
-        setLoading(true);
+  // Fetch client data
+  const fetchData = async () => {
+    if (!user) return;
+    setLoading(true);
+    
+    try {
+        const targetClientId = user.client_id || searchParams.get('client');
         
-        try {
-            // 1. Get Client Info
-            const targetClientId = user.client_id || searchParams.get('client');
-            
-            if (targetClientId) {
-                const { data: client, error: clientErr } = await supabase
-                    .from('clients')
-                    .select('*')
-                    .eq('id', targetClientId)
-                    .single();
-                
-                if (client) setClientData(client);
-            }
-
-            // 3. Get Social Analytics
-            const { data: social, error: socialErr } = await supabase
-                .from('social_analytics')
+        if (targetClientId) {
+            const { data: client, error: clientErr } = await supabase
+                .from('clients')
                 .select('*')
-                .eq('user_id', user.id);
-            
-            if (social) setSocialMetrics(social);
-
-            // 4. Get Brand Analytics
-            const { data: brand, error: brandErr } = await supabase
-                .from('brand_analytics')
-                .select('*')
-                .eq('user_id', user.id)
+                .eq('id', targetClientId)
                 .single();
             
-            if (brand) setBrandMetrics(brand);
+            if (client) {
+                setClientData(client);
+                
+                // Prefill form states
+                const ob = client.onboarding_data || {};
+                const cp = ob.company_profile || {};
+                const bd = ob.business_diagnosis || {};
+                const brand = ob.brand || {};
+                const social = ob.social || {};
 
-            // 5. Get Ad Insights
-            const { data: insights, error: insightsErr } = await supabase
-                .from('insights_daily')
-                .select('*')
-                .gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-            
-            if (insights) setAdInsights(insights);
+                setInfoForm({
+                  company_name: cp.company_name || client.name || '',
+                  country: cp.country || client.country || 'Ecuador',
+                  city: cp.city || client.city || '',
+                  address: cp.address || client.address || '',
+                  website: cp.website || client.website || '',
+                  email: cp.email || client.email || '',
+                  phone: cp.phone || client.whatsapp_number || '',
+                  anniversary_date: cp.anniversary_date || client.birth_date || '',
+                  description: cp.description || '',
+                  services_offered: bd.services_offered || '',
+                  main_product: bd.main_product || '',
+                  time_in_market: bd.time_in_market || '',
+                  clients_count: bd.clients_count || '',
+                  team_size: bd.team_size || '',
+                  revenue: bd.revenue || ''
+                });
 
-            // 6. Get CRM Leads
-            const { data: leads, error: leadsErr } = await supabase
-                .from('crm_leads')
-                .select('*')
-                .eq('user_id', user.id);
-            
-            if (leads) setCrmLeads(leads);
+                setBrandForm({
+                  logo: brand.logo || '',
+                  primaryColor: brand.primaryColor || '#6366f1',
+                  secondaryColor: brand.secondaryColor || '#ec4899',
+                  typography: brand.typography || 'Inter',
+                  brand_manual: brand.brand_manual || ''
+                });
 
-            // 7. NEW: Integration Check - Force Jessica Data if empty (Demo Mode)
-            if (!socialMetrics || socialMetrics.length === 0) {
-                const { MOCK_DATA } = require('@/lib/mockData');
-                setSocialMetrics(MOCK_DATA.social_analytics.filter(s => s.user_id === 'jessica_user_id'));
-                setBrandMetrics(MOCK_DATA.brand_analytics.find(b => b.user_id === 'jessica_user_id'));
-                setAdInsights(MOCK_DATA.insights_daily);
-                setCrmLeads(MOCK_DATA.crm_leads);
+                setSocialForm({
+                  facebook: social.facebook || '',
+                  instagram: social.instagram || '',
+                  tiktok: social.tiktok || '',
+                  linkedin: social.linkedin || '',
+                  whatsapp: social.whatsapp || '',
+                  youtube: social.youtube || ''
+                });
             }
-
-        } catch (err) {
-            console.error('Error fetching dashboard data:', err);
-        } finally {
-            setLoading(false);
         }
-    };
 
+        // Get Social Analytics
+        const { data: social, error: socialErr } = await supabase
+            .from('social_analytics')
+            .select('*')
+            .eq('user_id', user.id);
+        
+        if (social) setSocialMetrics(social);
+
+        // Get Brand Analytics
+        const { data: brand, error: brandErr } = await supabase
+            .from('brand_analytics')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+        
+        if (brand) setBrandMetrics(brand);
+
+        // Get Ad Insights
+        const { data: insights, error: insightsErr } = await supabase
+            .from('insights_daily')
+            .select('*')
+            .gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+        
+        if (insights) setAdInsights(insights);
+
+        // Get CRM Leads
+        const { data: leads, error: leadsErr } = await supabase
+            .from('crm_leads')
+            .select('*')
+            .eq('user_id', user.id);
+        
+        if (leads) setCrmLeads(leads);
+
+        // Demo fallback
+        if (!socialMetrics || socialMetrics.length === 0) {
+            const { MOCK_DATA } = require('@/lib/mockData');
+            setSocialMetrics(MOCK_DATA.social_analytics.filter(s => s.user_id === 'jessica_user_id'));
+            setBrandMetrics(MOCK_DATA.brand_analytics.find(b => b.user_id === 'jessica_user_id'));
+            setAdInsights(MOCK_DATA.insights_daily);
+            setCrmLeads(MOCK_DATA.crm_leads);
+        }
+
+    } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [user, searchParams]);
+
+  // Google OAuth Redirect scan for Drive Connection
+  useEffect(() => {
+    const scanForDriveToken = async () => {
+        if (!clientData || localStorage.getItem('diic_waiting_drive') !== 'true') return;
+        
+        const hash = window.location.hash || window.location.search;
+        if (hash && (hash.includes('provider_token') || hash.includes('access_token'))) {
+            const params = new URLSearchParams(hash.replace('#', '?'));
+            const token = params.get('provider_token') || params.get('access_token');
+            const refreshToken = params.get('provider_refresh_token') || params.get('refresh_token');
+            
+            if (token) {
+                toast.loading('Google Drive conectado. Configurando carpetas...', { id: 'drive-setup' });
+                localStorage.removeItem('diic_waiting_drive');
+                window.history.replaceState(null, null, window.location.pathname);
+                
+                try {
+                    const brandName = clientData.name || 'Mi Marca';
+                    const driveResult = await driveService.automatedSetup(token, brandName);
+                    
+                    const updatedOnboardingData = {
+                        ...(clientData.onboarding_data || {}),
+                        drive_connected: true
+                    };
+                    
+                    await supabase.from('clients').update({
+                        google_drive_folder_id: driveResult.rootId,
+                        google_access_token: token,
+                        google_refresh_token: refreshToken || undefined,
+                        google_connected_email: user?.email || '',
+                        sync_active: true,
+                        onboarding_data: updatedOnboardingData
+                    }).eq('id', clientData.id);
+                    
+                    setClientData(prev => ({
+                        ...prev,
+                        google_drive_folder_id: driveResult.rootId,
+                        google_connected_email: user?.email || '',
+                        onboarding_data: updatedOnboardingData
+                    }));
+                    
+                    toast.success('¡Ecosistema Google Drive creado y sincronizado!', { id: 'drive-setup' });
+                } catch (e) {
+                    console.error(e);
+                    toast.error('Error al configurar carpetas: ' + e.message, { id: 'drive-setup' });
+                }
+            }
+        }
+    };
+    
+    if (user && clientData) {
+        scanForDriveToken();
+    }
+  }, [user, clientData]);
+
+  // Checklist Completion Checkers
+  const checklistItems = [
+    { id: 'info', label: 'Información de empresa', completed: !!clientData?.onboarding_data?.company_profile?.completed },
+    { id: 'drive', label: 'Conectar Google Drive', completed: !!clientData?.google_drive_folder_id },
+    { id: 'calendar', label: 'Activar Google Calendar', completed: !!clientData?.onboarding_data?.calendar_connected },
+    { id: 'logo', label: 'Subir logo', completed: !!clientData?.onboarding_data?.brand?.logo },
+    { id: 'visual', label: 'Configurar identidad visual', completed: !!clientData?.onboarding_data?.brand?.completed },
+    { id: 'social', label: 'Conectar redes sociales', completed: !!clientData?.onboarding_data?.social?.completed },
+    { id: 'growth', label: 'Elegir nivel de crecimiento', completed: !!clientData?.onboarding_data?.growth_level_completed }
+  ];
+
+  const completedCount = checklistItems.filter(item => item.completed).length;
+  const activationProgress = 20 + Math.round((completedCount / 7) * 80);
+
+  // Remaining days calculation
+  const getRemainingDays = () => {
+    if (!clientData?.start_date) return 15;
+    const trialEndDate = new Date(clientData.start_date);
+    const today = new Date();
+    const diffTime = trialEndDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
 
   // Helper to format large numbers
   const formatValue = (val) => {
@@ -274,8 +378,8 @@ function DashboardContent() {
   const totalAudience = socialMetrics?.reduce((acc, curr) => acc + (curr.followers_count || 0), 0) || 0;
   
   // Niche Config for guidance
-  const currentNiche = clientData?.niche || 'medical';
-  const nicheData = getNicheConfig(currentNiche);
+  const currentNiche = clientData?.niche || 'other';
+  const nicheData = getNicheConfig(currentNiche === 'doctor' || currentNiche === 'health' || currentNiche === 'horeca' || currentNiche === 'legal' || currentNiche === 'agro' ? currentNiche : 'medical');
   const levelKeys = ['presencia', 'crecimiento', 'autoridad', 'sistemas', 'escala'];
   const currentLevelKey = levelKeys[(brandMetrics?.current_level || 2) - 1];
 
@@ -320,6 +424,887 @@ function DashboardContent() {
     }
   ];
 
+  // Save changes to database for a module drawer
+  const handleSaveModule = async (moduleId, data) => {
+    if (!clientData?.id) return;
+    setDrawerLoading(true);
+    
+    try {
+        const updatedOnboardingData = {
+            ...(clientData.onboarding_data || {}),
+            ...data
+        };
+        
+        const updates = {
+            onboarding_data: updatedOnboardingData
+        };
+        
+        if (moduleId === 'info') {
+            if (data.company_profile?.company_name) updates.name = data.company_profile.company_name;
+            if (data.company_profile?.country) updates.country = data.company_profile.country;
+            if (data.company_profile?.city) updates.city = data.company_profile.city;
+            if (data.company_profile?.address) updates.address = data.company_profile.address;
+            if (data.company_profile?.website) updates.website = data.company_profile.website;
+            if (data.company_profile?.email) updates.email = data.company_profile.email;
+        }
+        
+        if (moduleId === 'growth') {
+            if (data.growth_level?.plan) updates.plan = data.growth_level.plan;
+            if (data.growth_level?.price) updates.price = data.growth_level.price;
+        }
+        
+        const { error } = await supabase
+            .from('clients')
+            .update(updates)
+            .eq('id', clientData.id);
+            
+        if (error) throw error;
+        
+        setClientData(prev => ({
+            ...prev,
+            ...updates
+        }));
+        
+        toast.success('Cambios guardados con éxito.');
+        setActiveDrawer(null);
+    } catch (err) {
+        console.error('Error saving module:', err);
+        toast.error('Error al guardar: ' + err.message);
+    } finally {
+        setDrawerLoading(false);
+    }
+  };
+
+  // Google OAuth Flow for Drive
+  const handleConnectDrive = async () => {
+    try {
+        toast.loading('Iniciando conexión con Google...', { id: 'drive-connect' });
+        localStorage.setItem('diic_waiting_drive', 'true');
+        
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                },
+                redirectTo: window.location.origin + '/dashboard',
+                scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events'
+            }
+        });
+        if (error) throw error;
+    } catch (err) {
+        toast.error('Error al conectar Google: ' + err.message, { id: 'drive-connect' });
+    }
+  };
+
+  // Connection for Google Calendar
+  const handleConnectCalendar = async () => {
+    toast.loading('Activando Google Calendar...', { id: 'calendar-setup' });
+    await new Promise(r => setTimeout(r, 1500));
+    
+    try {
+        const updatedOnboardingData = {
+            ...(clientData?.onboarding_data || {}),
+            calendar_connected: true
+        };
+        
+        await supabase.from('clients').update({
+            onboarding_data: updatedOnboardingData
+        }).eq('id', clientData.id);
+        
+        setClientData(prev => ({
+            ...prev,
+            onboarding_data: updatedOnboardingData
+        }));
+        
+        toast.success('¡Google Calendar activado y sincronizado!', { id: 'calendar-setup' });
+        setActiveDrawer(null);
+    } catch (e) {
+        toast.error('Error al conectar Calendar: ' + e.message, { id: 'calendar-setup' });
+    }
+  };
+
+  // Logo uploader
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setDrawerLoading(true);
+    try {
+        await new Promise(r => setTimeout(r, 1200));
+        const logoUrl = URL.createObjectURL(file); // fallback URL
+        
+        const updatedBrand = {
+            ...(clientData?.onboarding_data?.brand || {}),
+            logo: logoUrl
+        };
+        
+        const updatedOnboardingData = {
+            ...(clientData?.onboarding_data || {}),
+            brand: updatedBrand
+        };
+        
+        await supabase.from('clients').update({
+            onboarding_data: updatedOnboardingData
+        }).eq('id', clientData.id);
+        
+        setClientData(prev => ({
+            ...prev,
+            onboarding_data: updatedOnboardingData
+        }));
+        
+        setBrandForm(prev => ({ ...prev, logo: logoUrl }));
+        toast.success('Logotipo subido con éxito.');
+    } catch (err) {
+        toast.error('Error al subir logotipo: ' + err.message);
+    } finally {
+        setDrawerLoading(false);
+    }
+  };
+
+  // Brand manual uploader
+  const handleManualUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setDrawerLoading(true);
+    try {
+        await new Promise(r => setTimeout(r, 1500));
+        const fileUrl = URL.createObjectURL(file);
+        
+        setBrandForm(prev => ({ ...prev, brand_manual: file.name }));
+        toast.success('Manual de marca cargado.');
+    } catch (err) {
+        toast.error('Error al subir manual: ' + err.message);
+    } finally {
+        setDrawerLoading(false);
+    }
+  };
+
+  // Drawer Title Generator
+  const getDrawerTitle = (id) => {
+    switch (id) {
+      case 'info': return 'Perfil Empresarial';
+      case 'drive': return 'Google Drive';
+      case 'calendar': return 'Google Calendar';
+      case 'logo': return 'Logotipo de Marca';
+      case 'visual': return 'Identidad Visual';
+      case 'social': return 'Canales Digitales';
+      case 'growth': return 'Nivel de Crecimiento';
+      default: return '';
+    }
+  };
+
+  const getDrawerSubtitle = (id) => {
+    switch (id) {
+      case 'info': return 'Información de la empresa y diagnóstico';
+      case 'drive': return 'Conecta tu almacenamiento en la nube';
+      case 'calendar': return 'Sincroniza tus agendas de trabajo';
+      case 'logo': return 'Sube el logo oficial de tu negocio';
+      case 'visual': return 'Configura colores y tipografía oficial';
+      case 'social': return 'Conecta tus perfiles de redes sociales';
+      case 'growth': return 'Selecciona tu nivel de crecimiento digital';
+      default: return '';
+    }
+  };
+
+  // Crecimiento Digital specialized strategies (Módulo 6)
+  const renderCrecimientoDigital = () => {
+    const niche = clientData?.niche || 'other';
+    
+    const nicheLabels = {
+        'doctor': 'Médico',
+        'health': 'Hospitalario',
+        'agro': 'Agropecuario',
+        'horeca': 'Restaurantes',
+        'legal': 'Jurídico',
+        'realestate': 'Inmobiliario',
+        'education': 'Educación',
+        'tech': 'Empresas',
+        'other': 'Digital'
+    };
+    
+    const nicheLabel = nicheLabels[niche] || 'Digital';
+    const nicheConfigs = {
+        'doctor': {
+            objective: 'Atraer pacientes recurrentes de alto valor y consolidar la reputación del doctor en su especialidad.',
+            strategy: 'Funnel de Captación Médica + Campañas de Google Search para patologías de urgencia + Reels educativos.',
+            route: 'Fase 1: Identidad visual médica. Fase 2: Automatización de agenda con IA. Fase 3: Pauta en Meta Ads.',
+            indicators: 'Costo de Adquisición de Paciente (CPA), Pacientes Nuevos Mensuales, Tasa de Asistencia a Citas.',
+            content: 'Videos explicando tratamientos, testimonios reales de pacientes y tips de prevención en salud.',
+            automation: 'Chatbot de WhatsApp integrado a Doctoralia/Calendar para agendamiento autónomo.'
+        },
+        'health': {
+            objective: 'Consolidar el posicionamiento del hospital/clínica y gestionar flujos masivos de agendamiento.',
+            strategy: 'Plataforma multi-especialista + SEO local optimizado + Campañas de reputación clínica e instalaciones.',
+            route: 'Fase 1: Auditoría web corporativa. Fase 2: Embudo de cotización de cirugías. Fase 3: Branding e impacto local.',
+            indicators: 'Retorno de Gasto Publicitario (ROAS), Lead de Consulta Especializada, Retención de Pacientes.',
+            content: 'Tour virtual de quirófanos, presentación del staff médico y webinars de especialidades complejas.',
+            automation: 'CRM unificado con CRM-Hospital, asignación inteligente de médicos y confirmaciones por SMS.'
+        },
+        'agro': {
+            objective: 'Generar leads B2B calificados, distribuidores y compradores mayoristas para productos agrícolas.',
+            strategy: 'Campañas en LinkedIn Ads + Google Search para distribuidores de insumos + Landing de Catálogo.',
+            route: 'Fase 1: Catálogo interactivo de productos. Fase 2: Embudo B2B de cotizaciones. Fase 3: Presencia en ferias.',
+            indicators: 'Leads Mayoristas Generados, Costo por Lead B2B, Valor de Ciclo del Cliente (LTV).',
+            content: 'Casos de éxito de cultivos con el insumo, demostraciones técnicas de maquinaria y reportes de rendimiento.',
+            automation: 'Pipeline automático de ventas B2B con recordatorios de re-compra y cotizaciones PDF automáticas.'
+        },
+        'horeca': {
+            objective: 'Incrementar visitas recurrentes al restaurante físico y escalar los pedidos a domicilio.',
+            strategy: 'Meta Ads de Geocercas (localizado a 5km) + Campañas de WhatsApp + Colaboración con Foodies.',
+            route: 'Fase 1: Menú digital interactivo. Fase 2: Campañas de fin de semana y promociones. Fase 3: Fidelización.',
+            indicators: 'Costo por Reservación, Pedidos Delivery, Ticket Promedio por Mesa.',
+            content: 'Videos ASMR de preparación de platos, interacción con comensales y dinámicas/promociones semanales.',
+            automation: 'Bot de WhatsApp interactivo para visualización de menú, reservación de mesa y facturación instantánea.'
+        },
+        'legal': {
+            objective: 'Posicionar al despacho como la principal opción legal y captar consultas de alta facturación.',
+            strategy: 'Google Search Ads de Alta Intención + Artículos de Blog sobre Leyes + Casos de Éxito documentados.',
+            route: 'Fase 1: Perfil de socios y biografía. Fase 2: Embudo de consulta exploratoria. Fase 3: Lead Magnets de contratos.',
+            indicators: 'Leads Calificados, Costo por Consulta Agendada, Tasa de Conversión de Consulta a Contrato.',
+            content: 'Explicación sencilla de reformas legales, tips para proteger empresas y análisis de casos de éxito.',
+            automation: 'Envío de contratos de servicios digitales automáticos con firma digital e integración con Google Calendar.'
+        },
+        'realestate': {
+            objective: 'Captar leads interesados en comprar o vender propiedades exclusivas (mercado inmobiliario premium).',
+            strategy: 'Campañas de Meta Lead Ads + Fichas Interactivas de Propiedades + Video walkthroughs de alta producción.',
+            route: 'Fase 1: Portafolio de propiedades listas. Fase 2: Embudo de pre-calificación crediticia. Fase 3: Retargeting.',
+            indicators: 'Leads Inmobiliarios Calificados, Costo por Lead de Propiedad, Citas Agendadas para Visita.',
+            content: 'Recorridos de video cinematográficos de propiedades, tips de inversión inmobiliaria y tendencias del mercado.',
+            automation: 'Distribución automática de leads a asesores comerciales e integraciones con agendas de visitas.'
+        },
+        'education': {
+            objective: 'Llenar las matrículas de programas, talleres, cursos y carreras educativas.',
+            strategy: 'Clase gratuita (Lead Magnet) + Webinars interactivos + Campañas de conversiones con urgencia.',
+            route: 'Fase 1: Diseño de la landing de conversión. Fase 2: Embudo del evento gratuito. Fase 3: Pauta en Meta Ads.',
+            indicators: 'Estudiantes Inscritos, Costo de Adquisición de Alumno (CAC), Tasa de Asistencia al Webinar.',
+            content: 'Extractos de clases presenciales, testimonios de egresados exitosos e infografías educativas.',
+            automation: 'Secuencia automática de correos y mensajes de WhatsApp antes, durante y después del webinar.'
+        },
+        'tech': {
+            objective: 'Incrementar las pruebas gratuitas y conversiones de pago para productos tecnológicos y SaaS.',
+            strategy: 'Embudo SaaS directo a prueba gratuita + Campañas de remarketing de producto + Contenido comparativo.',
+            route: 'Fase 1: Optimización de onboarding de producto. Fase 2: Campañas de paid media. Fase 3: Estrategia de Retención.',
+            indicators: 'Registros a prueba (Sign-ups), Conversión de Prueba a Pago, Tasa de Cancelación (Churn Rate).',
+            content: 'Tutoriales cortos de uso, animaciones 3D del producto, y comparativas "Nosotros vs Competencia".',
+            automation: 'Eventos de uso de app enviados al CRM para lanzar correos personalizados a usuarios inactivos.'
+        },
+        'other': {
+            objective: 'Construir una presencia digital robusta y diseñar canales optimizados de adquisición de clientes.',
+            strategy: 'Embudo General de Ventas + Meta Ads + Campaña de Autoridad en Redes Sociales.',
+            route: 'Fase 1: Estructura de marca básica. Fase 2: Implementación de CRM básico. Fase 3: Campaña de captación.',
+            indicators: 'Visitas web, Leads generados, Costo por Lead total.',
+            content: 'Presentación del equipo de trabajo, explicación de los servicios generales y casos prácticos.',
+            automation: 'Respuesta automática en redes sociales e integración con base de datos unificada.'
+        }
+    };
+    
+    const config = nicheConfigs[niche] || nicheConfigs['other'];
+    
+    return (
+        <section className="relative px-8 py-10 rounded-[3rem] bg-indigo-500/[0.03] border border-indigo-500/10 overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] -z-10" />
+            <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                    <div className="w-1 h-5 bg-indigo-500 rounded-full" />
+                    <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">Marketing {nicheLabel}</h2>
+                    <div className="bg-indigo-500/10 px-2 py-0.5 rounded text-[8px] font-black text-indigo-400 uppercase tracking-widest">Ecosistema {nicheLabel}</div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="p-6 bg-[#0E0E1B] border border-white/5 rounded-2xl space-y-2">
+                        <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest">Objetivo</h4>
+                        <p className="text-xs text-gray-400 leading-relaxed">{config.objective}</p>
+                    </div>
+                    <div className="p-6 bg-[#0E0E1B] border border-white/5 rounded-2xl space-y-2">
+                        <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest">Estrategia</h4>
+                        <p className="text-xs text-gray-400 leading-relaxed">{config.strategy}</p>
+                    </div>
+                    <div className="p-6 bg-[#0E0E1B] border border-white/5 rounded-2xl space-y-2">
+                        <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest">Ruta de crecimiento</h4>
+                        <p className="text-xs text-gray-400 leading-relaxed">{config.route}</p>
+                    </div>
+                    <div className="p-6 bg-[#0E0E1B] border border-white/5 rounded-2xl space-y-2">
+                        <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest">Indicadores clave</h4>
+                        <p className="text-xs text-gray-400 leading-relaxed">{config.indicators}</p>
+                    </div>
+                    <div className="p-6 bg-[#0E0E1B] border border-white/5 rounded-2xl space-y-2">
+                        <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest">Estrategia de Contenido</h4>
+                        <p className="text-xs text-gray-400 leading-relaxed">{config.content}</p>
+                    </div>
+                    <div className="p-6 bg-[#0E0E1B] border border-white/5 rounded-2xl space-y-2">
+                        <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest">Automatización propuesta</h4>
+                        <p className="text-xs text-gray-400 leading-relaxed">{config.automation}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+  };
+
+  // Drawer Content Renderer
+  const renderDrawerContent = (id) => {
+    switch (id) {
+      case 'info':
+        return (
+          <div className="space-y-6">
+            <div className="flex bg-[#111126] p-1 rounded-xl border border-white/5">
+              <button 
+                onClick={() => setDrawerSubTab('perfil')}
+                className={`flex-1 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${drawerSubTab === 'perfil' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              >
+                Perfil
+              </button>
+              <button 
+                onClick={() => setDrawerSubTab('diagnostico')}
+                className={`flex-1 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${drawerSubTab === 'diagnostico' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              >
+                Diagnóstico
+              </button>
+            </div>
+
+            {drawerSubTab === 'perfil' ? (
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Nombre Empresa</label>
+                  <input 
+                    value={infoForm.company_name}
+                    onChange={(e) => setInfoForm({...infoForm, company_name: e.target.value})}
+                    className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">País</label>
+                    <input 
+                      value={infoForm.country}
+                      onChange={(e) => setInfoForm({...infoForm, country: e.target.value})}
+                      className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Ciudad</label>
+                    <input 
+                      value={infoForm.city}
+                      onChange={(e) => setInfoForm({...infoForm, city: e.target.value})}
+                      className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Dirección</label>
+                  <input 
+                    value={infoForm.address}
+                    onChange={(e) => setInfoForm({...infoForm, address: e.target.value})}
+                    className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Sitio Web</label>
+                  <input 
+                    value={infoForm.website}
+                    onChange={(e) => setInfoForm({...infoForm, website: e.target.value})}
+                    className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Correo Empresarial</label>
+                  <input 
+                    value={infoForm.email}
+                    onChange={(e) => setInfoForm({...infoForm, email: e.target.value})}
+                    className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Teléfono</label>
+                    <input 
+                      value={infoForm.phone}
+                      onChange={(e) => setInfoForm({...infoForm, phone: e.target.value})}
+                      className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Fecha Aniversario</label>
+                    <input 
+                      type="date"
+                      value={infoForm.anniversary_date}
+                      onChange={(e) => setInfoForm({...infoForm, anniversary_date: e.target.value})}
+                      className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Descripción Empresa</label>
+                  <textarea 
+                    value={infoForm.description}
+                    onChange={(e) => setInfoForm({...infoForm, description: e.target.value})}
+                    className="w-full h-24 bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Servicios que Ofrece</label>
+                  <textarea 
+                    placeholder="Describe los servicios principales..."
+                    value={infoForm.services_offered}
+                    onChange={(e) => setInfoForm({...infoForm, services_offered: e.target.value})}
+                    className="w-full h-20 bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Producto Principal</label>
+                  <input 
+                    placeholder="Ej: Consultas de Cirugía Plástica"
+                    value={infoForm.main_product}
+                    onChange={(e) => setInfoForm({...infoForm, main_product: e.target.value})}
+                    className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Tiempo en Mercado</label>
+                    <input 
+                      placeholder="Ej: 3 años"
+                      value={infoForm.time_in_market}
+                      onChange={(e) => setInfoForm({...infoForm, time_in_market: e.target.value})}
+                      className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Cantidad de Clientes</label>
+                    <input 
+                      placeholder="Ej: 150 activos"
+                      value={infoForm.clients_count}
+                      onChange={(e) => setInfoForm({...infoForm, clients_count: e.target.value})}
+                      className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Tamaño de Equipo</label>
+                    <input 
+                      placeholder="Ej: 5 personas"
+                      value={infoForm.team_size}
+                      onChange={(e) => setInfoForm({...infoForm, team_size: e.target.value})}
+                      className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Facturación Aprox.</label>
+                    <input 
+                      placeholder="Ej: $5,000 / mes"
+                      value={infoForm.revenue}
+                      onChange={(e) => setInfoForm({...infoForm, revenue: e.target.value})}
+                      className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => handleSaveModule('info', {
+                company_profile: {
+                  company_name: infoForm.company_name,
+                  country: infoForm.country,
+                  city: infoForm.city,
+                  address: infoForm.address,
+                  website: infoForm.website,
+                  email: infoForm.email,
+                  phone: infoForm.phone,
+                  anniversary_date: infoForm.anniversary_date,
+                  description: infoForm.description,
+                  completed: true
+                },
+                business_diagnosis: {
+                  services_offered: infoForm.services_offered,
+                  main_product: infoForm.main_product,
+                  time_in_market: infoForm.time_in_market,
+                  clients_count: infoForm.clients_count,
+                  team_size: infoForm.team_size,
+                  revenue: infoForm.revenue
+                }
+              })}
+              disabled={drawerLoading}
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50 mt-4"
+            >
+              {drawerLoading ? 'Guardando...' : 'Guardar Información'}
+            </button>
+          </div>
+        );
+
+      case 'drive':
+        return (
+          <div className="space-y-6 text-center py-4">
+            <div className="w-16 h-16 bg-[#111126] border border-white/5 rounded-2xl flex items-center justify-center mx-auto text-indigo-400">
+              <Globe className="w-8 h-8" />
+            </div>
+            
+            <div className="space-y-2 max-w-sm mx-auto">
+              <h4 className="text-white font-bold text-sm">Almacenamiento Cloud</h4>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Vincula tu cuenta de Google Drive para crear carpetas inteligentes de entregables, videos, manuales y recursos automáticamente.
+              </p>
+            </div>
+
+            {clientData?.google_drive_folder_id ? (
+              <div className="space-y-4 pt-4">
+                <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">Ecosistema Drive Sincronizado</span>
+                </div>
+                <p className="text-[10px] text-gray-500 font-mono break-all bg-black/40 p-3 rounded-xl border border-white/5">
+                  ID: {clientData.google_drive_folder_id}
+                </p>
+                <div className="flex gap-3 pt-2">
+                  <a 
+                    href={`https://drive.google.com/drive/folders/${clientData.google_drive_folder_id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2"
+                  >
+                    Abrir Carpeta
+                  </a>
+                  <button 
+                    onClick={async () => {
+                      if(confirm("¿Seguro que deseas desvincular Google Drive?")) {
+                        setDrawerLoading(true);
+                        await supabase.from('clients').update({ google_drive_folder_id: null }).eq('id', clientData.id);
+                        setClientData(prev => ({ ...prev, google_drive_folder_id: null }));
+                        setDrawerLoading(false);
+                        toast.success("Desvinculado con éxito.");
+                      }
+                    }}
+                    className="px-4 py-3 bg-red-900/10 border border-red-500/20 hover:bg-red-900/20 text-red-400 text-xs font-bold rounded-xl"
+                  >
+                    Desvincular
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="pt-6">
+                <button
+                  onClick={handleConnectDrive}
+                  disabled={drawerLoading}
+                  className="w-full py-4 bg-white hover:bg-gray-100 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {drawerLoading ? 'Conectando...' : 'Conectar Google Drive'}
+                </button>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'calendar':
+        const hasCalendar = clientData?.onboarding_data?.calendar_connected;
+        return (
+          <div className="space-y-6 text-center py-4">
+            <div className="w-16 h-16 bg-[#111126] border border-white/5 rounded-2xl flex items-center justify-center mx-auto text-indigo-400">
+              <Plus className="w-8 h-8" />
+            </div>
+            
+            <div className="space-y-2 max-w-sm mx-auto">
+              <h4 className="text-white font-bold text-sm">Calendario Comercial</h4>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Sincroniza tus eventos, filmaciones y reuniones directamente con Google Calendar para mantener al día a tu equipo.
+              </p>
+            </div>
+
+            {hasCalendar ? (
+              <div className="space-y-4 pt-4">
+                <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">Google Calendar Activo</span>
+                </div>
+                <button 
+                  onClick={async () => {
+                    setDrawerLoading(true);
+                    const updated = { ...(clientData.onboarding_data || {}), calendar_connected: false };
+                    await supabase.from('clients').update({ onboarding_data: updated }).eq('id', clientData.id);
+                    setClientData(prev => ({ ...prev, onboarding_data: updated }));
+                    setDrawerLoading(false);
+                    toast.success("Desactivado con éxito.");
+                  }}
+                  className="w-full py-3 bg-red-900/10 border border-red-500/20 hover:bg-red-900/20 text-red-400 text-xs font-bold rounded-xl"
+                >
+                  Desactivar Sincronización
+                </button>
+              </div>
+            ) : (
+              <div className="pt-6">
+                <button
+                  onClick={handleConnectCalendar}
+                  disabled={drawerLoading}
+                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {drawerLoading ? 'Sincronizando...' : 'Activar Sincronización'}
+                </button>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'logo':
+        return (
+          <div className="space-y-6">
+            <div className="p-6 bg-[#111126] border border-white/5 rounded-2xl text-center space-y-4 relative">
+              {brandForm.logo ? (
+                <div className="relative w-32 h-32 mx-auto rounded-xl overflow-hidden border border-white/10 flex items-center justify-center bg-black/40">
+                  <img src={brandForm.logo} alt="Logo" className="max-w-full max-h-full object-contain" />
+                  <button 
+                    onClick={() => setBrandForm(prev => ({ ...prev, logo: '' }))}
+                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md text-[8px] font-black"
+                  >
+                    ELIMINAR
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  onClick={() => logoInputRef.current?.click()}
+                  className="w-32 h-32 mx-auto rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center text-gray-500 hover:border-indigo-500 cursor-pointer transition-colors"
+                >
+                  <Upload className="w-8 h-8 mb-2" />
+                  <span className="text-[10px] font-black uppercase">Subir Logo</span>
+                </div>
+              )}
+              <input 
+                type="file" 
+                ref={logoInputRef} 
+                className="hidden" 
+                accept="image/*"
+                onChange={handleLogoUpload}
+              />
+              <p className="text-[10px] text-gray-500">Formato PNG transparente recomendado.</p>
+            </div>
+
+            <button
+              onClick={() => handleSaveModule('logo', {
+                brand: {
+                  ...(clientData?.onboarding_data?.brand || {}),
+                  logo: brandForm.logo
+                }
+              })}
+              disabled={drawerLoading || !brandForm.logo}
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50 mt-4"
+            >
+              {drawerLoading ? 'Guardando...' : 'Confirmar Logotipo'}
+            </button>
+          </div>
+        );
+
+      case 'visual':
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Color Principal</label>
+                <div className="flex gap-2 items-center bg-[#111126] border border-white/5 rounded-xl p-3">
+                  <input 
+                    type="color" 
+                    value={brandForm.primaryColor}
+                    onChange={(e) => setBrandForm({...brandForm, primaryColor: e.target.value})}
+                    className="w-8 h-8 border-none bg-transparent cursor-pointer rounded"
+                  />
+                  <span className="text-xs font-bold text-white uppercase">{brandForm.primaryColor}</span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Color Secundario</label>
+                <div className="flex gap-2 items-center bg-[#111126] border border-white/5 rounded-xl p-3">
+                  <input 
+                    type="color" 
+                    value={brandForm.secondaryColor}
+                    onChange={(e) => setBrandForm({...brandForm, secondaryColor: e.target.value})}
+                    className="w-8 h-8 border-none bg-transparent cursor-pointer rounded"
+                  />
+                  <span className="text-xs font-bold text-white uppercase">{brandForm.secondaryColor}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Tipografía Principal</label>
+              <select 
+                value={brandForm.typography}
+                onChange={(e) => setBrandForm({...brandForm, typography: e.target.value})}
+                className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+              >
+                <option value="Inter">Inter</option>
+                <option value="Outfit">Outfit</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Playfair Display">Playfair Display</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Manual de Marca (PDF/Doc)</label>
+              <div 
+                onClick={() => manualInputRef.current?.click()}
+                className="border-2 border-dashed border-white/10 rounded-xl p-6 text-center hover:border-indigo-500 cursor-pointer transition-colors"
+              >
+                <Upload className="w-6 h-6 text-gray-500 mx-auto mb-2" />
+                <span className="text-xs text-gray-400 font-bold">
+                  {brandForm.brand_manual || 'Haz clic para subir tu manual de marca'}
+                </span>
+              </div>
+              <input 
+                type="file" 
+                ref={manualInputRef} 
+                className="hidden" 
+                accept=".pdf,.doc,.docx"
+                onChange={handleManualUpload}
+              />
+            </div>
+
+            <button
+              onClick={() => handleSaveModule('visual', {
+                brand: {
+                  ...(clientData?.onboarding_data?.brand || {}),
+                  primaryColor: brandForm.primaryColor,
+                  secondaryColor: brandForm.secondaryColor,
+                  typography: brandForm.typography,
+                  brand_manual: brandForm.brand_manual,
+                  completed: true
+                }
+              })}
+              disabled={drawerLoading}
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50 mt-4"
+            >
+              {drawerLoading ? 'Guardando...' : 'Confirmar Identidad Visual'}
+            </button>
+          </div>
+        );
+
+      case 'social':
+        return (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Instagram</label>
+                <input 
+                  placeholder="https://instagram.com/tu_marca"
+                  value={socialForm.instagram}
+                  onChange={(e) => setSocialForm({...socialForm, instagram: e.target.value})}
+                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Facebook</label>
+                <input 
+                  placeholder="https://facebook.com/tu_marca"
+                  value={socialForm.facebook}
+                  onChange={(e) => setSocialForm({...socialForm, facebook: e.target.value})}
+                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">TikTok</label>
+                <input 
+                  placeholder="https://tiktok.com/@tu_marca"
+                  value={socialForm.tiktok}
+                  onChange={(e) => setSocialForm({...socialForm, tiktok: e.target.value})}
+                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">LinkedIn</label>
+                <input 
+                  placeholder="https://linkedin.com/company/tu_marca"
+                  value={socialForm.linkedin}
+                  onChange={(e) => setSocialForm({...socialForm, linkedin: e.target.value})}
+                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">WhatsApp Business</label>
+                <input 
+                  placeholder="Ej: +593987654321"
+                  value={socialForm.whatsapp}
+                  onChange={(e) => setSocialForm({...socialForm, whatsapp: e.target.value})}
+                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">YouTube</label>
+                <input 
+                  placeholder="https://youtube.com/@tu_marca"
+                  value={socialForm.youtube}
+                  onChange={(e) => setSocialForm({...socialForm, youtube: e.target.value})}
+                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={() => handleSaveModule('social', {
+                social: {
+                  ...socialForm,
+                  completed: true
+                }
+              })}
+              disabled={drawerLoading}
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50 mt-4"
+            >
+              {drawerLoading ? 'Guardando...' : 'Confirmar Canales'}
+            </button>
+          </div>
+        );
+
+      case 'growth':
+        const levels = [
+          { name: 'Presencia Digital', price: 250, desc: 'Ideal para iniciar la digitalización de tu consultorio o marca. CRM + Pauta Básica.' },
+          { name: 'Crecimiento', price: 500, desc: 'Expansión de canales y automatizaciones avanzadas. Recomendado para marcas medianas.' },
+          { name: 'Autoridad', price: 700, desc: 'Posicionamiento estratégico, pauta optimizada y contenido multiplataforma Premium.' },
+          { name: 'Escalamiento', price: 1000, desc: 'Estrategia omnicanal masiva, embudos avanzados e integraciones profundas.' },
+          { name: 'Dominio de Mercado', price: 'Personalizado', desc: 'Desarrollo corporativo customizado con soporte prioritario 24/7.' }
+        ];
+        return (
+          <div className="space-y-6">
+            <div className="space-y-3">
+              {levels.map((lvl) => {
+                const isSelected = clientData?.plan === lvl.name;
+                return (
+                  <div
+                    key={lvl.name}
+                    onClick={() => handleSaveModule('growth', {
+                      growth_level: {
+                        plan: lvl.name,
+                        price: lvl.price
+                      },
+                      growth_level_completed: true
+                    })}
+                    className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
+                      isSelected
+                        ? 'bg-indigo-600/10 border-indigo-500 shadow-md'
+                        : 'bg-[#111126] border-white/5 hover:border-white/10'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-black text-white uppercase tracking-wider">{lvl.name}</span>
+                      <span className="text-xs font-black text-indigo-400">
+                        {typeof lvl.price === 'number' ? `$${lvl.price}/mes` : lvl.price}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">{lvl.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#07070F] flex items-center justify-center text-white font-black tracking-[0.5em] uppercase text-[10px] italic">
@@ -356,10 +1341,8 @@ function DashboardContent() {
 
       <div className="p-6 md:p-10 pt-24 md:pt-32 space-y-12">
       
-      
       {isStaff ? (
         <section className="relative overflow-hidden rounded-[3rem] border border-white/5 bg-gradient-to-br from-[#0A0A1F] to-[#050510] shadow-2xl">
-            {/* Ambient Glow */}
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full -z-10" />
             <StrategyPlanner activeCampaign={{ name: clientData?.name || 'DIIC Global', progress: 94 }} />
         </section>
@@ -388,9 +1371,88 @@ function DashboardContent() {
                  <span className="text-gray-600 block text-xs mt-1 uppercase tracking-widest font-black">Revisa tus últimos activos y reportes debajo.</span>
               </p>
            </div>
-           
-           {/* Identity Panel Removed as per feedback */}
         </section>
+      )}
+
+      {/* ─── ACTIVATION CENTER WIDGET (NEW V2) ─── */}
+      {!isStaff && activationProgress < 100 && (
+          <section className="relative p-8 md:p-10 rounded-[3rem] bg-indigo-500/[0.03] border border-indigo-500/20 overflow-hidden group">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/5 blur-[100px] -z-10" />
+              
+              <div className="flex flex-col lg:flex-row justify-between gap-8 items-start relative z-10">
+                  <div className="space-y-4 max-w-lg">
+                      <div className="flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full w-fit">
+                          <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                          <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Cuenta Activa</span>
+                      </div>
+                      
+                      <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Bienvenido a DIIC ZONE</h2>
+                      <p className="text-xs text-gray-400 leading-relaxed font-bold uppercase tracking-wider">Tu cuenta está activa.</p>
+                      
+                      <div className="bg-[#0A0A12]/80 border border-white/5 p-4 rounded-2xl flex items-center justify-between gap-6 max-w-sm">
+                          <div>
+                              <p className="text-[8px] font-black text-gray-500 uppercase tracking-wider">Prueba gratuita</p>
+                              <p className="text-xs font-black text-indigo-400">{getRemainingDays()} días restantes</p>
+                          </div>
+                          <div>
+                              <p className="text-[8px] font-black text-gray-500 uppercase tracking-wider">Costo Mensual</p>
+                              <p className="text-xs font-black text-white">$70 / mes (Uso de App)</p>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div className="flex-1 w-full space-y-6">
+                      <div className="flex justify-between items-end">
+                          <div>
+                              <h3 className="text-sm font-black text-white uppercase tracking-widest italic">Centro de Activación</h3>
+                              <p className="text-xs text-gray-500">Completa tu entorno de trabajo corporativo</p>
+                          </div>
+                          <div className="flex items-end gap-0.5 font-mono">
+                              <span className="text-3xl font-black text-white leading-none">{activationProgress}</span>
+                              <span className="text-indigo-400 text-xs font-black">%</span>
+                          </div>
+                      </div>
+
+                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden relative border border-white/5">
+                          <motion.div 
+                              className="h-full bg-gradient-to-r from-indigo-600 via-indigo-400 to-emerald-400"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${activationProgress}%` }}
+                              transition={{ duration: 0.8 }}
+                          />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {checklistItems.map((item) => (
+                              <button
+                                  key={item.id}
+                                  onClick={() => {
+                                      if (item.id === 'drive' && !item.completed) {
+                                          handleConnectDrive();
+                                      } else if (item.id === 'calendar' && !item.completed) {
+                                          handleConnectCalendar();
+                                      } else {
+                                          setActiveDrawer(item.id);
+                                      }
+                                  }}
+                                  className={`flex items-center gap-3 p-4 rounded-2xl border text-left transition-all ${
+                                      item.completed
+                                          ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400'
+                                          : 'bg-white/[0.01] border-white/5 text-gray-400 hover:bg-white/[0.03] hover:border-white/10 hover:text-white'
+                                  }`}
+                              >
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center border shrink-0 ${
+                                      item.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/10'
+                                  }`}>
+                                      {item.completed ? '✓' : ''}
+                                  </div>
+                                  <span className="text-xs font-bold truncate">{item.label}</span>
+                              </button>
+                          ))}
+                      </div>
+                  </div>
+              </div>
+          </section>
       )}
 
       {/* ─── Metric Cards ─── */}
@@ -398,50 +1460,8 @@ function DashboardContent() {
          {stats.map((s, i) => <StatCard key={i} {...s} />)}
       </section>
 
-      {/* ─── Connectivity & Storage Section (NEW) ─── */}
-      {!isStaff && (
-          <section className="relative px-8 py-10 rounded-[3rem] bg-indigo-500/[0.03] border border-indigo-500/10 overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] -z-10" />
-              <div className="flex flex-col md:flex-row justify-between items-center gap-8 relative z-10">
-                  <div className="flex gap-6 items-center">
-                      <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400">
-                          <Globe className="w-8 h-8" />
-                      </div>
-                      <div className="space-y-1">
-                          <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Espacio de Almacenamiento</h3>
-                          <p className="text-sm text-gray-500 font-bold">
-                              {clientData?.google_connected_email 
-                                ? `Sincronizado con: ${clientData.google_connected_email}` 
-                                : 'Tu almacenamiento en Google Drive no está vinculado aún.'}
-                          </p>
-                      </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                      {clientData?.google_connected_email ? (
-                          <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 px-6 py-3 rounded-2xl">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Nube Activa</span>
-                          </div>
-                      ) : (
-                          <button 
-                            onClick={async () => {
-                                // Logic to trigger Google Auth handled by AuthContext
-                                window.location.href = '/login'; 
-                            }}
-                            className="bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center gap-3"
-                          >
-                            <UserPlus className="w-4 h-4" /> Relacionar Google Drive
-                          </button>
-                      )}
-                      
-                      <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center gap-3 shadow-lg shadow-indigo-600/20">
-                          <Settings className="w-4 h-4" /> Configurar Sincronización
-                      </button>
-                  </div>
-              </div>
-          </section>
-      )}
+      {/* ─── Specialized Niche Growth Strategy (NEW V2 - Módulo 6) ─── */}
+      {!isStaff && renderCrecimientoDigital()}
 
       {/* ─── Strategic Protocol Section ─── */}
       <section className="mb-10 px-2">
@@ -474,7 +1494,6 @@ function DashboardContent() {
 
          {/* Row 3: Insights 360 (Social + Ads) */}
          <section className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-            {/* Left: Social Feed */}
             <div className="h-full">
                 <SocialFeedPreview 
                     connected={socialMetrics && socialMetrics.length > 0} 
@@ -482,7 +1501,6 @@ function DashboardContent() {
                 />
             </div>
 
-            {/* Right: Ads Performance */}
             <div className="h-full">
                 <AdPerformanceCard 
                     campaigns={Object.values(adInsights?.reduce((acc, curr) => {
@@ -506,7 +1524,7 @@ function DashboardContent() {
 
       </section>
 
-      {/* ─── Gallery Area (Restored) ─── */}
+      {/* ─── Gallery Area ─── */}
       {!isStaff && (
           <section className="mb-12 mt-10">
               <GalleryPreview />
@@ -518,6 +1536,56 @@ function DashboardContent() {
       <div className="fixed -bottom-40 -right-40 w-[40rem] h-[40rem] bg-amber-500/5 rounded-full blur-[8rem] -z-10" />
 
       </div>
+
+      {/* ─── ACTIVATION DRAWER PANEL ─── */}
+      <AnimatePresence>
+          {activeDrawer && (
+              <>
+                  <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.6 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setActiveDrawer(null)}
+                      className="fixed inset-0 bg-black z-50 backdrop-blur-sm"
+                  />
+                  <motion.div
+                      initial={{ x: '100%' }}
+                      animate={{ x: 0 }}
+                      exit={{ x: '100%' }}
+                      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                      className="fixed right-0 top-0 h-full w-full max-w-md bg-[#0A0A1F] border-l border-white/10 p-8 z-50 overflow-y-auto custom-scrollbar flex flex-col justify-between"
+                  >
+                      <div>
+                          <div className="flex justify-between items-center pb-6 border-b border-white/5">
+                              <div>
+                                  <h3 className="text-xl font-black text-white italic uppercase tracking-tight">
+                                      {getDrawerTitle(activeDrawer)}
+                                  </h3>
+                                  <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mt-1">
+                                      {getDrawerSubtitle(activeDrawer)}
+                                  </p>
+                              </div>
+                              <button
+                                  onClick={() => setActiveDrawer(null)}
+                                  className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors font-mono text-sm"
+                              >
+                                  ✕
+                              </button>
+                          </div>
+
+                          <div className="py-8">
+                              {renderDrawerContent(activeDrawer)}
+                          </div>
+                      </div>
+                      
+                      <div className="pt-6 border-t border-white/5 flex justify-between items-center text-[8px] font-mono text-gray-600 uppercase tracking-widest">
+                          <span>DIIC ZONE v2.0</span>
+                          <span>CENTRO_DE_ACTIVACION</span>
+                      </div>
+                  </motion.div>
+              </>
+          )}
+      </AnimatePresence>
     </div>
   );
 }

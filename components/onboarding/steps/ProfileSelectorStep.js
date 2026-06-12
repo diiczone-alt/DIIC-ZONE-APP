@@ -2,41 +2,30 @@
 
 import { motion } from 'framer-motion';
 import {
-    HardHat, Megaphone, ShoppingBag, GraduationCap,
-    Coins, Landmark, Stethoscope, UtensilsCrossed,
-    Cpu, Gavel, Factory, HeartHandshake,
-    Home, Store, Truck, Plane,
-    Briefcase, MoreHorizontal, Mic, User, Sprout
+    GraduationCap, Stethoscope, UtensilsCrossed,
+    Cpu, Gavel, HeartHandshake, Home, MoreHorizontal, Sprout
 } from 'lucide-react';
 
 export default function ProfileSelectorStep({ onNext, updateData }) {
     const profiles = [
-        { id: 'personal', label: 'Marca Personal', desc: 'Autoridad para profesionales', icon: User, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'hover:border-purple-500' },
         { id: 'doctor', label: 'Médico', desc: 'Funnels para médicos y especialistas', icon: Stethoscope, color: 'text-red-400', bg: 'bg-red-500/10', border: 'hover:border-red-500' },
+        { id: 'health', label: 'Clínica / Hospital', desc: 'Reputación & directorio médico', icon: HeartHandshake, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'hover:border-rose-500' },
         { id: 'agro', label: 'Agropecuario', desc: 'Venta mayorista e insumos', icon: Sprout, color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'hover:border-emerald-500' },
-        { id: 'creator', label: 'Blog / Podcast', desc: 'Viralidad y monetización de marca', icon: Mic, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'hover:border-pink-500' },
-        { id: 'marketing', label: 'Marketing Digital', desc: 'Embudo de captación B2B', icon: Megaphone, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'hover:border-blue-500' },
-        { id: 'ecommerce', label: 'E-commerce', desc: 'Conversión y escala de ventas web', icon: ShoppingBag, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'hover:border-emerald-500' },
+        { id: 'horeca', label: 'Restaurante', desc: 'Atracción foodie & delivery', icon: UtensilsCrossed, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'hover:border-orange-500' },
+        { id: 'legal', label: 'Jurídico', desc: 'Posicionamiento y casos complejos', icon: Gavel, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'hover:border-amber-500' },
+        { id: 'realestate', label: 'Inmobiliario', desc: 'Leads inmobiliarios de alta gama', icon: Home, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'hover:border-indigo-500' },
         { id: 'education', label: 'Educación', desc: 'Conversión para cursos y talleres', icon: GraduationCap, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'hover:border-yellow-500' },
-        { id: 'finance', label: 'Finanzas', desc: 'Captación de capital e inversiones', icon: Coins, color: 'text-green-400', bg: 'bg-green-500/10', border: 'hover:border-green-500' },
-        { id: 'health', label: 'Servicios de Salud', desc: 'Reputación & directorio médico', icon: Stethoscope, color: 'text-red-400', bg: 'bg-red-500/10', border: 'hover:border-red-500' },
-        { id: 'horeca', label: 'Restaurantes', desc: 'Atracción foodie & delivery', icon: UtensilsCrossed, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'hover:border-orange-500', featured: true },
-        { id: 'tech', label: 'Tecnología / TI', desc: 'Adquisición de usuarios y SaaS', icon: Cpu, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'hover:border-cyan-500' },
-        { id: 'legal', label: 'Legal / Abogados', desc: 'Posicionamiento y casos complejos', icon: Gavel, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'hover:border-amber-500' },
-        { id: 'realestate', label: 'Bienes Raíces', desc: 'Leads inmobiliarios de alta gama', icon: Home, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'hover:border-indigo-500' },
-        { id: 'retail', label: 'Ventas Minoristas', desc: 'Tráfico al punto de venta físico', icon: Store, color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'hover:border-violet-500' },
-        { id: 'consulting', label: 'Consultoría', desc: 'Asesoría de negocio high-ticket', icon: Briefcase, color: 'text-teal-400', bg: 'bg-teal-500/10', border: 'hover:border-teal-500' },
-        { id: 'manufacturing', label: 'Manufactura', desc: 'Licitaciones y clientes corporativos', icon: Factory, color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'hover:border-gray-500' },
-        { id: 'construction', label: 'Construcción', desc: 'Pre-ventas y portafolio de obra', icon: HardHat, color: 'text-orange-600', bg: 'bg-orange-600/10', border: 'hover:border-orange-600' },
-        { id: 'transport', label: 'Logística / Transp.', desc: 'Logística y distribución B2B', icon: Truck, color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'hover:border-slate-500' },
-        { id: 'travel', label: 'Viajes / Turismo', desc: 'Reservas y branding de turismo', icon: Plane, color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'hover:border-sky-500' },
-        { id: 'ong', label: 'Sin fines de lucro', desc: 'Recaudación y concientización social', icon: HeartHandshake, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'hover:border-rose-500' },
-        { id: 'government', label: 'Gubernamental', desc: 'Communication institucional', icon: Landmark, color: 'text-blue-600', bg: 'bg-blue-600/10', border: 'hover:border-blue-600' },
-        { id: 'other', label: 'Otro Sector', desc: 'Estrategias a la medida', icon: MoreHorizontal, color: 'text-gray-500', bg: 'bg-gray-500/5', border: 'hover:border-gray-500' }
+        { id: 'tech', label: 'Empresa', desc: 'Adquisición de usuarios y SaaS', icon: Cpu, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'hover:border-cyan-500' },
+        { id: 'other', label: 'Otro', desc: 'Estrategias a la medida', icon: MoreHorizontal, color: 'text-gray-500', bg: 'bg-gray-500/5', border: 'hover:border-gray-500' }
     ];
 
     const handleSelect = (id) => {
-        updateData({ profileType: id });
+        updateData({ 
+            profileType: id,
+            niche: id,
+            business_niche: id,
+            industry: id
+        });
         onNext();
     };
 
@@ -59,10 +48,10 @@ export default function ProfileSelectorStep({ onNext, updateData }) {
         <div className="flex flex-col h-full max-w-7xl mx-auto w-full">
             <div className="text-center mb-10 space-y-4">
                 <h2 className="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter">
-                    ¿A qué se <span className="text-indigo-500">dedica?</span>
+                    ¿A qué se dedica tu <span className="text-indigo-500">negocio?</span>
                 </h2>
                 <p className="text-gray-400 text-lg font-medium">
-                    Selecciona tu sector para que DIIC ZONE adapte su <br className="hidden md:block" /> inteligencia a tu modelo de negocio.
+                    DIIC ZONE adaptará su inteligencia, procesos y estrategia a tu modelo de negocio.
                 </p>
             </div>
 
@@ -70,27 +59,17 @@ export default function ProfileSelectorStep({ onNext, updateData }) {
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-12 overflow-y-auto custom-scrollbar px-2 content-start animate-fade-in"
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pb-12 overflow-y-auto custom-scrollbar px-2 content-start animate-fade-in"
             >
                 {profiles.map((p) => (
                     <motion.button
                         key={p.id}
                         variants={itemVariants}
                         onClick={() => handleSelect(p.id)}
-                        className={`group relative p-5 rounded-[2rem] border transition-all hover:bg-white/[0.05] ${p.border} flex items-start gap-4 text-left backdrop-blur-sm overflow-hidden ${
-                            p.featured 
-                                ? 'border-orange-500/30 bg-orange-500/[0.03] shadow-[0_0_25px_rgba(249,115,22,0.15)] ring-1 ring-orange-500/20' 
-                                : 'border-white/5 bg-white/[0.02]'
-                        }`}
+                        className="group relative p-5 rounded-[2rem] border transition-all hover:bg-white/[0.05] border-white/5 bg-white/[0.02] flex items-start gap-4 text-left backdrop-blur-sm overflow-hidden"
                     >
                         {/* Background Glow on Hover */}
                         <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl ${p.bg} -z-10 scale-150`} />
-                        
-                        {p.featured && (
-                            <div className="absolute top-3 right-3 px-2.5 py-0.5 bg-orange-500 text-black text-[8px] font-black uppercase tracking-widest rounded-full shadow-lg z-20">
-                                Popular
-                            </div>
-                        )}
 
                         <div className={`p-3.5 rounded-2xl ${p.bg} ${p.color} transition-all duration-300 group-hover:scale-105 group-hover:rotate-2 shadow-xl flex-shrink-0`}>
                             <p.icon className="w-6 h-6" />

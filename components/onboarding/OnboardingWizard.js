@@ -61,7 +61,7 @@ export default function OnboardingWizard({ initialType = 'client' }) {
     const { user, loading } = useAuth();
 
     const isCreative = formData.type === 'creative';
-    const totalSteps = isCreative ? 9 : 15;
+    const totalSteps = isCreative ? 9 : 4;
 
 
     // 1. Persistence: Load state from localStorage on mount
@@ -112,20 +112,22 @@ export default function OnboardingWizard({ initialType = 'client' }) {
         // --- BYPASS CRÍTICO PARA USUARIOS REGISTRADOS ---
         if (user?.user_metadata?.onboarding_completed) {
             console.log('[OnboardingWizard] Usuario ya registrado detectado. Redirigiendo al Dashboard...');
-            const industrySlug = user.industry_slug || user.user_metadata?.industry_slug || 'general';
-            const clientSlug = user.client_slug || user.user_metadata?.client_slug || 'workspace';
-            
             if (user.role === 'CLIENT') {
-                router.push(`/dashboard/${industrySlug}/${clientSlug}/profile`);
+                router.push('/dashboard');
             } else {
                 router.push('/dashboard');
             }
             return;
         }
 
-        if (currentStep < 4 && user) {
-            console.log('[OnboardingWizard] Session detected, skipping to profile technical setup...');
-            setCurrentStep(4);
+        if (user) {
+            if (isCreative && currentStep < 4) {
+                console.log('[OnboardingWizard] Session detected for Creative, skipping to step 4...');
+                setCurrentStep(4);
+            } else if (!isCreative && currentStep === 1) {
+                console.log('[OnboardingWizard] Session detected for Client, skipping to step 2...');
+                setCurrentStep(2);
+            }
         }
     }, [user, isHydrated, loading, router]);
 
@@ -158,11 +160,10 @@ export default function OnboardingWizard({ initialType = 'client' }) {
     };
 
     const renderStep = () => {
-        if (currentStep === 1) return <WelcomeStep onNext={nextStep} type={formData.type} />;
-        if (currentStep === 2) return <LegalStep onNext={nextStep} />;
-        if (currentStep === 3) return <AuthStep onNext={nextStep} updateData={updateRoot} type={formData.type} />;
-
         if (isCreative) {
+            if (currentStep === 1) return <WelcomeStep onNext={nextStep} type={formData.type} />;
+            if (currentStep === 2) return <LegalStep onNext={nextStep} />;
+            if (currentStep === 3) return <AuthStep onNext={nextStep} updateData={updateRoot} type={formData.type} />;
             switch (currentStep) {
                 case 4: return <TalentRoleStep onNext={nextStep} updateData={updateRoot} />;
                 case 5: return <TalentDescriptionStep onNext={nextStep} updateData={updateRoot} data={formData} />;
@@ -172,22 +173,14 @@ export default function OnboardingWizard({ initialType = 'client' }) {
                 case 9: return <EnvironmentSuccessStep onNext={nextStep} formData={formData} />;
                 default: return <div className="text-white text-center p-10 font-bold">¡Bienvenido a la Zona Creativa! 🎥</div>;
             }
-        }
-
-        switch (currentStep) {
-            case 4: return <ProfileSelectorStep onNext={nextStep} updateData={updateRoot} />;
-            case 5: return <SubProfileStep onNext={nextStep} updateData={updateRoot} profileType={formData.profileType} />;
-            case 6: return <GoalStep onNext={nextStep} updateData={updateRoot} />;
-            case 7: return <BusinessInfoStep onNext={nextStep} updateData={updateRoot} />;
-            case 8: return <CapacityStep onNext={nextStep} updateData={(d) => handleUpdateData('capacity', d)} userType={formData.profileType} niche={formData.niche} />;
-            case 9: return <AnalisisChannelStep onNext={nextStep} updateData={(d) => handleUpdateData('channels', d)} />;
-            case 10: return <SocialConnectStep onNext={nextStep} updateData={(d) => handleUpdateData('social', d)} />;
-            case 11: return <BrandIdentityStep onNext={nextStep} updateData={(d) => handleUpdateData('brandIdentity', d)} />;
-            case 12: return <LevelCalculationStep onNext={nextStep} formData={formData} />;
-            case 13: return <SmartRecommendationStep onNext={nextStep} formData={formData} updateData={updateRoot} />;
-            case 14: return <DriveSetupStep onNext={nextStep} updateData={(d) => handleUpdateData('driveData', d)} data={formData} />;
-            case 15: return <EnvironmentSuccessStep onNext={nextStep} formData={formData} />;
-            default: return <div className="text-white text-center p-10 font-bold">¡Flujo Completado! Generando tu entorno...</div>;
+        } else {
+            switch (currentStep) {
+                case 1: return <AuthStep onNext={nextStep} updateData={updateRoot} type={formData.type} />;
+                case 2: return <ProfileSelectorStep onNext={nextStep} updateData={updateRoot} />;
+                case 3: return <GoalStep onNext={nextStep} updateData={updateRoot} />;
+                case 4: return <EnvironmentSuccessStep onNext={nextStep} formData={formData} />;
+                default: return <div className="text-white text-center p-10 font-bold">¡Flujo Completado! Generando tu entorno...</div>;
+            }
         }
     };
 
