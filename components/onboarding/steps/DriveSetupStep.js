@@ -69,9 +69,13 @@ export default function DriveSetupStep({ onNext, updateData, data }) {
                     }
 
                     const token = params.get('provider_token');
+                    const refreshToken = params.get('provider_refresh_token');
                     if (token) {
                         console.log('[DriveSetupStep] ¡Llave detectada en URL! Captura directa exitosa.');
                         localStorage.setItem('diic_google_token', token);
+                        if (refreshToken) {
+                            localStorage.setItem('diic_google_refresh_token', refreshToken);
+                        }
                         localStorage.removeItem('diic_waiting_oauth');
                         
                         // Limpiar URL para seguridad

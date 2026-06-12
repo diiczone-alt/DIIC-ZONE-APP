@@ -160,6 +160,10 @@ export const AuthProvider = ({ children }) => {
                         console.log('🗝️ [AuthContext] Captured provider_token on init:', initialSession.provider_token);
                         localStorage.setItem('diic_google_token', initialSession.provider_token);
                     }
+                    if (initialSession.provider_refresh_token) {
+                        console.log('🗝️ [AuthContext] Captured provider_refresh_token on init:', initialSession.provider_refresh_token);
+                        localStorage.setItem('diic_google_refresh_token', initialSession.provider_refresh_token);
+                    }
                     
                     const profileData = await fetchProfile(initialSession.user.id, initialSession.user.email, initialSession.user.user_metadata);
                     if (active) {
@@ -214,6 +218,10 @@ export const AuthProvider = ({ children }) => {
                     if (session?.provider_token) {
                         console.log('🗝️ [AuthContext] Captured provider_token on state change:', session.provider_token);
                         localStorage.setItem('diic_google_token', session.provider_token);
+                    }
+                    if (session?.provider_refresh_token) {
+                        console.log('🗝️ [AuthContext] Captured provider_refresh_token on state change:', session.provider_refresh_token);
+                        localStorage.setItem('diic_google_refresh_token', session.provider_refresh_token);
                     }
                     if (session?.user) {
                         const profile = await fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
@@ -339,7 +347,7 @@ export const AuthProvider = ({ children }) => {
                     access_type: 'offline',
                     prompt: 'consent',
                 },
-                scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+                scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
                 data: {
                     full_name: metadata.full_name || '',
                     role: metadata.role || 'CLIENT',

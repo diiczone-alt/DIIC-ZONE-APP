@@ -123,7 +123,10 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                 if (isMounted.current) setLogs(prev => [...prev, 'Buscando llave de ecosistema en bóveda...']);
                 
                 const backupToken = typeof window !== 'undefined' ? localStorage.getItem('diic_google_token') : null;
+                const backupRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('diic_google_refresh_token') : null;
                 const providerToken = session?.provider_token || backupToken;
+                const providerRefreshToken = session?.provider_refresh_token || backupRefreshToken;
+                const googleConnectedEmail = activeUser?.email || session?.user?.email || '';
 
                 if (providerToken && isMounted.current) {
                     try {
@@ -151,12 +154,17 @@ export default function EnvironmentSuccessStep({ onNext, formData }) {
                             // If client, also save in clients table
                             if (formData.type === 'client' && finalSlugs.current.clientId) {
                                 await supabase.from('clients').update({
-                                    google_drive_folder_id: driveResult.rootId
+                                    google_drive_folder_id: driveResult.rootId,
+                                    google_access_token: providerToken,
+                                    google_refresh_token: providerRefreshToken,
+                                    google_connected_email: googleConnectedEmail,
+                                    sync_active: true
                                 }).eq('id', finalSlugs.current.clientId);
                             }
 
-                            // Clean up backup token
+                            // Clean up backup tokens
                             localStorage.removeItem('diic_google_token');
+                            localStorage.removeItem('diic_google_refresh_token');
                             localStorage.removeItem('diic_waiting_oauth');
                         }
                     } catch (driveErr) {

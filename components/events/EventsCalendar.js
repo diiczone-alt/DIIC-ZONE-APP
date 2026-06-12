@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, Search, Plus, MoreHorizontal, Calendar as CalendarIcon, Edit2, Link as LinkIcon, Video, CheckCircle2, Clock, Smartphone, Camera, Star, Users, ChevronDown, CheckSquare, ExternalLink, X, FileText, Mic, MicOff, MonitorUp, PhoneOff, Paperclip, MessageCircle, MessageSquare } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function EventsCalendar() {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -317,6 +318,74 @@ export default function EventsCalendar() {
     };
 
     const [isSyncing, setIsSyncing] = useState(false);
+
+    const handleGoogleCalendarSync = async () => {
+        const clientId = typeof window !== 'undefined' ? localStorage.getItem('client_id') : null;
+        if (!clientId) {
+            toast.error("No se pudo detectar el ID del cliente para la sincronización.");
+            return;
+        }
+
+        setIsSyncing(true);
+        const syncToastId = toast.loading("Sincronizando con Google Calendar...", { id: 'gcal-sync' });
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            const eventsToSync = events.map(event => {
+                const curr = new Date(currentDate);
+                let day = curr.getDay();
+                if (day === 0) day = 7;
+                const mondayDate = new Date(curr);
+                mondayDate.setDate(curr.getDate() - day + 1);
+                mondayDate.setHours(0, 0, 0, 0);
+
+                const eventDate = new Date(mondayDate);
+                eventDate.setDate(mondayDate.getDate() + event.dayIndex);
+
+                const startHour = Math.floor(event.startHour);
+                const startMinute = Math.round((event.startHour - startHour) * 60);
+                const startDateTime = new Date(eventDate);
+                startDateTime.setHours(startHour, startMinute, 0, 0);
+
+                const endHourVal = event.startHour + event.duration;
+                const endHour = Math.floor(endHourVal);
+                const endMinute = Math.round((endHourVal - endHour) * 60);
+                const endDateTime = new Date(eventDate);
+                endDateTime.setHours(endHour, endMinute, 0, 0);
+
+                return {
+                    summary: event.title,
+                    description: event.description || `Tipo: ${event.type}. Sincronizado desde DIIC ZONE.`,
+                    start: startDateTime.toISOString(),
+                    end: endDateTime.toISOString()
+                };
+            });
+
+            const response = await fetch('/api/calendar/sync', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
+                body: JSON.stringify({ clientId, events: eventsToSync })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Error al sincronizar con Google Calendar');
+            }
+
+            toast.success(`¡Ecosistema Calendar Sincronizado! Se crearon ${result.syncedCount} eventos reales.`, { id: 'gcal-sync' });
+        } catch (err) {
+            console.error('[Calendar Sync Error]', err);
+            toast.error(err.message || "Error al sincronizar calendario.", { id: 'gcal-sync' });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
     const [hoveredEventId, setHoveredEventId] = useState(null);
     
     // Meet States
@@ -1523,13 +1592,7 @@ export default function EventsCalendar() {
                                             </button>
 
                                             <button 
-                                                onClick={() => {
-                                                    setIsSyncing(true);
-                                                    setTimeout(() => {
-                                                        setIsSyncing(false);
-                                                        toast.success("Redirigiendo a Google Calendar...");
-                                                    }, 1500);
-                                                }}
+                                                onClick={handleGoogleCalendarSync}
                                                 className="w-full bg-[#232332] hover:bg-white/5 border border-white/5 hover:border-white/20 rounded-xl p-4 flex flex-col items-center gap-3 transition-all group"
                                             >
                                                 <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -1548,14 +1611,7 @@ export default function EventsCalendar() {
                 {/* Sidebar Apps (Right) - Centered & Aligned */}
                 <div className="w-16 shrink-0 bg-black/40 backdrop-blur-2xl rounded-[32px] flex flex-col items-center justify-center py-8 gap-6 border border-white/10 shadow-[0_10px_50px_rgba(0,0,0,0.6)] overflow-hidden ml-6 self-start mt-10">
                     <button 
-                        onClick={() => {
-                            setIsSyncing(true);
-                            setTimeout(() => {
-                                setIsSyncing(false);
-                                toast.success("Google Calendar Sincronizado Correctamente", { id: 'gcal-sync' });
-                            }, 2000);
-                            toast.loading("Sincronizando con Google Calendar...", { id: 'gcal-sync' });
-                        }} 
+                        onClick={handleGoogleCalendarSync} 
                         className="p-2.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors group relative" 
                         title="Google Calendar Sync"
                     >

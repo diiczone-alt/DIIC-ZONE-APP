@@ -16,7 +16,7 @@ export const driveService = {
                     prompt: 'consent',
                 },
                 redirectTo: window.location.origin + '/onboarding',
-                scopes: 'https://www.googleapis.com/auth/drive.file'
+                scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events'
 
             }
         });
