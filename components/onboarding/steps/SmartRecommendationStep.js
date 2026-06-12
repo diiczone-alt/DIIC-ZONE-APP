@@ -11,13 +11,40 @@ import {
 import { toast } from 'sonner';
 import { NICHE_DETAILS } from '@/lib/nicheDetails';
 
+const soloAppPlan = {
+    name: 'SOLO USO DE APP (BÁSICO)',
+    price: 70,
+    narrative: 'Acceso completo al software DIIC ZONE Internal OS. Sin servicios de marketing, pauta o filmmaker. Ideal para gestionar tu propio marketing y automatizaciones.',
+    features: [
+        'Acceso al software de gestión e informes',
+        'Automatización básica de WhatsApp y Calendario',
+        'Acceso al módulo de Inteligencia Artificial',
+        'Soporte técnico por correo'
+    ],
+    enfoque: 'Gestión interna y software propio',
+    filmmaker: 'No incluido (Solo Software)'
+};
+
+const getTrialDateString = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 15);
+    return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
 export default function SmartRecommendationStep({ onNext, formData, updateData }) {
     const isDoctor = formData.profileType === 'doctor' || formData.profileType === 'health';
+
+    const getFilmmakerText = (planFilmmaker) => {
+        if (selectedPlanKey === 'solo_app') return 'No incluido (Solo Software)';
+        const isEcuador = (formData.country || '').toLowerCase().trim() === 'ecuador';
+        if (isEcuador) return planFilmmaker;
+        return `En revisión / Por coordinar en ${formData.country || 'tu país'}`;
+    };
     
     // --- ESTADOS LOCALES DE WIZARD ---
     // 1: Plan Selection, 2: Contract, 3: Payment, 4: Final Success
     const [localStep, setLocalStep] = useState(1);
-    const [selectedPlanKey, setSelectedPlanKey] = useState('growth'); // 'presence', 'growth', 'authority', 'elite'
+    const [selectedPlanKey, setSelectedPlanKey] = useState('solo_app'); // 'presence', 'growth', 'authority', 'elite', 'solo_app'
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [paymentInfo, setPaymentInfo] = useState({ cardNumber: '', expiry: '', cvv: '', cardholderName: '' });
 
@@ -89,17 +116,66 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
     const planKeys = ['presence', 'growth', 'authority', 'elite'];
     const recommendedKey = planKeys[recommendedLevel - 1] || 'growth';
 
-    // Inicializar el plan seleccionado con el recomendado la primera vez
-    useEffect(() => {
-        setSelectedPlanKey(recommendedKey);
-    }, [recommendedKey]);
-
-    const activePlan = plans[selectedPlanKey] || plans['growth'];
+    // El plan inicial por defecto es 'solo_app' (Solo Uso de App) para evitar cargos accidentales
+    const activePlan = selectedPlanKey === 'solo_app' ? soloAppPlan : (plans[selectedPlanKey] || plans['growth']);
 
     // --- MANIPULADORES DE DIBUJO ---
+    const isCanvasInitialized = useRef(false);
+
+    const initializeCanvas = () => {
+        if (canvasRef.current && !isCanvasInitialized.current) {
+            const canvas = canvasRef.current;
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                isCanvasInitialized.current = true;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.strokeStyle = '#6366f1';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+            }
+        }
+    };
+
+    // Inicializar tamaño del lienzo al cargar la vista de firma
+    useEffect(() => {
+        if (localStep === 2) {
+            isCanvasInitialized.current = false;
+            const timer = setTimeout(() => {
+                initializeCanvas();
+            }, 300); // Esperar a que la animación de entrada de framer-motion termine
+            
+            // Prevenir scroll táctil al firmar en móvil
+            const preventDefault = (e) => {
+                if (canvasRef.current && e.target === canvasRef.current) {
+                    e.preventDefault();
+                }
+            };
+            
+            const canvas = canvasRef.current;
+            if (canvas) {
+                canvas.addEventListener('touchstart', preventDefault, { passive: false });
+                canvas.addEventListener('touchmove', preventDefault, { passive: false });
+            }
+            
+            return () => {
+                clearTimeout(timer);
+                if (canvas) {
+                    canvas.removeEventListener('touchstart', preventDefault);
+                    canvas.removeEventListener('touchmove', preventDefault);
+                }
+            };
+        }
+    }, [localStep]);
+
     const startDrawing = (e) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
+        
+        initializeCanvas(); // Asegurar inicialización en el primer click
+        
         const ctx = canvas.getContext('2d');
         ctx.strokeStyle = '#6366f1';
         ctx.lineWidth = 3;
@@ -138,9 +214,11 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
     };
 
     const stopDrawing = () => {
-        setIsDrawing(false);
-        if (canvasRef.current) {
-            setSignatureImage(canvasRef.current.toDataURL());
+        if (isDrawing) {
+            setIsDrawing(false);
+            if (canvasRef.current) {
+                setSignatureImage(canvasRef.current.toDataURL());
+            }
         }
     };
 
@@ -198,7 +276,15 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                         </div>
                         <div class="grid-item">
                             <label>Inversión Mensual</label>
-                            <p>$${activePlan.price} USD / mes</p>
+                            <p>$${activePlan.price} USD / mes (Tras período de prueba)</p>
+                        </div>
+                        <div class="grid-item">
+                            <label>Período de Prueba</label>
+                            <p>15 Días Gratis (Hoy pagas $0.00 USD)</p>
+                        </div>
+                        <div class="grid-item">
+                            <label>Inicio de Facturación</label>
+                            <p>${getTrialDateString()}</p>
                         </div>
                         <div class="grid-item">
                             <label>Cliente Titular</label>
@@ -227,7 +313,7 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                             ${activePlan.features ? activePlan.features.map(f => `<li><strong>${f}</strong></li>`).join('') : ''}
                         </ul>
                         <p style="margin-top: 15px; font-size: 13px;"><strong>Enfoque Estratégico principal:</strong> ${activePlan.enfoque}</p>
-                        <p style="font-size: 13px;"><strong>Cobertura Audiovisual (Filmmaker):</strong> ${activePlan.filmmaker}</p>
+                        <p style="font-size: 13px;"><strong>Cobertura Audiovisual (Filmmaker):</strong> ${getFilmmakerText(activePlan.filmmaker)}</p>
                     </div>
                 </div>
                 
@@ -285,8 +371,24 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                             </p>
                         </div>
 
+                        {/* Free Trial Premium Banner */}
+                        <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-4 flex items-center justify-between gap-4 backdrop-blur-md">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-500/30 text-indigo-400">
+                                    <Zap className="w-4 h-4 text-indigo-400" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-white font-black uppercase text-[10px] tracking-wider">Período de Prueba de 15 Días Gratis</p>
+                                    <p className="text-gray-400 text-[9px] font-medium leading-none mt-1">Todos los niveles incluyen prueba gratuita. Hoy pagas $0.00 USD.</p>
+                                </div>
+                            </div>
+                            <span className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black text-[8px] uppercase tracking-widest px-2.5 py-1 rounded-full leading-none">
+                                Activo
+                            </span>
+                        </div>
+
                         {/* NICHE PLAN CARD SELECTOR */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[350px] overflow-y-auto custom-scrollbar p-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto custom-scrollbar p-2">
                             {planKeys.map((key, idx) => {
                                 const plan = plans[key];
                                 const isRecommended = key === recommendedKey;
@@ -308,7 +410,12 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                                             </span>
                                         )}
                                         <div>
-                                            <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest group-hover:text-white transition-colors">{plan.name}</h3>
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest group-hover:text-white transition-colors">{plan.name}</h3>
+                                                <span className="text-[7px] bg-indigo-500/10 text-indigo-300 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-indigo-500/20 whitespace-nowrap">
+                                                    15 Días Gratis
+                                                </span>
+                                            </div>
                                             <p className="text-2xl font-black text-white mt-2 font-mono">${plan.price} <span className="text-[10px] text-gray-500 font-bold">USD/mes</span></p>
                                             <p className="text-[10px] text-gray-400 font-medium leading-relaxed mt-2.5 italic border-l-2 border-indigo-500/50 pl-3">
                                                 {plan.narrative}
@@ -316,12 +423,59 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                                         </div>
                                         <div className="mt-4 pt-4 border-t border-white/5 text-[9px] font-bold text-gray-500 space-y-1">
                                             <p>📍 Enfoque: <span className="text-white font-black">{plan.enfoque}</span></p>
-                                            <p>🎥 Filmmaker: <span className="text-white font-black">{plan.filmmaker}</span></p>
+                                            <p>🎥 Filmmaker: <span className="text-white font-black">{getFilmmakerText(plan.filmmaker)}</span></p>
                                         </div>
                                     </div>
                                 );
                             })}
+
+                            {/* Solo Uso de App Card */}
+                            <div
+                                onClick={() => setSelectedPlanKey('solo_app')}
+                                className={`p-6 rounded-3xl border transition-all text-left cursor-pointer relative flex flex-col justify-between group backdrop-blur-md md:col-span-2 ${
+                                    selectedPlanKey === 'solo_app' 
+                                    ? 'bg-indigo-950/30 border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.25)]' 
+                                    : 'bg-white/[0.01] border-white/5 hover:border-white/15'
+                                }`}
+                            >
+                                <div>
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest group-hover:text-white transition-colors">
+                                            Solo Uso de App (Básico)
+                                        </h3>
+                                        <div className="flex gap-2">
+                                            <span className="bg-indigo-500/20 text-indigo-300 font-bold text-[8px] uppercase tracking-wider px-2 py-0.5 rounded-full">
+                                                15 Días Gratis
+                                            </span>
+                                            <span className="bg-white/10 text-white font-bold text-[8px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-white/5">
+                                                Sin Producción
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="text-2xl font-black text-white mt-2 font-mono">$70 <span className="text-[10px] text-gray-500 font-bold">USD/mes</span></p>
+                                    <p className="text-[10px] text-gray-400 font-medium leading-relaxed mt-2.5 italic border-l-2 border-indigo-500/50 pl-3">
+                                        {soloAppPlan.narrative}
+                                    </p>
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-white/5 text-[9px] font-bold text-gray-500 space-y-1">
+                                    <p>📍 Enfoque: <span className="text-white font-black">{soloAppPlan.enfoque}</span></p>
+                                    <p>🎥 Filmmaker: <span className="text-white font-black">{getFilmmakerText(soloAppPlan.filmmaker)}</span></p>
+                                </div>
+                            </div>
                         </div>
+
+                        {/* Cobertura Warning */}
+                        {formData.country && formData.country.toLowerCase().trim() !== 'ecuador' && selectedPlanKey !== 'solo_app' && (
+                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-left flex items-start gap-3 mt-4">
+                                <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                    <p className="text-amber-400 font-black uppercase text-[10px] tracking-wider">Servicio Fuera de Ecuador (En Revisión)</p>
+                                    <p className="text-gray-400 text-[9px] font-medium leading-relaxed">
+                                        Has seleccionado {formData.country} como país. Actualmente no contamos con equipos de filmación (Filmmaker) locales activos fuera de Ecuador. La cobertura presencial de Filmmaker quedará en estado <strong>"En revisión / Por coordinar"</strong> y su precio o viabilidad estará sujeta a coordinación.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         <button
                             onClick={() => setLocalStep(2)}
@@ -367,6 +521,17 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                                 <div className="h-px bg-white/5 w-full" />
                                 <div className="grid grid-cols-2 gap-4 text-xs">
                                     <div>
+                                        <p className="text-[8px] font-black text-white/40 uppercase tracking-widest">Prueba Gratis</p>
+                                        <p className="font-bold text-emerald-400">15 Días (Activa)</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[8px] font-black text-white/40 uppercase tracking-widest">Inicio de Facturación</p>
+                                        <p className="font-bold font-mono text-indigo-400">{getTrialDateString()}</p>
+                                    </div>
+                                </div>
+                                <div className="h-px bg-white/5 w-full" />
+                                <div className="grid grid-cols-2 gap-4 text-xs">
+                                    <div>
                                         <p className="text-[8px] font-black text-white/40 uppercase tracking-widest">Titular</p>
                                         <p className="font-bold">{formData.name || 'Cliente Representante'}</p>
                                     </div>
@@ -377,12 +542,28 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                                 </div>
                             </div>
 
+                            {formData.country && formData.country.toLowerCase().trim() !== 'ecuador' && selectedPlanKey !== 'solo_app' && (
+                                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-[10px] text-amber-400 font-bold uppercase tracking-wider space-y-1">
+                                    <p>⚠️ SERVICIO DE FILMMAKER FUERA DE ECUADOR ({formData.country.toUpperCase()})</p>
+                                    <p className="text-[9px] text-gray-400 font-medium normal-case">
+                                        El recurso presencial de filmación no está activo actualmente en tu ubicación. Al firmar este acuerdo, aceptas que la cobertura presencial queda en estado <strong>"En revisión / Por coordinar"</strong> hasta confirmar viabilidad local con la administración.
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="space-y-4">
                                 <p className="text-white font-black uppercase tracking-wider text-xs flex items-center gap-2">
                                     <Check className="w-4 h-4 text-indigo-400" />
                                     Detalles y Entregables Incluidos en el Paquete:
                                 </p>
                                 <div className="space-y-3 bg-white/[0.02] border border-white/5 rounded-2xl p-5 text-gray-300">
+                                    <p className="text-white font-bold text-xs uppercase tracking-wider">
+                                        Período de Prueba y Facturación:
+                                    </p>
+                                    <p className="text-xs text-gray-300 leading-relaxed italic">
+                                        El servicio inicia hoy con una <strong className="text-emerald-400">prueba gratuita de 15 días</strong>. El cargo mensual de <strong>${activePlan.price} USD</strong> se cobrará automáticamente a partir del <strong>{getTrialDateString()}</strong>. Puede cancelar la suscripción en cualquier momento antes del vencimiento de la prueba para evitar cargos.
+                                    </p>
+                                    <div className="h-px bg-white/5 my-3" />
                                     <p className="text-white font-bold text-xs uppercase tracking-wider">
                                         Servicios y Entregables Activos:
                                     </p>
@@ -401,7 +582,7 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                                         </div>
                                         <div>
                                             <span className="text-gray-500 uppercase text-[9px] font-bold block">Recurso de Filmmaker:</span>
-                                            <span className="text-white font-bold">{activePlan.filmmaker}</span>
+                                            <span className="text-white font-bold">{getFilmmakerText(activePlan.filmmaker)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -424,18 +605,16 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                                         </button>
                                     )}
                                 </div>
-                                <div className="border border-white/10 rounded-2xl bg-black/60 w-full h-32 relative overflow-hidden">
+                                <div className="border border-dashed border-white/10 rounded-2xl bg-[#090916]/80 backdrop-blur-md w-full h-36 relative overflow-hidden shadow-inner group hover:border-indigo-500/30 transition-all">
                                     <canvas
                                         ref={canvasRef}
-                                        width={400}
-                                        height={128}
                                         className="w-full h-full cursor-crosshair touch-none"
                                         onMouseDown={startDrawing}
                                         onMouseMove={draw}
                                         onMouseUp={stopDrawing}
                                         onMouseLeave={stopDrawing}
-                                        onTouchStart={startDrawing}
-                                        onTouchMove={draw}
+                                        onTouchStart={(e) => { e.preventDefault(); startDrawing(e); }}
+                                        onTouchMove={(e) => { e.preventDefault(); draw(e); }}
                                         onTouchEnd={stopDrawing}
                                     />
                                     {!hasSignature && (
@@ -488,15 +667,36 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
                         </div>
 
                         {/* BILLING OVERVIEW */}
-                        <div className="bg-[#05050C] border border-white/5 rounded-3xl p-6 flex justify-between items-center">
-                            <div>
-                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Plan Contratado</span>
-                                <p className="text-sm font-black text-white mt-1 italic">{activePlan.name}</p>
+                        <div className="bg-[#05050C] border border-white/5 rounded-3xl p-6 space-y-4">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Plan Contratado</span>
+                                    <p className="text-sm font-black text-white mt-1 italic">{activePlan.name}</p>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Inversión Recurrente</span>
+                                    <p className="text-lg font-black text-white font-mono mt-1">${activePlan.price} USD<span className="text-[10px] text-gray-500 font-bold">/mes</span></p>
+                                </div>
                             </div>
-                            <div className="text-right">
-                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Inversión Recurrente</span>
-                                <p className="text-lg font-black text-white font-mono mt-1">${activePlan.price} USD</p>
+                            <div className="h-px bg-white/5 w-full" />
+                            <div className="flex justify-between items-center text-xs">
+                                <div>
+                                    <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block">Período de Prueba</span>
+                                    <span className="text-white font-bold">15 Días Gratis</span>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block">Total Hoy</span>
+                                    <span className="text-lg font-black text-emerald-400 font-mono">$0.00 USD</span>
+                                </div>
                             </div>
+                            <p className="text-[9px] text-gray-500 text-center italic mt-2">
+                                Tu prueba de 15 días gratis finaliza el <span className="text-white font-bold">{getTrialDateString()}</span>. No se realizará ningún cargo hoy.
+                            </p>
+                            {formData.country && formData.country.toLowerCase().trim() !== 'ecuador' && selectedPlanKey !== 'solo_app' && (
+                                <p className="text-[9px] text-amber-400 text-center italic mt-2">
+                                    ⚠️ Nota: El recurso de Filmmaker en {formData.country} está en revisión y sujeto a coordinación.
+                                </p>
+                            )}
                         </div>
 
                         {/* STRIPE-LIKE FORM */}

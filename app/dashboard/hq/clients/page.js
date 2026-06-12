@@ -88,6 +88,13 @@ const getPlanPrice = (plan, industry) => {
     if (plan === 'Basic') normalizedPlan = 'Presencia';
     if (plan === 'Estrategia') normalizedPlan = 'Crecimiento';
     if (plan === 'Premium') normalizedPlan = 'Autoridad';
+    if (plan?.toUpperCase().includes('SOLO USO DE APP') || plan?.toUpperCase().includes('SOLO APP')) {
+        normalizedPlan = 'Solo App';
+    }
+    
+    if (normalizedPlan === 'Solo App') {
+        return 70;
+    }
     
     if (isMedical && !isHospital) {
         if (normalizedPlan === 'Presencia') return 250;
@@ -705,8 +712,13 @@ export default function HQClientsPage() {
                                                                 )}
                                                             </div>
                                                             <div className="text-[10px] text-gray-500 font-medium flex items-center gap-2 mt-1.5 flex-wrap">
-                                                                <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[9px] font-bold text-gray-400">
-                                                                    📍 {client?.city || 'HQ'}
+                                                                <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[9px] font-bold text-gray-400 flex items-center gap-1">
+                                                                    📍 {client?.city || 'HQ'}{client?.country && `, ${client.country}`}
+                                                                    {client?.country && client.country.toLowerCase().trim() !== 'ecuador' && client?.plan !== 'Solo App' && client?.plan !== 'SOLO USO DE APP (BÁSICO)' && (
+                                                                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[8px] font-black uppercase tracking-wider animate-pulse">
+                                                                            ⚠️ Sin Cobertura Filmmaker
+                                                                        </span>
+                                                                    )}
                                                                 </span>
                                                             </div>
                                                         </div>

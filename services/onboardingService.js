@@ -75,6 +75,13 @@ export const onboardingService = {
 
                     const targetId = clientId || `${brandName.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
                     
+                    const trialDate = new Date();
+                    trialDate.setDate(trialDate.getDate() + 15);
+                    const startDateStr = trialDate.toISOString().split('T')[0];
+
+                    const isEcuador = (country || '').toLowerCase().trim() === 'ecuador';
+                    const initialFilmmaker = isEcuador ? 'Sin asignar' : 'En revisión / Por coordinar';
+
                     const { data: clientData, error: clientError } = await supabase
                         .from('clients')
                         .upsert({
@@ -90,7 +97,10 @@ export const onboardingService = {
                             specialty: formData.niche || 'General',
                             status: 'ONBOARDING_COMPLETED',
                             priority: 'MEDIUM',
-                            plan: formData.selectedPlan?.name || 'Basic',
+                            plan: formData.selectedPlan?.name || 'SOLO USO DE APP (BÁSICO)',
+                            price: formData.selectedPlan?.price !== undefined ? formData.selectedPlan.price : 70,
+                            start_date: startDateStr,
+                            filmmaker: initialFilmmaker,
                             birth_date: birthDate,
                             website: formData.website || user.user_metadata?.website || '',
                             goals: formData.goals || [],
