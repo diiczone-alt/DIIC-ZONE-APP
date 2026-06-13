@@ -76,35 +76,43 @@ export default function Sidebar() {
     const clientId = searchParams.get('client');
     const { user, logout } = useAuth();
     const [hasConnectivity, setHasConnectivity] = useState(true);
-    const [clientBrand, setClientBrand] = useState('CLIENT HUB');
+    const [clientBrand, setClientBrand] = useState('DIIC ZONE');
 
     useEffect(() => {
+        const cleanBrandName = (name) => {
+            if (!name) return 'DIIC ZONE';
+            let cleaned = name.replace(/[-_\s]+workspace\s*$/i, '').trim();
+            return cleaned || 'DIIC ZONE';
+        };
+
         const fetchClientBrand = async () => {
             const finalClientId = clientId || user?.client_id || user?.user_metadata?.client_id;
             if (!finalClientId) {
-                // Fallback to user brand or name
-                const userBrand = user?.user_metadata?.brand || user?.user_metadata?.full_name || 'CLIENT HUB';
-                setClientBrand(userBrand.replace(/[-_\s]+workspace\s*$/i, '').trim());
+                const userBrand = user?.user_metadata?.brand || user?.user_metadata?.full_name || 'DIIC ZONE';
+                setClientBrand(cleanBrandName(userBrand));
                 return;
             }
 
             try {
                 const { data, error } = await supabase
                     .from('clients')
-                    .select('name')
+                    .select('name, onboarding_data')
                     .eq('id', finalClientId)
                     .single();
                 
-                if (data && data.name) {
-                    setClientBrand(data.name);
+                if (data) {
+                    const rawBrand = data.onboarding_data?.strategic?.brandName || 
+                                     data.onboarding_data?.brandName || 
+                                     data.name;
+                    setClientBrand(cleanBrandName(rawBrand));
                 } else {
-                    const userBrand = user?.user_metadata?.brand || user?.user_metadata?.full_name || 'CLIENT HUB';
-                    setClientBrand(userBrand.replace(/[-_\s]+workspace\s*$/i, '').trim());
+                    const userBrand = user?.user_metadata?.brand || user?.user_metadata?.full_name || 'DIIC ZONE';
+                    setClientBrand(cleanBrandName(userBrand));
                 }
             } catch (err) {
                 console.error("Error fetching client brand in Sidebar:", err);
-                const userBrand = user?.user_metadata?.brand || user?.user_metadata?.full_name || 'CLIENT HUB';
-                setClientBrand(userBrand.replace(/[-_\s]+workspace\s*$/i, '').trim());
+                const userBrand = user?.user_metadata?.brand || user?.user_metadata?.full_name || 'DIIC ZONE';
+                setClientBrand(cleanBrandName(userBrand));
             }
         };
 
