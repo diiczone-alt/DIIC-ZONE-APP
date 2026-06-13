@@ -617,7 +617,13 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
     };
 
     const handleConfirm = async (overrideProfile = null) => {
-        const targetProfile = overrideProfile || profile;
+        // Avoid using React event objects as profile overrides
+        const isEvent = overrideProfile && (
+            overrideProfile.nativeEvent || 
+            typeof overrideProfile.preventDefault === 'function' || 
+            typeof overrideProfile.stopPropagation === 'function'
+        );
+        const targetProfile = (overrideProfile && !isEvent) ? overrideProfile : profile;
         let currentClientId = activeClientId;
 
         setIsSaving(true);
@@ -2426,7 +2432,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                         </div>
                     </div>
                     <button 
-                        onClick={handleSaveSnapshot}
+                        onClick={() => handleSaveSnapshot()}
                         className="px-6 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all flex items-center gap-2"
                     >
                         <Plus size={14} /> Nuevo Snapshot
@@ -2571,7 +2577,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
             
             <div className="mt-12 flex justify-end gap-4">
                  <button 
-                    onClick={handleSaveSnapshot}
+                    onClick={() => handleSaveSnapshot()}
                     className="px-8 py-5 bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 active:scale-95 transition-all flex items-center gap-3"
                 >
                     <Database className="w-5 h-5 text-gray-400" />
@@ -2579,7 +2585,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                  </button>
 
                  <button 
-                    onClick={handleConfirm}
+                    onClick={() => handleConfirm()}
                     disabled={isSaving}
                     className="px-10 py-5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
                 >
