@@ -87,16 +87,16 @@ export async function POST(req) {
         } catch (genError) {
             console.warn("[NeuralInvestigator] Primary model (gemini-2.5-flash with search) failed:", genError.message);
             
-            // Fallback 1: gemini-1.5-flash with search grounding (typically has separate/larger limits)
+            // Fallback 1: gemini-2.0-flash with search grounding (typically has separate/larger limits)
             try {
-                console.log("[NeuralInvestigator] Attempting Fallback 1: gemini-1.5-flash with search...");
+                console.log("[NeuralInvestigator] Attempting Fallback 1: gemini-2.0-flash with search...");
                 const model = genAI.getGenerativeModel({ 
-                    model: "gemini-1.5-flash", 
+                    model: "gemini-2.0-flash", 
                     tools: [{ googleSearch: {} }]
                 });
                 researchResult = await model.generateContent(researchPrompt);
-                usedModelName = "gemini-1.5-flash";
-                steps.push({ msg: 'Usando motor de búsqueda secundario (Gemini 1.5)', icon: 'Globe', source: 'google' });
+                usedModelName = "gemini-2.0-flash";
+                steps.push({ msg: 'Usando motor de búsqueda secundario (Gemini 2.0)', icon: 'Globe', source: 'google' });
             } catch (err1) {
                 console.warn("[NeuralInvestigator] Fallback 1 failed:", err1.message);
                 
@@ -110,11 +110,11 @@ export async function POST(req) {
                 } catch (err2) {
                     console.warn("[NeuralInvestigator] Fallback 2 failed:", err2.message);
                     
-                    // Fallback 3: gemini-1.5-flash without search grounding (highly stable free tier model)
-                    console.log("[NeuralInvestigator] Attempting Fallback 3: gemini-1.5-flash without search...");
-                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                    // Fallback 3: gemini-2.0-flash without search grounding (highly stable free tier model)
+                    console.log("[NeuralInvestigator] Attempting Fallback 3: gemini-2.0-flash without search...");
+                    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
                     researchResult = await model.generateContent(researchPrompt + "\n\n(Fallback: No tienes acceso a búsqueda en vivo, usa tu conocimiento base o indica que no hay datos).");
-                    usedModelName = "gemini-1.5-flash";
+                    usedModelName = "gemini-2.0-flash";
                     usedGrounding = false;
                     steps.push({ msg: 'Usando base de conocimiento secundaria (Búsqueda offline)', icon: 'AlertTriangle', source: 'warning' });
                 }
@@ -156,8 +156,8 @@ export async function POST(req) {
             const structuringResult = await structuringModel.generateContent(structuringPrompt);
             responseText = structuringResult.response.text();
         } catch (structError) {
-            console.warn("[NeuralInvestigator] Primary structuring failed, falling back to gemini-1.5-flash:", structError.message);
-            const fallbackStruct = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            console.warn("[NeuralInvestigator] Primary structuring failed, falling back to gemini-2.0-flash:", structError.message);
+            const fallbackStruct = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
             const structuringResult = await fallbackStruct.generateContent(structuringPrompt);
             responseText = structuringResult.response.text();
         }
