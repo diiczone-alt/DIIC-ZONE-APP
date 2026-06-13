@@ -1361,7 +1361,7 @@ function DashboardContent() {
               
               <div className="relative">
                  <h1 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter leading-none select-none">
-                    ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">{user?.user_metadata?.brand || (user?.user_metadata?.full_name || user?.full_name || 'Estratega').split(' ')[0]}</span>.
+                    ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-white">{(user?.user_metadata?.brand || user?.user_metadata?.full_name || user?.full_name || 'Estratega').replace(/[-_\s]+workspace\s*$/i, '').trim()}</span>.
                  </h1>
                  <div className="absolute -top-4 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-[80px] -z-10" />
               </div>

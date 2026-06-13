@@ -306,7 +306,7 @@ export default function Sidebar() {
 
                         <div className="flex-1 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <h4 className="text-[10px] font-black text-white truncate uppercase tracking-tight leading-tight">
-                                {user?.user_metadata?.brand || 'DIIC Admin'}
+                                {(user?.user_metadata?.brand || 'DIIC Admin').replace(/[-_\s]+workspace\s*$/i, '').trim()}
                             </h4>
                             <p className="text-[8px] text-emerald-400 font-black uppercase tracking-widest opacity-80 leading-none mt-0.5">
                                 {user?.user_metadata?.city || 'Centro de Mando'}
