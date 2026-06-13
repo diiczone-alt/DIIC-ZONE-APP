@@ -12,6 +12,7 @@ import Link from 'next/link';
 
 import { useState, useEffect } from 'react';
 import { agencyService } from '@/services/agencyService';
+import DepartmentWelcome from '@/components/ui/DepartmentWelcome';
 
 const ROLE_DATA = {
     editor: { name: 'Editor', icon: Video, color: 'text-indigo-400' },
@@ -33,6 +34,7 @@ export default function WorkstationPage() {
     const [loading, setLoading] = useState(true);
     const [team, setTeam] = useState([]);
     const [currentMember, setCurrentMember] = useState(null);
+    const [viewMode, setViewMode] = useState('welcome');
 
     const roleConfig = ROLE_DATA[roleId] || { name: roleId, icon: Layout, color: 'text-gray-400' };
 
@@ -60,6 +62,25 @@ export default function WorkstationPage() {
         : tasks;
 
     const role = { ...roleConfig, tasks };
+
+    // Mapear roleId a deptId de DepartmentWelcome si es necesario
+    const getDeptId = (id) => {
+        const mapping = {
+            'editor': 'video',
+            'audio': 'audition',
+            'dev': 'web'
+        };
+        return mapping[id] || id;
+    };
+
+    if (viewMode === 'welcome') {
+        return (
+            <DepartmentWelcome 
+                deptId={getDeptId(roleId)} 
+                onAction={() => setViewMode('dashboard')} 
+            />
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#050511] text-white p-8 md:p-12 font-sans">
