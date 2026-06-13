@@ -7,7 +7,7 @@ import {
     Users, ImageIcon, Mic, UploadCloud, Camera,
     Clapperboard, Star, Globe, Printer, Calendar,
     FileText, MessageSquare, LayoutDashboard, ArrowRight,
-    BarChart3, Video, ShoppingBag, CheckCircle2, LayoutGrid, ArrowLeft
+    BarChart3, Video, ShoppingBag, CheckCircle2, LayoutGrid, ArrowLeft, Share2
 } from 'lucide-react';
 
 const DEPARTMENT_CONTENT = {
