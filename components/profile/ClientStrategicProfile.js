@@ -281,14 +281,14 @@ const RecordingFormatsModal = ({ isOpen, onClose, profile }) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl"
+                    className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl print-modal-container"
                     onClick={onClose}
                 >
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                        className="w-full max-w-5xl max-h-[90vh] bg-[#0A0A0F] border border-white/10 rounded-[40px] shadow-2xl relative overflow-y-auto custom-scrollbar"
+                        className="w-full max-w-5xl max-h-[90vh] bg-[#0A0A0F] border border-white/10 rounded-[40px] shadow-2xl relative overflow-y-auto custom-scrollbar print-modal-content print-modal-body"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Background Decoration */}
@@ -1139,7 +1139,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
     };
 
     return (
-        <div className="animate-in fade-in duration-500 pb-16">
+        <div className="animate-in fade-in duration-500 pb-16 main-strategic-profile-container">
             <div className="space-y-4 text-center pb-8 border-b border-white/5 mb-12">
                 <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[9px] font-black text-indigo-400 uppercase tracking-widest">
                     {viewMode === 'edit' ? 'Capa 1: Búsqueda Estratégica' : 'Capa 2: Perfil Estratégico'}
@@ -1207,6 +1207,46 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                         width: 100% !important;
                         display: block !important;
                         position: relative !important;
+                    }
+
+                    /* Hide the main profile page content when printing a modal preview */
+                    body:has(.print-modal-container) .main-strategic-profile-container > *:not(:has(.print-modal-container)):not(.print-modal-container) {
+                        display: none !important;
+                    }
+
+                    /* Print Modal Container Customization */
+                    .print-modal-container {
+                        position: absolute !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        min-height: 100% !important;
+                        overflow: visible !important;
+                        display: block !important;
+                        background: white !important;
+                        padding: 0 !important;
+                        z-index: 9999 !important;
+                    }
+                    .print-modal-content {
+                        max-height: none !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        background: white !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        display: block !important;
+                    }
+                    .print-modal-body {
+                        overflow: visible !important;
+                        height: auto !important;
+                        max-height: none !important;
+                        padding: 0 !important;
+                        display: block !important;
                     }
 
                     /* Text Contrast */
@@ -2665,13 +2705,13 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                 {selectedSnapshotForPreview && (
                     <motion.div 
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 backdrop-blur-3xl bg-black/90"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 backdrop-blur-3xl bg-black/90 print-modal-container"
                     >
                         <motion.div 
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-[#050508] border border-white/10 rounded-[40px] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-[0_0_100px_rgba(99,102,241,0.1)]"
+                            className="bg-[#050508] border border-white/10 rounded-[40px] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-[0_0_100px_rgba(99,102,241,0.1)] print-modal-content"
                         >
                             <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/5">
                                 <div className="flex items-center gap-4">
@@ -2699,7 +2739,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                                 </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-10 space-y-12 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-10 space-y-12 custom-scrollbar print-modal-body">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     {[
                                         { label: 'Marca', field: 'brandName', icon: Tag },
@@ -2741,21 +2781,21 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm print-modal-container"
                         onClick={() => setInsightModalOpen(false)}
                     >
                         <motion.div 
                             initial={{ scale: 0.95, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="w-full max-w-2xl bg-[#0A0A0F] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl relative"
+                            className="w-full max-w-2xl bg-[#0A0A0F] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl relative print-modal-content"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="absolute top-0 right-0 p-8 opacity-5">
                                 <Bot className="w-64 h-64 text-indigo-500" />
                             </div>
                             
-                            <div className="p-8 md:p-10 relative z-10 max-h-[85vh] flex flex-col">
+                            <div className="p-8 md:p-10 relative z-10 max-h-[85vh] flex flex-col print-modal-body">
                                 <div className="flex justify-between items-center mb-8 shrink-0">
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
