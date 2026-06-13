@@ -12,7 +12,7 @@ export async function POST(req) {
         }
 
         const strategic = context.onboarding_data?.strategic || {};
-        const brandName = strategic.brandName || context.name;
+        const brandName = strategic.brandName || (context.name && context.name !== 'Neyser' ? context.name : 'Espiga de oro');
         const industry = strategic.industry || context.industry || 'General';
         const whatItDoes = strategic.whatItDoes || '';
         const whatItOffers = strategic.whatItOffers || '';

@@ -11,7 +11,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // Conversation generator based on client niche (Initial demo conversations)
 const generateConversations = (activeClient) => {
-    const brandName = activeClient?.onboarding_data?.strategic?.brandName || activeClient?.name || 'Neyser';
+    const brandName = activeClient?.onboarding_data?.strategic?.brandName || 
+                      activeClient?.onboarding_data?.company_profile?.company_name || 
+                      (activeClient?.name && activeClient.name !== 'Neyser' ? activeClient.name : 'Espiga de oro');
     const industry = activeClient?.industry || activeClient?.onboarding_data?.strategic?.industry || 'General';
     const industryLower = industry.toLowerCase();
     const nameLower = (activeClient?.name || '').toLowerCase();
@@ -328,7 +330,9 @@ const generateConversations = (activeClient) => {
 };
 
 export default function UnifiedInbox({ activeClient }) {
-    const brandName = activeClient?.onboarding_data?.strategic?.brandName || activeClient?.name || 'Neyser';
+    const brandName = activeClient?.onboarding_data?.strategic?.brandName || 
+                      activeClient?.onboarding_data?.company_profile?.company_name || 
+                      (activeClient?.name && activeClient.name !== 'Neyser' ? activeClient.name : 'Espiga de oro');
     
     const [conversations, setConversations] = useState([]);
     const [selectedId, setSelectedId] = useState(null);

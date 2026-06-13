@@ -226,7 +226,9 @@ const SERVICE_FALLBACKS = {
 };
 
 export default function MedicalCatalog({ activeClient, onSelect, onClose }) {
-    const brandName = activeClient?.onboarding_data?.strategic?.brandName || activeClient?.name || 'Neyser';
+    const brandName = activeClient?.onboarding_data?.strategic?.brandName || 
+                      activeClient?.onboarding_data?.company_profile?.company_name || 
+                      (activeClient?.name && activeClient.name !== 'Neyser' ? activeClient.name : 'Espiga de oro');
     const industry = activeClient?.industry || activeClient?.onboarding_data?.strategic?.industry || 'General';
     const industryLower = industry.toLowerCase();
     const nameLower = (activeClient?.name || '').toLowerCase();
