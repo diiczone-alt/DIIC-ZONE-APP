@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { LayoutDashboard, FileText, Calendar as CalendarIcon, Users, Bot } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -12,8 +12,16 @@ import { useState, useEffect } from 'react';
 export default function ClientCMSidebar() {
     const { user } = useAuth();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const clientParam = searchParams.get('client');
     const [clientName, setClientName] = useState('DIIC ZONE');
     const [clientPlan, setClientPlan] = useState('Plan Pro Active');
+
+    const getScopedHref = (basePath) => {
+        if (!clientParam) return basePath;
+        const separator = basePath.includes('?') ? '&' : '?';
+        return `${basePath}${separator}client=${clientParam}`;
+    };
 
     useEffect(() => {
         const fetchClientInfo = async () => {
@@ -80,7 +88,7 @@ export default function ClientCMSidebar() {
                 {menuItems.map((item) => {
                     const isActive = pathname === item.path;
                     return (
-                        <Link key={item.path} href={item.path} className="block group">
+                        <Link key={item.path} href={getScopedHref(item.path)} className="block group">
                             <motion.div 
                                 whileHover={{ x: 5 }}
                                 className={`relative w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${isActive ? 'bg-indigo-600/10 text-white border border-indigo-500/30' : 'text-gray-500 hover:text-white hover:bg-white/5 border border-transparent'}`}

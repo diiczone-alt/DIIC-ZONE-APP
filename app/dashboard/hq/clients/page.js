@@ -356,6 +356,7 @@ export default function HQClientsPage() {
 
     const cmOptions = useMemo(() => {
         const staff = team.filter(m => {
+            if (!m) return false;
             const role = m.role?.toLowerCase() || '';
             return role.includes('community manager') || 
                    role.includes('estratega') ||
@@ -374,7 +375,7 @@ export default function HQClientsPage() {
 
     const editorOptions = useMemo(() => {
         const staff = team.filter(m => 
-            m.role?.toLowerCase().includes('editor')
+            m && m.role?.toLowerCase().includes('editor')
         );
         return [
             ...staff.map(m => ({ value: m.name, label: m.name })),
@@ -384,8 +385,8 @@ export default function HQClientsPage() {
 
     const filmmakerOptions = useMemo(() => {
         const staff = team.filter(m => 
-            m.role?.toLowerCase().includes('filmmaker') || 
-            m.role?.toLowerCase().includes('videógrafo')
+            m && (m.role?.toLowerCase().includes('filmmaker') || 
+            m.role?.toLowerCase().includes('videógrafo'))
         );
         return [
             ...staff.map(m => ({ value: m.name, label: m.name })),

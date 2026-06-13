@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import CommunityDashboard from '@/components/community/CommunityDashboard';
 import DepartmentWelcome from '@/components/ui/DepartmentWelcome';
@@ -9,6 +9,8 @@ import DepartmentWelcome from '@/components/ui/DepartmentWelcome';
 export default function CommunityPage() {
     const { user, getHomeRoute } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const clientParam = searchParams.get('client');
     const [view, setView] = useState('welcome');
 
     useEffect(() => {
@@ -24,16 +26,22 @@ export default function CommunityPage() {
     }, [user, getHomeRoute, router]);
 
     const handleAction = (mode) => {
+        const getScopedHref = (basePath) => {
+            if (!clientParam) return basePath;
+            const separator = basePath.includes('?') ? '&' : '?';
+            return `${basePath}${separator}client=${clientParam}`;
+        };
+
         if (mode === 'production_report' || mode === 'ad_report' || mode === 'reports') {
-            router.push('/dashboard/community/reports');
+            router.push(getScopedHref('/dashboard/community/reports'));
         } else if (mode === 'strategy') {
-            router.push('/dashboard/community/strategy');
+            router.push(getScopedHref('/dashboard/community/strategy'));
         } else if (mode === 'chat') {
-            router.push('/dashboard/community/team');
+            router.push(getScopedHref('/dashboard/community/team'));
         } else if (mode === 'pipeline') {
-            router.push('/dashboard/community/contenidos');
+            router.push(getScopedHref('/dashboard/community/contenidos'));
         } else if (mode === 'calendar') {
-            router.push('/dashboard/community/calendar');
+            router.push(getScopedHref('/dashboard/community/calendar'));
         } else {
             setView('dashboard');
         }

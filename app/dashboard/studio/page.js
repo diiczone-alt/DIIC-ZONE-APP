@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ArrowRight, LayoutGrid, List } from 'lucide-react';
 import { DEPARTMENTS } from '../../../data/departments';
 import { motion } from 'framer-motion';
@@ -9,6 +10,14 @@ import { motion } from 'framer-motion';
 export default function StudioPage() {
     const [viewMode, setViewMode] = useState('grid');
     const [activeFilter, setActiveFilter] = useState('all');
+    const searchParams = useSearchParams();
+    const clientParam = searchParams.get('client');
+
+    const getScopedHref = (basePath) => {
+        if (!clientParam) return basePath;
+        const separator = basePath.includes('?') ? '&' : '?';
+        return `${basePath}${separator}client=${clientParam}`;
+    };
 
     const enhancedDepartments = DEPARTMENTS.map(d => ({
         ...d,
@@ -121,7 +130,7 @@ export default function StudioPage() {
                                         <span className="px-2 py-0.5 bg-white/5 rounded-full text-[9px] font-bold uppercase tracking-widest text-gray-600">Próximamente</span>
                                     </div>
                                 ) : (
-                                    <Link href={dept.href} className="block h-full">
+                                    <Link href={getScopedHref(dept.href)} className="block h-full">
                                         <div className={`relative h-full bg-[#0E0E18] border border-white/5 rounded-3xl p-6 overflow-hidden transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-2xl hover:border-${dept.color.split('-')[1]}-500/30 min-h-[220px] flex flex-col`}>
 
                                             {/* Top Tech Decoration */}
@@ -181,7 +190,7 @@ export default function StudioPage() {
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: idx * 0.03 }}
                             >
-                                <Link href={dept.href} className={`block group ${dept.disabled ? 'pointer-events-none opacity-50' : ''}`}>
+                                <Link href={getScopedHref(dept.href)} className={`block group ${dept.disabled ? 'pointer-events-none opacity-50' : ''}`}>
                                     <div className="bg-[#0E0E18] border border-white/5 rounded-xl p-4 flex items-center gap-6 hover:bg-white/5 transition-colors relative overflow-hidden">
                                         <div className={`absolute left-0 top-0 bottom-0 w-1 ${dept.bg.replace('10', '50')} opacity-0 group-hover:opacity-100 transition-opacity`} />
 
