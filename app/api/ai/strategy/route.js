@@ -48,13 +48,10 @@ export async function POST(req) {
         }
 
         // --- STAGE 1: GROUNDED RESEARCH ---
-        const researchModel = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash", 
-            tools: [{ 
-                googleSearch: {}
-            }]
-        });
-
+        let researchResult;
+        let usedModelName = "gemini-2.5-flash";
+        let usedGrounding = true;
+        
         const researchPrompt = `OBJETIVO: Investigar y realizar una auditoría exhaustiva en tiempo real sobre la marca y sus canales digitales para obtener datos 100% reales.
         Nombre de la marca: ${brandName || 'No especificado'}
         Sitio Web Principal / Enlace base: ${url || 'No especificado'}
@@ -80,23 +77,53 @@ export async function POST(req) {
 
         NO INVENTES DATOS. Si tras buscar activamente en Google no encuentras resultados reales para algún campo, coloca "Información no indexada en Google para este canal". Bajo ninguna circunstancia uses datos ficticios o ejemplos simulados.`;
 
-        let researchResult;
         try {
-            researchResult = await researchModel.generateContent(researchPrompt);
+            console.log("[NeuralInvestigator] Attempting gemini-2.5-flash with search...");
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-2.5-flash", 
+                tools: [{ googleSearch: {} }]
+            });
+            researchResult = await model.generateContent(researchPrompt);
         } catch (genError) {
-            console.warn("[NeuralInvestigator] Primary Search Model failed.", genError.message);
-            const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-            researchResult = await fallbackModel.generateContent(researchPrompt + "\n\n(Fallback: No tienes acceso a búsqueda en vivo, usa tu conocimiento base o indica que no hay datos).");
-            steps.push({ msg: 'Usando base de conocimiento (Búsqueda limitada)', icon: 'AlertTriangle', source: 'warning' });
+            console.warn("[NeuralInvestigator] Primary model (gemini-2.5-flash with search) failed:", genError.message);
+            
+            // Fallback 1: gemini-1.5-flash with search grounding (typically has separate/larger limits)
+            try {
+                console.log("[NeuralInvestigator] Attempting Fallback 1: gemini-1.5-flash with search...");
+                const model = genAI.getGenerativeModel({ 
+                    model: "gemini-1.5-flash", 
+                    tools: [{ googleSearch: {} }]
+                });
+                researchResult = await model.generateContent(researchPrompt);
+                usedModelName = "gemini-1.5-flash";
+                steps.push({ msg: 'Usando motor de búsqueda secundario (Gemini 1.5)', icon: 'Globe', source: 'google' });
+            } catch (err1) {
+                console.warn("[NeuralInvestigator] Fallback 1 failed:", err1.message);
+                
+                // Fallback 2: gemini-2.5-flash without search grounding
+                try {
+                    console.log("[NeuralInvestigator] Attempting Fallback 2: gemini-2.5-flash without search...");
+                    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+                    researchResult = await model.generateContent(researchPrompt + "\n\n(Fallback: No tienes acceso a búsqueda en vivo, usa tu conocimiento base o indica que no hay datos).");
+                    usedGrounding = false;
+                    steps.push({ msg: 'Usando base de conocimiento (Búsqueda offline)', icon: 'AlertTriangle', source: 'warning' });
+                } catch (err2) {
+                    console.warn("[NeuralInvestigator] Fallback 2 failed:", err2.message);
+                    
+                    // Fallback 3: gemini-1.5-flash without search grounding (highly stable free tier model)
+                    console.log("[NeuralInvestigator] Attempting Fallback 3: gemini-1.5-flash without search...");
+                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                    researchResult = await model.generateContent(researchPrompt + "\n\n(Fallback: No tienes acceso a búsqueda en vivo, usa tu conocimiento base o indica que no hay datos).");
+                    usedModelName = "gemini-1.5-flash";
+                    usedGrounding = false;
+                    steps.push({ msg: 'Usando base de conocimiento secundaria (Búsqueda offline)', icon: 'AlertTriangle', source: 'warning' });
+                }
+            }
         }
 
         const researchText = researchResult.response.text();
 
         // --- STAGE 2: JSON STRUCTURING ---
-        const structuringModel = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash"
-        });
-
         const structuringPrompt = `Toma el siguiente informe de investigación de una marca y estructúralo EXACTAMENTE en el formato JSON solicitado. No inventes información, utiliza únicamente los hechos reales presentados en el informe. Si el informe dice que algo no se encontró o no está indexado, refléjalo con esa misma frase.
 
         Informe de investigación:
@@ -122,8 +149,18 @@ export async function POST(req) {
 
         Responde únicamente con el JSON válido.`;
 
-        const structuringResult = await structuringModel.generateContent(structuringPrompt);
-        const responseText = structuringResult.response.text();
+        let responseText;
+        try {
+            console.log(`[NeuralInvestigator] Structuring JSON with ${usedModelName}...`);
+            const structuringModel = genAI.getGenerativeModel({ model: usedModelName });
+            const structuringResult = await structuringModel.generateContent(structuringPrompt);
+            responseText = structuringResult.response.text();
+        } catch (structError) {
+            console.warn("[NeuralInvestigator] Primary structuring failed, falling back to gemini-1.5-flash:", structError.message);
+            const fallbackStruct = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const structuringResult = await fallbackStruct.generateContent(structuringPrompt);
+            responseText = structuringResult.response.text();
+        }
 
         // Improved Robust JSON Extraction
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
