@@ -180,6 +180,7 @@ export default function GrowthPricing() {
                                 onSelectService={setSelectedService}
                                 userNiche={user?.industry || user?.marketing_type}
                                 clientSub={clientSub}
+                                user={user}
                             />
                         ))}
                     </div>
@@ -203,7 +204,7 @@ export default function GrowthPricing() {
     );
 }
 
-function PricingCard({ service, index, onSelectService, userNiche, clientSub }) {
+function PricingCard({ service, index, onSelectService, userNiche, clientSub, user }) {
     const isPopular = service.level === 'PLAN CLAVE';
     const finalPrice = getAdaptedPrice(service.price, service.name, userNiche || 'General');
 
@@ -266,36 +267,54 @@ function PricingCard({ service, index, onSelectService, userNiche, clientSub }) 
 
     const features = service.features || getFeatures(service.name);
 
+    // Evaluate trial and subscription status
+    const calculateTrialDaysLeft = () => {
+        if (!user?.created_at) return 0;
+        const creationDate = new Date(user.created_at);
+        const currentDate = new Date();
+        const differenceInTime = currentDate.getTime() - creationDate.getTime();
+        const differenceInDays = Math.floor(differenceInTime / (1000 * 3600 * 24));
+        const daysLeft = 15 - differenceInDays;
+        return daysLeft > 0 ? daysLeft : 0;
+    };
+
+    const trialDaysLeft = calculateTrialDaysLeft();
+    const isTrialing = trialDaysLeft > 0 && clientSub?.status !== 'active';
+    const isActuallyPaid = clientSub?.status === 'active';
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: index * 0.1 }}
-            className={`p-8 rounded-[2rem] border flex flex-col h-full relative overflow-hidden group transition-all duration-700 backdrop-blur-xl ${
+            whileHover={{ y: -5 }}
+            className={`flex flex-col p-8 rounded-[2.5rem] relative overflow-hidden transition-all duration-500 backdrop-blur-xl ${
                 isPopular 
-                ? 'bg-gradient-to-b from-indigo-600 to-indigo-900/90 border-indigo-400/50 shadow-[0_0_50px_rgba(99,102,241,0.25)] scale-105 z-10' 
-                : 'bg-white/[0.02] border-white/10 hover:border-white/20 shadow-2xl'
+                ? 'bg-gradient-to-br from-[#0A0A1F]/90 via-[#0E0E2A]/90 to-[#0A0A1F]/90 border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.1)]' 
+                : 'bg-black/40 border border-white/5 hover:bg-black/60'
             }`}
         >
-            {/* Header Badge */}
-            <div className="flex items-center mb-6">
-                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                    isPopular ? 'bg-black/20 text-white shadow-inner' : 'bg-white/5 text-gray-300 border border-white/5'
-                }`}>
-                    {service.level === 'PLAN CLAVE' ? 'NIVEL CLAVE' : service.level} {isPopular && '⭐'}
-                </span>
+            {/* Glows */}
+            {isPopular && (
+                <>
+                    <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent opacity-50" />
+                    <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none" />
+                </>
+            )}
+
+            {/* Popular Badge */}
+            <div className="h-8 mb-4">
+                {isPopular && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-widest">
+                        <Crown className="w-3 h-3" />
+                        Recomendado
+                    </div>
+                )}
             </div>
 
-            {/* Plan Name */}
-            <div className="mb-6">
-                <h3 className="text-3xl font-black text-white mb-2 tracking-tight">{service.name}</h3>
-                <p className={`text-sm font-medium leading-relaxed ${isPopular ? 'text-indigo-200' : 'text-gray-400'}`}>
-                    {service.name.toUpperCase().includes('PRESENCIA') ? "Presencia digital para generar confianza visual." :
-                     service.name.toUpperCase().includes('MÉDICO') || service.name.toUpperCase().includes('CRECIMIENTO') ? "Sistema enfocado en captar clientes calificados." :
-                     service.name.toUpperCase().includes('AUTORIDAD') ? "Conviértete en el referente #1 de tu nicho." :
-                     "Dominio total del mercado y viralidad agresiva."}
-                </p>
+            {/* Header */}
+            <div className="mb-6 space-y-2 relative z-10">
+                <h3 className={`text-2xl font-black uppercase tracking-tight italic ${isPopular ? 'text-white' : 'text-gray-300'}`}>{service.name}</h3>
+                <p className={`text-sm font-medium ${isPopular ? 'text-indigo-200/70' : 'text-gray-500'}`}>{service.enfoque}</p>
             </div>
 
             {/* Price Main */}
@@ -346,19 +365,27 @@ function PricingCard({ service, index, onSelectService, userNiche, clientSub }) 
 
             {/* Subscription and Payment Status Info */}
             {isActivePlan && (
-                <div className="mb-4 flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-center">
-                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1.5 justify-center">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Suscripción Registrada
+                <div className={`mb-4 flex flex-col items-center justify-center p-3 rounded-2xl border text-center ${
+                    isActuallyPaid 
+                    ? 'bg-emerald-500/5 border-emerald-500/10' 
+                    : isTrialing 
+                    ? 'bg-amber-500/5 border-amber-500/10' 
+                    : 'bg-red-500/5 border-red-500/10'
+                }`}>
+                    <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 justify-center ${
+                        isActuallyPaid ? 'text-emerald-400' : isTrialing ? 'text-amber-400' : 'text-red-400'
+                    }`}>
+                        {isActuallyPaid ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+                        {isActuallyPaid ? 'Suscripción Activa' : isTrialing ? `Periodo de Prueba (${trialDaysLeft} días)` : 'Suscripción Vencida'}
                     </span>
                     <span className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
-                        Estado del Pago: {clientSub?.status === 'active' ? '✓ APROBADO & ACTIVO' : 'Pendiente de verificación'}
+                        Estado del Pago: {isActuallyPaid ? '✓ APROBADO & ACTIVO' : 'Pendiente / No Pagado'}
                     </span>
                 </div>
             )}
 
             {/* Action CTA */}
-            {isActivePlan ? (
+            {isActivePlan && isActuallyPaid ? (
                 <div className="w-full py-4 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center gap-2 cursor-default shadow-inner">
                     <Check className="w-4 h-4 text-emerald-400" strokeWidth={3} />
                     PLAN ACTUAL ACTIVO
@@ -374,7 +401,7 @@ function PricingCard({ service, index, onSelectService, userNiche, clientSub }) 
                         : 'bg-white/5 text-white hover:bg-white/10 border border-white/10 shadow-lg'
                     }`}
                 >
-                    {hasAnyActivePlan ? 'CAMBIAR PLAN' : 'INICIAR DESPLIEGUE'}
+                    {isActivePlan && !isActuallyPaid ? 'REALIZAR PAGO AHORA' : hasAnyActivePlan ? 'CAMBIAR PLAN' : 'INICIAR DESPLIEGUE'}
                 </button>
             )}
         </motion.div>

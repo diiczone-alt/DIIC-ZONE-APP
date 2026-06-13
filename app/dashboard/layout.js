@@ -157,6 +157,8 @@ function DashboardContent({ children }) {
     );
 }
 
+import PaywallGuard from '@/components/ui/PaywallGuard';
+
 export default function DashboardLayout({ children }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -205,9 +207,11 @@ export default function DashboardLayout({ children }) {
 
     return (
         <SidebarProvider>
-            <DashboardContent>
-                {children}
-            </DashboardContent>
+            <PaywallGuard user={user}>
+                <DashboardContent>
+                    {children}
+                </DashboardContent>
+            </PaywallGuard>
         </SidebarProvider>
     );
 }
