@@ -76,6 +76,40 @@ export default function Sidebar() {
     const clientId = searchParams.get('client');
     const { user, logout } = useAuth();
     const [hasConnectivity, setHasConnectivity] = useState(true);
+    const [clientBrand, setClientBrand] = useState('CLIENT HUB');
+
+    useEffect(() => {
+        const fetchClientBrand = async () => {
+            const finalClientId = clientId || user?.client_id || user?.user_metadata?.client_id;
+            if (!finalClientId) {
+                // Fallback to user brand or name
+                const userBrand = user?.user_metadata?.brand || user?.user_metadata?.full_name || 'CLIENT HUB';
+                setClientBrand(userBrand.replace(/[-_\s]+workspace\s*$/i, '').trim());
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('clients')
+                    .select('name')
+                    .eq('id', finalClientId)
+                    .single();
+                
+                if (data && data.name) {
+                    setClientBrand(data.name);
+                } else {
+                    const userBrand = user?.user_metadata?.brand || user?.user_metadata?.full_name || 'CLIENT HUB';
+                    setClientBrand(userBrand.replace(/[-_\s]+workspace\s*$/i, '').trim());
+                }
+            } catch (err) {
+                console.error("Error fetching client brand in Sidebar:", err);
+                const userBrand = user?.user_metadata?.brand || user?.user_metadata?.full_name || 'CLIENT HUB';
+                setClientBrand(userBrand.replace(/[-_\s]+workspace\s*$/i, '').trim());
+            }
+        };
+
+        fetchClientBrand();
+    }, [clientId, user]);
 
     const handleLogout = async () => {
         try {
@@ -230,8 +264,8 @@ export default function Sidebar() {
                 {/* Glow effect behind logo */}
                 <div className="absolute inset-0 bg-indigo-500/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
 
-                <h1 className="ml-3 text-lg font-black font-display text-white tracking-tight opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-10">
-                    CLIENT <span className="text-indigo-500 italic">HUB</span>
+                <h1 className="ml-3 text-xs md:text-sm font-black font-display text-white tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-10 max-w-[170px] overflow-hidden text-ellipsis">
+                    {clientBrand}
                 </h1>
             </div>
 
