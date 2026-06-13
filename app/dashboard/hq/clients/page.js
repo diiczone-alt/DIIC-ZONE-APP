@@ -430,6 +430,7 @@ export default function HQClientsPage() {
     const handleOpenEdit = (client) => {
         setEditingClient(client);
         
+        let initialPrice = client.price || 0;
         const calculatedPrice = getPlanPrice(client.plan, client.industry);
         const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         const normalizedInd = cleanNiche(client.industry);
@@ -543,6 +544,7 @@ export default function HQClientsPage() {
     }) : [];
 
     const mrr = Array.isArray(clients) ? clients.reduce((acc, c) => {
+        let price = c.price || 0;
         const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         const normalizedInd = cleanNiche(c.industry);
         const isMedOrHosp = normalizedInd.includes('medico') || normalizedInd.includes('hospital') || normalizedInd.includes('clinica');
@@ -743,6 +745,7 @@ export default function HQClientsPage() {
                                     </td>
                                     <td className="px-6 py-6">
                                         {(() => {
+                                            let displayPrice = client?.price || 0;
                                             const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
                                             const normalizedInd = cleanNiche(client?.industry);
                                             const isMedOrHosp = normalizedInd.includes('medico') || normalizedInd.includes('hospital') || normalizedInd.includes('clinica');
