@@ -40,11 +40,22 @@ const getAdaptedPrice = (basePrice, planName, industry) => {
     return basePrice;
 };
 
+const normalizePlan = (planName) => {
+    if (!planName) return '';
+    const clean = planName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    if (clean.includes('presencia') || clean === 'basic') return 'presence';
+    if (clean.includes('crecimiento') || clean === 'estrategia' || clean === 'medico') return 'growth';
+    if (clean.includes('autoridad') || clean === 'premium' || clean.includes('especialista')) return 'authority';
+    if (clean.includes('control') || clean.includes('elite') || clean.includes('monopolio')) return 'elite';
+    return clean;
+};
+
 export default function GrowthPricing() {
     const { user } = useAuth();
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedService, setSelectedService] = useState(null);
+    const [clientSub, setClientSub] = useState(null);
 
     useEffect(() => {
         const loadServices = async () => {
@@ -96,6 +107,29 @@ export default function GrowthPricing() {
                 });
                 
                 setServices(mappedServices);
+
+                // --- QUERY CURRENT CLIENT PLAN STATUS ---
+                let activePlan = user?.plan || null;
+                let activePrice = user?.price || null;
+                let activeStatus = null;
+
+                if (user?.client_id) {
+                    const { data: clientData } = await supabase
+                        .from('clients')
+                        .select('plan, price, status')
+                        .eq('id', user.client_id)
+                        .maybeSingle();
+                    if (clientData) {
+                        activePlan = clientData.plan;
+                        activePrice = clientData.price;
+                        activeStatus = clientData.status;
+                    }
+                }
+                setClientSub({
+                    plan: activePlan,
+                    price: activePrice,
+                    status: activeStatus
+                });
             } catch (err) {
                 console.error("Error loading services:", err);
             } finally {
@@ -145,6 +179,7 @@ export default function GrowthPricing() {
                                 index={idx} 
                                 onSelectService={setSelectedService}
                                 userNiche={user?.industry || user?.marketing_type}
+                                clientSub={clientSub}
                             />
                         ))}
                     </div>
@@ -168,9 +203,14 @@ export default function GrowthPricing() {
     );
 }
 
-function PricingCard({ service, index, onSelectService, userNiche }) {
+function PricingCard({ service, index, onSelectService, userNiche, clientSub }) {
     const isPopular = service.level === 'PLAN CLAVE';
     const finalPrice = getAdaptedPrice(service.price, service.name, userNiche || 'General');
+
+    const normalizedServicePlan = normalizePlan(service.id);
+    const normalizedUserPlan = clientSub ? normalizePlan(clientSub.plan) : '';
+    const isActivePlan = normalizedUserPlan !== '' && normalizedServicePlan === normalizedUserPlan;
+    const hasAnyActivePlan = normalizedUserPlan !== '';
 
     const handleAction = () => {
         if (onSelectService) {
@@ -304,17 +344,39 @@ function PricingCard({ service, index, onSelectService, userNiche }) {
                 <DeliverableItem label="Posts" value={service.deliverables?.posts || 0} isPopular={isPopular} />
             </div>
 
+            {/* Subscription and Payment Status Info */}
+            {isActivePlan && (
+                <div className="mb-4 flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-center">
+                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1.5 justify-center">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Suscripción Registrada
+                    </span>
+                    <span className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
+                        Estado del Pago: {clientSub?.status === 'active' ? '✓ APROBADO & ACTIVO' : 'Pendiente de verificación'}
+                    </span>
+                </div>
+            )}
+
             {/* Action CTA */}
-            <button
-                onClick={handleAction}
-                className={`w-full py-4 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-300 ${
-                    isPopular 
-                    ? 'bg-white text-black hover:bg-gray-100 shadow-[0_0_20px_rgba(255,255,255,0.3)]' 
-                    : 'bg-white/5 text-white hover:bg-white/10 border border-white/10 shadow-lg'
-                }`}
-            >
-                INICIAR DESPLIEGUE
-            </button>
+            {isActivePlan ? (
+                <div className="w-full py-4 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center gap-2 cursor-default shadow-inner">
+                    <Check className="w-4 h-4 text-emerald-400" strokeWidth={3} />
+                    PLAN ACTUAL ACTIVO
+                </div>
+            ) : (
+                <button
+                    onClick={handleAction}
+                    className={`w-full py-4 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-300 ${
+                        hasAnyActivePlan 
+                        ? 'bg-white/10 text-indigo-300 hover:bg-white/20 border border-indigo-500/30' 
+                        : isPopular 
+                        ? 'bg-white text-black hover:bg-gray-100 shadow-[0_0_20px_rgba(255,255,255,0.3)]' 
+                        : 'bg-white/5 text-white hover:bg-white/10 border border-white/10 shadow-lg'
+                    }`}
+                >
+                    {hasAnyActivePlan ? 'CAMBIAR PLAN' : 'INICIAR DESPLIEGUE'}
+                </button>
+            )}
         </motion.div>
     );
 }
