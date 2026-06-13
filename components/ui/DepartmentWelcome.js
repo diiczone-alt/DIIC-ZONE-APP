@@ -15,14 +15,14 @@ const DEPARTMENT_CONTENT = {
         icon: Users,
         title: "Community Manager",
         welcome: "👋 Hola, soy tu Community Manager",
-        description: "Desde aquí coordinaremos tu contenido, publicaciones, campañas y reportes. Tu equipo creativo se encarga del trabajo, tú ves los resultados.",
+        description: "Desde aquí coordinaremos tu contenido, publicaciones, campañas y reportes. ¿En qué puedo ayudarte hoy?",
         color: "blue",
         actions: [
-            { label: "Ver mis proyectos", icon: FileText, mode: "projects" },
-            { label: "Ver calendario", icon: Calendar, mode: "calendar" },
+            { label: "Reporte de producción", icon: BarChart3, mode: "production_report" },
+            { label: "Reporte de pauta", icon: FileText, mode: "ad_report" },
+            { label: "Estrategia de contenido", icon: Share2, mode: "strategy" },
             { label: "Hablar con mi CM", icon: MessageSquare, mode: "chat" },
-            { label: "Ver reportes", icon: BarChart3, mode: "reports" },
-            { label: "Flujo de contenido", icon: LayoutDashboard, mode: "pipeline" }
+            { label: "Calendario de publicaciones", icon: Calendar, mode: "calendar" }
         ]
     },
     design: {
