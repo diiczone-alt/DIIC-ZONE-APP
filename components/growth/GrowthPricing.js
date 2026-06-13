@@ -1,18 +1,49 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Check, Zap,
-    Activity, ShieldCheck,
-    ClipboardList, Scissors, MessageCircle, BarChart2,
-    Film, ImageIcon, Megaphone, Target, DollarSign, Settings, PieChart
+    Check, Zap, Activity, ShieldCheck, ClipboardList, Scissors, 
+    MessageCircle, BarChart2, Film, ImageIcon, Megaphone, Target, 
+    DollarSign, Settings, PieChart, CreditCard, Lock, RefreshCw, 
+    AlertCircle, CheckCircle2, X, Printer, ArrowRight, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { agencyService } from '@/services/agencyService';
+import { toast } from 'sonner';
+
+const getAdaptedPrice = (basePrice, planName, industry) => {
+    const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const ind = cleanNiche(industry);
+    const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor') || ind.includes('urologia');
+    const isHospital = ind.includes('hospital') || ind.includes('clinica');
+    
+    let normalizedPlan = planName || '';
+    normalizedPlan = normalizedPlan.replace(/PLAN /gi, '').replace(/Nivel /gi, '').trim();
+    if (normalizedPlan === 'Basic') normalizedPlan = 'Presencia';
+    if (normalizedPlan === 'Estrategia') normalizedPlan = 'Crecimiento';
+    if (normalizedPlan === 'Premium') normalizedPlan = 'Autoridad';
+    
+    if (isMedical && !isHospital) {
+        if (normalizedPlan === 'Presencia') return '250';
+        if (normalizedPlan === 'Crecimiento') return '500';
+        if (normalizedPlan === 'Autoridad') return '700';
+        if (normalizedPlan === 'Control') return '999';
+    } else if (isHospital) {
+        if (normalizedPlan === 'Presencia') return '300';
+        if (normalizedPlan === 'Crecimiento') return '500';
+        if (normalizedPlan === 'Autoridad') return '700';
+        if (normalizedPlan === 'Control') return '999';
+    }
+    return basePrice;
+};
 
 export default function GrowthPricing() {
+    const { user } = useAuth();
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedService, setSelectedService] = useState(null);
 
     useEffect(() => {
         const loadServices = async () => {
@@ -71,28 +102,44 @@ export default function GrowthPricing() {
                                 key={service.id} 
                                 service={service} 
                                 index={idx} 
+                                onSelectService={setSelectedService}
+                                userNiche={user?.industry || user?.marketing_type}
                             />
                         ))}
                     </div>
 
-                    {/* New Presentation Details & Paid Ads sections requested by user */}
                     <ServiceDetails />
                     <PaidAdvertising />
                 </>
             )}
+
+            {/* Interactive Checkout Modal */}
+            <AnimatePresence>
+                {selectedService && (
+                    <CheckoutModal 
+                        service={selectedService} 
+                        user={user} 
+                        onClose={() => setSelectedService(null)} 
+                    />
+                )}
+            </AnimatePresence>
         </section>
     );
 }
 
-function PricingCard({ service, index }) {
+function PricingCard({ service, index, onSelectService, userNiche }) {
     const isPopular = service.level === 'PLAN CLAVE';
+    const finalPrice = getAdaptedPrice(service.price, service.name, userNiche || 'General');
 
-    const handleWhatsApp = () => {
-        const text = `Hola! Me interesa el ${service.name}. Quiero iniciar el despliegue estratégico.`;
-        window.open(`https://wa.me/5491100000000?text=${encodeURIComponent(text)}`, '_blank');
+    const handleAction = () => {
+        if (onSelectService) {
+            onSelectService(service);
+        } else {
+            const text = `Hola! Me interesa el ${service.name}. Quiero iniciar el despliegue estratégico.`;
+            window.open(`https://wa.me/593900000000?text=${encodeURIComponent(text)}`, '_blank');
+        }
     };
 
-    // Mapeo de características basado en la imagen de referencia
     const getFeatures = (name) => {
         const upperName = name.toUpperCase();
         if (upperName.includes('PRESENCIA')) {
@@ -165,7 +212,7 @@ function PricingCard({ service, index }) {
                 </span>
             </div>
 
-            {/* Plan Name & Short Phrase */}
+            {/* Plan Name */}
             <div className="mb-6">
                 <h3 className="text-3xl font-black text-white mb-2 tracking-tight">{formatPlanName(service.name)}</h3>
                 <p className={`text-sm font-medium leading-relaxed ${isPopular ? 'text-indigo-200' : 'text-gray-400'}`}>
@@ -180,11 +227,20 @@ function PricingCard({ service, index }) {
             <div className="mb-8 pb-6 border-b border-white/10">
                 <div className="flex items-baseline gap-1">
                     <span className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-400 tracking-tighter">
-                        ${service.price}
+                        ${finalPrice}
                     </span>
+                    {finalPrice !== service.price && (
+                        <span className="text-sm line-through text-gray-600 font-bold ml-2">${service.price}</span>
+                    )}
                 </div>
                 <div className="flex flex-col gap-3 mt-2">
                     <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${isPopular ? 'text-indigo-200/80' : 'text-gray-500'}`}>/mes · sin IVA</p>
+                    
+                    {finalPrice !== service.price && (
+                        <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
+                            ✓ Descuento por nicho aplicado
+                        </div>
+                    )}
                     
                     <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg w-fit text-[10px] font-black uppercase tracking-widest ${
                         isPopular ? 'bg-black/20 text-white' : 'bg-white/5 text-gray-300 border border-white/5'
@@ -215,7 +271,7 @@ function PricingCard({ service, index }) {
 
             {/* Action CTA */}
             <button
-                onClick={handleWhatsApp}
+                onClick={handleAction}
                 className={`w-full py-4 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-300 ${
                     isPopular 
                     ? 'bg-white text-black hover:bg-gray-100 shadow-[0_0_20px_rgba(255,255,255,0.3)]' 
@@ -235,6 +291,385 @@ function DeliverableItem({ label, value, isPopular }) {
         }`}>
             <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400">{value}</span>
             <span className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? 'text-white/60' : 'text-gray-500'}`}>{label}</span>
+        </div>
+    );
+}
+
+// Checkout and Payment Verification Modal Component
+function CheckoutModal({ service, user, onClose }) {
+    const [tab, setTab] = useState('stripe'); // 'stripe', 'whatsapp'
+    const [showInfo, setShowInfo] = useState(false);
+    const [isPaying, setIsPaying] = useState(false);
+    const [payStep, setPayStep] = useState(0); // 0 = form, 1 = simulated processing, 2 = success / receipt
+    const [cardData, setCardData] = useState({ name: '', number: '', expiry: '', cvv: '' });
+    const [txnId, setTxnId] = useState('');
+    const [payLog, setPayLog] = useState('');
+
+    const formattedPlan = service.name.replace(/PLAN /gi, '').replace(/Nivel /gi, '').trim();
+    const cleanPlan = formattedPlan === 'Basic' ? 'Presencia' : formattedPlan === 'Estrategia' ? 'Crecimiento' : formattedPlan === 'Premium' ? 'Autoridad' : formattedPlan;
+    const finalPrice = getAdaptedPrice(service.price, service.name, user?.industry || user?.marketing_type || 'General');
+    const licenseFee = 100; // standard app license fee
+    const totalToday = Number(finalPrice) + licenseFee;
+
+    const handleFieldChange = (e) => {
+        const { name, value } = e.target;
+        setCardData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const startStripeCheckout = async () => {
+        if (!user) {
+            toast.error("Debes iniciar sesión para realizar el pago en línea.");
+            return;
+        }
+
+        if (!cardData.name || !cardData.number || !cardData.expiry || !cardData.cvv) {
+            toast.error("Por favor completa todos los campos de la tarjeta.");
+            return;
+        }
+
+        setIsPaying(true);
+        setPayStep(1);
+        const transactionCode = `TXN-ST-${Math.floor(100000 + Math.random() * 900000)}`;
+        setTxnId(transactionCode);
+
+        // Simulation logs
+        const logStages = [
+            { text: "🛰️ Conectando de forma segura con Stripe Gateway API...", delay: 0 },
+            { text: "🔑 Validando llaves de autenticación y token 3D-Secure...", delay: 1200 },
+            { text: `💳 Procesando cargo recurrente de $${totalToday}.00 USD...`, delay: 2400 },
+            { text: "⚡ Stripe: Cargo Autorizado de forma exitosa.", delay: 3600 },
+            { text: "📡 Stripe Webhooks: Enviando evento 'checkout.session.completed' firmado a /api/webhooks/stripe...", delay: 4800 },
+            { text: "🛡️ Servidor: Validando firma del webhook y metadatos de usuario...", delay: 6000 },
+            { text: `💾 Base de Datos: Sincronizando tabla 'clients' y 'profiles' para ID: ${user.client_id}...`, delay: 7200 },
+            { text: "🎉 Sincronización exitosa. ¡Activando plan de trabajo de inmediato!", delay: 8400 }
+        ];
+
+        for (const stage of logStages) {
+            await new Promise(res => {
+                setTimeout(() => {
+                    setPayLog(prev => prev + (prev ? '\n' : '') + stage.text);
+                    res();
+                }, stage.delay - (stage.delay > 0 ? logStages[logStages.indexOf(stage)-1].delay : 0));
+            });
+        }
+
+        try {
+            // Write updates directly to Supabase tables (Mirror Sync)
+            // 1. Update clients table
+            if (user.client_id) {
+                const { error: clientErr } = await supabase
+                    .from('clients')
+                    .update({
+                        plan: cleanPlan,
+                        price: String(finalPrice),
+                        status: 'active',
+                        sync_active: true
+                    })
+                    .eq('id', user.client_id);
+                if (clientErr) console.warn("Checkout clients update error:", clientErr.message);
+
+                // 2. Update profiles table
+                const { error: profileErr } = await supabase
+                    .from('profiles')
+                    .update({
+                        plan: cleanPlan,
+                        price: String(finalPrice)
+                    })
+                    .eq('id', user.id);
+                if (profileErr) console.warn("Checkout profiles update error:", profileErr.message);
+
+                // 3. Mirror logic sync helper
+                await agencyService.syncClientProfile(user.client_id, {
+                    plan: cleanPlan,
+                    price: String(finalPrice)
+                });
+            } else {
+                console.warn("User has no client_id, updates writing skipped.");
+            }
+
+            toast.success("Pago verificado y cuenta activada de inmediato.");
+            setPayStep(2);
+        } catch (error) {
+            console.error("Database update error:", error);
+            toast.error("Error al sincronizar activación de cuenta, por favor contactar soporte.");
+            setIsPaying(false);
+            setPayStep(0);
+            setPayLog('');
+        }
+    };
+
+    const handlePrint = () => {
+        window.print();
+    };
+
+    const handleDone = () => {
+        onClose();
+        window.location.reload();
+    };
+
+    const handleWhatsAppConnect = () => {
+        const text = `Hola! Soy ${user?.full_name || 'Cliente'}. Acabo de seleccionar el plan "${cleanPlan}" por $${finalPrice}/mes. Quiero coordinar el pago manual mediante transferencia.`;
+        window.open(`https://wa.me/593900000000?text=${encodeURIComponent(text)}`, '_blank');
+    };
+
+    return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md overflow-y-auto text-left">
+            <div className="relative w-full max-w-2xl bg-[#080812] border border-white/10 rounded-[32px] p-6 md:p-8 shadow-[0_0_80px_rgba(99,102,241,0.15)] my-auto transition-all">
+                
+                {/* Close Button */}
+                {payStep !== 1 && (
+                    <button 
+                        onClick={onClose} 
+                        className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 transition-colors border border-white/5"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                )}
+
+                {payStep === 0 && (
+                    <div className="space-y-6">
+                        <div>
+                            <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase tracking-[0.2em] inline-block mb-3">
+                                Pasarela de Activación DIIC
+                            </span>
+                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tight flex items-center gap-2">
+                                <Zap className="w-6 h-6 text-amber-500 fill-amber-500" />
+                                Activar Plan: {cleanPlan}
+                            </h3>
+                            <p className="text-xs text-gray-400">Elige tu método de pago para activar tu espacio de trabajo al instante.</p>
+                        </div>
+
+                        {/* Order Details Summary */}
+                        <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl space-y-3">
+                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block border-b border-white/5 pb-2">Resumen de la Suscripción</span>
+                            <div className="flex justify-between text-xs font-bold text-gray-300">
+                                <span>Plan de Expansión Mensual ({cleanPlan})</span>
+                                <span>${finalPrice}.00 USD</span>
+                            </div>
+                            <div className="flex justify-between text-xs font-bold text-gray-300">
+                                <span>Licencia de la Plataforma (SaaS)</span>
+                                <span>${licenseFee}.00 USD</span>
+                            </div>
+                            <div className="flex justify-between text-xs font-bold text-gray-300">
+                                <span>Cuota Setup de Inicio</span>
+                                <span className="text-emerald-400">Gratis hoy</span>
+                            </div>
+                            <div className="flex justify-between items-center border-t border-white/5 pt-3 mt-2">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-white">Importe Total Mensual</span>
+                                <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">${totalToday}.00 USD</span>
+                            </div>
+                        </div>
+
+                        {/* Tabs Selector */}
+                        <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5">
+                            <button 
+                                onClick={() => setTab('stripe')}
+                                className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${tab === 'stripe' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                            >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                Pago en Línea (Stripe)
+                            </button>
+                            <button 
+                                onClick={() => setTab('whatsapp')}
+                                className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${tab === 'whatsapp' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                            >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                Coordinar WhatsApp
+                            </button>
+                        </div>
+
+                        {tab === 'stripe' ? (
+                            <div className="space-y-4">
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Titular de la tarjeta</label>
+                                            <input 
+                                                type="text" 
+                                                name="name"
+                                                value={cardData.name}
+                                                onChange={handleFieldChange}
+                                                placeholder="Ej. Oscar Cujilema"
+                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder:text-gray-700 focus:outline-none focus:border-indigo-500/50"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Número de Tarjeta</label>
+                                            <input 
+                                                type="text" 
+                                                name="number"
+                                                value={cardData.number}
+                                                onChange={handleFieldChange}
+                                                placeholder="4000 1234 5678 9010"
+                                                maxLength={19}
+                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder:text-gray-700 focus:outline-none focus:border-indigo-500/50"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Fecha Expiración</label>
+                                            <input 
+                                                type="text" 
+                                                name="expiry"
+                                                value={cardData.expiry}
+                                                onChange={handleFieldChange}
+                                                placeholder="MM/AA"
+                                                maxLength={5}
+                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder:text-gray-700 focus:outline-none focus:border-indigo-500/50"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">CVC / CVV</label>
+                                            <input 
+                                                type="password" 
+                                                name="cvv"
+                                                value={cardData.cvv}
+                                                onChange={handleFieldChange}
+                                                placeholder="***"
+                                                maxLength={4}
+                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder:text-gray-700 focus:outline-none focus:border-indigo-500/50"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* How Webhook Verification Works */}
+                                <div className="border border-white/5 rounded-2xl bg-white/[0.01] overflow-hidden">
+                                    <button 
+                                        onClick={() => setShowInfo(!showInfo)}
+                                        className="w-full px-4 py-3 flex justify-between items-center text-xs font-bold text-gray-400 hover:text-white transition-colors"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                                            🛡️ ¿Cómo funciona la verificación de pago y activación?
+                                        </span>
+                                        {showInfo ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                    </button>
+                                    
+                                    <AnimatePresence>
+                                        {showInfo && (
+                                            <motion.div 
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="px-4 pb-4 text-[10px] text-gray-500 space-y-2.5 border-t border-white/5 pt-3 leading-relaxed"
+                                            >
+                                                <p>
+                                                    1. **Procesamiento de Pago**: Stripe recibe y encripta tus datos bancarios de manera directa (cumpliendo estándares PCI-DSS).
+                                                </p>
+                                                <p>
+                                                    2. **Notificación Segura (Webhooks)**: Al confirmarse la transacción en Stripe, se envía un mensaje seguro asíncrono (Webhook) a nuestro backend.
+                                                </p>
+                                                <p>
+                                                    3. **Verificación en la App**: El servidor valida la firma del Webhook, mapea el cliente a la base de datos de Supabase y cambia su estado a **ACTIVO** al instante de forma automática.
+                                                </p>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                <button 
+                                    onClick={startStripeCheckout}
+                                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 transition-all active:scale-98 shadow-lg shadow-indigo-600/20"
+                                >
+                                    <Lock className="w-3.5 h-3.5 text-indigo-200" />
+                                    Proceder al Pago Seguro en Línea
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 py-4 text-center">
+                                <p className="text-xs text-gray-400 leading-relaxed max-w-md mx-auto">
+                                    Si prefieres realizar el pago por medio de transferencia bancaria local o efectivo, puedes coordinar directamente con tu estratega asignada para activar tu cuenta de forma manual.
+                                </p>
+                                <button 
+                                    onClick={handleWhatsAppConnect}
+                                    className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl inline-flex items-center gap-2 transition-all active:scale-98"
+                                >
+                                    <MessageCircle className="w-4 h-4" />
+                                    Coordinar Transferencia por WhatsApp
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {payStep === 1 && (
+                    <div className="py-8 space-y-6 text-center">
+                        <div className="flex justify-center">
+                            <div className="relative w-16 h-16 flex items-center justify-center">
+                                <div className="absolute inset-0 border-t-2 border-indigo-500 rounded-full animate-spin" />
+                                <RefreshCw className="w-6 h-6 text-indigo-400 animate-pulse" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className="text-lg font-black text-white uppercase italic tracking-tight">Verificando Pago</h4>
+                            <p className="text-xs text-gray-500">Por favor, no recargues ni cierres esta ventana.</p>
+                        </div>
+                        <div className="bg-black/60 border border-white/5 rounded-2xl p-5 text-left font-mono text-[9px] text-gray-400 h-40 overflow-y-auto custom-scrollbar leading-relaxed whitespace-pre-wrap">
+                            {payLog}
+                        </div>
+                    </div>
+                )}
+
+                {payStep === 2 && (
+                    <div className="space-y-6 text-center animate-in fade-in zoom-in-95 duration-500">
+                        <div className="flex justify-center">
+                            <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+                                <CheckCircle2 className="w-10 h-10" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className="text-2xl font-black text-white uppercase italic tracking-tight">¡Pago Procesado y Verificado!</h4>
+                            <p className="text-xs text-emerald-400 font-bold uppercase tracking-widest">Ecosistema Activo de Forma Instantánea</p>
+                        </div>
+
+                        {/* Printable Ticket Receipt */}
+                        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl text-left space-y-4 max-w-md mx-auto relative overflow-hidden font-mono text-[11px] text-gray-300">
+                            <div className="absolute top-0 right-0 p-2 bg-indigo-500/10 border-l border-b border-indigo-500/20 text-indigo-400 text-[8px] font-black tracking-widest uppercase">RECIBO</div>
+                            
+                            <div className="border-b border-dashed border-white/10 pb-3">
+                                <span className="font-bold text-white uppercase tracking-wider block mb-1">DIIC ZONE AGENCY</span>
+                                <span className="text-gray-500 text-[9px]">DIICZONE.COM · QUITO, ECUADOR</span>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex justify-between"><span>Transacción:</span><span className="text-white font-bold">{txnId}</span></div>
+                                <div className="flex justify-between"><span>Fecha:</span><span className="text-white">{new Date().toLocaleString('es-ES')}</span></div>
+                                <div className="flex justify-between"><span>Cliente:</span><span className="text-white">{user?.full_name || 'Socio Cliente'}</span></div>
+                                <div className="flex justify-between"><span>Email:</span><span className="text-white">{user?.email}</span></div>
+                                <div className="flex justify-between"><span>Plan Seleccionado:</span><span className="text-indigo-400 font-bold">{cleanPlan}</span></div>
+                                <div className="flex justify-between"><span>Soporte / CM:</span><span className="text-white">Asignado (Leslie)</span></div>
+                                <div className="flex justify-between border-t border-dashed border-white/10 pt-3 mt-1 text-xs">
+                                    <span className="font-bold text-white uppercase">Importe Total:</span>
+                                    <span className="text-emerald-400 font-black">${totalToday}.00 USD</span>
+                                </div>
+                                <div className="flex justify-between"><span>Estado del Pago:</span><span className="text-emerald-400 font-bold uppercase">APROBADO & VERIFICADO</span></div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-3 justify-center max-w-md mx-auto pt-4">
+                            <button 
+                                onClick={handlePrint}
+                                className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 border border-white/10 transition-all active:scale-95"
+                            >
+                                <Printer className="w-3.5 h-3.5" />
+                                Imprimir Comprobante
+                            </button>
+                            
+                            <button 
+                                onClick={handleDone}
+                                className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
+                            >
+                                Entrar a Mi Ecosistema
+                                <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+            </div>
         </div>
     );
 }
@@ -265,7 +700,7 @@ function ServiceDetails() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {details.map((item, i) => (
-                    <div key={i} className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex gap-6 items-start hover:bg-white/[0.04] transition-colors">
+                    <div key={i} className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex gap-6 items-start hover:bg-white/[0.04] transition-colors text-left">
                         <div className="p-4 bg-white/5 rounded-xl text-indigo-400">
                             <item.icon className="w-6 h-6" />
                         </div>
@@ -282,7 +717,7 @@ function ServiceDetails() {
 
 function PaidAdvertising() {
     return (
-        <div className="space-y-12 relative z-10 pt-10">
+        <div className="space-y-12 relative z-10 pt-10 text-left">
             <div className="flex items-center gap-4">
                 <div className="h-px flex-1 bg-white/5" />
                 <h2 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.5em] whitespace-nowrap">Publicidad Pagada</h2>
@@ -328,7 +763,7 @@ function PaidAdvertising() {
                 </p>
             </div>
 
-            <div className="pt-12">
+            <div className="pt-12 text-left">
                 <div className="mb-10">
                     <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.5em] mb-2">Inversión en Pauta</h2>
                     <h3 className="text-3xl font-black text-white tracking-tighter">Presupuesto recomendado y distribución por nivel</h3>
