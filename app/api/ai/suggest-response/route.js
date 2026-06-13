@@ -12,7 +12,18 @@ export async function POST(req) {
         }
 
         const strategic = context.onboarding_data?.strategic || {};
-        const brandName = strategic.brandName || (context.name && context.name !== 'Neyser' ? context.name : 'Espiga de oro');
+        let brandName = strategic.brandName || 
+                        context.onboarding_data?.company_profile?.company_name || 
+                        context.onboarding_data?.brand?.brandName || 
+                        context.name || 
+                        'mi negocio';
+        brandName = brandName.replace(/[-_]workspace/gi, '').trim();
+        const brandNameLower = brandName.toLowerCase();
+        if (brandNameLower === 'neyser') brandName = 'Espiga de oro';
+        else if (brandNameLower === 'mauro') brandName = 'Servicios Agropecuarios Ecuador';
+        else if (brandNameLower === 'fernando') brandName = 'ACEI';
+        else if (brandNameLower === 'christian') brandName = 'NovaUrology';
+        else if (brandNameLower === 'oscar cujilema' || brandNameLower === 'dr. oscar cujilema') brandName = 'Dr. Oscar Cujilema';
         const industry = strategic.industry || context.industry || 'General';
         const whatItDoes = strategic.whatItDoes || '';
         const whatItOffers = strategic.whatItOffers || '';

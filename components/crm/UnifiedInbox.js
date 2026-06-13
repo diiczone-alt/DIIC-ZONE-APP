@@ -9,11 +9,26 @@ import {
 import MedicalCatalog from './MedicalCatalog';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const getCleanBrandName = (client) => {
+    if (!client) return 'mi negocio';
+    let name = client.onboarding_data?.strategic?.brandName || 
+               client.onboarding_data?.company_profile?.company_name || 
+               client.onboarding_data?.brand?.brandName ||
+               client.name || 
+               'mi negocio';
+    name = name.replace(/[-_]workspace/gi, '').trim();
+    const nameLower = name.toLowerCase();
+    if (nameLower === 'neyser') return 'Espiga de oro';
+    if (nameLower === 'mauro') return 'Servicios Agropecuarios Ecuador';
+    if (nameLower === 'fernando') return 'ACEI';
+    if (nameLower === 'christian') return 'NovaUrology';
+    if (nameLower === 'oscar cujilema' || nameLower === 'dr. oscar cujilema') return 'Dr. Oscar Cujilema';
+    return name;
+};
+
 // Conversation generator based on client niche (Initial demo conversations)
 const generateConversations = (activeClient) => {
-    const brandName = activeClient?.onboarding_data?.strategic?.brandName || 
-                      activeClient?.onboarding_data?.company_profile?.company_name || 
-                      (activeClient?.name && activeClient.name !== 'Neyser' ? activeClient.name : 'Espiga de oro');
+    const brandName = getCleanBrandName(activeClient);
     const industry = activeClient?.industry || activeClient?.onboarding_data?.strategic?.industry || 'General';
     const industryLower = industry.toLowerCase();
     const nameLower = (activeClient?.name || '').toLowerCase();
@@ -330,9 +345,7 @@ const generateConversations = (activeClient) => {
 };
 
 export default function UnifiedInbox({ activeClient }) {
-    const brandName = activeClient?.onboarding_data?.strategic?.brandName || 
-                      activeClient?.onboarding_data?.company_profile?.company_name || 
-                      (activeClient?.name && activeClient.name !== 'Neyser' ? activeClient.name : 'Espiga de oro');
+    const brandName = getCleanBrandName(activeClient);
     
     const [conversations, setConversations] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
