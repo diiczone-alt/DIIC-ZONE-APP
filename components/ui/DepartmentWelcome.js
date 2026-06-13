@@ -213,7 +213,7 @@ export default function DepartmentWelcome({ deptId, onAction }) {
                     transition={{ duration: 1.2, ease: "easeOut" }}
                     className="relative hidden lg:block"
                 >
-                    <div className="relative w-full aspect-square max-w-lg mx-auto">
+                    <div className="relative w-full aspect-square max-w-sm mx-auto">
                         {/* Central Glow Orb */}
                         <div className={`absolute inset-0 bg-gradient-to-tr ${colorClasses[data.color]} opacity-5 rounded-full blur-[100px] animate-pulse`} />
                         
@@ -238,7 +238,7 @@ export default function DepartmentWelcome({ deptId, onAction }) {
                                 }}
                                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                             >
-                                <DeptIcon className={`w-48 h-48 text-white opacity-40`} strokeWidth={0.5} />
+                                <DeptIcon className={`w-32 h-32 text-white opacity-40`} strokeWidth={0.5} />
                             </motion.div>
 
                             {/* Floating Tech Data Elements */}
@@ -299,14 +299,14 @@ export default function DepartmentWelcome({ deptId, onAction }) {
                         Zona Creativa • Operación en Vivo
                     </motion.div>
 
-                    <h1 className="text-5xl md:text-6xl lg:text-8xl font-black text-white mb-8 leading-[0.9] tracking-tighter italic uppercase">
+                    <h1 className="text-4xl md:text-5xl lg:text-7xl font-black text-white mb-6 leading-[0.95] tracking-tighter italic uppercase">
                         {data.welcome.split(',')[0]},<br />
                         <span className={`text-transparent bg-clip-text bg-gradient-to-r ${colorClasses[data.color]} not-italic`}>
                             {data.welcome.split(',')[1]}
                         </span>
                     </h1>
 
-                    <p className="text-xl text-gray-400 mb-14 font-medium leading-relaxed max-w-xl opacity-80 border-l-2 border-white/10 pl-8">
+                    <p className="text-lg text-gray-400 mb-10 font-medium leading-relaxed max-w-xl opacity-80 border-l-2 border-white/10 pl-6">
                         {data.description}
                     </p>
 
@@ -320,20 +320,20 @@ export default function DepartmentWelcome({ deptId, onAction }) {
                                 whileHover={{ scale: 1.02, x: 8 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => onAction(action.mode)}
-                                className={`group flex items-center justify-between p-6 bg-white/5 border border-white/[0.05] rounded-[2rem] hover:bg-white/10 hover:border-white/20 transition-all text-left backdrop-blur-sm relative overflow-hidden ${i === 0 ? 'sm:col-span-2 bg-indigo-600/10 border-indigo-500/20' : ''}`}
+                                className={`group flex items-center justify-between p-5 bg-white/5 border border-white/[0.05] rounded-[1.5rem] hover:bg-white/10 hover:border-white/20 transition-all text-left backdrop-blur-sm relative overflow-hidden ${i === 0 ? 'sm:col-span-2 bg-indigo-600/10 border-indigo-500/20' : ''}`}
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 
-                                <div className="flex items-center gap-6 relative z-10">
-                                    <div className={`w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-white/10 group-hover:scale-110 transition-all shadow-xl`}>
-                                        <action.icon className="w-6 h-6 text-white" strokeWidth={1.5} />
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <div className={`w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-white/10 group-hover:scale-110 transition-all shadow-xl`}>
+                                        <action.icon className="w-5 h-5 text-white" strokeWidth={1.5} />
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-xs font-black text-gray-500 uppercase tracking-widest mb-1 group-hover:text-indigo-400 transition-colors">Ejecutar</span>
-                                        <span className="text-lg font-black text-white tracking-tight uppercase">{action.label}</span>
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 group-hover:text-indigo-400 transition-colors">Ejecutar</span>
+                                        <span className="text-base font-black text-white tracking-tight uppercase">{action.label}</span>
                                     </div>
                                 </div>
-                                <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-white group-hover:border-white transition-all">
+                                <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-white group-hover:border-white transition-all">
                                     <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-black group-hover:translate-x-1 transition-all" />
                                 </div>
                             </motion.button>
@@ -344,7 +344,7 @@ export default function DepartmentWelcome({ deptId, onAction }) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 1.5 }}
-                        className="mt-16 flex items-center gap-8"
+                        className="mt-12 flex items-center gap-6"
                     >
                         <div className="flex -space-x-4">
                             {[1, 2, 3, 4].map(i => (
@@ -352,7 +352,7 @@ export default function DepartmentWelcome({ deptId, onAction }) {
                                     key={i} 
                                     whileHover={{ y: -5, scale: 1.1 }}
                                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + data.color + 10}`} 
-                                    className="w-12 h-12 rounded-full border-4 border-[#050511] bg-gray-900 shadow-2xl cursor-pointer" 
+                                    className="w-10 h-10 rounded-full border-4 border-[#050511] bg-gray-900 shadow-2xl cursor-pointer" 
                                     alt="team" 
                                 />
                             ))}

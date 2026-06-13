@@ -12,11 +12,10 @@ import {
     Film, ImageIcon, Megaphone, Target, DollarSign, Settings, PieChart,
     Stethoscope, Utensils, Home, GraduationCap, HeartPulse,
     HardHat, Coins, Landmark, UtensilsCrossed, Cpu, Gavel, Factory, 
-    HeartHandshake, Store, Truck, Plane, MoreHorizontal, Mic, Sprout, ShoppingBag
+    HeartHandshake, Store, Truck, Plane, MoreHorizontal, Mic, Sprout, ShoppingBag, Croissant
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
-
 import { NICHE_DETAILS } from '@/lib/nicheDetails';
 
 export default function HQServicesPage() {
