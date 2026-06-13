@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { agencyService } from '@/services/agencyService';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy_key_for_builds');
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy_for_builds';
 
 export async function POST(req) {
     const rawBody = await req.text();
