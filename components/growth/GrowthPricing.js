@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
 import { toast } from 'sonner';
+import { NICHE_DETAILS } from '@/lib/nicheDetails';
 
 const getAdaptedPrice = (basePrice, planName, industry) => {
     const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -54,7 +55,47 @@ export default function GrowthPricing() {
                     .select('*')
                     .eq('category', 'plan')
                     .order('price', { ascending: true });
-                setServices(data || []);
+                
+                // --- CUSTOMIZE SERVICES BASED ON CLIENT NICHE ---
+                const rawNiche = user?.industry || user?.marketing_type || 'General';
+                const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                const nicheStr = cleanNiche(rawNiche);
+                
+                let resolvedNiche = 'general';
+                if (nicheStr.includes('hospital') || nicheStr.includes('clinica')) {
+                    resolvedNiche = 'hospital';
+                } else if (nicheStr.includes('medico') || nicheStr.includes('health') || nicheStr.includes('doctor') || nicheStr.includes('salud') || nicheStr.includes('urologia')) {
+                    resolvedNiche = 'medical';
+                } else if (nicheStr.includes('horeca') || nicheStr.includes('restaurant') || nicheStr.includes('gastronom') || nicheStr.includes('comida') || nicheStr.includes('restaurante') || nicheStr.includes('hospitality')) {
+                    resolvedNiche = 'hospitality';
+                } else if (nicheStr.includes('realestate') || nicheStr.includes('inmobiliaria') || nicheStr.includes('bienes raices') || nicheStr.includes('realtor')) {
+                    resolvedNiche = 'realestate';
+                } else if (nicheStr.includes('agropecuario') || nicheStr.includes('agro') || nicheStr.includes('campo') || nicheStr.includes('actividad agropecuaria')) {
+                    resolvedNiche = 'agropecuario';
+                } else if (nicheStr.includes('juridico') || nicheStr.includes('abogado') || nicheStr.includes('derecho') || nicheStr.includes('legal')) {
+                    resolvedNiche = 'juridico';
+                } else if (nicheStr.includes('educacion') || nicheStr.includes('academia') || nicheStr.includes('cursos') || nicheStr.includes('educativo')) {
+                    resolvedNiche = 'educativo';
+                }
+
+                const mappedServices = (data || []).map(service => {
+                    const nichePlan = NICHE_DETAILS[resolvedNiche]?.plans[service.id];
+                    if (nichePlan) {
+                        return {
+                            ...service,
+                            name: nichePlan.name,
+                            narrative: nichePlan.narrative,
+                            price: nichePlan.price || service.price,
+                            originalPrice: nichePlan.originalPrice || null,
+                            features: nichePlan.features || service.features,
+                            enfoque: nichePlan.enfoque || service.enfoque,
+                            filmmaker: nichePlan.filmmaker || service.filmmaker
+                        };
+                    }
+                    return service;
+                });
+                
+                setServices(mappedServices);
             } catch (err) {
                 console.error("Error loading services:", err);
             } finally {
@@ -62,7 +103,7 @@ export default function GrowthPricing() {
             }
         };
         loadServices();
-    }, []);
+    }, [user]);
 
     return (
         <section className="relative py-20 bg-transparent space-y-16">
