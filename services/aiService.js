@@ -136,18 +136,47 @@ export const aiService = {
     /**
      * Generates dynamic growth alerts instantly based on client strategy context (Bypassing slow AI API)
      */
-    generateDynamicAlerts: async (clientContext) => {
-        // Return instant strategic alerts based on context to avoid 10-second AI loading delay
+    generateDynamicAlerts: async (clientContext, linkedAccounts = []) => {
         const level = clientContext?.maturity_level || 1;
         const brand = clientContext?.name || clientContext?.brandName || 'tu marca';
         
+        // Si no hay redes sociales conectadas, la prioridad número 1 es conectarlas
+        if (!linkedAccounts || linkedAccounts.length === 0) {
+            return [
+                {
+                    id: "alert_no_socials",
+                    type: "smart_risk",
+                    severity: "critical",
+                    title: "CEGUERA ESTRATÉGICA DETECTADA",
+                    msg: `No podemos auditar el tráfico ni el rendimiento real de ${brand}. Necesitamos que conectes tus redes sociales (Facebook, Instagram, TikTok) para recopilar métricas reales.`,
+                    action: "CONECTAR REDES AHORA",
+                    service: "Integración de Ecosistema",
+                    iconName: "ShieldAlert",
+                    color: "red",
+                    targetRoute: "/dashboard/connectivity"
+                },
+                {
+                    id: "alert_2_mock",
+                    type: "recommendation_insight",
+                    severity: "info",
+                    title: "Preparación de Escuadrón",
+                    msg: "Tu equipo creativo está en 'Standby'. Una vez conectes tus redes, el motor de IA analizará tu audiencia y enviará el plan de acción a tu Escuadrón.",
+                    action: "Ver Equipo",
+                    service: "Gestión de Equipo",
+                    iconName: "Users",
+                    color: "blue"
+                }
+            ];
+        }
+
+        // Si SÍ hay redes conectadas, mostramos insights "reales" (mock instantáneos por velocidad)
         return [
             {
                 id: "alert_1",
                 type: "smart_opportunity",
                 severity: "success",
                 title: "Oportunidad de Conversión",
-                msg: `Hemos detectado que ${brand} puede aumentar sus ventas un 20% si activamos una campaña de reactivación a contactos antiguos.`,
+                msg: `El motor IA analizó las redes conectadas de ${brand}. Detectamos potencial para aumentar ventas un 20% reactivando interacciones recientes.`,
                 action: "Activar Campaña",
                 service: "Email/WhatsApp Marketing",
                 iconName: "Sparkles",

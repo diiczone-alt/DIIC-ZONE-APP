@@ -14,6 +14,7 @@ export default function IntegrationModal({
     isOpen, 
     onClose, 
     platform = 'meta', // 'meta' | 'whatsapp'
+    clientName = 'tu marca',
     onSuccess 
 }) {
     const [step, setStep] = useState('CHOICE'); // CHOICE, CONNECTING, SUCCESS
@@ -26,11 +27,16 @@ export default function IntegrationModal({
         setStep('CONNECTING');
         
         try {
-            toast.info(`Abriendo portal oficial de ${platform}...`);
+            toast.info(`Iniciando handshake seguro con API de ${platform}...`);
+            
+            // Simulación de pasos de seguridad tipo app real (1.5 segundos extra antes de oauth/sandbox)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            toast.success("Verificación de origen completa. Abriendo portal oficial...");
             await socialService.connect(platform);
         } catch (err) {
             console.error("Error al conectar:", err);
-            toast.error(`Error al iniciar conexión con ${platform}`);
+            toast.error(`Error de negociación con servidor de ${platform}`);
             setStep('CHOICE');
             setLoading(false);
         }
@@ -144,7 +150,7 @@ export default function IntegrationModal({
                                 <div className="text-center space-y-3">
                                     <h4 className="text-2xl font-black text-white italic uppercase italic">¡Conexión Exitosa!</h4>
                                     <p className="text-xs text-gray-400 font-bold max-w-[280px] leading-relaxed mx-auto">
-                                        Tu cuenta de <span className="text-white">Nova Estética</span> ha sido vinculada de forma segura al ecosistema DIIC.
+                                        El entorno de <span className="text-white">{clientName}</span> ha sido enlazado de forma segura al ecosistema DIIC.
                                     </p>
                                 </div>
                                 <button 

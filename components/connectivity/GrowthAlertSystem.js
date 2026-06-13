@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
 import { aiService } from '@/services/aiService';
+import { socialService } from '@/services/socialService';
 import { toast } from 'sonner';
 
 const ICON_MAP = {
@@ -42,8 +43,16 @@ export default function GrowthAlertSystem() {
                     context = { ...client.metadata.strategic, maturity_level: client.metadata.maturity_level };
                 }
 
-                // 2. Ask AI to generate alerts
-                const aiAlerts = await aiService.generateDynamicAlerts(context);
+                // 1.5 Get linked social accounts to provide real data validation
+                let linkedAccounts = [];
+                try {
+                    linkedAccounts = await socialService.getLinkedAccounts();
+                } catch (e) {
+                    console.log("[GrowthAlert] Could not fetch social accounts:", e);
+                }
+
+                // 2. Ask AI to generate alerts (passing linked accounts status)
+                const aiAlerts = await aiService.generateDynamicAlerts(context, linkedAccounts);
                 setAlerts(aiAlerts);
             } catch (error) {
                 console.error("Failed to fetch growth alerts", error);
@@ -61,21 +70,20 @@ export default function GrowthAlertSystem() {
     };
 
     const handleAction = (alert) => {
+        if (alert.targetRoute) {
+            router.push(alert.targetRoute);
+            return;
+        }
+
         if (alert.targetTab) {
             router.push(`?tab=${alert.targetTab}`);
             toast.success(`Navegando a ${alert.targetTab.toUpperCase()}`);
             return;
         }
         
-        // Fallback or specialized actions
-        if (alert.service?.toLowerCase().includes('workshop')) {
-            router.push('?tab=identity');
-            toast.info("Iniciando Workshop de Identidad");
-        } else if (alert.service?.toLowerCase().includes('catálogo')) {
-            router.push('?tab=catalog');
-        } else {
-            toast.info(`Ejecutando: ${alert.action}`);
-        }
+        // Conectar la acción al equipo (Estratega / Community Manager)
+        toast.success(`Solicitud de "${alert.action}" enviada a tu Escuadrón. Tu Estratega te contactará pronto.`);
+        router.push('/dashboard/connect');
     };
 
     if (isLoading) {
@@ -115,55 +123,76 @@ export default function GrowthAlertSystem() {
 
             <div className="grid grid-cols-1 gap-4">
                 <AnimatePresence>
-                    {alerts.map((alert) => {
-                        const IconComponent = ICON_MAP[alert.iconName] || AlertTriangle;
+                    {alerts.map((alert, i) => {
+                        const Icon = ICON_MAP[alert.iconName] || AlertTriangle;
+                        const hasSocialsAlert = alerts.some(a => a.id === 'alert_no_socials');
+                        const isBlocked = hasSocialsAlert && alert.id !== 'alert_no_socials';
+
+                        // Colores
+                        const colors = {
+                            red: "bg-red-500/5 border-red-500/20 text-red-400",
+                            yellow: "bg-yellow-500/5 border-yellow-500/20 text-yellow-400",
+                            blue: "bg-blue-500/5 border-blue-500/20 text-blue-400",
+                            emerald: "bg-emerald-500/5 border-emerald-500/20 text-emerald-400",
+                            indigo: "bg-indigo-500/5 border-indigo-500/20 text-indigo-400"
+                        };
+
+                        const selectedColor = colors[alert.color] || colors.indigo;
+                        
+                        // Action Button Styling
+                        let btnStyle = `px-8 py-4 bg-${alert.color}-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-${alert.color}-500/20`;
+                        
+                        // Si es la alerta de conectar redes, hacerla súper llamativa
+                        if (alert.id === 'alert_no_socials') {
+                            btnStyle = `px-8 py-5 bg-red-600 hover:bg-red-500 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(220,38,38,0.4)] border border-red-400 animate-pulse`;
+                        }
+
                         return (
                             <div key={alert.id} className="space-y-4">
                                 <motion.div
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
+                                    layout
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
-                                    className={`relative overflow-hidden bg-[#0A0A12] border border-${alert.color}-500/20 rounded-[32px] p-8 group hover:border-${alert.color}-500/40 transition-all`}
+                                    transition={{ delay: i * 0.1 }}
+                                    className={`relative overflow-hidden border rounded-[2.5rem] p-8 md:p-10 transition-all ${
+                                        isBlocked ? 'opacity-40 blur-[4px] grayscale-[50%] pointer-events-none select-none relative z-0' : 'hover:border-white/20 z-10'
+                                    }`}
                                 >
-                                    <div className={`absolute top-0 right-0 w-32 h-32 bg-${alert.color}-500/5 blur-3xl rounded-full -mr-16 -mt-16`} />
-
-                                    <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
-                                        <div className={`p-5 rounded-2xl bg-${alert.color}-500/10 text-${alert.color}-400 border border-${alert.color}-500/20`}>
-                                            <IconComponent className="w-8 h-8 font-black" />
+                                    <div className={`absolute -top-20 -right-20 w-60 h-60 blur-[100px] rounded-full opacity-10 pointer-events-none ${selectedColor.split(' ')[0]}`} />
+                                    
+                                    <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start md:items-center">
+                                        <div className={`w-20 h-20 shrink-0 rounded-[2rem] border flex items-center justify-center shadow-2xl ${selectedColor}`}>
+                                            <Icon className="w-10 h-10" />
                                         </div>
 
-                                    <div className="flex-1 space-y-4 text-left">
-                                        <div className="flex items-center gap-3">
-                                            <h4 className="text-xl font-black text-white uppercase tracking-tight">{alert.title}</h4>
-                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase border border-${alert.color}-500/20 bg-${alert.color}-500/10 text-${alert.color}-400`}>
-                                                {alert.severity}
-                                            </span>
-                                        </div>
-                                        <p className="text-sm text-gray-400 font-medium leading-relaxed max-w-2xl">
-                                            {alert.msg}
-                                        </p>
-                                        <div className="flex flex-wrap items-center gap-6 pt-2">
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-1.5 h-1.5 rounded-full bg-${alert.color}-500 shadow-[0_0_10px_rgba(0,0,0,0.5)]`} />
-                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Activaría: <span className="text-white">{alert.service}</span></span>
+                                        <div className="flex-1 space-y-4 text-left">
+                                            <div className="flex items-center gap-3">
+                                                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">{alert.title}</h3>
+                                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${selectedColor}`}>
+                                                    {alert.severity}
+                                                </span>
                                             </div>
-                                            <button
-                                                onClick={() => removeAlert(alert.id)}
-                                                className="ml-auto text-gray-600 hover:text-white transition-colors p-2"
+                                            <p className="text-gray-400 font-medium text-sm leading-relaxed max-w-3xl">
+                                                {alert.msg}
+                                            </p>
+                                            <div className="flex items-center gap-2 pt-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                                    Activaría: <span className="text-white">{alert.service}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-4 items-end justify-center shrink-0 w-full md:w-auto mt-6 md:mt-0">
+                                            <button 
+                                                onClick={() => handleAction(alert)}
+                                                className={btnStyle}
                                             >
-                                                <Ban className="w-4 h-4" />
+                                                <span className="flex items-center gap-3">
+                                                    {alert.action} <ArrowUpRight className="w-4 h-4" />
+                                                </span>
                                             </button>
                                         </div>
-                                    </div>
-
-                                    <div className="w-full md:w-auto self-stretch flex items-center">
-                                        <button 
-                                            onClick={() => handleAction(alert)}
-                                            className={`w-full md:w-auto px-10 py-5 bg-${alert.color}-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-${alert.color}-500/20 flex items-center justify-center gap-3 group`}
-                                        >
-                                            {alert.action} <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                                        </button>
-                                    </div>
                                 </div>
                             </motion.div>
 
@@ -221,10 +250,19 @@ export default function GrowthAlertSystem() {
                     </p>
                 </div>
                 <div className="flex gap-4">
-                    <button className="px-8 py-4 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all">
+                    <button 
+                        onClick={() => router.push('?tab=progress')}
+                        className="px-8 py-4 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all"
+                    >
                         Ver Roadmap
                     </button>
-                    <button className="px-8 py-4 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-500/20 border border-white/10">
+                    <button 
+                        onClick={() => {
+                            toast.success("Alerta enviada a tu equipo creativo. Se comunicarán para corregirlo.");
+                            router.push('/dashboard/connect');
+                        }}
+                        className="px-8 py-4 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-500/20 border border-white/10"
+                    >
                         Corregir Ahora
                     </button>
                 </div>

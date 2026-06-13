@@ -97,8 +97,8 @@ export default function AIRecommendationHUD({ data = {} }) {
                 <div className="flex flex-col md:flex-row gap-4">
                     <button 
                         onClick={() => {
-                            toast.success("Enviando solicitud de ajustes al Strategist...");
-                            router.push('?tab=identity');
+                            toast.success("Enviando solicitud de ajustes a tu Strategist y Community Manager...");
+                            router.push('/dashboard/connect');
                         }}
                         className="flex-1 py-5 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl hover:bg-white/10 transition-all"
                     >
@@ -106,8 +106,8 @@ export default function AIRecommendationHUD({ data = {} }) {
                     </button>
                     <button 
                         onClick={() => {
-                            toast.success("Estrategia aplicada al calendario de producción.");
-                            router.push('?tab=catalog');
+                            toast.success("Estrategia sincronizada con el equipo creativo para su ejecución.");
+                            router.push('/dashboard/connect');
                         }}
                         className="flex-1 py-5 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3"
                     >

@@ -914,7 +914,10 @@ export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
                         </div>
                         {activeLevel === level && (
                             <button 
-                                onClick={() => router.push('?tab=catalog')}
+                                onClick={() => {
+                                    toast.success("Contactando a tu Estratega para planificar la siguiente meta...");
+                                    router.push('/dashboard/connect');
+                                }}
                                 className={`w-full py-4 bg-${currentLevelData.color}-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-${currentLevelData.color}-500/20 flex items-center justify-center gap-2 group border border-white/10`}
                             >
                                 Lograr Siguiente Meta <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -963,8 +966,8 @@ export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
                         </div>
                         <button 
                             onClick={() => {
-                                router.push('?tab=identity');
-                                toast.info("Consultando al Coach IA...");
+                                toast.success("Notificando al Escuadrón sobre tu interés en la siguiente meta...");
+                                router.push('/dashboard/connect');
                             }}
                             className="w-full py-4 bg-indigo-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2 group border border-white/10"
                         >

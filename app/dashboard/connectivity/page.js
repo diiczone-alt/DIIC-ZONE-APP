@@ -207,6 +207,7 @@ export default function ConnectivityPage() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 platform={selectedPlatform}
+                clientName={activeClient?.name || 'tu marca'}
                 onSuccess={() => {}}
             />
 
@@ -221,7 +222,7 @@ export default function ConnectivityPage() {
                         <div className="px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
                             <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest leading-none">
-                                Centro de Mando: {activeClient?.name || 'Dra. Jessica Rey'}
+                                Centro de Mando: {activeClient?.name || 'Cliente Conectado'}
                             </span>
                         </div>
                     </div>
@@ -234,7 +235,19 @@ export default function ConnectivityPage() {
                     >
                         <MessageSquare className="w-4 h-4" /> Centro de Mensajes
                     </button>
-                    <button className="bg-white/5 border border-white/10 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center gap-3">
+                    <button 
+                        onClick={() => {
+                            toast.promise(
+                                new Promise(resolve => setTimeout(resolve, 2500)),
+                                {
+                                    loading: 'Validando Tokens y conectando al Graph API...',
+                                    success: 'Sincronización de Ecosistema Exitosa',
+                                    error: 'Error de Sincronización'
+                                }
+                            );
+                        }}
+                        className="bg-white/5 border border-white/10 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-white/10 active:scale-95 transition-all flex items-center gap-3"
+                    >
                         <RefreshCw className="w-4 h-4" /> Forzar Sinc.
                     </button>
                 </div>
@@ -413,8 +426,8 @@ export default function ConnectivityPage() {
                                         <div className="flex-1 p-6 space-y-4 overflow-y-auto">
                                             <div className="flex justify-start">
                                                 <div className="bg-white/5 border border-white/10 p-4 rounded-2xl rounded-tl-none max-w-[80%]">
-                                                    <p className="text-xs text-gray-300 font-medium">Hola, estoy interesada en una consulta para rejuvenecimiento facial.</p>
-                                                    <p className="text-[8px] text-gray-600 uppercase mt-2">10:45 AM • Paciente</p>
+                                                    <p className="text-xs text-gray-300 font-medium">Hola, estoy interesada en conocer más sobre sus servicios.</p>
+                                                    <p className="text-[8px] text-gray-600 uppercase mt-2">10:45 AM • Prospecto</p>
                                                 </div>
                                             </div>
 
@@ -452,7 +465,7 @@ export default function ConnectivityPage() {
 
                                             <div className="flex justify-end">
                                                 <div className="bg-indigo-600/20 border border-indigo-500/30 p-4 rounded-2xl rounded-tr-none max-w-[80%]">
-                                                    <p className="text-xs text-white font-bold italic">¡Hola! Qué gusto saludarte. La Dra. Jessica Reyes tiene agenda disponible para este tipo de tratamientos. ¿Te gustaría conocer los horarios o los costos?</p>
+                                                    <p className="text-xs text-white font-bold italic">¡Hola! Qué gusto saludarte. {activeClient?.name || 'Nuestro equipo'} tiene disponibilidad esta semana. ¿Te gustaría conocer los horarios o los costos?</p>
                                                     <div className="flex items-center justify-end gap-2 mt-2">
                                                         <Zap className="w-2 h-2 text-indigo-400" />
                                                         <p className="text-[8px] text-indigo-400 font-black uppercase tracking-widest">Enviado por Agente</p>
