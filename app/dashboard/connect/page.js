@@ -1,7 +1,5 @@
-'use client';
-
-import ConnectivityDashboard from '@/components/growth/ConnectivityDashboard';
+import { redirect } from 'next/navigation';
 
 export default function ConnectPage() {
-    return <ConnectivityDashboard />;
+    redirect('/dashboard/connectivity');
 }

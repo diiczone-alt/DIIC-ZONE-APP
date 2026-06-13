@@ -34,7 +34,7 @@ const PULSE_DATA = [
         icon: Share2,
         color: 'text-purple-400',
         bg: 'bg-purple-500/10',
-        link: '/dashboard/connect'
+        link: '/dashboard/connectivity'
     }
 ];
 

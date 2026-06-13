@@ -348,6 +348,35 @@ export default function ConnectivityPage() {
                         ))}
                     </div>
                 </div>
+
+                {/* Automations Ecosystem (Real Data State) */}
+                <div className="space-y-8">
+                    <h2 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.5em] flex items-center gap-4 ml-4">
+                        <div className="w-10 h-[1px] bg-emerald-500/20" /> Ecosistema de Automatizaciones (Zapier / Make)
+                    </h2>
+                    
+                    <div className="p-10 rounded-[2.5rem] bg-white/[0.02] border border-white/5 border-dashed relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay" />
+                        
+                        <div className="flex flex-col items-center justify-center text-center space-y-6 relative z-10 py-10">
+                            <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center relative">
+                                <Zap className="w-8 h-8 text-emerald-500/50" />
+                                <div className="absolute top-0 right-0 w-3 h-3 rounded-full bg-red-500 animate-pulse border-2 border-[#050510]" />
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">0 Automatizaciones Activas</h3>
+                                <p className="text-xs font-bold text-gray-500 tracking-widest max-w-md mx-auto leading-relaxed">
+                                    No hemos detectado Webhooks activos en tu base de datos de Supabase. Conecta Zapier o Make para inyectar flujos de trabajo reales.
+                                </p>
+                            </div>
+
+                            <button className="text-[10px] font-black text-emerald-400 hover:text-white px-8 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/10 flex items-center gap-3">
+                                <LinkIcon className="w-4 h-4" /> Generar Webhook URL
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* WhatsApp / Omni-Channel Hub Overlay */}

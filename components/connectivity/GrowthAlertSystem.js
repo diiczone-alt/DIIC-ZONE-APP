@@ -83,7 +83,7 @@ export default function GrowthAlertSystem() {
         
         // Conectar la acción al equipo (Estratega / Community Manager)
         toast.success(`Solicitud de "${alert.action}" enviada a tu Escuadrón. Tu Estratega te contactará pronto.`);
-        router.push('/dashboard/connect');
+        router.push('/dashboard/connectivity');
     };
 
     if (isLoading) {
@@ -259,7 +259,7 @@ export default function GrowthAlertSystem() {
                     <button 
                         onClick={() => {
                             toast.success("Alerta enviada a tu equipo creativo. Se comunicarán para corregirlo.");
-                            router.push('/dashboard/connect');
+                            router.push('/dashboard/connectivity');
                         }}
                         className="px-8 py-4 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-500/20 border border-white/10"
                     >

@@ -916,7 +916,7 @@ export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
                             <button 
                                 onClick={() => {
                                     toast.success("Contactando a tu Estratega para planificar la siguiente meta...");
-                                    router.push('/dashboard/connect');
+                                    router.push('/dashboard/connectivity');
                                 }}
                                 className={`w-full py-4 bg-${currentLevelData.color}-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-${currentLevelData.color}-500/20 flex items-center justify-center gap-2 group border border-white/10`}
                             >
@@ -967,7 +967,7 @@ export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
                         <button 
                             onClick={() => {
                                 toast.success("Notificando al Escuadrón sobre tu interés en la siguiente meta...");
-                                router.push('/dashboard/connect');
+                                router.push('/dashboard/connectivity');
                             }}
                             className="w-full py-4 bg-indigo-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2 group border border-white/10"
                         >
