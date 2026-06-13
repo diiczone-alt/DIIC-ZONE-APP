@@ -397,10 +397,6 @@ function CheckoutModal({ service, user, onClose }) {
     const [tab, setTab] = useState('stripe'); // 'stripe', 'whatsapp'
     const [showInfo, setShowInfo] = useState(false);
     const [isPaying, setIsPaying] = useState(false);
-    const [payStep, setPayStep] = useState(0); // 0 = form, 1 = simulated processing, 2 = success / receipt
-    const [cardData, setCardData] = useState({ name: '', number: '', expiry: '', cvv: '' });
-    const [txnId, setTxnId] = useState('');
-    const [payLog, setPayLog] = useState('');
 
     const formattedPlan = service.name.replace(/PLAN /gi, '').replace(/Nivel /gi, '').trim();
     const cleanPlan = formattedPlan === 'Basic' ? 'Presencia' : formattedPlan === 'Estrategia' ? 'Crecimiento' : formattedPlan === 'Premium' ? 'Autoridad' : formattedPlan;
@@ -408,100 +404,38 @@ function CheckoutModal({ service, user, onClose }) {
     const licenseFee = 100; // standard app license fee
     const totalToday = Number(finalPrice) + licenseFee;
 
-    const handleFieldChange = (e) => {
-        const { name, value } = e.target;
-        setCardData(prev => ({ ...prev, [name]: value }));
-    };
-
     const startStripeCheckout = async () => {
         if (!user) {
             toast.error("Debes iniciar sesión para realizar el pago en línea.");
             return;
         }
 
-        if (!cardData.name || !cardData.number || !cardData.expiry || !cardData.cvv) {
-            toast.error("Por favor completa todos los campos de la tarjeta.");
-            return;
-        }
-
         setIsPaying(true);
-        setPayStep(1);
-        const transactionCode = `TXN-ST-${Math.floor(100000 + Math.random() * 900000)}`;
-        setTxnId(transactionCode);
-
-        // Simulation logs
-        const logStages = [
-            { text: "🛰️ Conectando de forma segura con Stripe Gateway API...", delay: 0 },
-            { text: "🔑 Validando llaves de autenticación y token 3D-Secure...", delay: 1200 },
-            { text: `💳 Procesando cargo recurrente de $${totalToday}.00 USD...`, delay: 2400 },
-            { text: "⚡ Stripe: Cargo Autorizado de forma exitosa.", delay: 3600 },
-            { text: "📡 Stripe Webhooks: Enviando evento 'checkout.session.completed' firmado a /api/webhooks/stripe...", delay: 4800 },
-            { text: "🛡️ Servidor: Validando firma del webhook y metadatos de usuario...", delay: 6000 },
-            { text: `💾 Base de Datos: Sincronizando tabla 'clients' y 'profiles' para ID: ${user.client_id}...`, delay: 7200 },
-            { text: "🎉 Sincronización exitosa. ¡Activando plan de trabajo de inmediato!", delay: 8400 }
-        ];
-
-        for (const stage of logStages) {
-            await new Promise(res => {
-                setTimeout(() => {
-                    setPayLog(prev => prev + (prev ? '\n' : '') + stage.text);
-                    res();
-                }, stage.delay - (stage.delay > 0 ? logStages[logStages.indexOf(stage)-1].delay : 0));
-            });
-        }
-
         try {
-            // Write updates directly to Supabase tables (Mirror Sync)
-            // 1. Update clients table
-            if (user.client_id) {
-                const { error: clientErr } = await supabase
-                    .from('clients')
-                    .update({
-                        plan: cleanPlan,
-                        price: String(finalPrice),
-                        status: 'active',
-                        sync_active: true
-                    })
-                    .eq('id', user.client_id);
-                if (clientErr) console.warn("Checkout clients update error:", clientErr.message);
+            const res = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    clientId: user.client_id,
+                    userId: user.id,
+                    planName: cleanPlan,
+                    finalPrice: finalPrice,
+                }),
+            });
 
-                // 2. Update profiles table
-                const { error: profileErr } = await supabase
-                    .from('profiles')
-                    .update({
-                        plan: cleanPlan,
-                        price: String(finalPrice)
-                    })
-                    .eq('id', user.id);
-                if (profileErr) console.warn("Checkout profiles update error:", profileErr.message);
-
-                // 3. Mirror logic sync helper
-                await agencyService.syncClientProfile(user.client_id, {
-                    plan: cleanPlan,
-                    price: String(finalPrice)
-                });
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
             } else {
-                console.warn("User has no client_id, updates writing skipped.");
+                throw new Error(data.error || 'Error al crear la sesión de pago');
             }
-
-            toast.success("Pago verificado y cuenta activada de inmediato.");
-            setPayStep(2);
         } catch (error) {
-            console.error("Database update error:", error);
-            toast.error("Error al sincronizar activación de cuenta, por favor contactar soporte.");
+            console.error('Checkout error:', error);
+            toast.error(error.message || 'Error al iniciar la pasarela de Stripe. Intenta de nuevo.');
             setIsPaying(false);
-            setPayStep(0);
-            setPayLog('');
         }
-    };
-
-    const handlePrint = () => {
-        window.print();
-    };
-
-    const handleDone = () => {
-        onClose();
-        window.location.reload();
     };
 
     const handleWhatsAppConnect = () => {
@@ -514,7 +448,7 @@ function CheckoutModal({ service, user, onClose }) {
             <div className="relative w-full max-w-2xl bg-[#080812] border border-white/10 rounded-[32px] p-6 md:p-8 shadow-[0_0_80px_rgba(99,102,241,0.15)] my-auto transition-all">
                 
                 {/* Close Button */}
-                {payStep !== 1 && (
+                {!isPaying && (
                     <button 
                         onClick={onClose} 
                         className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 transition-colors border border-white/5"
@@ -523,248 +457,139 @@ function CheckoutModal({ service, user, onClose }) {
                     </button>
                 )}
 
-                {payStep === 0 && (
-                    <div className="space-y-6">
-                        <div>
-                            <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase tracking-[0.2em] inline-block mb-3">
-                                Pasarela de Activación DIIC
-                            </span>
-                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tight flex items-center gap-2">
-                                <Zap className="w-6 h-6 text-amber-500 fill-amber-500" />
-                                Activar Plan: {cleanPlan}
-                            </h3>
-                            <p className="text-xs text-gray-400">Elige tu método de pago para activar tu espacio de trabajo al instante.</p>
-                        </div>
+                <div className="space-y-6">
+                    <div>
+                        <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase tracking-[0.2em] inline-block mb-3">
+                            Pasarela de Activación DIIC
+                        </span>
+                        <h3 className="text-2xl font-black text-white uppercase italic tracking-tight flex items-center gap-2">
+                            <Zap className="w-6 h-6 text-amber-500 fill-amber-500" />
+                            Activar Plan: {cleanPlan}
+                        </h3>
+                        <p className="text-xs text-gray-400">Elige tu método de pago para activar tu espacio de trabajo al instante.</p>
+                    </div>
 
-                        {/* Order Details Summary */}
-                        <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl space-y-3">
-                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block border-b border-white/5 pb-2">Resumen de la Suscripción</span>
-                            <div className="flex justify-between text-xs font-bold text-gray-300">
-                                <span>Plan de Expansión Mensual ({cleanPlan})</span>
-                                <span>${finalPrice}.00 USD</span>
-                            </div>
-                            <div className="flex justify-between text-xs font-bold text-gray-300">
-                                <span>Licencia de la Plataforma (SaaS)</span>
-                                <span>${licenseFee}.00 USD</span>
-                            </div>
-                            <div className="flex justify-between text-xs font-bold text-gray-300">
-                                <span>Cuota Setup de Inicio</span>
-                                <span className="text-emerald-400">Gratis hoy</span>
-                            </div>
-                            <div className="flex justify-between items-center border-t border-white/5 pt-3 mt-2">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-white">Importe Total Mensual</span>
-                                <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">${totalToday}.00 USD</span>
-                            </div>
+                    {/* Order Details Summary */}
+                    <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl space-y-3">
+                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block border-b border-white/5 pb-2">Resumen de la Suscripción</span>
+                        <div className="flex justify-between text-xs font-bold text-gray-300">
+                            <span>Plan de Expansión Mensual ({cleanPlan})</span>
+                            <span>${finalPrice}.00 USD</span>
                         </div>
-
-                        {/* Tabs Selector */}
-                        <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5">
-                            <button 
-                                onClick={() => setTab('stripe')}
-                                className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${tab === 'stripe' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
-                            >
-                                <CreditCard className="w-3.5 h-3.5" />
-                                Pago en Línea (Stripe)
-                            </button>
-                            <button 
-                                onClick={() => setTab('whatsapp')}
-                                className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${tab === 'whatsapp' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
-                            >
-                                <MessageCircle className="w-3.5 h-3.5" />
-                                Coordinar WhatsApp
-                            </button>
+                        <div className="flex justify-between text-xs font-bold text-gray-300">
+                            <span>Licencia de la Plataforma (SaaS)</span>
+                            <span>${licenseFee}.00 USD</span>
                         </div>
+                        <div className="flex justify-between text-xs font-bold text-gray-300">
+                            <span>Cuota Setup de Inicio</span>
+                            <span className="text-emerald-400">Gratis hoy</span>
+                        </div>
+                        <div className="flex justify-between items-center border-t border-white/5 pt-3 mt-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white">Importe Total Mensual</span>
+                            <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">${totalToday}.00 USD</span>
+                        </div>
+                    </div>
 
-                        {tab === 'stripe' ? (
-                            <div className="space-y-4">
-                                <div className="space-y-3">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Titular de la tarjeta</label>
-                                            <input 
-                                                type="text" 
-                                                name="name"
-                                                value={cardData.name}
-                                                onChange={handleFieldChange}
-                                                placeholder="Ej. Oscar Cujilema"
-                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder:text-gray-700 focus:outline-none focus:border-indigo-500/50"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Número de Tarjeta</label>
-                                            <input 
-                                                type="text" 
-                                                name="number"
-                                                value={cardData.number}
-                                                onChange={handleFieldChange}
-                                                placeholder="4000 1234 5678 9010"
-                                                maxLength={19}
-                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder:text-gray-700 focus:outline-none focus:border-indigo-500/50"
-                                            />
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Fecha Expiración</label>
-                                            <input 
-                                                type="text" 
-                                                name="expiry"
-                                                value={cardData.expiry}
-                                                onChange={handleFieldChange}
-                                                placeholder="MM/AA"
-                                                maxLength={5}
-                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder:text-gray-700 focus:outline-none focus:border-indigo-500/50"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">CVC / CVV</label>
-                                            <input 
-                                                type="password" 
-                                                name="cvv"
-                                                value={cardData.cvv}
-                                                onChange={handleFieldChange}
-                                                placeholder="***"
-                                                maxLength={4}
-                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder:text-gray-700 focus:outline-none focus:border-indigo-500/50"
-                                            />
-                                        </div>
-                                    </div>
+                    {/* Tabs Selector */}
+                    <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/5">
+                        <button 
+                            disabled={isPaying}
+                            onClick={() => setTab('stripe')}
+                            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${tab === 'stripe' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'} disabled:opacity-50`}
+                        >
+                            <CreditCard className="w-3.5 h-3.5" />
+                            Pago en Línea (Stripe)
+                        </button>
+                        <button 
+                            disabled={isPaying}
+                            onClick={() => setTab('whatsapp')}
+                            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${tab === 'whatsapp' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'} disabled:opacity-50`}
+                        >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            Coordinar WhatsApp
+                        </button>
+                    </div>
+
+                    {tab === 'stripe' ? (
+                        <div className="space-y-4">
+                            <div className="p-5 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 text-center space-y-3">
+                                <ShieldCheck className="w-8 h-8 text-indigo-400 mx-auto" />
+                                <div className="space-y-1">
+                                    <h4 className="text-xs font-black text-white uppercase tracking-widest">Pasarela Segura de Stripe</h4>
+                                    <p className="text-[10px] text-gray-400 leading-relaxed">
+                                        Serás redirigido a la pasarela cifrada de Stripe para ingresar tus datos bancarios de manera 100% protegida (Cumple estándar PCI-DSS).
+                                    </p>
                                 </div>
+                            </div>
 
-                                {/* How Webhook Verification Works */}
-                                <div className="border border-white/5 rounded-2xl bg-white/[0.01] overflow-hidden">
-                                    <button 
-                                        onClick={() => setShowInfo(!showInfo)}
-                                        className="w-full px-4 py-3 flex justify-between items-center text-xs font-bold text-gray-400 hover:text-white transition-colors"
-                                    >
-                                        <span className="flex items-center gap-2">
-                                            <ShieldCheck className="w-4 h-4 text-indigo-400" />
-                                            🛡️ ¿Cómo funciona la verificación de pago y activación?
-                                        </span>
-                                        {showInfo ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                    </button>
-                                    
-                                    <AnimatePresence>
-                                        {showInfo && (
-                                            <motion.div 
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: "auto", opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                className="px-4 pb-4 text-[10px] text-gray-500 space-y-2.5 border-t border-white/5 pt-3 leading-relaxed"
-                                            >
-                                                <p>
-                                                    1. **Procesamiento de Pago**: Stripe recibe y encripta tus datos bancarios de manera directa (cumpliendo estándares PCI-DSS).
-                                                </p>
-                                                <p>
-                                                    2. **Notificación Segura (Webhooks)**: Al confirmarse la transacción en Stripe, se envía un mensaje seguro asíncrono (Webhook) a nuestro backend.
-                                                </p>
-                                                <p>
-                                                    3. **Verificación en la App**: El servidor valida la firma del Webhook, mapea el cliente a la base de datos de Supabase y cambia su estado a **ACTIVO** al instante de forma automática.
-                                                </p>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-
+                            {/* How Webhook Verification Works */}
+                            <div className="border border-white/5 rounded-2xl bg-white/[0.01] overflow-hidden">
                                 <button 
-                                    onClick={startStripeCheckout}
-                                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 transition-all active:scale-98 shadow-lg shadow-indigo-600/20"
+                                    onClick={() => setShowInfo(!showInfo)}
+                                    className="w-full px-4 py-3 flex justify-between items-center text-xs font-bold text-gray-400 hover:text-white transition-colors"
                                 >
-                                    <Lock className="w-3.5 h-3.5 text-indigo-200" />
-                                    Proceder al Pago Seguro en Línea
+                                    <span className="flex items-center gap-2">
+                                        <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                                        🛡️ ¿Cómo funciona la verificación de pago y activación?
+                                    </span>
+                                    {showInfo ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                                 </button>
-                            </div>
-                        ) : (
-                            <div className="space-y-4 py-4 text-center">
-                                <p className="text-xs text-gray-400 leading-relaxed max-w-md mx-auto">
-                                    Si prefieres realizar el pago por medio de transferencia bancaria local o efectivo, puedes coordinar directamente con tu estratega asignada para activar tu cuenta de forma manual.
-                                </p>
-                                <button 
-                                    onClick={handleWhatsAppConnect}
-                                    className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl inline-flex items-center gap-2 transition-all active:scale-98"
-                                >
-                                    <MessageCircle className="w-4 h-4" />
-                                    Coordinar Transferencia por WhatsApp
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {payStep === 1 && (
-                    <div className="py-8 space-y-6 text-center">
-                        <div className="flex justify-center">
-                            <div className="relative w-16 h-16 flex items-center justify-center">
-                                <div className="absolute inset-0 border-t-2 border-indigo-500 rounded-full animate-spin" />
-                                <RefreshCw className="w-6 h-6 text-indigo-400 animate-pulse" />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <h4 className="text-lg font-black text-white uppercase italic tracking-tight">Verificando Pago</h4>
-                            <p className="text-xs text-gray-500">Por favor, no recargues ni cierres esta ventana.</p>
-                        </div>
-                        <div className="bg-black/60 border border-white/5 rounded-2xl p-5 text-left font-mono text-[9px] text-gray-400 h-40 overflow-y-auto custom-scrollbar leading-relaxed whitespace-pre-wrap">
-                            {payLog}
-                        </div>
-                    </div>
-                )}
-
-                {payStep === 2 && (
-                    <div className="space-y-6 text-center animate-in fade-in zoom-in-95 duration-500">
-                        <div className="flex justify-center">
-                            <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
-                                <CheckCircle2 className="w-10 h-10" />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <h4 className="text-2xl font-black text-white uppercase italic tracking-tight">¡Pago Procesado y Verificado!</h4>
-                            <p className="text-xs text-emerald-400 font-bold uppercase tracking-widest">Ecosistema Activo de Forma Instantánea</p>
-                        </div>
-
-                        {/* Printable Ticket Receipt */}
-                        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl text-left space-y-4 max-w-md mx-auto relative overflow-hidden font-mono text-[11px] text-gray-300">
-                            <div className="absolute top-0 right-0 p-2 bg-indigo-500/10 border-l border-b border-indigo-500/20 text-indigo-400 text-[8px] font-black tracking-widest uppercase">RECIBO</div>
-                            
-                            <div className="border-b border-dashed border-white/10 pb-3">
-                                <span className="font-bold text-white uppercase tracking-wider block mb-1">DIIC ZONE AGENCY</span>
-                                <span className="text-gray-500 text-[9px]">DIICZONE.COM · QUITO, ECUADOR</span>
+                                
+                                <AnimatePresence>
+                                    {showInfo && (
+                                        <motion.div 
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="px-4 pb-4 text-[10px] text-gray-500 space-y-2.5 border-t border-white/5 pt-3 leading-relaxed"
+                                        >
+                                            <p>
+                                                1. **Redirección Cifrada**: Stripe recibe y encripta tus datos bancarios directamente en sus servidores (cumpliendo con PCI-DSS).
+                                            </p>
+                                            <p>
+                                                2. **Notificación Inmediata (Webhooks)**: Al confirmarse el pago en Stripe, se envía un mensaje firmado digitalmente a nuestro backend.
+                                            </p>
+                                            <p>
+                                                3. **Activación de Cuenta**: El servidor valida la firma, actualiza tu perfil en Supabase como **ACTIVO** y sincroniza tu área de trabajo al instante de forma automática.
+                                            </p>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
-                            <div className="space-y-2">
-                                <div className="flex justify-between"><span>Transacción:</span><span className="text-white font-bold">{txnId}</span></div>
-                                <div className="flex justify-between"><span>Fecha:</span><span className="text-white">{new Date().toLocaleString('es-ES')}</span></div>
-                                <div className="flex justify-between"><span>Cliente:</span><span className="text-white">{user?.full_name || 'Socio Cliente'}</span></div>
-                                <div className="flex justify-between"><span>Email:</span><span className="text-white">{user?.email}</span></div>
-                                <div className="flex justify-between"><span>Plan Seleccionado:</span><span className="text-indigo-400 font-bold">{cleanPlan}</span></div>
-                                <div className="flex justify-between"><span>Soporte / CM:</span><span className="text-white">Asignado (Leslie)</span></div>
-                                <div className="flex justify-between border-t border-dashed border-white/10 pt-3 mt-1 text-xs">
-                                    <span className="font-bold text-white uppercase">Importe Total:</span>
-                                    <span className="text-emerald-400 font-black">${totalToday}.00 USD</span>
-                                </div>
-                                <div className="flex justify-between"><span>Estado del Pago:</span><span className="text-emerald-400 font-bold uppercase">APROBADO & VERIFICADO</span></div>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col md:flex-row gap-3 justify-center max-w-md mx-auto pt-4">
                             <button 
-                                onClick={handlePrint}
-                                className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 border border-white/10 transition-all active:scale-95"
+                                onClick={startStripeCheckout}
+                                disabled={isPaying}
+                                className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 transition-all active:scale-98 shadow-lg shadow-indigo-600/20 disabled:opacity-50"
                             >
-                                <Printer className="w-3.5 h-3.5" />
-                                Imprimir Comprobante
-                            </button>
-                            
-                            <button 
-                                onClick={handleDone}
-                                className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
-                            >
-                                Entrar a Mi Ecosistema
-                                <ArrowRight className="w-3.5 h-3.5" />
+                                {isPaying ? (
+                                    <>
+                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                        Redirigiendo a Stripe...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Lock className="w-3.5 h-3.5 text-indigo-200" />
+                                        Proceder al Pago Seguro en Línea
+                                    </>
+                                )}
                             </button>
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <div className="space-y-4 py-4 text-center">
+                            <p className="text-xs text-gray-400 leading-relaxed max-w-md mx-auto">
+                                Si prefieres realizar el pago por medio de transferencia bancaria local o efectivo, puedes coordinar directamente con tu estratega asignada para activar tu cuenta de forma manual.
+                            </p>
+                            <button 
+                                onClick={handleWhatsAppConnect}
+                                className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl inline-flex items-center gap-2 transition-all active:scale-98"
+                            >
+                                <MessageCircle className="w-4 h-4" />
+                                Coordinar Transferencia por WhatsApp
+                            </button>
+                        </div>
+                    )}
+                </div>
 
             </div>
         </div>

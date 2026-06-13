@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Zap, Gift, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import ClientLevelSystem from './ClientLevelSystem';
 import ClientRewards from './ClientRewards';
 import ClientAccountSettings from './ClientAccountSettings';
@@ -17,7 +18,12 @@ export default function ClientProfileHub() {
 
     useEffect(() => {
         setIsMounted(true);
-    }, []);
+        if (searchParams.get('success') === 'true') {
+            toast.success("¡Pago procesado y cuenta activada de inmediato!");
+        } else if (searchParams.get('cancelled') === 'true') {
+            toast.error("El pago fue cancelado. Si tienes problemas, contáctanos por WhatsApp.");
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         const tabParam = searchParams.get('tab');
