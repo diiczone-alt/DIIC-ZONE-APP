@@ -418,8 +418,20 @@ export default function HQFinancePage() {
                                                 {clients.map((c, i) => (
                                                     <tr key={i} className="group hover:bg-white/[0.02]">
                                                         <td className="py-6 font-black text-lg italic uppercase">{c.name}</td>
-                                                        <td className="py-6"><span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${c.price > 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>{c.price > 0 ? 'Contratado' : 'Sin Precio DB'}</span></td>
-                                                        <td className="py-6 text-right text-2xl font-black italic text-emerald-400">${Number(c.price).toLocaleString()}</td>
+                                                        <td className="py-6">
+                                                            <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+                                                                c.status === 'active' 
+                                                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                                                                    : c.status === 'trial'
+                                                                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                                                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                                            }`}>
+                                                                {c.status === 'active' ? 'Contratado' : c.status === 'trial' ? 'En Prueba' : 'Sin Pago'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-6 text-right text-2xl font-black italic text-emerald-400">
+                                                            ${c.status === 'active' ? Number(c.price).toLocaleString() : '0'}
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>

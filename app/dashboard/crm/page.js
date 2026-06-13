@@ -20,6 +20,8 @@ import BroadcastCenter from '@/components/crm/BroadcastCenter';
 import ProductivityView from '@/components/crm/ProductivityView';
 import { LayoutGrid, List, MessageSquare as InboxIcon, BarChart3, Settings2, megaphone } from 'lucide-react';
 import { toast } from 'sonner';
+import CRMGuard from '@/components/ui/CRMGuard';
+
 
 // Helper para terminología dinámica según el nicho
 const getCRMTerminology = (niche = '', role = '') => {
@@ -305,7 +307,8 @@ const handleCreateLead = async (e) => {
     );
 
     return (
-        <main className="min-h-screen bg-[#050510] text-white p-6 md:p-10 space-y-10">
+        <CRMGuard user={user}>
+            <main className="min-h-screen bg-[#050510] text-white p-6 md:p-10 space-y-10">
             {/* Header Section */}
             <div className="border-b border-white/5 pb-6 space-y-4">
                 {/* Top Row: Breadcrumbs & Client Status Selector */}
@@ -1036,5 +1039,6 @@ const handleCreateLead = async (e) => {
                 )}
             </AnimatePresence>
         </main>
+        </CRMGuard>
     );
 }

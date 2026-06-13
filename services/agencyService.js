@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase';
-import { MOCK_DATA } from '@/lib/mockData';
 import { toast } from 'sonner';
 
 const cleanNicheString = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -95,7 +94,7 @@ export const agencyService = {
                         name: p.full_name.trim() + (p.client_slug ? ` (${p.client_slug})` : ''),
                         city: p.location || 'Santo Domingo',
                         type: p.specialty || 'General',
-                        status: 'active',
+                        status: 'trial',
                         cm: 'Leslie', // default CM assignment
                         priority: 'Media',
                         plan: initialPlan,
@@ -698,7 +697,7 @@ export const agencyService = {
             };
 
             const localTasks = localStorage.getItem('diic_tasks');
-            const tasks = localTasks ? JSON.parse(localTasks) : MOCK_DATA.tasks;
+            const tasks = localTasks ? JSON.parse(localTasks) : [];
             const updatedTasks = [newTask, ...tasks];
             localStorage.setItem('diic_tasks', JSON.stringify(updatedTasks));
 
@@ -1024,7 +1023,7 @@ export const agencyService = {
                 }
 
                 let clientCost = 0;
-                let clientIncome = Number(client.price) || 0;
+                let clientIncome = client.status === 'active' ? (Number(client.price) || 0) : 0;
                 totalMRR += clientIncome;
 
                 let deliv = planDef ? planDef.deliverables : null;
@@ -1803,7 +1802,7 @@ export const agencyService = {
                     name: data.brand || data.name,
                     city: data.city,
                     type: data.businessType,
-                    status: 'active',
+                    status: 'trial',
                     whatsapp: data.whatsapp,
                 });
             }
@@ -1813,12 +1812,6 @@ export const agencyService = {
         }
     },
 
-    forceSyncMocks: () => {
-        console.log("🔥 Force Syncing MOCK_DATA is DISABLED for Clients");
-        localStorage.removeItem('diic_clients'); // Clear local clients to force refresh from Supabase
-        localStorage.setItem('diic_team', JSON.stringify(MOCK_DATA.team));
-        localStorage.setItem('diic_tasks', JSON.stringify(MOCK_DATA.tasks));
-    },
 
     getClientCount: async () => {
         try {
