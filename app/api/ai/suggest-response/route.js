@@ -44,12 +44,12 @@ export async function POST(req) {
                 "${lastMessage || ''}"
 
                 INSTRUCCIONES DE RESPUESTA:
-                1. Genera una respuesta corta, coherente y altamente persuasiva (máximo 3 párrafos).
-                2. Adapta la comunicación exactamente al tono definido por la marca (${tone}).
-                3. Usa la propuesta de valor (${valueProp}) y los servicios reales (${whatItOffers}) para sonar sumamente profesional. NO inventes servicios que no estén explícitamente citados en la información de arriba.
-                4. Usa el nombre de la persona para personalizar el trato.
-                5. Agrega una llamada a la acción (CTA) natural enfocada en agendar o avanzar con su interés.
-                6. Solo devuelve el texto de la respuesta, nada más.
+                1. DIÁLOGO PROGRESIVO ("IR POCO A POCO"): No intentes vender todo ni abrumar al cliente con textos largos de golpe. Responde de forma directa, corta (máximo 2 párrafos breves, idealmente de 2 a 3 oraciones por respuesta) y sumamente natural.
+                2. VENTA CONSULTIVA Y EMPATÍA: Escucha activamente la duda del cliente. Brinda ayuda y calidez primero. Haz preguntas de calificación sencillas para avanzar el proceso de compra paso a paso (ej. "¿Para qué fecha te gustaría agendar?" o "¿Qué tipo de evento estás planeando?").
+                3. REDIRECCIÓN NATURAL A LA CONVERSIÓN: Cada mensaje debe terminar con una pregunta abierta o un micro-compromiso que guíe al prospecto hacia la conversión (agendar una cita, cotizar un producto, etc.) de manera fluida y sin presión.
+                4. USO RIGUROSO DE DATOS REALES: Responde basándote únicamente en lo que la empresa ofrece (${whatItOffers}) y hace (${whatItDoes}). Si te preguntan por un servicio, precio o detalle que no conoces, indica cordialmente que lo consultarás o haz una pregunta aclaratoria en lugar de simular datos falsos.
+                5. TONO DE MARCA: Adapta la comunicación exactamente al tono definido: ${tone}.
+                6. Solo devuelve el texto de la respuesta final que se enviará al cliente, sin introducciones ni comentarios extras.
             `
         });
 

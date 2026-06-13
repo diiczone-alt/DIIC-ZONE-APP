@@ -9,7 +9,7 @@ import {
 import MedicalCatalog from './MedicalCatalog';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Conversation generator based on client niche
+// Conversation generator based on client niche (Initial demo conversations)
 const generateConversations = (activeClient) => {
     const brandName = activeClient?.onboarding_data?.strategic?.brandName || activeClient?.name || 'Neyser';
     const industry = activeClient?.industry || activeClient?.onboarding_data?.strategic?.industry || 'General';
@@ -19,6 +19,9 @@ const generateConversations = (activeClient) => {
     const isMedical = ['doctor', 'medico', 'médico', 'medical', 'salud', 'clinica', 'clínica', 'urologia', 'urología'].some(k => industryLower.includes(k));
     const isAgro = ['agro', 'campo', 'agropecuario', 'agropecuaria', 'vete', 'veterinaria'].some(k => industryLower.includes(k));
     const isFood = ['panaderia', 'panadería', 'pasteleria', 'pastelería', 'bakery', 'comida', 'restaurante', 'alimentos'].some(k => industryLower.includes(k) || nameLower.includes(k)) || activeClient?.id === 'C-NEYSER-964';
+    const isGym = ['gym', 'fitness', 'gimnasio', 'deporte', 'entrenador'].some(k => industryLower.includes(k));
+    const isEducation = ['curso', 'formacion', 'formación', 'educacion', 'educación', 'mentoria', 'mentoría'].some(k => industryLower.includes(k));
+    const isIndustrial = ['industrial', 'fabrica', 'fábrica', 'manufactura'].some(k => industryLower.includes(k));
 
     if (isMedical) {
         return [
@@ -152,6 +155,132 @@ const generateConversations = (activeClient) => {
                 ]
             }
         ];
+    } else if (isGym) {
+        return [
+            {
+                id: 'c1',
+                name: 'Mateo Silva',
+                avatar: 'https://i.pravatar.cc/150?u=mateo',
+                niche: 'Atleta',
+                lastMessage: '¿Tienen pase de cortesía para probar?',
+                time: '10:42 AM',
+                unread: 2,
+                botActive: true,
+                source: 'whatsapp',
+                score: 75,
+                status: 'Negociación',
+                value: 90,
+                messages: [
+                    { id: 1, sender: 'bot', text: `¡Hola! Bienvenido a ${brandName}. Soy el asistente IA de soporte deportivo. ¿Listo para empezar a entrenar hoy?`, time: '10:30 AM' },
+                    { id: 2, sender: 'user', text: 'Hola, me gustaría saber si tienen planes trimestrales y qué incluyen.', time: '10:32 AM' },
+                    { id: 3, sender: 'bot', text: '¡Hola! Sí, manejamos planes trimestrales con acceso libre a máquinas, clases funcionales guiadas y evaluación mensual.', time: '10:32 AM' },
+                    { id: 4, sender: 'user', text: 'Excelente. ¿Tienen pase de cortesía para probar?', time: '10:40 AM' },
+                ]
+            },
+            {
+                id: 'c2',
+                name: 'Clara Ortiz',
+                avatar: 'https://i.pravatar.cc/150?u=clara',
+                niche: 'Cliente',
+                lastMessage: '¿En qué horario son las clases funcionales?',
+                time: 'Ayer',
+                unread: 0,
+                botActive: true,
+                source: 'instagram',
+                score: 80,
+                status: 'Contactado',
+                value: 35,
+                messages: [
+                    { id: 1, sender: 'user', text: 'Hola, qué tal. ¿Dan clases dirigidas por la mañana?', time: 'Ayer, 4:00 PM' },
+                    { id: 2, sender: 'bot', text: `¡Hola! Sí, tenemos clases funcionales y de cardio en las mañanas. ¿En qué horario te gustaría asistir?`, time: 'Ayer, 4:00 PM' },
+                    { id: 3, sender: 'user', text: '¿En qué horario son las clases funcionales?', time: 'Ayer, 4:05 PM' }
+                ]
+            }
+        ];
+    } else if (isEducation) {
+        return [
+            {
+                id: 'c1',
+                name: 'Diego Falconí',
+                avatar: 'https://i.pravatar.cc/150?u=diego',
+                niche: 'Estudiante',
+                lastMessage: '¿El curso incluye certificación?',
+                time: '10:42 AM',
+                unread: 2,
+                botActive: true,
+                source: 'whatsapp',
+                score: 85,
+                status: 'Negociación',
+                value: 290,
+                messages: [
+                    { id: 1, sender: 'bot', text: `¡Hola! Bienvenido a ${brandName}. Soy el asistente IA de admisiones. ¿En qué programa formativo estás interesado hoy?`, time: '10:30 AM' },
+                    { id: 2, sender: 'user', text: 'Hola, quisiera información sobre el temario del programa premium.', time: '10:32 AM' },
+                    { id: 3, sender: 'bot', text: '¡Hola Diego! Con gusto, te comparto el plan de estudios del programa. El curso es 100% interactivo con clases grabadas de por vida.', time: '10:32 AM' },
+                    { id: 4, sender: 'user', text: 'Excelente. ¿El curso incluye certificación?', time: '10:40 AM' },
+                ]
+            },
+            {
+                id: 'c2',
+                name: 'Paola V.',
+                avatar: 'https://i.pravatar.cc/150?u=paola',
+                niche: 'Prospecto',
+                lastMessage: '¿Tienen financiamiento para la mentoría?',
+                time: 'Ayer',
+                unread: 0,
+                botActive: true,
+                source: 'instagram',
+                score: 70,
+                status: 'Contactado',
+                value: 950,
+                messages: [
+                    { id: 1, sender: 'user', text: 'Hola, me interesa agendar una mentoría uno a uno.', time: 'Ayer, 4:00 PM' },
+                    { id: 2, sender: 'bot', text: `¡Hola! Qué gusto saludarte. Sí, ofrecemos mentorías personalizadas de crecimiento empresarial con cupos limitados. ¿Buscas financiamiento o pago en cuotas?`, time: 'Ayer, 4:00 PM' },
+                    { id: 3, sender: 'user', text: '¿Tienen financiamiento para la mentoría?', time: 'Ayer, 4:05 PM' }
+                ]
+            }
+        ];
+    } else if (isIndustrial) {
+        return [
+            {
+                id: 'c1',
+                name: 'Ing. Pedro Rosas',
+                avatar: 'https://i.pravatar.cc/150?u=pedro',
+                niche: 'Proveedor',
+                lastMessage: '¿Me envían la cotización del lote?',
+                time: '10:42 AM',
+                unread: 1,
+                botActive: true,
+                source: 'whatsapp',
+                score: 95,
+                status: 'Negociación',
+                value: 12000,
+                messages: [
+                    { id: 1, sender: 'bot', text: `¡Hola! Bienvenido a ${brandName}. Soy el asistente IA de soporte industrial. ¿En qué le podemos servir hoy?`, time: '10:30 AM' },
+                    { id: 2, sender: 'user', text: 'Buenas tardes, necesitamos una cotización formal para el suministro de materiales metálicos a medida.', time: '10:32 AM' },
+                    { id: 3, sender: 'bot', text: 'Entendido, Ing. Pedro. ¿Nos podría compartir los planos y cantidades deseadas para cotizarle a la brevedad?', time: '10:32 AM' },
+                    { id: 4, sender: 'user', text: 'Sí, ya se los pasé a su correo corporativo.', time: '10:40 AM' },
+                    { id: 5, sender: 'bot', text: 'Recibido correctamente. ¿Me envían la cotización del lote?', time: '10:42 AM' }
+                ]
+            },
+            {
+                id: 'c2',
+                name: 'Tecno-Metal Cía.',
+                avatar: 'https://i.pravatar.cc/150?u=tecno',
+                niche: 'Cliente Corp.',
+                lastMessage: '¿Cuál es el tiempo de entrega?',
+                time: 'Ayer',
+                unread: 0,
+                botActive: true,
+                source: 'instagram',
+                score: 80,
+                status: 'Contactado',
+                value: 4500,
+                messages: [
+                    { id: 1, sender: 'user', text: 'Hola, vi sus maquinarias en su catálogo digital.', time: 'Ayer, 4:00 PM' },
+                    { id: 2, sender: 'bot', text: `¡Hola! Con gusto. Fabricamos maquinaria industrial a medida con entregas a nivel nacional en Ecuador. ¿Cuál es el tiempo de entrega?`, time: 'Ayer, 4:00 PM' }
+                ]
+            }
+        ];
     } else {
         return [
             {
@@ -198,41 +327,6 @@ const generateConversations = (activeClient) => {
     }
 };
 
-const getSimulatedQuestions = (activeClient) => {
-    const industry = activeClient?.industry || activeClient?.onboarding_data?.strategic?.industry || 'General';
-    const industryLower = industry.toLowerCase();
-    const nameLower = (activeClient?.name || '').toLowerCase();
-    const isMedical = ['doctor', 'medico', 'médico', 'medical', 'salud', 'clinica', 'clínica', 'urologia', 'urología'].some(k => industryLower.includes(k));
-    const isAgro = ['agro', 'campo', 'agropecuario', 'agropecuaria', 'vete', 'veterinaria'].some(k => industryLower.includes(k));
-    const isFood = ['panaderia', 'panadería', 'pasteleria', 'pastelería', 'bakery', 'comida', 'restaurante', 'alimentos'].some(k => industryLower.includes(k) || nameLower.includes(k)) || activeClient?.id === 'C-NEYSER-964';
-
-    if (isMedical) {
-        return [
-            { label: 'Precio Consulta', text: 'Hola, ¿qué precio tiene la consulta urológica?' },
-            { label: 'Citas Disponibles', text: 'Hola, ¿tienen disponibilidad de citas para esta semana?' },
-            { label: 'Cirugía Láser', text: 'Quisiera saber sobre el tratamiento con láser de próstata.' }
-        ];
-    } else if (isAgro) {
-        return [
-            { label: 'Cotizar Abono', text: 'Buenas tardes, ¿qué precio tiene el saco de abono orgánico?' },
-            { label: 'Visita Técnica', text: 'Hola, ¿cómo puedo agendar una visita técnica para mis cultivos?' },
-            { label: 'Sistemas Riego', text: 'Hola, me gustaría cotizar un sistema de riego para 1 hectárea.' }
-        ];
-    } else if (isFood) {
-        return [
-            { label: 'Torta Chocolate', text: 'Hola, ¿qué precio tiene una torta personalizada de chocolate?' },
-            { label: 'Pedidos Domicilio', text: 'Hola, ¿tienen entregas a domicilio el día de hoy?' },
-            { label: 'Pan Masa Madre', text: 'Buenas tardes, ¿qué días hornean pan de masa madre?' }
-        ];
-    } else {
-        return [
-            { label: 'Precios y Planes', text: 'Hola, me interesa conocer los precios de sus servicios y planes.' },
-            { label: 'Horarios', text: 'Hola, ¿cuáles son sus horarios de atención?' },
-            { label: 'Asesoría 1-on-1', text: 'Me gustaría agendar una mentoría o asesoría con ustedes.' }
-        ];
-    }
-};
-
 export default function UnifiedInbox({ activeClient }) {
     const brandName = activeClient?.onboarding_data?.strategic?.brandName || activeClient?.name || 'Neyser';
     
@@ -243,6 +337,10 @@ export default function UnifiedInbox({ activeClient }) {
     const [inputText, setInputText] = useState('');
     const [isBotTyping, setIsBotTyping] = useState(false);
     
+    // AI Dynamic Simulation Questions State
+    const [simulatedQuestions, setSimulatedQuestions] = useState([]);
+    const [loadingQuestions, setLoadingQuestions] = useState(false);
+
     // AI Suggestions Sidekick States
     const [aiSuggestion, setAiSuggestion] = useState('');
     const [loadingSuggestion, setLoadingSuggestion] = useState(false);
@@ -259,6 +357,45 @@ export default function UnifiedInbox({ activeClient }) {
     }, [activeClient]);
 
     const activeChat = conversations.find(c => c.id === selectedId);
+
+    // Dynamic AI Simulation Questions based on Strategic Profile
+    useEffect(() => {
+        if (!activeClient) return;
+
+        async function fetchDynamicQuestions() {
+            setLoadingQuestions(true);
+            try {
+                const res = await fetch('/api/ai/generate-questions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ context: activeClient })
+                });
+                const data = await res.json();
+                if (data.questions && Array.isArray(data.questions) && data.questions.length > 0) {
+                    setSimulatedQuestions(data.questions.map(q => ({
+                        label: q.length > 25 ? q.substring(0, 22) + '...' : q,
+                        text: q
+                    })));
+                } else {
+                    // Fallback in case of API failure
+                    setSimulatedQuestions([
+                        { label: 'Servicios y tarifas', text: 'Hola, me interesa conocer los precios de sus servicios y planes.' },
+                        { label: 'Contacto directo', text: 'Hola, ¿cómo puedo agendar una llamada con ustedes?' }
+                    ]);
+                }
+            } catch (e) {
+                console.error("Error loading dynamic questions:", e);
+                setSimulatedQuestions([
+                    { label: 'Servicios y tarifas', text: 'Hola, me interesa conocer los precios de sus servicios y planes.' },
+                    { label: 'Contacto directo', text: 'Hola, ¿cómo puedo agendar una llamada con ustedes?' }
+                ]);
+            } finally {
+                setLoadingQuestions(false);
+            }
+        }
+
+        fetchDynamicQuestions();
+    }, [activeClient]);
 
     // Auto-scroll when chat messages update or typing state changes
     useEffect(() => {
@@ -443,8 +580,6 @@ export default function UnifiedInbox({ activeClient }) {
         return true;
     });
 
-    const simulatedQuestions = getSimulatedQuestions(activeClient);
-
     return (
         <div className="flex-1 flex h-full min-h-[600px] overflow-hidden bg-[#050511]">
             
@@ -567,22 +702,28 @@ export default function UnifiedInbox({ activeClient }) {
                             </div>
                         </div>
 
-                        {/* Client Simulation Bar */}
-                        <div className="px-6 py-2 bg-[#0E0E18]/80 border-b border-white/5 flex items-center justify-between gap-3 overflow-x-auto custom-scrollbar z-10">
+                        {/* Dynamic Client Simulation Bar */}
+                        <div className="px-6 py-2 bg-[#0E0E18]/85 border-b border-white/5 flex items-center justify-between gap-3 overflow-x-auto custom-scrollbar z-10">
                             <div className="flex items-center gap-1.5 shrink-0">
-                                <Bot className="w-3.5 h-3.5 text-indigo-400" />
-                                <span className="text-[9px] font-black uppercase text-indigo-400 tracking-wider">Simular Lead:</span>
+                                <Bot className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+                                <span className="text-[9px] font-black uppercase text-indigo-400 tracking-wider">Simulador de Leads:</span>
                             </div>
-                            <div className="flex gap-2 overflow-x-auto pb-0.5 custom-scrollbar">
-                                {simulatedQuestions.map((q, idx) => (
-                                    <button
-                                        key={idx}
-                                        onClick={() => handleSimulateClientMessage(q.text)}
-                                        className="px-3 py-1 bg-white/5 hover:bg-indigo-600/30 border border-white/10 hover:border-indigo-500/30 rounded-full text-[10px] text-gray-300 hover:text-indigo-200 whitespace-nowrap transition-all"
-                                    >
-                                        "{q.label}"
-                                    </button>
-                                ))}
+                            <div className="flex gap-2 overflow-x-auto pb-0.5 custom-scrollbar items-center">
+                                {loadingQuestions ? (
+                                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest animate-pulse">
+                                        Analizando perfil estratégico de {brandName} para formular preguntas reales...
+                                    </span>
+                                ) : (
+                                    simulatedQuestions.map((q, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => handleSimulateClientMessage(q.text)}
+                                            className="px-3 py-1 bg-[#1a1a2e] hover:bg-indigo-600/30 border border-indigo-500/20 hover:border-indigo-500/50 rounded-full text-[10px] text-gray-300 hover:text-indigo-200 whitespace-nowrap transition-all shadow-sm"
+                                        >
+                                            "{q.label}"
+                                        </button>
+                                    ))
+                                )}
                             </div>
                         </div>
 
