@@ -27,8 +27,11 @@ export default function ClientProfileHub() {
 
     useEffect(() => {
         const tabParam = searchParams.get('tab');
+        const upgradeParam = searchParams.get('upgrade');
         if (tabParam && ['progress', 'rewards', 'settings'].includes(tabParam)) {
             setSubTab(tabParam);
+        } else if (upgradeParam === 'crm') {
+            setSubTab('settings');
         }
     }, [searchParams]);
 

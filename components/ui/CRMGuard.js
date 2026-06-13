@@ -4,13 +4,19 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Sparkles, Bot, Zap, ArrowRight, X, Play, Lock, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function CRMGuard({ user, children }) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [isBlocked, setIsBlocked] = useState(false);
     const [loading, setLoading] = useState(true);
     const [isPlaying, setIsPlaying] = useState(false);
+    
+    // Trial States
+    const [trialDaysLeft, setTrialDaysLeft] = useState(15);
+    const [hasCrm, setHasCrm] = useState(false);
+    const [showTrialBanner, setShowTrialBanner] = useState(false);
 
     useEffect(() => {
         if (!user || user.role !== 'CLIENT') {
@@ -20,23 +26,51 @@ export default function CRMGuard({ user, children }) {
 
         const checkCRMStatus = async () => {
             try {
+                // 1. Calculate trial days based on user creation date
+                let daysLeft = 15;
+                if (user.created_at) {
+                    const creationDate = new Date(user.created_at);
+                    const currentDate = new Date();
+                    const differenceInTime = currentDate.getTime() - creationDate.getTime();
+                    const differenceInDays = Math.floor(differenceInTime / (1000 * 3600 * 24));
+                    daysLeft = 15 - differenceInDays;
+                }
+
+                // URL simulation override for testing (e.g. ?trial_days=5 or ?trial_days=0)
+                const paramTrialDays = searchParams.get('trial_days');
+                if (paramTrialDays !== null) {
+                    daysLeft = parseInt(paramTrialDays, 10);
+                }
+
+                setTrialDaysLeft(daysLeft);
+
+                // 2. Fetch linked client record check if crm is active
+                let hasCRMAddon = false;
                 if (user.client_id) {
                     const { data: clientData } = await supabase
                         .from('clients')
-                        .select('onboarding_data')
+                        .select('has_crm, onboarding_data')
                         .eq('id', user.client_id)
                         .maybeSingle();
 
-                    // Comprobar si tiene el add-on (por defecto asumimos que no lo tiene para esta demo)
-                    // En producción, esto miraría clientData.onboarding_data?.has_crm === true
-                    const hasCRMAddon = clientData?.onboarding_data?.has_crm === true;
+                    hasCRMAddon = clientData?.has_crm === true || clientData?.onboarding_data?.has_crm === true;
+                }
+                
+                setHasCrm(hasCRMAddon);
 
-                    if (!hasCRMAddon) {
-                        // Temporizador de 3 segundos (Gamificación: Dejarlos curiosear antes de bloquear)
-                        setTimeout(() => {
-                            setIsBlocked(true);
-                        }, 3000);
-                    }
+                // 3. Evaluate restriction rules
+                if (hasCRMAddon) {
+                    setIsBlocked(false);
+                    setShowTrialBanner(false);
+                } else if (daysLeft > 0) {
+                    setIsBlocked(false);
+                    setShowTrialBanner(true);
+                } else {
+                    setShowTrialBanner(false);
+                    // 3s delay (gamified peeking experience before block)
+                    setTimeout(() => {
+                        setIsBlocked(true);
+                    }, 3000);
                 }
             } catch (err) {
                 console.error("Error checking CRM access status:", err);
@@ -46,12 +80,46 @@ export default function CRMGuard({ user, children }) {
         };
 
         checkCRMStatus();
-    }, [user]);
+    }, [user, searchParams]);
+
+    if (loading) {
+        return <div className="h-full w-full flex items-center justify-center text-white/50 animate-pulse py-20">Verificando Licencia del CRM...</div>;
+    }
 
     return (
-        <>
-            {/* El contenido real del CRM se renderiza aquí (visible los primeros 3s) */}
-            {children}
+        <div className="relative min-h-screen flex flex-col">
+            {/* Premium Countdown Trial Banner */}
+            <AnimatePresence>
+                {showTrialBanner && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -50 }}
+                        className="sticky top-0 z-[40] bg-[#070719]/90 backdrop-blur-md border-b border-indigo-500/20 py-2.5 px-4 text-xs shadow-[0_4px_30px_rgba(0,0,0,0.4)]"
+                    >
+                        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                            <div className="flex flex-col sm:flex-row items-center gap-3">
+                                <span className="flex items-center gap-1.5 text-indigo-400 font-black uppercase tracking-widest text-[9px] bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-full animate-pulse">
+                                    <Sparkles className="w-3.5 h-3.5" /> Periodo de Prueba
+                                </span>
+                                <span className="text-gray-300 font-medium">
+                                    Tienes acceso completo al CRM y Agentes de IA. Te quedan <strong className="text-indigo-400 font-extrabold">{trialDaysLeft} {trialDaysLeft === 1 ? 'día' : 'días'}</strong> de prueba gratuita.
+                                </span>
+                            </div>
+                            <button 
+                                onClick={() => router.push('/dashboard/profile?upgrade=crm')}
+                                className="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest text-[9px] px-3.5 py-1.5 rounded-lg transition-all shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                            >
+                                Activar CRM Permanente <ArrowRight className="w-3 h-3" />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className="flex-1">
+                {children}
+            </div>
 
             <AnimatePresence>
                 {isBlocked && (
@@ -65,7 +133,7 @@ export default function CRMGuard({ user, children }) {
                             initial={{ scale: 0.9, y: 50, opacity: 0 }}
                             animate={{ scale: 1, y: 0, opacity: 1 }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="bg-[#050511]/90 border border-indigo-500/30 max-w-5xl w-full rounded-[2.5rem] p-1 shadow-[0_0_150px_rgba(99,102,241,0.15)] relative overflow-hidden flex flex-col md:flex-row"
+                            className="bg-[#050511]/90 border border-indigo-500/30 max-w-5xl w-full rounded-[2.5rem] p-1 shadow-[0_0_15px_rgba(99,102,241,0.15)] relative overflow-hidden flex flex-col md:flex-row"
                         >
                             {/* Visual Glow */}
                             <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none" />
@@ -158,6 +226,7 @@ export default function CRMGuard({ user, children }) {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </>
+        </div>
     );
 }
+

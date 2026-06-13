@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
 import { aiService } from '@/services/aiService';
 import { socialService } from '@/services/socialService';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const ICON_MAP = {
@@ -43,12 +44,20 @@ export default function GrowthAlertSystem() {
                     context = { ...client.metadata.strategic, maturity_level: client.metadata.maturity_level };
                 }
 
-                // 1.5 Get linked social accounts to provide real data validation
+                // 1.5 Get linked business accounts to provide real data validation
                 let linkedAccounts = [];
                 try {
-                    linkedAccounts = await socialService.getLinkedAccounts();
+                    const { data: brandConns } = await supabase
+                        .from('brand_connections')
+                        .select('provider, status')
+                        .eq('client_id', clientId)
+                        .eq('status', 'connected');
+                        
+                    if (brandConns) {
+                        linkedAccounts = brandConns.map(c => c.provider);
+                    }
                 } catch (e) {
-                    console.log("[GrowthAlert] Could not fetch social accounts:", e);
+                    console.log("[GrowthAlert] Could not fetch brand_connections:", e);
                 }
 
                 // 2. Ask AI to generate alerts (passing linked accounts status)

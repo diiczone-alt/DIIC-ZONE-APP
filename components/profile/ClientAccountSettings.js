@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
 import { supabase } from '@/lib/supabase';
 import { driveService } from '@/services/driveService';
+import { useSearchParams } from 'next/navigation';
 import GrowthPricing from '../growth/GrowthPricing';
 import PremiumDropdown from '../shared/PremiumDropdown';
 import { motion } from 'framer-motion';
@@ -43,10 +44,18 @@ const getPlanPrice = (plan, industry) => {
 
 export default function ClientAccountSettings() {
     const { user } = useAuth();
+    const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [activeSection, setActiveSection] = useState('profile'); // profile, brand, security, billing, notifications
     const [showPlans, setShowPlans] = useState(false);
     const [isNicheLocked, setIsNicheLocked] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get('upgrade') === 'crm') {
+            setActiveSection('billing');
+            setShowPlans(true);
+        }
+    }, [searchParams]);
     
     const [profileData, setProfileData] = useState({
         full_name: '',
