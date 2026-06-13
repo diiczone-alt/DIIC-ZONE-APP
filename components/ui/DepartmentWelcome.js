@@ -1,8 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { agencyService } from '@/services/agencyService';
 import {
     Users, ImageIcon, Mic, UploadCloud, Camera,
     Clapperboard, Star, Globe, Printer, Calendar,
@@ -138,8 +140,61 @@ const DEPARTMENT_CONTENT = {
 export default function DepartmentWelcome({ deptId, onAction }) {
     const router = useRouter();
     const { user } = useAuth();
+    const [squad, setSquad] = useState(null);
+    const [assignedTalent, setAssignedTalent] = useState(null);
+    const [isLoadingTeam, setIsLoadingTeam] = useState(true);
+
     const data = DEPARTMENT_CONTENT[deptId] || DEPARTMENT_CONTENT.community;
     const DeptIcon = data.icon;
+
+    useEffect(() => {
+        const fetchTeam = async () => {
+            // Utilizamos el id del usuario si no tiene client_id (algunos usuarios tienen el ID directo)
+            const clientIdToUse = user?.client_id || user?.id;
+            
+            if (!clientIdToUse) {
+                setIsLoadingTeam(false);
+                return;
+            }
+            
+            try {
+                const clientSquad = await agencyService.getClientSquad(clientIdToUse);
+                setSquad(clientSquad);
+
+                if (clientSquad) {
+                    const findTalent = () => {
+                        if (deptId === 'community') return clientSquad.cm;
+                        
+                        const roleMatches = {
+                            design: ['diseña', 'design'],
+                            print: ['diseña', 'design'],
+                            video: ['editor', 'video'],
+                            filmmaker: ['film', 'realizador'],
+                            audition: ['audio', 'sonido'],
+                            web: ['web', 'desarrollo'],
+                            photo: ['foto', 'cámara'],
+                            models: ['produ', 'cast'],
+                            events: ['produ', 'event']
+                        };
+                        
+                        const keywords = roleMatches[deptId] || [];
+                        const match = clientSquad.creatives?.find(m => 
+                            keywords.some(keyword => m.role.toLowerCase().includes(keyword))
+                        );
+                        
+                        return match || null;
+                    };
+                    
+                    setAssignedTalent(findTalent());
+                }
+            } catch (err) {
+                console.error("Error fetching squad:", err);
+            } finally {
+                setIsLoadingTeam(false);
+            }
+        };
+        fetchTeam();
+    }, [user, deptId]);
 
     const colorClasses = {
         blue: "from-blue-400 via-indigo-500 to-indigo-600",
@@ -300,9 +355,9 @@ export default function DepartmentWelcome({ deptId, onAction }) {
                     </motion.div>
 
                     <h1 className="text-4xl md:text-5xl lg:text-7xl font-black text-white mb-6 leading-[0.95] tracking-tighter italic uppercase">
-                        {data.welcome.split(',')[0]},<br />
+                        {isLoadingTeam ? data.welcome.split(',')[0] : (assignedTalent ? `👋 Hola, soy ${assignedTalent.name.split(' ')[0]}` : data.welcome.split(',')[0])},<br />
                         <span className={`text-transparent bg-clip-text bg-gradient-to-r ${colorClasses[data.color]} not-italic`}>
-                            {data.welcome.split(',')[1]}
+                            {isLoadingTeam ? data.welcome.split(',')[1] : (assignedTalent ? `Tu ${data.title}` : data.welcome.split(',')[1])}
                         </span>
                     </h1>
 
@@ -319,7 +374,17 @@ export default function DepartmentWelcome({ deptId, onAction }) {
                                 transition={{ delay: 0.6 + i * 0.1 }}
                                 whileHover={{ scale: 1.02, x: 8 }}
                                 whileTap={{ scale: 0.98 }}
-                                onClick={() => onAction(action.mode)}
+                                onClick={() => {
+                                    if (action.mode === 'chat' && !isLoadingTeam) {
+                                        const targetPhone = assignedTalent?.whatsapp || squad?.cm?.whatsapp || assignedTalent?.whatsapp_number || squad?.cm?.whatsapp_number;
+                                        if (targetPhone) {
+                                            const cleanPhone = targetPhone.replace(/\D/g, '');
+                                            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hola, necesito ayuda en el departamento de ${data.title}.`)}`, '_blank');
+                                            return;
+                                        }
+                                    }
+                                    onAction(action.mode);
+                                }}
                                 className={`group flex items-center justify-between p-5 bg-white/5 border border-white/[0.05] rounded-[1.5rem] hover:bg-white/10 hover:border-white/20 transition-all text-left backdrop-blur-sm relative overflow-hidden ${i === 0 ? 'sm:col-span-2 bg-indigo-600/10 border-indigo-500/20' : ''}`}
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -347,20 +412,46 @@ export default function DepartmentWelcome({ deptId, onAction }) {
                         className="mt-12 flex items-center gap-6"
                     >
                         <div className="flex -space-x-4">
-                            {[1, 2, 3, 4].map(i => (
+                            {isLoadingTeam ? (
+                                <div className="w-10 h-10 rounded-full border-4 border-[#050511] bg-gray-800 animate-pulse shadow-2xl" />
+                            ) : assignedTalent ? (
                                 <motion.img 
-                                    key={i} 
                                     whileHover={{ y: -5, scale: 1.1 }}
-                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + data.color + 10}`} 
-                                    className="w-10 h-10 rounded-full border-4 border-[#050511] bg-gray-900 shadow-2xl cursor-pointer" 
-                                    alt="team" 
+                                    src={assignedTalent.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${assignedTalent.name}`} 
+                                    className="w-12 h-12 rounded-full border-4 border-[#050511] bg-gray-900 shadow-2xl cursor-pointer" 
+                                    alt={assignedTalent.name} 
                                 />
-                            ))}
+                            ) : squad?.cm ? (
+                                <motion.img 
+                                    whileHover={{ y: -5, scale: 1.1 }}
+                                    src={squad.cm.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${squad.cm.name}`} 
+                                    className="w-12 h-12 rounded-full border-4 border-[#050511] bg-gray-900 shadow-2xl cursor-pointer" 
+                                    alt={squad.cm.name} 
+                                />
+                            ) : (
+                                [1, 2, 3, 4].map(i => (
+                                    <motion.img 
+                                        key={i} 
+                                        whileHover={{ y: -5, scale: 1.1 }}
+                                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + data.color + 10}`} 
+                                        className="w-10 h-10 rounded-full border-4 border-[#050511] bg-gray-900 shadow-2xl cursor-pointer" 
+                                        alt="team" 
+                                    />
+                                ))
+                            )}
                         </div>
                         <div className="flex flex-col">
                             <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest leading-none mb-1">Status: Active</span>
                             <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">
-                                Tu equipo de <strong className="text-white">{data.title}</strong> está listo para operar.
+                                {isLoadingTeam ? (
+                                    <>Conectando con tu <strong className="text-white">Escuadrón...</strong></>
+                                ) : assignedTalent ? (
+                                    <>Tu equipo de <strong className="text-white">{data.title}</strong> está listo para operar.</>
+                                ) : squad?.cm ? (
+                                    <>Aún no tienes talento asignado aquí. Contacta a <strong className="text-white">{squad.cm.name}</strong>.</>
+                                ) : (
+                                    <>Tu equipo de <strong className="text-white">{data.title}</strong> está listo para operar.</>
+                                )}
                             </p>
                         </div>
                     </motion.div>

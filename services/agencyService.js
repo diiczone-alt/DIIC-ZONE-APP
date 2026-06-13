@@ -870,6 +870,35 @@ export const agencyService = {
         }
     },
 
+    getClientSquad: async (clientId) => {
+        try {
+            const client = await agencyService.getClientById(clientId);
+            if (!client || !client.cm) return null;
+
+            const team = await agencyService.getTeam();
+            const normalizedCMName = client.cm.toLowerCase().trim();
+            const cmRecord = team.find(m => 
+                m.name.toLowerCase().includes(normalizedCMName) && 
+                (m.role.toLowerCase().includes('community') || m.role.toLowerCase().includes('cm'))
+            );
+
+            if (!cmRecord) {
+                // Si no encontramos un CM exacto, buscamos solo por nombre
+                const cmFallback = team.find(m => m.name.toLowerCase().includes(normalizedCMName));
+                if (!cmFallback) return null;
+                
+                const creatives = team.filter(m => m.squad_lead_id === cmFallback.id);
+                return { client, cm: cmFallback, creatives };
+            }
+
+            const creatives = team.filter(m => m.squad_lead_id === cmRecord.id);
+            return { client, cm: cmRecord, creatives };
+        } catch (error) {
+            console.error("Error fetching client squad:", error);
+            return null;
+        }
+    },
+
     createTeamMember: async (memberData) => {
         const timestamp = new Date().toLocaleTimeString();
         console.log(`🚀 [${timestamp}] Service: Creating New Team Member...`);
