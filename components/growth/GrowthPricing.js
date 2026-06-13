@@ -224,13 +224,7 @@ function PricingCard({ service, index, onSelectService, userNiche }) {
         ];
     };
 
-    const features = getFeatures(service.name);
-
-    const formatPlanName = (name) => {
-        let clean = name.replace(/PLAN /gi, '').replace(/Nivel /gi, '').trim();
-        if (clean.toLowerCase() === 'elite') clean = 'Control';
-        return `Nivel ${clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase()}`;
-    };
+    const features = service.features || getFeatures(service.name);
 
     return (
         <motion.div
@@ -255,10 +249,10 @@ function PricingCard({ service, index, onSelectService, userNiche }) {
 
             {/* Plan Name */}
             <div className="mb-6">
-                <h3 className="text-3xl font-black text-white mb-2 tracking-tight">{formatPlanName(service.name)}</h3>
+                <h3 className="text-3xl font-black text-white mb-2 tracking-tight">{service.name}</h3>
                 <p className={`text-sm font-medium leading-relaxed ${isPopular ? 'text-indigo-200' : 'text-gray-400'}`}>
                     {service.name.toUpperCase().includes('PRESENCIA') ? "Presencia digital para generar confianza visual." :
-                     service.name.toUpperCase().includes('CRECIMIENTO') ? "Sistema enfocado en captar clientes calificados." :
+                     service.name.toUpperCase().includes('MÉDICO') || service.name.toUpperCase().includes('CRECIMIENTO') ? "Sistema enfocado en captar clientes calificados." :
                      service.name.toUpperCase().includes('AUTORIDAD') ? "Conviértete en el referente #1 de tu nicho." :
                      "Dominio total del mercado y viralidad agresiva."}
                 </p>
