@@ -167,7 +167,7 @@ export default function ClientAccountSettings() {
 
                 setProfileData({
                     full_name: profile?.full_name || user?.user_metadata?.full_name || '',
-                    brand_name: clientRecord?.name || user?.user_metadata?.brand || '',
+                    brand_name: (clientRecord?.name || user?.user_metadata?.brand || '').replace(/[-_\s]+workspace\s*$/i, '').trim(),
                     phone: clientRecord?.whatsapp_number || profile?.whatsapp || '',
                     email: user?.email || '',
                     location: clientRecord?.city || profile?.location || 'Santo Domingo',

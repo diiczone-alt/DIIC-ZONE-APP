@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
     Search, Bot, User, MessageCircle, MoreVertical, Paperclip, 
     Send, CheckCircle2, AlertCircle, Phone, X, Shield, Wallet, MapPin, DollarSign, BrainCircuit, ShoppingCart,
@@ -9,58 +9,441 @@ import {
 import MedicalCatalog from './MedicalCatalog';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Mock Data for the Inbox Demo
-const mockConversations = [
-    {
-        id: 'c1',
-        name: 'Dr. Roberto M.',
-        avatar: 'https://i.pravatar.cc/150?u=roberto',
-        niche: 'Médico',
-        lastMessage: 'Sí, me interesa el paquete pro.',
-        time: '10:42 AM',
-        unread: 2,
-        botActive: false,
-        source: 'whatsapp',
-        score: 85,
-        status: 'Negociación',
-        value: 1500,
-        messages: [
-            { id: 1, sender: 'bot', text: '¡Hola! Bienvenido a DIIC ZONE. Soy el asistente IA. ¿En qué puedo ayudarte hoy?', time: '10:30 AM' },
-            { id: 2, sender: 'user', text: 'Me gustaría información sobre gestión de redes para mi clínica.', time: '10:32 AM' },
-            { id: 3, sender: 'bot', text: '¡Claro! Manejamos paquetes especializados para el sector Salud. ¿Cuál es tu presupuesto mensual aproximado?', time: '10:32 AM' },
-            { id: 4, sender: 'user', text: 'Alrededor de $1,000 a $2,000 USD.', time: '10:40 AM' },
-            { id: 5, sender: 'human', text: 'Hola Dr. Roberto, soy Carlos. He pausado el asistente automático. Puedo ofrecerte nuestro Paquete Pro que se ajusta exacto a tu presupuesto.', time: '10:41 AM' },
-            { id: 6, sender: 'user', text: 'Sí, me interesa el paquete pro.', time: '10:42 AM' },
-        ]
-    },
-    {
-        id: 'c2',
-        name: 'Inmobiliaria City',
-        avatar: 'https://i.pravatar.cc/150?u=inmo',
-        niche: 'Real Estate',
-        lastMessage: '¿Tienen soporte 24/7?',
-        time: 'Ayer',
-        unread: 0,
-        botActive: true,
-        source: 'instagram',
-        score: 60,
-        status: 'Contactado',
-        value: 3200,
-        messages: [
-            { id: 1, sender: 'user', text: 'Hola, vi un anuncio suyo en Instagram', time: 'Ayer, 4:00 PM' },
-            { id: 2, sender: 'bot', text: '¡Hola! Qué gusto saludarte. Soy el bot de respuesta rápida de DIIC ZONE. ¿Eres agencia o negocio local?', time: 'Ayer, 4:00 PM' },
-            { id: 3, sender: 'user', text: 'Agencia.', time: 'Ayer, 4:05 PM' },
-            { id: 4, sender: 'user', text: '¿Tienen soporte 24/7?', time: 'Ayer, 4:06 PM' },
-        ]
-    }
-];
+// Conversation generator based on client niche
+const generateConversations = (activeClient) => {
+    const brandName = activeClient?.onboarding_data?.strategic?.brandName || activeClient?.name || 'Neyser';
+    const industry = activeClient?.industry || activeClient?.onboarding_data?.strategic?.industry || 'General';
+    const industryLower = industry.toLowerCase();
+    const nameLower = (activeClient?.name || '').toLowerCase();
+    
+    const isMedical = ['doctor', 'medico', 'médico', 'medical', 'salud', 'clinica', 'clínica', 'urologia', 'urología'].some(k => industryLower.includes(k));
+    const isAgro = ['agro', 'campo', 'agropecuario', 'agropecuaria', 'vete', 'veterinaria'].some(k => industryLower.includes(k));
+    const isFood = ['panaderia', 'panadería', 'pasteleria', 'pastelería', 'bakery', 'comida', 'restaurante', 'alimentos'].some(k => industryLower.includes(k) || nameLower.includes(k)) || activeClient?.id === 'C-NEYSER-964';
 
-export default function UnifiedInbox() {
-    const [selectedId, setSelectedId] = useState(mockConversations[0].id);
+    if (isMedical) {
+        return [
+            {
+                id: 'c1',
+                name: 'Roberto Mendoza',
+                avatar: 'https://i.pravatar.cc/150?u=roberto',
+                niche: 'Paciente',
+                lastMessage: 'Sí, me interesa agendar una cita.',
+                time: '10:42 AM',
+                unread: 2,
+                botActive: true,
+                source: 'whatsapp',
+                score: 85,
+                status: 'Negociación',
+                value: 150,
+                messages: [
+                    { id: 1, sender: 'bot', text: `¡Hola! Bienvenido a ${brandName}. Soy el asistente IA de atención médica. ¿En qué puedo ayudarte hoy?`, time: '10:30 AM' },
+                    { id: 2, sender: 'user', text: 'Me gustaría información sobre consultas de urología y agendamiento.', time: '10:32 AM' },
+                    { id: 3, sender: 'bot', text: '¡Claro! Ofrecemos consultas médicas presenciales y virtuales especializadas. ¿Qué horario te acomoda más?', time: '10:32 AM' },
+                    { id: 4, sender: 'user', text: 'Preferiría por las tardes, a partir de las 3 PM.', time: '10:40 AM' },
+                    { id: 5, sender: 'bot', text: 'Perfecto. Tenemos disponibilidad esta semana el miércoles y jueves a las 4:00 PM. ¿Te agendamos alguna?', time: '10:41 AM' },
+                    { id: 6, sender: 'user', text: 'Sí, me interesa agendar una cita.', time: '10:42 AM' },
+                ]
+            },
+            {
+                id: 'c2',
+                name: 'María Elena S.',
+                avatar: 'https://i.pravatar.cc/150?u=maria',
+                niche: 'Paciente',
+                lastMessage: '¿Tienen citas disponibles para ecografía?',
+                time: 'Ayer',
+                unread: 0,
+                botActive: true,
+                source: 'instagram',
+                score: 60,
+                status: 'Contactado',
+                value: 120,
+                messages: [
+                    { id: 1, sender: 'user', text: 'Hola, buenas tardes. ¿Realizan ecografías vesicales?', time: 'Ayer, 4:00 PM' },
+                    { id: 2, sender: 'bot', text: `¡Hola! Sí, realizamos ecografías renales y vesicales de alta resolución en nuestro consultorio de ${activeClient?.city || 'Santo Domingo'}. ¿Tienes orden médica?`, time: 'Ayer, 4:00 PM' },
+                    { id: 3, sender: 'user', text: 'Sí, mi médico me la envió ayer.', time: 'Ayer, 4:05 PM' },
+                    { id: 4, sender: 'user', text: '¿Tienen citas disponibles para ecografía?', time: 'Ayer, 4:06 PM' },
+                ]
+            }
+        ];
+    } else if (isAgro) {
+        return [
+            {
+                id: 'c1',
+                name: 'Hacienda La Florida (Juan R.)',
+                avatar: 'https://i.pravatar.cc/150?u=florida',
+                niche: 'Productor',
+                lastMessage: 'Necesito cotizar 50 sacos de abono orgánico.',
+                time: '10:42 AM',
+                unread: 2,
+                botActive: true,
+                source: 'whatsapp',
+                score: 90,
+                status: 'Negociación',
+                value: 850,
+                messages: [
+                    { id: 1, sender: 'bot', text: `¡Hola! Bienvenido a ${brandName}. Soy el asistente IA de asistencia agropecuaria. ¿Cómo te encuentras hoy?`, time: '10:30 AM' },
+                    { id: 2, sender: 'user', text: 'Hola, me gustaría saber si tienen stock de fertilizantes y asesoría técnica en la zona.', time: '10:32 AM' },
+                    { id: 3, sender: 'bot', text: `¡Hola, Juan! Sí, contamos con stock completo de insumos y ofrecemos asesoría técnica directa en campo para optimizar tus cultivos en ${activeClient?.city || 'Santo Domingo'}.`, time: '10:32 AM' },
+                    { id: 4, sender: 'user', text: 'Excelente. Necesito cotizar 50 sacos de abono orgánico.', time: '10:40 AM' },
+                ]
+            },
+            {
+                id: 'c2',
+                name: 'Agropecuaria del Sur',
+                avatar: 'https://i.pravatar.cc/150?u=agrosur',
+                niche: 'Distribuidor',
+                lastMessage: '¿Cuál es el costo del servicio de riego automatizado?',
+                time: 'Ayer',
+                unread: 0,
+                botActive: true,
+                source: 'instagram',
+                score: 75,
+                status: 'Contactado',
+                value: 3500,
+                messages: [
+                    { id: 1, sender: 'user', text: 'Buenas tardes, quisiera consultar por los sistemas de riego.', time: 'Ayer, 4:00 PM' },
+                    { id: 2, sender: 'bot', text: `¡Hola! Qué gusto saludarte de parte de ${brandName}. Ofrecemos diseño e instalación de sistemas de riego automatizado a la medida de tu parcela. ¿De cuántas hectáreas es tu cultivo?`, time: 'Ayer, 4:00 PM' },
+                    { id: 3, sender: 'user', text: 'Tengo unas 4 hectáreas de maíz.', time: 'Ayer, 4:05 PM' },
+                    { id: 4, sender: 'user', text: '¿Cuál es el costo del servicio de riego automatizado?', time: 'Ayer, 4:06 PM' },
+                ]
+            }
+        ];
+    } else if (isFood) {
+        return [
+            {
+                id: 'c1',
+                name: 'Sofía Gómez',
+                avatar: 'https://i.pravatar.cc/150?u=sofia',
+                niche: 'Cliente',
+                lastMessage: '¿Hacen entregas a domicilio?',
+                time: '10:42 AM',
+                unread: 1,
+                botActive: true,
+                source: 'whatsapp',
+                score: 80,
+                status: 'Negociación',
+                value: 75,
+                messages: [
+                    { id: 1, sender: 'bot', text: `¡Hola! Bienvenido a ${brandName}. Soy el asistente IA de atención rápida. ¿En qué podemos ayudarte hoy?`, time: '10:30 AM' },
+                    { id: 2, sender: 'user', text: 'Hola, me gustaría saber si tienen tortas personalizadas para cumpleaños y si hacen envíos.', time: '10:32 AM' },
+                    { id: 3, sender: 'bot', text: `¡Claro que sí! En ${brandName} preparamos tortas y pasteles de diseño personalizados para cualquier evento especial. Hacemos entregas a domicilio en ${activeClient?.city || 'Santo Domingo'}.`, time: '10:32 AM' },
+                    { id: 4, sender: 'user', text: 'Excelente, ¿tienen un catálogo con precios?', time: '10:40 AM' },
+                    { id: 5, sender: 'bot', text: 'Sí, puedes ver nuestro catálogo de productos en el botón de la tienda o aquí mismo. ¿Para qué fecha necesitas el pastel?', time: '10:41 AM' },
+                    { id: 6, sender: 'user', text: '¿Hacen entregas a domicilio?', time: '10:42 AM' }
+                ]
+            },
+            {
+                id: 'c2',
+                name: 'Restaurante El Sabor',
+                avatar: 'https://i.pravatar.cc/150?u=restaurante',
+                niche: 'Distribuidor',
+                lastMessage: 'Me gustaría cotizar pan de hamburguesa al por mayor.',
+                time: 'Ayer',
+                unread: 0,
+                botActive: true,
+                source: 'instagram',
+                score: 95,
+                status: 'Contactado',
+                value: 300,
+                messages: [
+                    { id: 1, sender: 'user', text: 'Hola, vi sus productos en redes sociales.', time: 'Ayer, 4:00 PM' },
+                    { id: 2, sender: 'bot', text: `¡Hola! Qué gusto saludarte. Soy el asistente IA de ${brandName}. ¿En qué te puedo colaborar hoy?`, time: 'Ayer, 4:00 PM' },
+                    { id: 3, sender: 'user', text: 'Me gustaría cotizar pan de hamburguesa al por mayor.', time: 'Ayer, 4:05 PM' }
+                ]
+            }
+        ];
+    } else {
+        return [
+            {
+                id: 'c1',
+                name: 'Carlos Ruiz',
+                avatar: 'https://i.pravatar.cc/150?u=carlos',
+                niche: 'Prospecto',
+                lastMessage: 'Me interesa contratar el plan de crecimiento.',
+                time: '10:42 AM',
+                unread: 2,
+                botActive: true,
+                source: 'whatsapp',
+                score: 70,
+                status: 'Negociación',
+                value: 500,
+                messages: [
+                    { id: 1, sender: 'bot', text: `¡Hola! Bienvenido a ${brandName}. Soy el asistente IA. ¿En qué podemos ayudarte hoy?`, time: '10:30 AM' },
+                    { id: 2, sender: 'user', text: 'Hola, me interesa conocer los servicios y planes que ofrecen.', time: '10:32 AM' },
+                    { id: 3, sender: 'bot', text: `¡Hola Carlos! Qué gusto. En ${brandName} ofrecemos soluciones especializadas para impulsar tus objetivos. ¿Qué tipo de servicio buscas?`, time: '10:32 AM' },
+                    { id: 4, sender: 'user', text: 'Me interesa contratar el plan de crecimiento.', time: '10:40 AM' },
+                ]
+            },
+            {
+                id: 'c2',
+                name: 'Ana María G.',
+                avatar: 'https://i.pravatar.cc/150?u=ana',
+                niche: 'Cliente',
+                lastMessage: '¿Cuándo es el próximo taller o mentoría?',
+                time: 'Ayer',
+                unread: 0,
+                botActive: true,
+                source: 'instagram',
+                score: 80,
+                status: 'Contactado',
+                value: 150,
+                messages: [
+                    { id: 1, sender: 'user', text: 'Hola, quisiera saber los detalles del próximo evento.', time: 'Ayer, 4:00 PM' },
+                    { id: 2, sender: 'bot', text: `¡Hola! Qué gusto saludarte. Soy el asistente IA de ${brandName}. Con gusto te brindo la información del próximo evento. ¿Buscas presencial o virtual?`, time: 'Ayer, 4:00 PM' },
+                    { id: 3, sender: 'user', text: 'Preferiría virtual si es posible.', time: 'Ayer, 4:05 PM' },
+                    { id: 4, sender: 'user', text: '¿Cuándo es el próximo taller o mentoría?', time: 'Ayer, 4:06 PM' }
+                ]
+            }
+        ];
+    }
+};
+
+const getSimulatedQuestions = (activeClient) => {
+    const industry = activeClient?.industry || activeClient?.onboarding_data?.strategic?.industry || 'General';
+    const industryLower = industry.toLowerCase();
+    const nameLower = (activeClient?.name || '').toLowerCase();
+    const isMedical = ['doctor', 'medico', 'médico', 'medical', 'salud', 'clinica', 'clínica', 'urologia', 'urología'].some(k => industryLower.includes(k));
+    const isAgro = ['agro', 'campo', 'agropecuario', 'agropecuaria', 'vete', 'veterinaria'].some(k => industryLower.includes(k));
+    const isFood = ['panaderia', 'panadería', 'pasteleria', 'pastelería', 'bakery', 'comida', 'restaurante', 'alimentos'].some(k => industryLower.includes(k) || nameLower.includes(k)) || activeClient?.id === 'C-NEYSER-964';
+
+    if (isMedical) {
+        return [
+            { label: 'Precio Consulta', text: 'Hola, ¿qué precio tiene la consulta urológica?' },
+            { label: 'Citas Disponibles', text: 'Hola, ¿tienen disponibilidad de citas para esta semana?' },
+            { label: 'Cirugía Láser', text: 'Quisiera saber sobre el tratamiento con láser de próstata.' }
+        ];
+    } else if (isAgro) {
+        return [
+            { label: 'Cotizar Abono', text: 'Buenas tardes, ¿qué precio tiene el saco de abono orgánico?' },
+            { label: 'Visita Técnica', text: 'Hola, ¿cómo puedo agendar una visita técnica para mis cultivos?' },
+            { label: 'Sistemas Riego', text: 'Hola, me gustaría cotizar un sistema de riego para 1 hectárea.' }
+        ];
+    } else if (isFood) {
+        return [
+            { label: 'Torta Chocolate', text: 'Hola, ¿qué precio tiene una torta personalizada de chocolate?' },
+            { label: 'Pedidos Domicilio', text: 'Hola, ¿tienen entregas a domicilio el día de hoy?' },
+            { label: 'Pan Masa Madre', text: 'Buenas tardes, ¿qué días hornean pan de masa madre?' }
+        ];
+    } else {
+        return [
+            { label: 'Precios y Planes', text: 'Hola, me interesa conocer los precios de sus servicios y planes.' },
+            { label: 'Horarios', text: 'Hola, ¿cuáles son sus horarios de atención?' },
+            { label: 'Asesoría 1-on-1', text: 'Me gustaría agendar una mentoría o asesoría con ustedes.' }
+        ];
+    }
+};
+
+export default function UnifiedInbox({ activeClient }) {
+    const brandName = activeClient?.onboarding_data?.strategic?.brandName || activeClient?.name || 'Neyser';
+    
+    const [conversations, setConversations] = useState([]);
+    const [selectedId, setSelectedId] = useState(null);
     const [filter, setFilter] = useState('Todos');
     const [showCatalog, setShowCatalog] = useState(false);
+    const [inputText, setInputText] = useState('');
+    const [isBotTyping, setIsBotTyping] = useState(false);
+    
+    // AI Suggestions Sidekick States
+    const [aiSuggestion, setAiSuggestion] = useState('');
+    const [loadingSuggestion, setLoadingSuggestion] = useState(false);
 
-    const activeChat = mockConversations.find(c => c.id === selectedId);
+    const chatEndRef = useRef(null);
+
+    // Initialize/Update conversations when client changes
+    useEffect(() => {
+        const list = generateConversations(activeClient);
+        setConversations(list);
+        if (list.length > 0) {
+            setSelectedId(list[0].id);
+        }
+    }, [activeClient]);
+
+    const activeChat = conversations.find(c => c.id === selectedId);
+
+    // Auto-scroll when chat messages update or typing state changes
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [activeChat?.messages, isBotTyping]);
+
+    // Sidekick suggestion auto-updater
+    useEffect(() => {
+        if (activeChat) {
+            const lastUserMsg = activeChat.messages.filter(m => m.sender === 'user').slice(-1)[0]?.text;
+            if (lastUserMsg) {
+                fetchAISuggestion(lastUserMsg);
+            } else {
+                setAiSuggestion('');
+            }
+        }
+    }, [selectedId, activeChat?.messages?.length]);
+
+    const fetchAISuggestion = async (lastUserMsg) => {
+        setLoadingSuggestion(true);
+        try {
+            const res = await fetch('/api/ai/suggest-response', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lead: {
+                        full_name: activeChat.name,
+                        industry: activeChat.niche,
+                        source: activeChat.source
+                    },
+                    context: activeClient || { name: brandName, industry: 'General', onboarding_data: {} },
+                    lastMessage: lastUserMsg
+                })
+            });
+            const data = await res.json();
+            setAiSuggestion(data.text || 'No se pudo generar una sugerencia.');
+        } catch (e) {
+            console.error("Error fetching suggestion:", e);
+            setAiSuggestion('Error al conectar con el asistente de IA.');
+        } finally {
+            setLoadingSuggestion(false);
+        }
+    };
+
+    const handleSendMessage = () => {
+        if (!inputText.trim()) return;
+
+        const userMsg = {
+            id: Date.now(),
+            sender: 'human', // The operator
+            text: inputText.trim(),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        setConversations(prev => prev.map(chat => {
+            if (chat.id === selectedId) {
+                return {
+                    ...chat,
+                    messages: [...chat.messages, userMsg],
+                    lastMessage: userMsg.text,
+                    time: userMsg.time,
+                    botActive: false // Pauses the automatic responses as requested
+                };
+            }
+            return chat;
+        }));
+
+        setInputText('');
+    };
+
+    // Simulate Client Message and trigger AI Auto-response
+    const handleSimulateClientMessage = async (messageText) => {
+        if (!activeChat) return;
+
+        const clientMsg = {
+            id: Date.now(),
+            sender: 'user', // The client
+            text: messageText,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        // Add client message
+        setConversations(prev => prev.map(chat => {
+            if (chat.id === selectedId) {
+                return {
+                    ...chat,
+                    messages: [...chat.messages, clientMsg],
+                    lastMessage: clientMsg.text,
+                    time: clientMsg.time,
+                    botActive: true // Turn bot back on for auto-responding
+                };
+            }
+            return chat;
+        }));
+
+        // Trigger bot auto-response
+        setIsBotTyping(true);
+
+        try {
+            const res = await fetch('/api/ai/suggest-response', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lead: {
+                        full_name: activeChat.name,
+                        industry: activeChat.niche,
+                        source: activeChat.source
+                    },
+                    context: activeClient || { name: brandName, industry: 'General', onboarding_data: {} },
+                    lastMessage: messageText
+                })
+            });
+            
+            const data = await res.json();
+            
+            // Wait 1.5 seconds for typing realism
+            setTimeout(() => {
+                const botMsg = {
+                    id: Date.now() + 1,
+                    sender: 'bot',
+                    text: data.text || `¡Hola! Gracias por comunicarte con ${brandName}. En breve responderemos a tu consulta sobre "${messageText}".`,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+
+                setConversations(prev => prev.map(chat => {
+                    if (chat.id === selectedId) {
+                        return {
+                            ...chat,
+                            messages: [...chat.messages, botMsg],
+                            lastMessage: botMsg.text,
+                            time: botMsg.time
+                        };
+                    }
+                    return chat;
+                }));
+                setIsBotTyping(false);
+            }, 1500);
+
+        } catch (e) {
+            console.error("AI Auto-response error:", e);
+            setIsBotTyping(false);
+        }
+    };
+
+    const handleUseSuggestion = () => {
+        if (aiSuggestion) {
+            setInputText(aiSuggestion);
+        }
+    };
+
+    const handleSendSuggestionDirectly = () => {
+        if (!aiSuggestion) return;
+        
+        const botMsg = {
+            id: Date.now(),
+            sender: 'bot',
+            text: aiSuggestion,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        setConversations(prev => prev.map(chat => {
+            if (chat.id === selectedId) {
+                return {
+                    ...chat,
+                    messages: [...chat.messages, botMsg],
+                    lastMessage: botMsg.text,
+                    time: botMsg.time,
+                    botActive: false // Pauses bot since human operator decided to push it
+                };
+            }
+            return chat;
+        }));
+
+        setAiSuggestion('');
+    };
+
+    // Filtering logic
+    const filteredConversations = conversations.filter(chat => {
+        if (filter === 'No Leídos') return chat.unread > 0;
+        if (filter === 'IA Activa') return chat.botActive;
+        if (filter === 'Humanos') return !chat.botActive;
+        return true;
+    });
+
+    const simulatedQuestions = getSimulatedQuestions(activeClient);
 
     return (
         <div className="flex-1 flex h-full min-h-[600px] overflow-hidden bg-[#050511]">
@@ -94,7 +477,7 @@ export default function UnifiedInbox() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-                    {mockConversations.map(chat => (
+                    {filteredConversations.map(chat => (
                         <div 
                             key={chat.id} 
                             onClick={() => setSelectedId(chat.id)}
@@ -164,9 +547,42 @@ export default function UnifiedInbox() {
                                 <button className="p-2 bg-white/5 hover:bg-white/10 text-gray-400 rounded-lg transition-colors tooltip relative group">
                                     <AlertCircle className="w-5 h-5" />
                                 </button>
-                                <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all">
-                                    Tomar Control
+                                <button 
+                                    onClick={() => {
+                                        setConversations(prev => prev.map(chat => {
+                                            if (chat.id === selectedId) {
+                                                return { ...chat, botActive: !chat.botActive };
+                                            }
+                                            return chat;
+                                        }));
+                                    }}
+                                    className={`px-4 py-2 text-white text-sm font-bold rounded-xl shadow-lg transition-all ${
+                                        activeChat.botActive 
+                                            ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20' 
+                                            : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20'
+                                    }`}
+                                >
+                                    {activeChat.botActive ? 'Tomar Control (Pausar IA)' : 'Activar Asistente IA'}
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* Client Simulation Bar */}
+                        <div className="px-6 py-2 bg-[#0E0E18]/80 border-b border-white/5 flex items-center justify-between gap-3 overflow-x-auto custom-scrollbar z-10">
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                <Bot className="w-3.5 h-3.5 text-indigo-400" />
+                                <span className="text-[9px] font-black uppercase text-indigo-400 tracking-wider">Simular Lead:</span>
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto pb-0.5 custom-scrollbar">
+                                {simulatedQuestions.map((q, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => handleSimulateClientMessage(q.text)}
+                                        className="px-3 py-1 bg-white/5 hover:bg-indigo-600/30 border border-white/10 hover:border-indigo-500/30 rounded-full text-[10px] text-gray-300 hover:text-indigo-200 whitespace-nowrap transition-all"
+                                    >
+                                        "{q.label}"
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
@@ -191,7 +607,7 @@ export default function UnifiedInbox() {
                                                     {isUser ? 'Cliente' : isBot ? 'Asistente IA' : 'Admin'}
                                                 </span>
                                             </div>
-                                            <p className={`text-sm leading-relaxed ${isUser ? 'text-gray-200' : 'text-white'}`}>
+                                            <p className={`text-sm leading-relaxed whitespace-pre-line ${isUser ? 'text-gray-200' : 'text-white'}`}>
                                                 {msg.text}
                                             </p>
                                             <span className="text-[9px] text-gray-500 text-right mt-2 block">{msg.time}</span>
@@ -199,13 +615,34 @@ export default function UnifiedInbox() {
                                     </div>
                                 )
                             })}
+
+                            {/* Typing Indicator */}
+                            {isBotTyping && (
+                                <div className="flex justify-end">
+                                    <div className="max-w-[75%] rounded-2xl p-4 flex flex-col bg-indigo-600/10 border border-indigo-500/20 rounded-tr-sm animate-pulse">
+                                        <div className="flex items-center gap-2 mb-1.5 opacity-60">
+                                            <Bot className="w-3 h-3 text-indigo-400" />
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">
+                                                Asistente IA ({brandName})
+                                            </span>
+                                        </div>
+                                        <div className="flex gap-1.5 items-center h-4 py-1 px-2">
+                                            <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                            <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                            <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div ref={chatEndRef} />
                         </div>
 
                         {/* Chat Input */}
                         <div className="p-4 bg-[#0A0A12] border-t border-white/5 z-10 w-full relative">
                             {activeChat.botActive && (
                                 <div className="absolute -top-10 left-0 right-0 py-2 bg-indigo-500/10 text-center border-t border-indigo-500/20 text-xs text-indigo-300 flex items-center justify-center gap-2">
-                                    <Bot className="w-4 h-4 animate-pulse" /> La IA está administrando esta conversación. Escribir pausará el bot.
+                                    <Bot className="w-4 h-4 animate-pulse" /> La IA de {brandName} responderá automáticamente a los mensajes entrantes del cliente. Escribir pausará el bot.
                                 </div>
                             )}
                             <div className="flex bg-[#151520] border border-white/10 rounded-2xl overflow-hidden shadow-inner">
@@ -213,14 +650,22 @@ export default function UnifiedInbox() {
                                 <button 
                                     onClick={() => setShowCatalog(!showCatalog)}
                                     className={`p-4 transition-colors ${showCatalog ? 'text-indigo-400 bg-indigo-500/10' : 'text-gray-500 hover:text-white'}`}
-                                    title="Catálogo Médico"
+                                    title="Catálogo Comercial"
                                 >
                                     <ShoppingCart className="w-5 h-5" />
                                 </button>
                                 <div className="flex-1 relative bg-transparent">
                                     <textarea 
-                                        className="w-full bg-transparent text-white text-sm p-4 resize-none focus:outline-none custom-scrollbar"
-                                        placeholder="Mensaje o comando para la IA..."
+                                        value={inputText}
+                                        onChange={(e) => setInputText(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSendMessage();
+                                            }
+                                        }}
+                                        className="w-full bg-transparent text-white text-sm p-4 pr-32 resize-none focus:outline-none custom-scrollbar"
+                                        placeholder={`Escribe un mensaje de respuesta manual de ${brandName}...`}
                                         rows="1"
                                     ></textarea>
                                     
@@ -238,10 +683,13 @@ export default function UnifiedInbox() {
                                 <button className="p-4 text-emerald-400 hover:text-emerald-300 transition-colors relative group/mic">
                                     <Mic className="w-5 h-5 group-hover/mic:scale-110 transition-transform" />
                                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-2 bg-black border border-white/10 rounded-xl text-[9px] font-black uppercase text-white whitespace-nowrap opacity-0 group-hover/mic:opacity-100 transition-opacity pointer-events-none">
-                                        Enviar Nota de Voz IA (Voz de Dra. Rey)
+                                        Enviar Nota de Voz IA (Voz de Marca)
                                     </div>
                                 </button>
-                                <button className="p-4 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors flex items-center justify-center min-w-[60px]">
+                                <button 
+                                    onClick={handleSendMessage}
+                                    className="p-4 bg-indigo-600 hover:bg-indigo-500 text-white transition-colors flex items-center justify-center min-w-[60px]"
+                                >
                                     <Send className="w-5 h-5" />
                                 </button>
                             </div>
@@ -268,10 +716,11 @@ export default function UnifiedInbox() {
                                 className="h-full"
                             >
                                 <MedicalCatalog 
+                                    activeClient={activeClient}
                                     onClose={() => setShowCatalog(false)} 
                                     onSelect={(service) => {
-                                        // Simulator: Add message to chat (UI only)
-                                        console.log("Selected service:", service);
+                                        // Insert catalog link or information into input
+                                        setInputText(prev => prev + `Hola, te comparto la información de nuestro servicio: *${service.name}*. El precio es de $${service.price} USD.\nDescripción: ${service.description}\n`);
                                         setShowCatalog(false);
                                     }} 
                                 />
@@ -301,60 +750,86 @@ export default function UnifiedInbox() {
                                         <p className="text-sm text-gray-500 flex items-center justify-center gap-1 mt-1"><BriefcaseIcon /> {activeChat.niche}</p>
                                     </div>
 
-                        {/* CRM Pipeline Status */}
-                        <div className="bg-[#151520] p-4 rounded-2xl border border-white/5">
-                            <h4 className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-3">Estado en Pipeline</h4>
-                            <select className="w-full bg-[#0A0A12] border border-white/10 text-white text-sm rounded-xl px-3 py-2 outline-none focus:border-indigo-500 appearance-none">
-                                <option>Nuevo Lead</option>
-                                <option>Contactado</option>
-                                <option selected={activeChat.status === 'Negociación'}>Negociación</option>
-                                <option selected={activeChat.status === 'Propuesta Enviada'}>Propuesta Enviada</option>
-                                <option>Cerrado / Ganado</option>
-                            </select>
-                        </div>
+                                    {/* CRM Pipeline Status */}
+                                    <div className="bg-[#151520] p-4 rounded-2xl border border-white/5">
+                                        <h4 className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-3">Estado en Pipeline</h4>
+                                        <select 
+                                            value={activeChat.status}
+                                            onChange={(e) => {
+                                                const newStatus = e.target.value;
+                                                setConversations(prev => prev.map(chat => {
+                                                    if (chat.id === selectedId) {
+                                                        return { ...chat, status: newStatus };
+                                                    }
+                                                    return chat;
+                                                }));
+                                            }}
+                                            className="w-full bg-[#0A0A12] border border-white/10 text-white text-sm rounded-xl px-3 py-2 outline-none focus:border-indigo-500 appearance-none"
+                                        >
+                                            <option>Nuevo Lead</option>
+                                            <option>Contactado</option>
+                                            <option>Negociación</option>
+                                            <option>Propuesta Enviada</option>
+                                            <option>Cerrado / Ganado</option>
+                                        </select>
+                                    </div>
 
-                        {/* Financial Value Indicator */}
-                        <div className="bg-emerald-500/10 p-5 rounded-2xl border border-emerald-500/20 text-center relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-emerald-500/5 translate-y-full group-hover:translate-y-0 transition-transform"></div>
-                            <p className="text-[10px] text-emerald-400 uppercase font-black tracking-widest mb-1 relative z-10">Valor del Lead</p>
-                            <p className="text-3xl font-bold text-emerald-300 relative z-10">${activeChat.value.toLocaleString()}</p>
-                        </div>
+                                    {/* Financial Value Indicator */}
+                                    <div className="bg-emerald-500/10 p-5 rounded-2xl border border-emerald-500/20 text-center relative overflow-hidden group">
+                                        <div className="absolute inset-0 bg-emerald-500/5 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                                        <p className="text-[10px] text-emerald-400 uppercase font-black tracking-widest mb-1 relative z-10">Valor de Venta Est.</p>
+                                        <p className="text-3xl font-bold text-emerald-300 relative z-10">${activeChat.value.toLocaleString()}</p>
+                                    </div>
 
-                        {/* AI Copilot Sidekick */}
-                        <div className="bg-indigo-500/10 p-5 rounded-2xl border border-indigo-500/20 relative overflow-hidden">
-                            <BrainCircuit className="absolute -right-4 -top-4 w-20 h-20 text-indigo-500/10" />
-                            <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <Bot className="w-4 h-4" /> Sugerencia IA
-                            </h4>
-                            <p className="text-sm text-indigo-200 leading-relaxed relative z-10">
-                                {activeChat.score < 50 
-                                    ? "Este lead parece ser un 'curioso'. No ha respondido sobre presupuesto. ¿Mover a archivo?"
-                                    : "El cliente ha denotado interés técnico. Sugiero enviar el Catálogo Interactivo y agendar una llamada de 15 min."
-                                }
-                            </p>
-                            <div className="flex gap-2 mt-4 relative z-10">
-                                <button className="flex-1 bg-indigo-500/20 hover:bg-indigo-500 flex items-center justify-center py-2 text-indigo-300 hover:text-white text-xs font-bold rounded-lg border border-indigo-500/30 transition-all">
-                                    {activeChat.score < 50 ? "Archivar" : "Agendar Cita"}
-                                </button>
-                                {activeChat.score < 50 && (
-                                    <button className="px-3 py-2 bg-red-500/10 hover:bg-red-500 text-red-300 hover:text-white rounded-lg border border-red-500/30 transition-all" title="Descartar como Curioso">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
+                                    {/* AI Copilot Sidekick */}
+                                    <div className="bg-indigo-500/10 p-5 rounded-2xl border border-indigo-500/20 relative overflow-hidden">
+                                        <BrainCircuit className="absolute -right-4 -top-4 w-20 h-20 text-indigo-500/10" />
+                                        <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                            <Bot className="w-4 h-4" /> Sugerencia IA Real
+                                        </h4>
+                                        
+                                        {loadingSuggestion ? (
+                                            <div className="flex flex-col items-center justify-center py-4 space-y-2">
+                                                <Bot className="w-6 h-6 text-indigo-400 animate-spin" />
+                                                <span className="text-[10px] font-black text-indigo-300 uppercase tracking-wider">Pensando respuesta real...</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <p className="text-xs text-indigo-200 leading-relaxed relative z-10 font-medium whitespace-pre-line">
+                                                    {aiSuggestion || "Sin mensajes recientes del cliente para analizar."}
+                                                </p>
+                                                {aiSuggestion && (
+                                                    <div className="flex gap-2 mt-4 relative z-10">
+                                                        <button 
+                                                            onClick={handleUseSuggestion}
+                                                            className="flex-1 bg-indigo-600/30 hover:bg-indigo-600 flex items-center justify-center py-2 text-indigo-300 hover:text-white text-xs font-bold rounded-lg border border-indigo-500/30 transition-all"
+                                                        >
+                                                            Copiar al Editor
+                                                        </button>
+                                                        <button 
+                                                            onClick={handleSendSuggestionDirectly}
+                                                            className="px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-300 hover:text-white rounded-lg border border-emerald-500/30 transition-all"
+                                                            title="Enviar Directo"
+                                                        >
+                                                            <Send className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
 
-                        {/* Basic Info Fields */}
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-3 p-3 bg-[#151520] rounded-xl border border-white/5">
-                                <Phone className="w-4 h-4 text-gray-500" />
-                                <span className="text-sm text-white">+52 55 1234 5678</span>
-                            </div>
-                            <div className="flex items-center gap-3 p-3 bg-[#151520] rounded-xl border border-white/5">
-                                <MapPin className="w-4 h-4 text-gray-500" />
-                                <span className="text-sm text-white">Ciudad de México</span>
-                            </div>
-                        </div>
+                                    {/* Basic Info Fields */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3 p-3 bg-[#151520] rounded-xl border border-white/5">
+                                            <Phone className="w-4 h-4 text-gray-500" />
+                                            <span className="text-sm text-white">{activeClient?.whatsapp_number || '+593 99 999 9999'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 p-3 bg-[#151520] rounded-xl border border-white/5">
+                                            <MapPin className="w-4 h-4 text-gray-500" />
+                                            <span className="text-sm text-white">{activeClient?.city || activeClient?.onboarding_data?.strategic?.city || 'Santo Domingo, Ecuador'}</span>
+                                        </div>
+                                    </div>
 
                                 </div>
                             </motion.div>

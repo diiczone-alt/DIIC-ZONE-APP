@@ -439,7 +439,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
 
     // Basic state for the profile
     const [profile, setProfile] = useState({
-        brandName: user?.user_metadata?.brand || '',
+        brandName: (user?.user_metadata?.brand || '').replace(/[-_\s]+workspace\s*$/i, '').trim(),
         leadership: '',
         whatItDoes: '',
         whatItOffers: '',
@@ -626,7 +626,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
             if (!currentClientId && user?.id) {
                 console.log("No client_id found. Auto-creating client record...");
                 const newClientRes = await agencyService.createClient({
-                    name: targetProfile.brandName || user?.user_metadata?.brand || user?.user_metadata?.full_name || 'Nuevo Cliente',
+                    name: (targetProfile.brandName || user?.user_metadata?.brand || user?.user_metadata?.full_name || 'Nuevo Cliente').replace(/[-_\s]+workspace\s*$/i, '').trim(),
                     email: user?.email || '',
                     website: targetProfile.websiteUrl || '',
                     goals: targetProfile.goals || []

@@ -520,7 +520,7 @@ const handleCreateLead = async (e) => {
 
                     {activeView === 'inbox' && (
                         <div className="h-[750px] border border-white/5 rounded-[3rem] overflow-hidden shadow-2xl">
-                             <UnifiedInbox />
+                             <UnifiedInbox activeClient={activeClient} />
                         </div>
                     )}
 
