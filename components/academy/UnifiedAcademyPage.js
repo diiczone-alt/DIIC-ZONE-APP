@@ -8,7 +8,7 @@ import {
     Award, Brain, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ACADEMY_COURSES, FILMMAKER_ACADEMY_COURSES, DESIGNER_ACADEMY_COURSES } from '@/data/academyCourses';
+import { ACADEMY_COURSES, FILMMAKER_ACADEMY_COURSES, DESIGNER_ACADEMY_COURSES, AUDIO_ACADEMY_COURSES } from '@/data/academyCourses';
 import { toast } from 'sonner';
 
 const getThemeColors = (role) => {
@@ -54,15 +54,15 @@ const getThemeColors = (role) => {
     }
     if (r === 'audio') {
         return {
-            primary: 'text-emerald-400',
-            primaryBg: 'bg-emerald-500/10',
-            primaryBorder: 'border-emerald-500/20',
-            primarySolidBg: 'bg-emerald-600 hover:bg-emerald-500',
-            primarySolidText: 'text-emerald-600',
-            accentGlow: 'shadow-emerald-500/20',
-            badge: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-            iconColor: 'text-emerald-400',
-            glowClass: 'bg-emerald-600/5'
+            primary: 'text-amber-400',
+            primaryBg: 'bg-amber-500/10',
+            primaryBorder: 'border-amber-500/20',
+            primarySolidBg: 'bg-amber-600 hover:bg-amber-500',
+            primarySolidText: 'text-amber-600',
+            accentGlow: 'shadow-amber-500/20',
+            badge: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+            iconColor: 'text-amber-400',
+            glowClass: 'bg-amber-600/5'
         };
     }
     if (r === 'photography') {
@@ -104,6 +104,7 @@ export default function UnifiedAcademyPage() {
     const currentRole = isCentral ? 'workstation' : pathParts[2];
     const isFilmmakerRoute = currentRole === 'filmmaker';
     const isDesignerRoute = currentRole === 'designer';
+    const isAudioRoute = currentRole === 'audio';
     
     const theme = getThemeColors(currentRole);
     
@@ -132,7 +133,9 @@ export default function UnifiedAcademyPage() {
                 ? FILMMAKER_ACADEMY_COURSES 
                 : isDesignerRoute 
                     ? DESIGNER_ACADEMY_COURSES 
-                    : ACADEMY_COURSES;
+                    : isAudioRoute
+                        ? AUDIO_ACADEMY_COURSES
+                        : ACADEMY_COURSES;
             const loadedCourses = baseCourses.map(course => {
                 let savedProgress = null;
                 try {
@@ -149,7 +152,7 @@ export default function UnifiedAcademyPage() {
         } catch (err) {
             console.error("Error initializing academy courses:", err);
         }
-    }, [pathname, isFilmmakerRoute]);
+    }, [pathname, isFilmmakerRoute, isAudioRoute]);
 
     const handleCourseClick = (course, isLocked) => {
         if (isLocked) {

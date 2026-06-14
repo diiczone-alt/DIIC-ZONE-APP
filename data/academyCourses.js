@@ -2,7 +2,7 @@ import {
     Megaphone, Users, PenTool, Video, Palette,
     Camera, Image as ImageIcon, MessageCircle, Bot, Rocket,
     Clapperboard, Lightbulb, Mic, Move, FileText, FolderOpen,
-    Scissors, Sliders, Paintbrush, Layers, Activity
+    Scissors, Sliders, Paintbrush, Layers, Activity, Music
 } from 'lucide-react';
 
 export const ACADEMY_COURSES = [
@@ -627,6 +627,199 @@ export const DESIGNER_ACADEMY_COURSES = [
         color: "text-white",
         bgColor: "bg-white/5",
         borderColor: "border-white/10",
+        progress: 0
+    }
+];
+
+export const AUDIO_ACADEMY_COURSES = [
+    {
+        id: 301,
+        title: "Fundamentos del Sonido & Audio Digital",
+        level: "Básico",
+        focus: "Acoustics & Audio Basics",
+        description: "Conoce las ondas sonoras, frecuencia, amplitud, fase, decibelios y la diferencia entre audio analógico y digital.",
+        icon: Activity,
+        topics: [
+            "Física del sonido: Longitud de onda e impedancia",
+            "Frecuencia, Amplitud y Fase",
+            "Decibelios (dB SPL, dBfs, dBu)",
+            "Muestreo digital (Sample Rate & Bit Depth)",
+            "Formatos de audio: Comprimido vs No comprimido"
+        ],
+        color: "text-blue-400",
+        bgColor: "bg-blue-500/10",
+        borderColor: "border-blue-500/20",
+        progress: 0
+    },
+    {
+        id: 302,
+        title: "Grabación de Voces & Acústica de Sala",
+        level: "Básico",
+        focus: "Recording Tech",
+        description: "Técnicas de microfonía (condensador vs dinámicos), patrones polares, ganancia limpia y acondicionamiento acústico del estudio.",
+        icon: Mic,
+        topics: [
+            "Tipos de micrófonos y sus aplicaciones",
+            "Patrones polares (Cardioide, Omnidireccional, Figura 8)",
+            "Ganancia y estructura de ganancia analógica",
+            "Tratamiento acústico básico de salas (absorción vs difusión)",
+            "Posicionamiento del micrófono y control de sibilancias"
+        ],
+        color: "text-blue-400",
+        bgColor: "bg-blue-500/10",
+        borderColor: "border-blue-500/20",
+        progress: 0
+    },
+    {
+        id: 303,
+        title: "Flujo de Trabajo en el DAW: Edición y Organización",
+        level: "Básico",
+        focus: "DAW Navigation",
+        description: "Organización de canales, códigos de color, plantillas de sesión, buses de envío, proxies de audio y estructura de carpetas DIIC.",
+        icon: FolderOpen,
+        topics: [
+            "Entorno de trabajo DAW y optimización de buffer size",
+            "Código de color y nomenclatura estándar DIIC",
+            "Creación de plantillas de sesión eficientes",
+            "Importación y exportación de stems",
+            "Control de versiones y backups de sesiones de audio"
+        ],
+        color: "text-blue-400",
+        bgColor: "bg-blue-500/10",
+        borderColor: "border-blue-500/20",
+        progress: 0
+    },
+    {
+        id: 304,
+        title: "Ecualización Técnica y Creativa (EQ)",
+        level: "Intermedio",
+        focus: "Equalization",
+        description: "Uso de ecualizadores paramétricos, filtros paso alto/bajo, barrido de frecuencias y limpieza de frecuencias molestas o resonancias.",
+        icon: Sliders,
+        topics: [
+            "Filtros de corte (High-pass, Low-pass, Shelving, Bell)",
+            "Barrido de frecuencias y detección de resonancias molestas",
+            "EQ correctiva frente a EQ creativa o tonal",
+            "Concepto de enmascaramiento de frecuencias",
+            "Uso de analizadores de espectro"
+        ],
+        color: "text-purple-400",
+        bgColor: "bg-purple-500/10",
+        borderColor: "border-purple-500/20",
+        progress: 0
+    },
+    {
+        id: 305,
+        title: "Compresión y Control de Dinámica",
+        level: "Intermedio",
+        focus: "Dynamic Processing",
+        description: "Umbral (threshold), ratio, ataque, liberación y codo. Compresión en serie, paralela y limitadores.",
+        icon: Sliders,
+        topics: [
+            "Parámetros del compresor: Threshold, Ratio, Attack, Release",
+            "Compresión musical vs compresión correctiva",
+            "Uso de limitadores y compresión multibanda",
+            "Compresión paralela para dar cuerpo y pegada",
+            "Procesamiento de sidechain técnico y creativo"
+        ],
+        color: "text-purple-400",
+        bgColor: "bg-purple-500/10",
+        borderColor: "border-purple-500/20",
+        progress: 0
+    },
+    {
+        id: 306,
+        title: "Efectos Temporales: Reverb & Delay",
+        level: "Intermedio",
+        focus: "Time FX",
+        description: "Creación de profundidad tridimensional. Reverbs de placa, sala, convolución y delays rítmicos sincronizados al tempo (BPM).",
+        icon: Music,
+        topics: [
+            "Profundidad acústica y espacio tridimensional",
+            "Tipos de Reverb: Hall, Room, Plate, Spring y Convolución",
+            "Alineación rítmica del Delay con el tempo (BPM)",
+            "Procesamiento de reverbs y delays en canales de envío (Aux)",
+            "Técnicas de modulación de efectos de tiempo"
+        ],
+        color: "text-purple-400",
+        bgColor: "bg-purple-500/10",
+        borderColor: "border-purple-500/20",
+        progress: 0
+    },
+    {
+        id: 307,
+        title: "Principios de Mezcla: Estéreo y Balance de Niveles",
+        level: "Intermedio",
+        focus: "Mixing Fundamentals",
+        description: "Técnicas de panning, posicionamiento instrumental en el campo estéreo y balance de volumen relativo.",
+        icon: Sliders,
+        topics: [
+            "Balance de niveles de canal (Leveling)",
+            "Uso del campo estéreo y técnicas de Paneo (Panning)",
+            "Mezcla en mono para compatibilidad y balance de fase",
+            "Estructuración de buses de mezcla (Submixes)",
+            "Flujo de señal y headroom en la consola de mezcla"
+        ],
+        color: "text-purple-400",
+        bgColor: "bg-purple-500/10",
+        borderColor: "border-purple-500/20",
+        progress: 0
+    },
+    {
+        id: 308,
+        title: "Edición Vocal: Afinación & Alineación",
+        level: "Avanzado",
+        focus: "Vocal Tuning",
+        description: "Corrección de tono manual y creativa (Melodyne/Autotune), sincronización de segundas voces y tratamiento de sibilancias (De-esser).",
+        icon: Mic,
+        topics: [
+            "Afinación vocal manual con Melodyne (tono, formantes, deriva)",
+            "Afinación automática creativa y natural",
+            "Alineación temporal de voces dobladas y coros (VocALign)",
+            "Control de sibilancias con De-esser y atenuación manual",
+            "Edición de ruidos de boca, respiraciones y clics"
+        ],
+        color: "text-red-400",
+        bgColor: "bg-red-500/10",
+        borderColor: "border-red-500/20",
+        progress: 0
+    },
+    {
+        id: 309,
+        title: "Diseño de Sonido & Foley para Cine",
+        level: "Avanzado",
+        focus: "Sound Design",
+        description: "Grabación de efectos de sala (Foley) con microfonía shotgun, creación de transiciones y foley, e integración sonora en video.",
+        icon: Clapperboard,
+        topics: [
+            "Grabación de efectos de sala (Foley) con microfonía shotgun",
+            "Creación de texturas sonoras e impactos de transición (Impacts, Wooshes)",
+            "Fundamentos de síntesis sustractiva, FM y wavetable",
+            "Sincronización de audio con pista de video en DAW",
+            "Mezcla envolvente básica (LCR, 5.1)"
+        ],
+        color: "text-red-400",
+        bgColor: "bg-red-500/10",
+        borderColor: "border-red-500/20",
+        progress: 0
+    },
+    {
+        id: 310,
+        title: "Masterización Digital de Audio",
+        level: "Avanzado",
+        focus: "Mastering",
+        description: "Procesamiento del bus master, ecualización mid-side, compresión multibanda, maximización de volumen (LUFS) y exportación para streaming.",
+        icon: Rocket,
+        topics: [
+            "Preparación del premaster y control de dinámica general",
+            "Ecualización Mid-Side (M/S) en el bus master",
+            "Compresión de pegada (Glue Compression) y limitación brickwall",
+            "Medición de sonoridad: LUFS integrados y de corto plazo, True Peak",
+            "Formatos de entrega para plataformas digitales (Metadata, Dither)"
+        ],
+        color: "text-red-400",
+        bgColor: "bg-red-500/10",
+        borderColor: "border-red-500/20",
         progress: 0
     }
 ];
