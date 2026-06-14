@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import WorkstationProfileDropdown from '@/components/workstation/WorkstationProfileDropdown';
 
 const SAMPLE_LIBRARY = [
     { id: 1, name: 'Lo-Fi Chill Snare & Kick Kit', category: 'Loops', type: 'Drum Kit', duration: '00:45', size: '8.4 MB' },
@@ -74,6 +75,9 @@ export default function AudioLibraryPage() {
                         </h1>
                         <p className="text-xs text-gray-400 font-medium">Librería de efectos, loops y herramientas de audio de uso libre</p>
                     </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <WorkstationProfileDropdown role="Audio" />
                 </div>
             </header>
 

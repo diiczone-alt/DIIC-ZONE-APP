@@ -8,6 +8,7 @@ import {
     MessageSquare, CheckCircle, Clock, Music
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import WorkstationProfileDropdown from '@/components/workstation/WorkstationProfileDropdown';
 
 export default function AudioProjectPage({ params }) {
     const { projectId } = use(params);
@@ -55,6 +56,7 @@ export default function AudioProjectPage({ params }) {
                         <Save className="w-4 h-4" />
                         Guardar Mix
                     </button>
+                    <WorkstationProfileDropdown role="Audio" />
                 </div>
             </header>
 

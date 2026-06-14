@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import WorkstationProfileDropdown from '@/components/workstation/WorkstationProfileDropdown';
 
 const MOCK_TRACKS = [
     { id: 1, name: 'Voz Principal - Podcast Ep. 45', type: 'Vocal Stem', size: '42.1 MB', duration: '45:30', date: 'Hace 2 horas', status: 'ready', volume: 80, isMuted: false, isSolo: false },
@@ -89,6 +90,9 @@ export default function AudioTracksPage() {
                         </h1>
                         <p className="text-xs text-gray-400">Canales de audio y stems de producción activos</p>
                     </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <WorkstationProfileDropdown role="Audio" />
                 </div>
             </header>
 

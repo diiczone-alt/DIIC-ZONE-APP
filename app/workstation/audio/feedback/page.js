@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import WorkstationProfileDropdown from '@/components/workstation/WorkstationProfileDropdown';
 
 const MOCK_TICKETS = [
     {
@@ -99,6 +100,9 @@ export default function AudioFeedbackPage() {
                         </h1>
                         <p className="text-xs text-gray-400">Revisión y comentarios de clientes con marcas de tiempo</p>
                     </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <WorkstationProfileDropdown role="Audio" />
                 </div>
             </header>
 

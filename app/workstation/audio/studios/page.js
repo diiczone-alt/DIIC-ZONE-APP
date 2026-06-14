@@ -6,6 +6,7 @@ import {
     Mic2, Music, DollarSign, Clock, ArrowRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import WorkstationProfileDropdown from '@/components/workstation/WorkstationProfileDropdown';
 
 export default function StudioMarketplace() {
 
@@ -64,6 +65,7 @@ export default function StudioMarketplace() {
                     <button className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors">
                         <Filter className="w-5 h-5" />
                     </button>
+                    <WorkstationProfileDropdown role="Audio" />
                 </div>
             </header>
 

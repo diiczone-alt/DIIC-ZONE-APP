@@ -5,6 +5,7 @@ import {
     Calendar as CalendarIcon, ChevronLeft, ChevronRight,
     Mic2, Disc, Clock, CheckCircle, AlertCircle
 } from 'lucide-react';
+import WorkstationProfileDropdown from '@/components/workstation/WorkstationProfileDropdown';
 
 export default function AudioAgenda() {
 
@@ -42,6 +43,9 @@ export default function AudioAgenda() {
                             <ChevronRight className="w-4 h-4 text-gray-400" />
                         </button>
                     </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <WorkstationProfileDropdown role="Audio" />
                 </div>
             </header>
 

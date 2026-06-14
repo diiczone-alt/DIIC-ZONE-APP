@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import WorkstationProfileDropdown from '@/components/workstation/WorkstationProfileDropdown';
 
 const MOCK_REVIEWS = [
     { id: 1, author: 'Carlos R. (DIIC Media)', comment: 'La calidad del mix del podcast es excelente. Entregó 2 horas antes de lo planeado y con todas las respiraciones eliminadas.', rating: 5, date: 'Hace 3 días' },
@@ -44,6 +45,9 @@ export default function AudioReputationPage() {
                         </h1>
                         <p className="text-xs text-gray-400">Puntaje, medallas de especialidad y valoraciones de clientes</p>
                     </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <WorkstationProfileDropdown role="Audio" />
                 </div>
             </header>
 

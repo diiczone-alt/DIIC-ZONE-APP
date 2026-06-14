@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import WorkstationProfileDropdown from '@/components/workstation/WorkstationProfileDropdown';
 
 // --- MOCK DATA ---
 const INITIAL_AUDIO_PROJECTS = [
@@ -151,6 +152,7 @@ export default function AudioDashboard() {
                     >
                         <Plus className="w-4 h-4" /> Nuevo Proyecto
                     </button>
+                    <WorkstationProfileDropdown role="Audio" />
                 </div>
             </header>
 
