@@ -28,8 +28,7 @@ import EnvironmentSuccessStep from './steps/EnvironmentSuccessStep'; // Etapa 16
 
 // --- CREATIVE SPECIALIZED STEPS ---
 import TalentRoleStep from './steps/TalentRoleStep';
-import TalentDescriptionStep from './steps/TalentDescriptionStep';
-import TalentCVStep from './steps/TalentCVStep';
+import CreativeProfileStep from './steps/CreativeProfileStep';
 
 export default function OnboardingWizard({ initialType = 'client' }) {
     const router = useRouter();
@@ -61,7 +60,7 @@ export default function OnboardingWizard({ initialType = 'client' }) {
     const { user, loading } = useAuth();
 
     const isCreative = formData.type === 'creative';
-    const totalSteps = isCreative ? 9 : 4;
+    const totalSteps = 4;
 
 
     // 1. Persistence: Load state from localStorage on mount
@@ -121,11 +120,8 @@ export default function OnboardingWizard({ initialType = 'client' }) {
         }
 
         if (user) {
-            if (isCreative && currentStep < 4) {
-                console.log('[OnboardingWizard] Session detected for Creative, skipping to step 4...');
-                setCurrentStep(4);
-            } else if (!isCreative && currentStep === 1) {
-                console.log('[OnboardingWizard] Session detected for Client, skipping to step 2...');
+            if (currentStep === 1) {
+                console.log('[OnboardingWizard] Session detected, skipping to step 2...');
                 setCurrentStep(2);
             }
         }
@@ -161,16 +157,11 @@ export default function OnboardingWizard({ initialType = 'client' }) {
 
     const renderStep = () => {
         if (isCreative) {
-            if (currentStep === 1) return <WelcomeStep onNext={nextStep} type={formData.type} />;
-            if (currentStep === 2) return <LegalStep onNext={nextStep} />;
-            if (currentStep === 3) return <AuthStep onNext={nextStep} updateData={updateRoot} type={formData.type} />;
             switch (currentStep) {
-                case 4: return <TalentRoleStep onNext={nextStep} updateData={updateRoot} />;
-                case 5: return <TalentDescriptionStep onNext={nextStep} updateData={updateRoot} data={formData} />;
-                case 6: return <TalentCVStep onNext={nextStep} updateData={updateRoot} data={formData} />;
-                case 7: return <SubProfileStep onNext={nextStep} updateData={updateRoot} profileType={formData.role || 'creator'} />;
-                case 8: return <DriveSetupStep onNext={nextStep} updateData={(d) => handleUpdateData('driveData', d)} data={formData} />;
-                case 9: return <EnvironmentSuccessStep onNext={nextStep} formData={formData} />;
+                case 1: return <AuthStep onNext={nextStep} updateData={updateRoot} type={formData.type} />;
+                case 2: return <TalentRoleStep onNext={nextStep} updateData={updateRoot} />;
+                case 3: return <CreativeProfileStep onNext={nextStep} updateData={updateRoot} data={formData} />;
+                case 4: return <EnvironmentSuccessStep onNext={nextStep} formData={formData} />;
                 default: return <div className="text-white text-center p-10 font-bold">¡Bienvenido a la Zona Creativa! 🎥</div>;
             }
         } else {

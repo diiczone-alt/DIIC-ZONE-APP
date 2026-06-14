@@ -114,11 +114,6 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
     }, []);
 
     const handleGoogleConnect = async () => {
-        if (isCreative && (!formData.country || !formData.city || !formData.address || !formData.birth_date || !formData.website)) {
-            toast.error("Por favor, ingresa tu País, Ciudad, Dirección Exacta, Fecha de Nacimiento y Sitio Web antes de continuar con Google.");
-            return;
-        }
-
         setLoading(true);
         try {
             toast.info('Iniciando conexión segura con Google...');
@@ -148,7 +143,7 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
             }
 
             const finalRole = isCreative 
-                ? mapSpecialtyToRole(formData.brand) 
+                ? 'CREATOR' 
                 : 'CLIENT';
 
             await signInWithGoogle({
@@ -170,38 +165,15 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
     const handleEmailRegister = async (e) => {
         e.preventDefault();
         
-        if (isCreative) {
-            if (!formData.country) {
-                toast.error('Por favor, selecciona tu país.');
-                return;
-            }
-            if (!formData.city) {
-                toast.error('Por favor, ingresa tu ciudad.');
-                return;
-            }
-            if (!formData.address) {
-                toast.error('Por favor, ingresa tu dirección exacta.');
-                return;
-            }
-            if (!formData.birth_date) {
-                toast.error('Por favor, ingresa tu fecha de nacimiento.');
-                return;
-            }
-            if (!formData.website) {
-                toast.error('Por favor, ingresa tu sitio web.');
-                return;
-            }
-        } else {
-            if (formData.password !== formData.confirmPassword) {
-                toast.error('Las contraseñas no coinciden.');
-                return;
-            }
+        if (formData.password !== formData.confirmPassword) {
+            toast.error('Las contraseñas no coinciden.');
+            return;
         }
 
         setLoading(true);
         try {
             const finalRole = isCreative 
-                ? mapSpecialtyToRole(formData.brand) 
+                ? 'CREATOR' 
                 : 'CLIENT';
 
             const result = await register(formData.email, formData.password, { 
@@ -609,317 +581,252 @@ export default function AuthStep({ onNext, updateData, type = 'client' }) {
         );
     }
 
-    // ORIGINAL CREATIVE AUTHENTICATION FORM FLOW
+    // CONSISTENT CREATIVE AUTHENTICATION FORM FLOW
     return (
-        <div className="flex flex-col items-center justify-center min-h-[550px] text-center space-y-6 max-w-lg mx-auto relative group py-2">
-            
+        <div className="flex flex-col items-center justify-center min-h-[550px] w-full text-center space-y-8 max-w-lg mx-auto relative group py-2">
             <div className="absolute top-0 left-0 w-full flex justify-between px-4 opacity-20 pointer-events-none">
                 <div className="flex items-center gap-2 font-mono text-[8px] tracking-[0.2em]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    IDENTITY_PROTOCOL_ACTIVE
-                </div>
-                <div className="flex items-center gap-2 font-mono text-[8px] tracking-[0.2em]">
-                    PORTAL: UNI_EXT_V2
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                    DIIC_ZONE_SYSTEM_V2
                 </div>
             </div>
 
-            <div className="space-y-4">
-                <motion.h1 
-                    initial={{ opacity: 0, scale: 0.9 }}
+            {authMode === 'welcome' && (
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="text-4xl md:text-5xl font-black text-white tracking-tight italic uppercase leading-none"
+                    className="space-y-8 w-full"
                 >
-                    QUEREMOS <span className="text-indigo-500">CONOCERTE</span>
-                </motion.h1>
-                <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">
-                    Estableciendo credenciales de seguridad
-                </p>
-            </div>
-
-            <motion.form
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                onSubmit={handleEmailRegister}
-                className="w-full space-y-4 bg-white/5 p-8 rounded-[2.5rem] border border-white/10 backdrop-blur-3xl relative overflow-hidden"
-            >
-                {/* Field Group: Identity & Brand */}
-                <div className="space-y-1 text-left">
-                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                        <User className="w-2.5 h-2.5" /> Identity
-                    </label>
-                    <input 
-                        required
-                        autoComplete="off"
-                        name={`diic_identity_${Math.random()}`}
-                        placeholder="Tu Nombre"
-                        value={formData.full_name}
-                        onChange={e => setFormData({...formData, full_name: e.target.value})}
-                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
-                    />
-                </div>
-
-                {/* Fields: Country & City (2-column layout) */}
-                <div className="grid grid-cols-2 gap-4">
-                    {/* Country Field (Custom Dropdown) */}
-                    <div className="space-y-1 text-left relative z-[103]">
-                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                            <Globe className="w-2.5 h-2.5" /> País
-                        </label>
-                        <div 
-                            onClick={() => setIsCountryOpen(!isCountryOpen)}
-                            className={`w-full bg-black/20 border ${isCountryOpen ? 'border-indigo-500' : 'border-white/5'} rounded-2xl p-4 text-xs text-white transition-all font-bold flex items-center justify-between cursor-pointer`}
-                        >
-                            <span className={formData.country ? 'text-white' : 'text-gray-700'}>
-                                {formData.country || "Seleccionar País"}
-                            </span>
-                            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isCountryOpen ? 'rotate-180' : ''}`} />
-                        </div>
-
-                        <AnimatePresence>
-                            {isCountryOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 5 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    className="absolute left-0 w-full bg-[#0A0A1F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-40 overflow-y-auto z-[104] backdrop-blur-3xl scrollbar-hide"
-                                >
-                                    {countryOptions.map((item) => (
-                                        <div 
-                                            key={item}
-                                            onClick={() => {
-                                                setFormData({...formData, country: item, city: ''});
-                                                setCustomCityActive(false);
-                                                setIsCountryOpen(false);
-                                            }}
-                                            className="px-6 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all flex items-center justify-between"
-                                        >
-                                            {item}
-                                            {formData.country === item && <div className="w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(79,70,229,1)]" />}
-                                        </div>
-                                    ))}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                    <div className="space-y-4">
+                        <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.5em] leading-none">
+                            ZONA CREATIVA
+                        </h2>
+                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight italic uppercase leading-none">
+                            Únete al equipo <br/>
+                            <span className="text-indigo-500">de alto rendimiento</span>
+                        </h1>
+                        <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-md mx-auto pt-2">
+                            Regístrate para conectar con las mejores marcas, automatizar tu flujo creativo y trabajar de manera colaborativa.
+                        </p>
                     </div>
 
-                    {/* City Field (Custom Dropdown with Custom Input Fallback) */}
-                    {customCityActive ? (
-                        <div className="space-y-1 text-left relative z-[103]">
-                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center justify-between">
-                                <span className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" /> Ciudad</span>
-                                <button 
-                                    type="button" 
-                                    onClick={() => {
-                                        setCustomCityActive(false);
-                                        setFormData({...formData, city: ''});
-                                    }}
-                                    className="text-[8px] text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-wider transition-colors"
-                                >
-                                    Ver Lista
-                                </button>
+                    <div className="space-y-4 pt-6 w-full px-4">
+                        <button
+                            onClick={handleGoogleConnect}
+                            disabled={loading}
+                            className="w-full py-5 bg-white text-black font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center shadow-[0_4px_20px_rgba(255,255,255,0.15)] disabled:opacity-50"
+                        >
+                            <GoogleIcon />
+                            {loading ? 'Cargando...' : 'Continuar con Google'}
+                        </button>
+
+                        <button
+                            onClick={() => setAuthMode('email_register')}
+                            className="w-full py-5 border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center"
+                        >
+                            <Mail className="w-5 h-5 mr-2 shrink-0 text-indigo-400" />
+                            Crear cuenta con correo
+                        </button>
+                    </div>
+
+                    <div className="pt-4">
+                        <p className="text-xs text-gray-500">
+                            ¿Ya tienes una cuenta?{' '}
+                            <button
+                                onClick={() => setAuthMode('email_login')}
+                                className="text-indigo-400 hover:text-indigo-300 font-bold underline"
+                            >
+                                Inicia Sesión
+                            </button>
+                        </p>
+                    </div>
+                </motion.div>
+            )}
+
+            {authMode === 'email_register' && (
+                <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full space-y-6 bg-white/5 p-8 rounded-[2.5rem] border border-white/10 backdrop-blur-3xl"
+                >
+                    <div className="space-y-2">
+                        <h2 className="text-2xl font-black text-white uppercase italic">Crear Cuenta</h2>
+                        <p className="text-gray-500 text-xs uppercase tracking-widest font-mono">ÚNETE A LA RED CREATIVA</p>
+                    </div>
+
+                    <form onSubmit={handleEmailRegister} className="space-y-4 text-left">
+                        <div className="space-y-1">
+                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                                <User className="w-2.5 h-2.5" /> Nombre Completo
                             </label>
                             <input 
                                 required
-                                autoComplete="off"
-                                name={`diic_city_${Math.random()}`}
-                                placeholder="Escribe tu Ciudad"
-                                value={formData.city}
-                                onChange={e => setFormData({...formData, city: e.target.value})}
-                                className="w-full bg-black/20 border border-indigo-500/50 rounded-2xl p-4 text-xs text-white focus:outline-none transition-all font-bold placeholder:text-gray-700"
+                                placeholder="Tu Nombre"
+                                value={formData.full_name}
+                                onChange={e => setFormData({...formData, full_name: e.target.value})}
+                                className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
                             />
                         </div>
-                    ) : (
-                        <div className="space-y-1 text-left relative z-[103]">
+
+                        <div className="space-y-1">
                             <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                                <MapPin className="w-2.5 h-2.5" /> Ciudad
+                                <Mail className="w-2.5 h-2.5" /> Correo Electrónico
                             </label>
-                            <div 
-                                onClick={() => {
-                                    if (!formData.country) {
-                                        toast.error('Por favor, selecciona primero un país.');
-                                        return;
-                                    }
-                                    setIsCityOpen(!isCityOpen);
-                                }}
-                                className={`w-full bg-black/20 border ${isCityOpen ? 'border-indigo-500' : 'border-white/5'} rounded-2xl p-4 text-xs text-white transition-all font-bold flex items-center justify-between cursor-pointer ${!formData.country ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                <span className={formData.city ? 'text-white' : 'text-gray-700'}>
-                                    {formData.city || (formData.country ? "Seleccionar Ciudad" : "Selecciona un País")}
-                                </span>
-                                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isCityOpen ? 'rotate-180' : ''}`} />
+                            <input 
+                                required
+                                type="email"
+                                placeholder="tu@email.com"
+                                value={formData.email}
+                                onChange={e => setFormData({...formData, email: e.target.value})}
+                                className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                                    <Lock className="w-2.5 h-2.5" /> Contraseña
+                                </label>
+                                <div className="relative">
+                                    <input 
+                                        required
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        value={formData.password}
+                                        onChange={e => setFormData({...formData, password: e.target.value})}
+                                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 pr-10 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
                             </div>
 
-                            <AnimatePresence>
-                                {isCityOpen && formData.country && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 5 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        className="absolute left-0 w-full bg-[#0A0A1F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-40 overflow-y-auto z-[104] backdrop-blur-3xl scrollbar-hide"
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                                    <ShieldCheck className="w-2.5 h-2.5" /> Confirmar
+                                </label>
+                                <div className="relative">
+                                    <input 
+                                        required
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        value={formData.confirmPassword}
+                                        onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
+                                        className={`w-full bg-black/20 border ${formData.confirmPassword && formData.password !== formData.confirmPassword ? 'border-red-500' : 'border-white/5'} rounded-2xl p-4 pr-10 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700`}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
                                     >
-                                        {[...(citiesByCountry[formData.country] || []), "Otra ciudad..."].map((item) => (
-                                            <div 
-                                                key={item}
-                                                onClick={() => {
-                                                    if (item === "Otra ciudad...") {
-                                                        setCustomCityActive(true);
-                                                        setFormData({...formData, city: ''});
-                                                    } else {
-                                                        setFormData({...formData, city: item});
-                                                    }
-                                                    setIsCityOpen(false);
-                                                }}
-                                                className="px-6 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer transition-all flex items-center justify-between"
-                                            >
-                                                {item}
-                                                {formData.city === item && <div className="w-1 h-1 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(79,70,229,1)]" />}
-                                            </div>
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    )}
-                </div>
 
-                {/* Field: Exact Address */}
-                <div className="space-y-1 text-left">
-                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                        <MapPin className="w-2.5 h-2.5 text-indigo-400" /> Dirección Exacta
-                    </label>
-                    <input 
-                        required
-                        autoComplete="off"
-                        name={`diic_address_${Math.random()}`}
-                        placeholder="Calle Principal, Secundaria, Nro de Casa/Apto"
-                        value={formData.address}
-                        onChange={e => setFormData({...formData, address: e.target.value})}
-                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
-                    />
-                </div>
+                        <button
+                            type="submit"
+                            disabled={loading || !formData.email || !formData.password || !formData.confirmPassword || !formData.full_name || formData.password !== formData.confirmPassword}
+                            className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+                        >
+                            {loading ? 'Creando...' : 'Crear Cuenta'} <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </form>
 
-                {/* Field: Birth Date */}
-                <div className="space-y-1 text-left">
-                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                        <Calendar className="w-2.5 h-2.5 animate-pulse text-green-400" /> Fecha de Nacimiento
-                    </label>
-                    <input 
-                        required
-                        type="date"
-                        value={formData.birth_date}
-                        onChange={e => setFormData({...formData, birth_date: e.target.value})}
-                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700 neon-date-input"
-                    />
-                </div>
+                    <div className="pt-2">
+                        <button
+                            onClick={() => setAuthMode('welcome')}
+                            className="text-xs text-gray-500 hover:text-white transition-colors"
+                        >
+                            ← Volver
+                        </button>
+                    </div>
+                </motion.div>
+            )}
 
-                {/* Field: Website */}
-                <div className="space-y-1 text-left">
-                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                        <Globe className="w-2.5 h-2.5 text-indigo-400" /> Portafolio o Sitio Web
-                    </label>
-                    <input 
-                        required
-                        autoComplete="off"
-                        type="text"
-                        placeholder="https://diiczone.com"
-                        value={formData.website}
-                        onChange={e => setFormData({...formData, website: e.target.value})}
-                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
-                    />
-                </div>
+            {authMode === 'email_login' && (
+                <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full space-y-6 bg-white/5 p-8 rounded-[2.5rem] border border-white/10 backdrop-blur-3xl"
+                >
+                    <div className="space-y-2">
+                        <h2 className="text-2xl font-black text-white uppercase italic">Iniciar Sesión</h2>
+                        <p className="text-gray-500 text-xs uppercase tracking-widest font-mono">Ingresa a tu cuenta de DIIC ZONE</p>
+                    </div>
 
-                <div className="space-y-1 text-left">
-                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                        <Mail className="w-2.5 h-2.5" /> Email
-                    </label>
-                    <input 
-                        required
-                        autoComplete="new-password"
-                        name={`diic_email_${Math.random()}`}
-                        placeholder="tu@email.com"
-                        value={formData.email}
-                        onChange={e => setFormData({...formData, email: e.target.value})}
-                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
-                    />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1 text-left">
-                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                            <Lock className="w-2.5 h-2.5" /> Password
-                        </label>
-                        <div className="relative">
+                    <form onSubmit={handleEmailLogin} className="space-y-4 text-left">
+                        <div className="space-y-1">
+                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                                <Mail className="w-2.5 h-2.5" /> Correo Electrónico
+                            </label>
                             <input 
                                 required
-                                type={showPassword ? "text" : "password"}
-                                autoComplete="new-password"
-                                name={`diic_pass_${Math.random()}`}
-                                placeholder="••••••••"
-                                value={formData.password}
-                                onChange={e => setFormData({...formData, password: e.target.value})}
-                                className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 pr-12 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                                type="email"
+                                placeholder="tu@email.com"
+                                value={formData.email}
+                                onChange={e => setFormData({...formData, email: e.target.value})}
+                                className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
                             />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
-                            >
-                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
                         </div>
-                    </div>
-                    <div className="space-y-1 text-left">
-                        <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
-                            <ShieldCheck className="w-2.5 h-2.5" /> Confirm
-                        </label>
-                        <div className="relative">
-                            <input 
-                                required
-                                type={showConfirmPassword ? "text" : "password"}
-                                placeholder="••••••••"
-                                value={formData.confirmPassword}
-                                onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
-                                className={`w-full bg-black/20 border ${formData.confirmPassword && formData.password !== formData.confirmPassword ? 'border-red-500' : 'border-white/5'} rounded-2xl p-4 pr-12 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700`}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
-                            >
-                                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
+
+                        <div className="space-y-1 text-left">
+                            <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] pl-2 flex items-center gap-1">
+                                <Lock className="w-2.5 h-2.5" /> Contraseña
+                            </label>
+                            <div className="relative">
+                                <input 
+                                    required
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="••••••••"
+                                    value={formData.password}
+                                    onChange={e => setFormData({...formData, password: e.target.value})}
+                                    className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 pr-10 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                >
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
                         </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading || !formData.email || !formData.password}
+                            className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+                        >
+                            {loading ? 'Accediendo...' : 'Iniciar Sesión'} <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </form>
+
+                    <div className="pt-2">
+                        <button
+                            onClick={() => setAuthMode('welcome')}
+                            className="text-xs text-gray-500 hover:text-white transition-colors"
+                        >
+                            ← Volver
+                        </button>
                     </div>
+                </motion.div>
+            )}
+
+            {isDev && (
+                <div 
+                    onClick={() => setBypassActive(!bypassActive)}
+                    className={`font-mono text-[7px] ${bypassActive ? 'text-emerald-500' : 'text-gray-700'} uppercase tracking-[0.3em] font-black cursor-pointer hover:opacity-100 transition-opacity`}
+                >
+                    PROTOCOL_BYPASS_ENABLED: {bypassActive ? 'TRUE' : 'FALSE'} | CHANNEL: SECURE_CORE
                 </div>
-
-                <button
-                    type="submit"
-                    disabled={loading || !formData.email || !formData.password || !formData.confirmPassword || !formData.full_name || !formData.country || !formData.city || !formData.address || !formData.birth_date || !formData.website || formData.password !== formData.confirmPassword}
-                    className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
-                >
-                    {loading ? 'Sincronizando...' : 'Establecer Acceso Vitalicio'} <ArrowRight className="w-4 h-4" />
-                </button>
-
-            </motion.form>
-
-            <div className="pt-4">
-                <button
-                    type="button"
-                    onClick={handleGoogleConnect}
-                    disabled={loading}
-                    className="w-full py-4 bg-white text-black font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center shadow-lg disabled:opacity-50"
-                >
-                    <GoogleIcon />
-                    {loading ? 'Sincronizando...' : 'Conectar con Google'}
-                </button>
-            </div>
-
-            <div 
-                onClick={() => isDev && setBypassActive(!bypassActive)}
-                className={`font-mono text-[7px] ${bypassActive ? 'text-emerald-500' : 'text-gray-700'} uppercase tracking-[0.3em] font-black cursor-pointer hover:opacity-100 transition-opacity`}
-            >
-                PROTOCOL_BYPASS_ENABLED: {bypassActive ? 'TRUE' : 'FALSE'} | CHANNEL: SECURE_CORE
-            </div>
+            )}
         </div>
     );
 }
