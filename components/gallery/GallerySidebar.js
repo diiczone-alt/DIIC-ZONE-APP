@@ -6,6 +6,7 @@ import {
     Zap, Globe, Command
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BrandLogo from '@/components/ui/BrandLogo';
 
 const MENU_ITEMS = [
     { id: 'videos', label: 'Videos', icon: Video, color: 'text-blue-400', glow: 'shadow-blue-500/20' },
@@ -32,7 +33,7 @@ export default function GallerySidebar({ selected, onSelect }) {
             <div className="px-10 mb-16 relative z-10">
                 <div className="flex items-center gap-3 mb-2">
                     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/20">
-                        <Command className="w-4 h-4 text-white" />
+                        <BrandLogo className="w-4 h-4 text-white" />
                     </div>
                     <h1 className="text-2xl font-black text-white tracking-tighter italic uppercase leading-none">
                         GALERÍA
