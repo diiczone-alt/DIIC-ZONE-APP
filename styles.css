@@ -330,25 +330,3 @@ h3 {
 .animate-fade-in {
     animation: fadeIn 0.4s ease-out forwards;
 }
-
-/* Dynamic Collapsible Sidebar System */
-:root {
-    --sidebar-width: 16rem; /* 256px */
-}
-
-html[data-sidebar-collapsed="true"] {
-    --sidebar-width: 5rem; /* 80px */
-}
-
-/* Override fixed sidebar width */
-aside.w-64 {
-    width: var(--sidebar-width) !important;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-/* Override main content left offset padding */
-main.pl-64,
-div.pl-64 {
-    padding-left: var(--sidebar-width) !important;
-    transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
