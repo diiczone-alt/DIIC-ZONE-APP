@@ -32,14 +32,14 @@ export default function GallerySidebar({ selected, onSelect }) {
             {/* BRAND LOGO AREA */}
             <div className="px-10 mb-16 relative z-10">
                 <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/20">
-                        <BrandLogo className="w-6 h-6 text-white" />
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/20">
+                        <BrandLogo className="w-8 h-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-black text-white tracking-tighter italic uppercase leading-none">
                         GALERÍA
                     </h1>
                 </div>
-                <p className="text-[9px] font-bold text-gray-600 uppercase tracking-[0.4em] ml-13">Creative Node</p>
+                <p className="text-[9px] font-bold text-gray-600 uppercase tracking-[0.4em] ml-15">Creative Node</p>
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar px-6 space-y-12 relative z-10">

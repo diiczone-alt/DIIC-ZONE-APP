@@ -53,7 +53,7 @@ export default function BrandLogo({ className = "w-6 h-6", color = "currentColor
             <path 
                 d="M 21,50 C 21,28 28,18 48,18 L 84,50" 
                 stroke={color} 
-                strokeWidth="8" 
+                strokeWidth="3.5" 
                 strokeLinecap="round" 
                 strokeLinejoin="round" 
             />
@@ -61,7 +61,7 @@ export default function BrandLogo({ className = "w-6 h-6", color = "currentColor
             <path 
                 d="M 19,63 C 19,81 29,82 41,82 L 84,50" 
                 stroke={color} 
-                strokeWidth="8" 
+                strokeWidth="3.5" 
                 strokeLinecap="round" 
                 strokeLinejoin="round" 
             />
@@ -69,10 +69,10 @@ export default function BrandLogo({ className = "w-6 h-6", color = "currentColor
             <motion.ellipse 
                 cx="34" 
                 cy="50" 
-                rx="5" 
+                rx="6.5" 
                 fill={color} 
                 animate={{
-                    ry: [14, 14, 1, 14, 14],
+                    ry: [24, 24, 1.5, 24, 24],
                     x: mousePos.x,
                     y: mousePos.y
                 }}
@@ -89,12 +89,12 @@ export default function BrandLogo({ className = "w-6 h-6", color = "currentColor
             />
             {/* Right Vertical Oval with Blink & Look Animation */}
             <motion.ellipse 
-                cx="48" 
+                cx="49" 
                 cy="50" 
-                rx="5" 
+                rx="6.5" 
                 fill={color} 
                 animate={{
-                    ry: [14, 14, 1, 14, 14],
+                    ry: [24, 24, 1.5, 24, 24],
                     x: mousePos.x,
                     y: mousePos.y
                 }}
