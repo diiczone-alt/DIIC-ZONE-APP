@@ -273,8 +273,7 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
                 const memberCity = (m.city || '').toLowerCase().trim();
                 const targetSede = activeSede.toLowerCase().trim();
                 const isResident = memberCity === targetSede;
-                const hasLocalBrands = sedeClients.length > 0;
-                return activePersonnelNames.has((m.name || '').trim()) || (isResident && hasLocalBrands);
+                return activePersonnelNames.has((m.name || '').trim()) || isResident;
             });
             
             const squadSet = new Set(coreMembers.map(m => m.id));
