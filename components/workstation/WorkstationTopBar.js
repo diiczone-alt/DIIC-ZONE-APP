@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 // Global Modals
-import WorkstationGlobalModal from './modals/WorkstationGlobalModal';
+import ControlCenterOverlay from './ControlCenterOverlay';
 
 export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) {
     const { user, logout } = useAuth();
@@ -58,7 +58,7 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                 </button>
 
                 {/* 2. Communication & Alert Cluster */}
-                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/5">
+                <div className="flex items-center gap-1 bg-white/[0.03] backdrop-blur-md p-1 rounded-2xl border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
                     {/* Calendar Button */}
                     {role?.toLowerCase() !== 'filmmaker' && (
                         <TopBarButton 
@@ -93,8 +93,8 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
                     <TopBarButton 
                         icon={<Bell className="w-4 h-4" />} 
                         label="Alertas" 
-                        isActive={isModalOpen && modalView === 'notifications'}
-                        onClick={() => openModal('notifications')}
+                        isActive={isModalOpen && modalView === 'alerts'}
+                        onClick={() => openModal('alerts')}
                         badge="!"
                         badgeColor="bg-amber-500"
                     />
@@ -218,10 +218,10 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
         {/* --- GLOBAL OPERATIONAL MODALS (Centered Large Window) --- */}
         <AnimatePresence>
                 {isModalOpen && (
-                    <WorkstationGlobalModal 
+                    <ControlCenterOverlay 
                         isOpen={isModalOpen} 
                         onClose={() => setIsModalOpen(false)} 
-                        view={modalView}
+                        initialTab={modalView}
                     />
                 )}
             </AnimatePresence>
@@ -233,8 +233,10 @@ function TopBarButton({ icon, label, isActive, onClick, badge, badgeColor = 'bg-
     return (
         <button 
             onClick={onClick}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all relative group ${
-                isActive ? 'bg-white/10 text-white shadow-inner' : 'text-gray-500 hover:text-white hover:bg-white/5'
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all relative group border ${
+                isActive 
+                ? 'bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),_0_8px_16px_rgba(0,0,0,0.3)] border-white/10' 
+                : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
             }`}
         >
             {icon}
