@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import HQSidebar from '@/components/layout/HQSidebar';
 import {
     CalendarDays, ChevronLeft, ChevronRight,
     Video, Users, FileCheck, MapPin, Clock
@@ -22,8 +21,7 @@ export default function GlobalCalendarPage() {
 
     return (
         <div className="min-h-screen bg-[#050511] text-white font-sans">
-            <HQSidebar />
-            <div className="pl-20 lg:pl-64 transition-all duration-300">
+            <div className="transition-all duration-300">
                 <main className="p-8 max-w-[1600px] mx-auto space-y-8">
 
                     {/* Header */}

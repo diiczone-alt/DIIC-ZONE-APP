@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import HQSidebar from '@/components/layout/HQSidebar';
 import {
     ShieldAlert, AlertTriangle, TrendingDown,
     Users, Clock, DollarSign, Activity
@@ -50,8 +49,7 @@ export default function OperationalRisksPage() {
 
     return (
         <div className="min-h-screen bg-[#050511] text-white">
-            <HQSidebar />
-            <div className="pl-64">
+            <div>
                 <header className="h-20 border-b border-white/5 flex items-center px-8 bg-[#050511]/80 backdrop-blur-xl sticky top-0 z-40">
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         <ShieldAlert className="w-5 h-5 text-red-500" /> Riesgos Operativos

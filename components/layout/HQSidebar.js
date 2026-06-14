@@ -72,10 +72,12 @@ export default function HQSidebar() {
                 <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-600/20">
                     <span className="font-black text-white text-lg tracking-tighter">HQ</span>
                 </div>
-                <div className={`transition-all duration-300 overflow-hidden ${isCollapsed ? 'w-0 opacity-0 ml-0' : 'w-auto opacity-100 ml-4'}`}>
-                    <h1 className="font-black text-white leading-none tracking-tight text-lg italic whitespace-nowrap">DIIC ZONE</h1>
-                    <span className="text-[10px] text-indigo-400 uppercase tracking-[0.3em] font-black whitespace-nowrap">Internal OS</span>
-                </div>
+                {!isCollapsed && (
+                    <div className="transition-all duration-300 overflow-hidden ml-4">
+                        <h1 className="font-black text-white leading-none tracking-tight text-lg italic whitespace-nowrap">DIIC ZONE</h1>
+                        <span className="text-[10px] text-indigo-400 uppercase tracking-[0.3em] font-black whitespace-nowrap">Internal OS</span>
+                    </div>
+                )}
             </div>
 
             {/* Navigation */}
@@ -89,9 +91,11 @@ export default function HQSidebar() {
                                 : 'text-gray-500 hover:bg-white/5 hover:text-white'
                                 }`}>
                                 <item.icon className={`w-5 h-5 shrink-0 transition-colors ${isActive ? item.color : 'group-hover:text-white'}`} />
-                                <span className={`font-black text-[11px] uppercase tracking-widest transition-all duration-300 overflow-hidden whitespace-nowrap ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
-                                    {item.label}
-                                </span>
+                                {!isCollapsed && (
+                                    <span className="font-black text-[11px] uppercase tracking-widest ml-3 whitespace-nowrap">
+                                        {item.label}
+                                    </span>
+                                )}
 
                                 {isCollapsed && (
                                     <div className="absolute left-20 bg-[#08081a] border border-white/10 text-white text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-50 shadow-2xl whitespace-nowrap border-l-2 border-l-indigo-500">
@@ -139,14 +143,16 @@ export default function HQSidebar() {
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 border border-white/10 flex items-center justify-center font-black text-white shadow-lg uppercase shrink-0">
                         {user?.full_name ? user.full_name[0] : (user?.email ? user.email[0] : 'A')}
                     </div>
-                    <div className={`flex-1 min-w-0 transition-all duration-300 overflow-hidden ${isCollapsed ? 'w-0 opacity-0 ml-0' : 'w-auto opacity-100 ml-3'}`}>
-                        <div className="text-xs font-black text-white uppercase tracking-widest truncate">
-                            {user?.full_name || 'Admin'}
+                    {!isCollapsed && (
+                        <div className="flex-1 min-w-0 ml-3 transition-all duration-300 overflow-hidden">
+                            <div className="text-xs font-black text-white uppercase tracking-widest truncate">
+                                {user?.full_name || 'Admin'}
+                            </div>
+                            <div className="text-[9px] text-gray-500 uppercase font-black tracking-tighter truncate">
+                                {user?.role === 'ADMIN' ? 'Director General' : (user?.role || 'Staff')}
+                            </div>
                         </div>
-                        <div className="text-[9px] text-gray-500 uppercase font-black tracking-tighter truncate">
-                            {user?.role === 'ADMIN' ? 'Director General' : (user?.role || 'Staff')}
-                        </div>
-                    </div>
+                    )}
                 </div>
 
                 <button
@@ -155,9 +161,11 @@ export default function HQSidebar() {
                     title={isCollapsed ? "Cerrar Sesión" : undefined}
                 >
                     <Settings className="w-4 h-4 shrink-0 group-hover:rotate-90 transition-transform duration-500" />
-                    <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
-                        Cerrar Sesión
-                    </span>
+                    {!isCollapsed && (
+                        <span className="text-[10px] tracking-[0.2em] whitespace-nowrap">
+                            Cerrar Sesión
+                        </span>
+                    )}
                 </button>
             </div>
         </aside>

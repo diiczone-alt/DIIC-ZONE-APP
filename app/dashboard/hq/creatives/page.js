@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import HQSidebar from '@/components/layout/HQSidebar';
 import {
     Users, UserPlus, Filter, MoreHorizontal,
     Star, Shield, Ban, CheckCircle2
@@ -29,8 +28,7 @@ export default function CreativesManagerPage() {
 
     return (
         <div className="min-h-screen bg-[#050511] text-white font-sans">
-            <HQSidebar />
-            <div className="pl-20 lg:pl-64 transition-all duration-300">
+            <div className="transition-all duration-300">
                 <main className="p-8 max-w-[1600px] mx-auto space-y-8">
 
                     {/* Header */}

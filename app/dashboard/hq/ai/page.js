@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import HQSidebar from '@/components/layout/HQSidebar';
 import {
     Sparkles, BrainCircuit, ArrowRight, Target,
     TrendingUp, Search
@@ -34,8 +33,7 @@ export default function StrategicAIPage() {
 
     return (
         <div className="min-h-screen bg-[#050511] text-white">
-            <HQSidebar />
-            <div className="pl-64 h-screen flex flex-col">
+            <div className="h-screen flex flex-col">
                 <header className="h-20 shrink-0 border-b border-white/5 flex items-center px-8 bg-[#050511]/80 backdrop-blur-xl z-40">
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         <Sparkles className="w-5 h-5 text-indigo-400" /> DIIC AI Estratégica
