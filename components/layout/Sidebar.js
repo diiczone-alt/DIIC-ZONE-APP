@@ -267,8 +267,8 @@ export default function Sidebar() {
         >
             {/* Logo */}
             <div className="h-20 flex items-center justify-center group-hover:justify-start group-hover:px-6 transition-all duration-300 shrink-0 relative">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20 z-10">
-                    <BrandLogo className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20 z-10">
+                    <BrandLogo className="w-8 h-8 text-white" />
                 </div>
                 {/* Glow effect behind logo */}
                 <div className="absolute inset-0 bg-indigo-500/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
