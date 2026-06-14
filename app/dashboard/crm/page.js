@@ -18,7 +18,10 @@ import UnifiedInbox from '@/components/crm/UnifiedInbox';
 import CRMAnalytics from '@/components/crm/CRMAnalytics';
 import BroadcastCenter from '@/components/crm/BroadcastCenter';
 import ProductivityView from '@/components/crm/ProductivityView';
-import { LayoutGrid, List, MessageSquare as InboxIcon, BarChart3, Settings2, megaphone } from 'lucide-react';
+import HabitualClients from '@/components/crm/HabitualClients';
+import LogisticsPipeline from '@/components/crm/LogisticsPipeline';
+import MedicalScheduler from '@/components/crm/MedicalScheduler';
+import { LayoutGrid, List, MessageSquare as InboxIcon, BarChart3, Settings2, megaphone, Truck, Package, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import CRMGuard from '@/components/ui/CRMGuard';
 
@@ -49,6 +52,29 @@ const getNicheLabel = (niche = '') => {
     if (['agro', 'campo', 'agropecuario', 'agropecuaria', 'vete', 'veterinaria'].some(k => val.includes(k))) return 'MARKETING AGROPECUARIO';
     if (['industrial', 'fabrica', 'fábrica', 'manufactura'].some(k => val.includes(k))) return 'MARKETING INDUSTRIAL';
     return 'ESTRATEGIA DE NEGOCIOS';
+};
+
+const isPhysicalProducts = (client) => {
+    if (!client) return false;
+    const name = (client.name || '').toLowerCase();
+    const ind = (client.industry || '').toLowerCase();
+    const brand = (client.onboarding_data?.strategic?.brandName || '').toLowerCase();
+    
+    return ['panadería', 'panaderia', 'espiga', 'oro', 'alimentos', 'producto', 'tienda', 'agro', 'agropecuario', 'agropecuaria'].some(k => 
+        name.includes(k) || ind.includes(k) || brand.includes(k)
+    );
+};
+
+const isMedicalOrService = (client) => {
+    if (!client) return false;
+    const name = (client.name || '').toLowerCase();
+    const ind = (client.industry || '').toLowerCase();
+    const spec = (client.specialty || '').toLowerCase();
+    const brand = (client.onboarding_data?.strategic?.brandName || '').toLowerCase();
+    
+    return ['doctor', 'medico', 'médico', 'medical', 'salud', 'clinica', 'clínica', 'urologia', 'urología', 'dentista', 'odontólogo', 'consultorio'].some(k => 
+        name.includes(k) || ind.includes(k) || spec.includes(k) || brand.includes(k)
+    );
 };
 
 export default function CRMPage() {
@@ -465,22 +491,36 @@ const handleCreateLead = async (e) => {
             {/* CONTROL BAR: VIEW SELECTOR (Bitrix24 Standard) */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white/[0.02] border border-white/5 p-4 rounded-3xl backdrop-blur-xl">
                 <div className="flex bg-black/20 p-1.5 rounded-2xl border border-white/5 overflow-hidden">
-                    {[
-                        { id: 'pipeline', label: 'Pipeline Kanban', icon: LayoutGrid },
-                        { id: 'list', label: 'Lista CRM', icon: List },
-                        { id: 'inbox', label: 'Inbox Omnicanal', icon: InboxIcon },
-                        { id: 'broadcast', label: 'Difusión Masiva', icon: Send },
-                        { id: 'analytics', label: 'Dashboard Inteligente', icon: BarChart3 },
-                    ].map(view => (
-                        <button
-                            key={view.id}
-                            onClick={() => setActiveView(view.id)}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all ${activeView === view.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-white'}`}
-                        >
-                            <view.icon className="w-3.5 h-3.5" />
-                            {view.label}
-                        </button>
-                    ))}
+                    {(() => {
+                        const viewsList = [
+                            { id: 'pipeline', label: 'Pipeline Kanban', icon: LayoutGrid },
+                            { id: 'list', label: 'Lista CRM', icon: List },
+                            { id: 'inbox', label: 'Inbox Omnicanal', icon: InboxIcon },
+                            { id: 'habituales', label: 'Clientes Habituales', icon: Users },
+                        ];
+
+                        if (isPhysicalProducts(activeClient)) {
+                            viewsList.push({ id: 'logistics', label: 'Logística y Entregas', icon: Truck });
+                        } else if (isMedicalOrService(activeClient)) {
+                            viewsList.push({ id: 'scheduler', label: 'Agenda de Citas', icon: CalendarDays });
+                        }
+
+                        viewsList.push(
+                            { id: 'broadcast', label: 'Difusión Masiva', icon: Send },
+                            { id: 'analytics', label: 'Dashboard Inteligente', icon: BarChart3 }
+                        );
+
+                        return viewsList.map(view => (
+                            <button
+                                key={view.id}
+                                onClick={() => setActiveView(view.id)}
+                                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all ${activeView === view.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-white'}`}
+                            >
+                                <view.icon className="w-3.5 h-3.5" />
+                                {view.label}
+                            </button>
+                        ));
+                    })()}
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -515,6 +555,36 @@ const handleCreateLead = async (e) => {
                                  onLeadCreate={handleCreateLeadQuick}
                                  labels={labels}
                              />
+                        </div>
+                    )}
+
+                    {activeView === 'habituales' && (
+                        <div className="min-h-[600px]">
+                            <HabitualClients 
+                                leads={leads} 
+                                activeClient={activeClient}
+                                onLeadUpdate={handleLeadUpdate}
+                            />
+                        </div>
+                    )}
+
+                    {activeView === 'logistics' && (
+                        <div className="min-h-[600px]">
+                            <LogisticsPipeline 
+                                leads={leads} 
+                                activeClient={activeClient}
+                                onLeadUpdate={handleLeadUpdate}
+                            />
+                        </div>
+                    )}
+
+                    {activeView === 'scheduler' && (
+                        <div className="min-h-[600px]">
+                            <MedicalScheduler 
+                                leads={leads} 
+                                activeClient={activeClient}
+                                onLeadUpdate={handleLeadUpdate}
+                            />
                         </div>
                     )}
 
