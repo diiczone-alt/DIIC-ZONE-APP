@@ -387,12 +387,14 @@ export default function Sidebar() {
                                     <div className="space-y-1">
                                         <Link href={getScopedHref("/dashboard/profile")} onClick={() => setShowProfileMenu(false)} className="block w-full">
                                             <ProfileMenuItem 
+                                                as="div"
                                                 icon={<User className="w-4 h-4" />} 
                                                 label="Mi Perfil" 
                                             />
                                         </Link>
                                         <Link href={getScopedHref("/dashboard/settings")} onClick={() => setShowProfileMenu(false)} className="block w-full">
                                             <ProfileMenuItem 
+                                                as="div"
                                                 icon={<Settings className="w-4 h-4" />} 
                                                 label="Configuración" 
                                             />
@@ -426,12 +428,13 @@ export default function Sidebar() {
     );
 }
 
-function ProfileMenuItem({ icon, label, onClick, variant = 'default' }) {
+function ProfileMenuItem({ icon, label, onClick, variant = 'default', as = 'button' }) {
+    const Component = as;
     return (
-        <button 
-            type="button"
+        <Component 
+            type={Component === 'button' ? 'button' : undefined}
             onClick={onClick}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
                 variant === 'danger' 
                 ? 'text-red-400 hover:bg-red-500/10' 
                 : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -439,6 +442,6 @@ function ProfileMenuItem({ icon, label, onClick, variant = 'default' }) {
         >
             {icon}
             {label}
-        </button>
+        </Component>
     );
 }

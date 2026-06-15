@@ -6,7 +6,7 @@ import {
     Brain, ShieldCheck, MessageSquare, Save, Plus, 
     Trash2, Bot, Sparkles, ChevronRight, AlertCircle, 
     Info, Target, UserCheck, Activity, Settings2, X,
-    CheckCircle2
+    CheckCircle2, Zap
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';

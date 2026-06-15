@@ -24,5 +24,16 @@ export function SidebarProvider({ children }) {
 }
 
 export function useSidebar() {
-    return useContext(SidebarContext);
+    const context = useContext(SidebarContext);
+    if (context === undefined) {
+        return {
+            isExpanded: false,
+            setIsExpanded: () => {},
+            isSuppressed: false,
+            setIsSuppressed: () => {},
+            isMobileOpen: false,
+            setIsMobileOpen: () => {}
+        };
+    }
+    return context;
 }
