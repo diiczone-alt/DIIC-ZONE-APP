@@ -6,7 +6,7 @@ import {
     Home, LayoutGrid, Clapperboard, BarChart3, Settings, LogOut,
     Kanban, GraduationCap, CalendarDays, Share2, Images, Zap, Bot,
     CreditCard, Megaphone, Award, ChevronDown, ChevronRight, Command, ShoppingBag,
-    Network, Box, Users, ShieldAlert, Rocket
+    Network, Box, Users, ShieldAlert, Rocket, User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
@@ -74,6 +74,7 @@ export default function Sidebar() {
     const [openGroup, setOpenGroup] = useState(null); // 'growth' | 'evolution' | null
     const { setIsExpanded } = useSidebar();
     const searchParams = useSearchParams();
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
     const clientId = searchParams.get('client');
     const { user, logout } = useAuth();
     const [hasConnectivity, setHasConnectivity] = useState(true);
@@ -318,18 +319,20 @@ export default function Sidebar() {
 
             </nav>
 
-            {/* System Footer (Fixed) - Premium User Profile */}
-            <div className="p-4 pb-8 border-t border-white/5 bg-black/20 shrink-0 relative z-50">
-                <div className="relative group/profile">
-
-                    {/* Premium Profile Card */}
-                    <div 
-                        className="flex items-center gap-3 p-2 rounded-2xl border border-white/5 group-hover/profile:bg-white/5 transition-all relative overflow-hidden group/item w-full"
+            {/* System Footer (Fixed) - Premium User Profile Dropdown */}
+            <div className="p-4 pb-8 border-t border-white/5 bg-black/20 shrink-0 relative">
+                <div className="relative">
+                    
+                    {/* Trigger: Clickable Profile Card */}
+                    <button 
+                        type="button"
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                        className="flex items-center gap-3 p-2 rounded-2xl border border-white/5 hover:bg-white/5 transition-all relative overflow-hidden w-full text-left"
                         style={{ backgroundColor: `${user?.user_metadata?.primary_color}08` || 'rgba(99, 102, 241, 0.05)' }}
                     >
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
                         
-                        <div className="relative shrink-0 ml-1.5 group-hover:ml-0 transition-all">
+                        <div className="relative shrink-0 ml-1.5 transition-all">
                             {/* Colorful Avatar Border (Brand Identity Style) */}
                             <div 
                                 className="w-9 h-9 rounded-xl p-[1.5px] shadow-lg shadow-black/20"
@@ -347,42 +350,95 @@ export default function Sidebar() {
                             </div>
                         </div>
 
-                        <div className="flex-1 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <h4 className="text-[10px] font-black text-white truncate uppercase tracking-tight leading-tight">
-                                {(user?.user_metadata?.brand || 'DIIC Admin').replace(/[-_\s]+workspace\s*$/i, '').trim()}
-                            </h4>
-                            <p className="text-[8px] text-emerald-400 font-black uppercase tracking-widest opacity-80 leading-none mt-0.5">
-                                {user?.user_metadata?.city || 'Centro de Mando'}
-                            </p>
-                        </div>
-
-                        {/* Quick Settings Icon */}
-                        <Link href={getScopedHref("/dashboard/settings")} title="Configuración" className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-white transition-all shrink-0">
-                            <Settings className="w-3 h-3" />
-                        </Link>
-                    </div>
-
-                    {/* Integrated Logout Button */}
-                    <div className="mt-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleLogout();
-                            }}
-                            className="w-full h-11 flex items-center gap-4 px-3 rounded-2xl bg-rose-500/5 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 transition-all group/logout active:scale-95 shadow-xl"
-                        >
-                            <LogOut className="w-4.5 h-4.5 shrink-0 transition-transform group-hover/logout:rotate-12" />
-                            <div className="flex flex-col items-start leading-none gap-1">
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em] whitespace-nowrap">
-                                    Cerrar Sesión
-                                </span>
-                                <span className="text-[7px] font-bold uppercase opacity-60 tracking-widest leading-none">Salir del Hub</span>
+                        <div className="flex-1 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-between">
+                            <div>
+                                <h4 className="text-[10px] font-black text-white truncate uppercase tracking-tight leading-tight">
+                                    {(user?.user_metadata?.brand || 'DIIC Admin').replace(/[-_\s]+workspace\s*$/i, '').trim()}
+                                </h4>
+                                <p className="text-[8px] text-emerald-400 font-black uppercase tracking-widest opacity-80 leading-none mt-0.5">
+                                    {user?.user_metadata?.city || 'Centro de Mando'}
+                                </p>
                             </div>
-                        </button>
-                    </div>
+                            <ChevronDown className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-300 ${showProfileMenu ? 'rotate-180' : ''}`} />
+                        </div>
+                    </button>
+
+                    {/* Popover Profile Menu */}
+                    <AnimatePresence>
+                        {showProfileMenu && (
+                            <>
+                                {/* Backdrop to close dropdown */}
+                                <div className="fixed inset-0 z-40 cursor-default" onClick={() => setShowProfileMenu(false)} />
+                                
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    className="absolute bottom-16 left-0 w-60 bg-[#0E0E18]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-2 z-50 overflow-hidden"
+                                >
+                                    <div className="p-4 border-b border-white/5 mb-2">
+                                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Marca Socio</p>
+                                        <p className="text-sm font-bold text-white truncate">
+                                            {(user?.user_metadata?.brand || 'DIIC Partner').replace(/[-_\s]+workspace\s*$/i, '').trim()}
+                                        </p>
+                                        <p className="text-[9px] text-indigo-400 font-bold uppercase tracking-widest mt-1 truncate">{user?.email}</p>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <Link href={getScopedHref("/dashboard/profile")} onClick={() => setShowProfileMenu(false)} className="block w-full">
+                                            <ProfileMenuItem 
+                                                icon={<User className="w-4 h-4" />} 
+                                                label="Mi Perfil" 
+                                            />
+                                        </Link>
+                                        <Link href={getScopedHref("/dashboard/settings")} onClick={() => setShowProfileMenu(false)} className="block w-full">
+                                            <ProfileMenuItem 
+                                                icon={<Settings className="w-4 h-4" />} 
+                                                label="Configuración" 
+                                            />
+                                        </Link>
+                                        
+                                        <div className="h-px bg-white/5 my-2 mx-2" />
+                                        
+                                        <ProfileMenuItem 
+                                            icon={<LogOut className="w-4 h-4" />} 
+                                            label="Cerrar Sesión" 
+                                            variant="danger"
+                                            onClick={handleLogout}
+                                        />
+                                    </div>
+
+                                    {/* App Info */}
+                                    <div className="p-4 mt-2 bg-black/20 rounded-xl border border-white/5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Socio Ecosistema</span>
+                                            <span className="text-[8px] font-black text-indigo-400 uppercase">DIIC ZONE</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
 
         </aside>
+    );
+}
+
+function ProfileMenuItem({ icon, label, onClick, variant = 'default' }) {
+    return (
+        <button 
+            type="button"
+            onClick={onClick}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                variant === 'danger' 
+                ? 'text-red-400 hover:bg-red-500/10' 
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+        >
+            {icon}
+            {label}
+        </button>
     );
 }
