@@ -1,356 +1,519 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { 
     X, Search, MessageSquare, Calendar, 
     Bell, Star, Zap, Shield, Phone,
     Mail, Globe, CheckCircle2, AlertCircle,
     ChevronRight, Plus, Filter, MoreHorizontal,
-    DollarSign, Activity, Target, Flame
+    DollarSign, Activity, Target, Flame, AlertTriangle, Send, Loader2, Clock
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 export default function ControlCenterOverlay({ isOpen, onClose, initialTab = 'messages' }) {
+    const { user } = useAuth();
+    const dragControls = useDragControls();
+    
     const [activeTab, setActiveTab] = useState(initialTab);
-    const [selectedItem, setSelectedItem] = useState(null);
+    const [selectedMember, setSelectedMember] = useState(null);
+    const [teamMembers, setTeamMembers] = useState([]);
+    const [tasks, setTasks] = useState([]);
+    const [dbConnected, setDbConnected] = useState(false);
+    const [loading, setLoading] = useState(true);
+    
+    // Chat states
+    const [myTeamMemberId, setMyTeamMemberId] = useState(null);
+    const [chatId, setChatId] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [sending, setSending] = useState(false);
+    const [messageText, setMessageText] = useState('');
+    const chatEndRef = useRef(null);
+
+    // Fetch team & tasks from Supabase
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!isOpen) return;
+            try {
+                setLoading(true);
+                
+                // 1. Fetch team members
+                const { data: teamData, error: teamErr } = await supabase
+                    .from('team')
+                    .select('*')
+                    .order('name', { ascending: true });
+                
+                if (teamErr) {
+                    console.error("Error fetching team:", teamErr);
+                    setDbConnected(false);
+                    setLoading(false);
+                    return;
+                }
+
+                // 2. Fetch tasks
+                const { data: tasksData, error: tasksErr } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .order('deadline', { ascending: true });
+
+                if (tasksErr) {
+                    console.warn("Error fetching tasks, using empty array:", tasksErr);
+                } else {
+                    setTasks(tasksData || []);
+                }
+
+                setTeamMembers(teamData || []);
+                setDbConnected(true);
+
+                // Find current user's team ID if matching email
+                if (user?.email) {
+                    const match = teamData?.find(t => t.email?.toLowerCase() === user.email.toLowerCase());
+                    if (match) {
+                        setMyTeamMemberId(match.id);
+                    } else {
+                        setMyTeamMemberId(user.id);
+                    }
+                }
+            } catch (err) {
+                console.error("Supabase connection exception:", err);
+                setDbConnected(false);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [isOpen, user]);
+
+    // Handle Tab Change
+    useEffect(() => {
+        setActiveTab(initialTab);
+    }, [initialTab]);
+
+    // Fetch messages when a member is selected
+    useEffect(() => {
+        const fetchMessages = async () => {
+            if (!selectedMember || !myTeamMemberId) {
+                setMessages([]);
+                setChatId(null);
+                return;
+            }
+
+            try {
+                // Find direct chat in chats table
+                const { data: chats, error: chatsErr } = await supabase
+                    .from('chats')
+                    .select('*')
+                    .eq('type', 'direct');
+
+                if (chatsErr) throw chatsErr;
+
+                // Find chat where participants match myTeamMemberId and selectedMember.id
+                const activeChat = chats?.find(chat => {
+                    const participants = chat.metadata?.participants || [];
+                    return participants.includes(myTeamMemberId) && participants.includes(selectedMember.id);
+                });
+
+                if (activeChat) {
+                    setChatId(activeChat.id);
+                    
+                    // Fetch messages for this chat
+                    const { data: msgs, error: msgsErr } = await supabase
+                        .from('messages')
+                        .select('*')
+                        .eq('chat_id', activeChat.id)
+                        .order('created_at', { ascending: true });
+
+                    if (msgsErr) throw msgsErr;
+                    setMessages(msgs || []);
+                } else {
+                    setChatId(null);
+                    setMessages([]);
+                }
+            } catch (err) {
+                console.error("Error fetching messages:", err);
+                toast.error("Error al cargar los mensajes del servidor.");
+            }
+        };
+
+        fetchMessages();
+    }, [selectedMember, myTeamMemberId]);
+
+    // Scroll chat to bottom
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    // Send Message handler
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+        if (!messageText.trim() || !selectedMember || !myTeamMemberId) return;
+
+        try {
+            setSending(true);
+            let activeChatId = chatId;
+
+            // 1. Create chat if it doesn't exist
+            if (!activeChatId) {
+                const newChat = {
+                    type: 'direct',
+                    status: 'active',
+                    metadata: {
+                        participants: [myTeamMemberId, selectedMember.id]
+                    },
+                    name: `direct_${myTeamMemberId}_${selectedMember.id}`
+                };
+
+                const { data: createdChat, error: createChatErr } = await supabase
+                    .from('chats')
+                    .insert(newChat)
+                    .select()
+                    .single();
+
+                if (createChatErr) throw createChatErr;
+                activeChatId = createdChat.id;
+                setChatId(createdChat.id);
+            }
+
+            // 2. Insert message
+            const newMsg = {
+                chat_id: activeChatId,
+                sender_id: myTeamMemberId,
+                content: messageText.trim()
+            };
+
+            const { data: insertedMsg, error: sendErr } = await supabase
+                .from('messages')
+                .insert(newMsg)
+                .select()
+                .single();
+
+            if (sendErr) throw sendErr;
+
+            setMessages(prev => [...prev, insertedMsg]);
+            setMessageText('');
+        } catch (err) {
+            console.error("Error sending message:", err);
+            toast.error("No se pudo enviar el mensaje.");
+        } finally {
+            setSending(false);
+        }
+    };
 
     if (!isOpen) return null;
 
     return (
-        <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 z-[1000] bg-[#05050A]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
-        >
-            {/* FLOATING CLOSE BUTTON */}
-            <button 
-                onClick={onClose}
-                className="absolute top-10 right-12 z-[1100] p-4 bg-white/5 hover:bg-rose-500/20 hover:text-rose-400 border border-white/10 rounded-[1.5rem] text-gray-500 transition-all active:scale-95 shadow-2xl backdrop-blur-md"
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 overflow-hidden pointer-events-none">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-md pointer-events-auto" onClick={onClose} />
+
+            {/* Draggable Desktop Glass Window */}
+            <motion.div 
+                drag
+                dragControls={dragControls}
+                dragListener={false}
+                dragMomentum={false}
+                dragElastic={0.05}
+                initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                className="relative w-[95vw] md:w-[980px] h-[80vh] md:h-[620px] bg-black/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex flex-col z-[1010] pointer-events-auto overflow-hidden select-none"
             >
-                <X className="w-6 h-6" />
-            </button>
-
-            {/* FLOATING TABS (Integrated) */}
-            <div className="absolute top-10 left-1/2 -translate-x-1/2 z-[1100]">
-                <nav className="flex items-center bg-[#0E0E18]/80 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-                    <TabButton 
-                        active={activeTab === 'messages'} 
-                        onClick={() => setActiveTab('messages')}
-                        icon={<MessageSquare className="w-4 h-4" />}
-                        label="Comunicaciones"
-                    />
-                    <TabButton 
-                        active={activeTab === 'calendar'} 
-                        onClick={() => setActiveTab('calendar')}
-                        icon={<Calendar className="w-4 h-4" />}
-                        label="Cronograma"
-                    />
-                    <TabButton 
-                        active={activeTab === 'alerts'} 
-                        onClick={() => setActiveTab('alerts')}
-                        icon={<Bell className="w-4 h-4" />}
-                        label="Inteligencia"
-                    />
-                </nav>
-            </div>
-
-            {/* 2. THREE-COLUMN COMMAND VIEW */}
-            <main className="flex-1 flex overflow-hidden pt-32">
-                
-                {/* --- COLUMN 1: CONTEXT SIDEBAR (20%) --- */}
-                <aside className="w-[20%] border-r border-white/5 flex flex-col overflow-hidden bg-black/20">
-                    <div className="p-8">
-                        <div className="relative group mb-8">
-                            <Search className="absolute left-4 top-3.5 w-4 h-4 text-gray-600 group-focus-within:text-indigo-400 transition-colors" />
-                            <input 
-                                type="text" 
-                                placeholder="Filtrar nodo..." 
-                                className="w-full bg-white/5 border border-white/5 rounded-2xl py-3.5 pl-12 pr-6 text-[10px] text-white uppercase tracking-widest font-black focus:outline-none focus:border-indigo-500/30"
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Directorio Activo</h3>
-                            <Plus className="w-3.5 h-3.5 text-gray-700 cursor-pointer hover:text-white" />
-                        </div>
-
-                        <div className="space-y-3 overflow-y-auto max-h-[calc(100vh-350px)] no-scrollbar">
-                            {activeTab === 'messages' && <ContactList selectedId={selectedItem} onSelect={setSelectedItem} />}
-                            {activeTab === 'calendar' && <CalendarMiniView />}
-                        </div>
-                    </div>
-                </aside>
-
-                {/* --- COLUMN 2: MAIN WORKSPACE (55%) --- */}
-                <section className="flex-1 flex flex-col overflow-hidden relative">
-                    {/* Background Gradients */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full opacity-10 pointer-events-none">
-                        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-indigo-600 rounded-full blur-[150px]" />
-                        <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] bg-purple-600 rounded-full blur-[150px]" />
+                {/* Header (Drag handle) */}
+                <div 
+                    onPointerDown={(e) => {
+                        // Prevent dragging when clicking buttons, inputs or tabs
+                        if (e.target.closest('button') || e.target.closest('nav') || e.target.closest('input')) {
+                            return;
+                        }
+                        dragControls.start(e);
+                    }}
+                    className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-white/[0.02] cursor-grab active:cursor-grabbing shrink-0 select-none"
+                >
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-xs font-black text-white uppercase tracking-wider italic">Control de Escuadra</h2>
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${dbConnected ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'}`}>
+                            {dbConnected ? 'ONLINE' : 'OFFLINE'}
+                        </span>
                     </div>
 
-                    <div className="flex-1 relative z-10 p-12 overflow-y-auto custom-scrollbar">
-                        {activeTab === 'messages' && <ChatWorkspace selectedMember={selectedItem} />}
-                        {activeTab === 'calendar' && <FullAgendaView />}
-                        {activeTab === 'alerts' && <IntelligenceFeed />}
-                    </div>
-                </section>
+                    {/* Navigation Tabs */}
+                    <nav className="flex items-center bg-white/[0.03] p-1 rounded-xl border border-white/5">
+                        <TabButton 
+                            active={activeTab === 'messages'} 
+                            onClick={(e) => { e.stopPropagation(); setActiveTab('messages'); }}
+                            icon={<MessageSquare className="w-3.5 h-3.5" />}
+                            label="Comunicaciones"
+                        />
+                        <TabButton 
+                            active={activeTab === 'calendar'} 
+                            onClick={(e) => { e.stopPropagation(); setActiveTab('calendar'); }}
+                            icon={<Calendar className="w-3.5 h-3.5" />}
+                            label="Cronograma"
+                        />
+                        <TabButton 
+                            active={activeTab === 'alerts'} 
+                            onClick={(e) => { e.stopPropagation(); setActiveTab('alerts'); }}
+                            icon={<Bell className="w-3.5 h-3.5" />}
+                            label="Inteligencia"
+                        />
+                    </nav>
 
-                {/* --- COLUMN 3: INTELLIGENCE & STATS (25%) --- */}
-                <aside className="w-[25%] border-l border-white/5 p-12 bg-black/40 flex flex-col gap-8 overflow-y-auto no-scrollbar">
-                    {activeTab === 'messages' && <MemberIntelligence selectedMember={selectedItem} />}
-                    {activeTab === 'calendar' && <EventIntelligence />}
-                    {activeTab === 'alerts' && <SystemHealthStats />}
-                </aside>
+                    <button 
+                        onClick={onClose}
+                        className="p-2 bg-white/5 hover:bg-rose-500/20 hover:text-rose-400 border border-white/10 rounded-xl text-gray-500 transition-all active:scale-95 cursor-pointer"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
 
-            </main>
-        </motion.div>
+                {/* Content Area */}
+                <div className="flex-1 overflow-hidden flex relative">
+                    {loading ? (
+                        <div className="flex-1 flex items-center justify-center">
+                            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                        </div>
+                    ) : !dbConnected ? (
+                        /* Connection Offline Alert (NO fictitious data allowed) */
+                        <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-black/20">
+                            <AlertTriangle className="w-16 h-16 text-amber-500 mb-6 animate-pulse" />
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Sin Conexión con la Escuadra</h3>
+                            <p className="text-xs text-gray-400 max-w-md mt-4 leading-relaxed font-mono">
+                                No se pudo conectar a la base de datos central de DIIC ZONE.
+                                Por favor verifica las credenciales de Supabase o tu conexión de red para acceder a los miembros de tu escuadra real.
+                            </p>
+                            <button 
+                                onClick={onClose} 
+                                className="mt-8 px-6 py-3 bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl text-[9px] font-bold text-white uppercase tracking-widest transition-all cursor-pointer"
+                            >
+                                Cerrar Panel
+                            </button>
+                        </div>
+                    ) : (
+                        /* Connected View (Real Database Data) */
+                        <>
+                            {activeTab === 'messages' && (
+                                <MessagesContent 
+                                    members={teamMembers} 
+                                    selectedMember={selectedMember} 
+                                    onSelectMember={setSelectedMember} 
+                                    messages={messages}
+                                    sending={sending}
+                                    messageText={messageText}
+                                    setMessageText={setMessageText}
+                                    handleSendMessage={handleSendMessage}
+                                    chatEndRef={chatEndRef}
+                                    myId={myTeamMemberId}
+                                />
+                            )}
+                            {activeTab === 'calendar' && (
+                                <CalendarContent tasks={tasks} />
+                            )}
+                            {activeTab === 'alerts' && (
+                                <NotificationsContent />
+                            )}
+                        </>
+                    )}
+                </div>
+            </motion.div>
+        </div>
     );
 }
 
-/* --- COMPONENTS HELPER --- */
+/* --- TABS HELPER COMPONENTS --- */
 
 function TabButton({ active, onClick, icon, label }) {
     return (
         <button 
             onClick={onClick}
-            className={`flex items-center gap-3 px-6 py-2.5 rounded-xl transition-all duration-300 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${
                 active 
-                ? 'bg-white text-black shadow-2xl shadow-white/10' 
+                ? 'bg-white text-black shadow-lg shadow-white/5 font-bold' 
                 : 'text-gray-500 hover:text-white hover:bg-white/5'
             }`}
         >
             {icon}
-            <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+            <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">{label}</span>
         </button>
     );
 }
 
-function ContactList({ onSelect, selectedId }) {
-    const contacts = [
-        { id: 1, name: 'Jessie Caballero', role: 'Estratega Senior', status: 'En reunión', avatar: 'JC', color: 'bg-indigo-500' },
-        { id: 2, name: 'David Ruiz', role: 'Editor Video', status: 'Online', avatar: 'DR', color: 'bg-pink-500' },
-        { id: 3, name: 'Elena Solís', role: 'Diseño Pro', status: 'Offline', avatar: 'ES', color: 'bg-amber-500' },
-    ];
-
+/* --- COMMUNICATIONS CONTENT (REAL DATA) --- */
+function MessagesContent({ 
+    members, selectedMember, onSelectMember, messages, 
+    sending, messageText, setMessageText, handleSendMessage, chatEndRef, myId 
+}) {
     return (
-        <div className="space-y-2">
-            {contacts.map(c => (
-                <button 
-                    key={c.id} 
-                    onClick={() => onSelect(c)}
-                    className={`w-full p-5 rounded-[2rem] border transition-all text-left flex items-center gap-4 group ${
-                        selectedId?.id === c.id 
-                        ? 'bg-white text-black border-white shadow-xl' 
-                        : 'bg-white/5 border-white/5 hover:border-white/10'
-                    }`}
-                >
-                    <div className={`w-12 h-12 rounded-2xl ${c.color} flex items-center justify-center text-white font-black text-xs shadow-lg group-hover:rotate-6 transition-transform italic`}>
-                        {c.avatar}
-                    </div>
-                    <div>
-                        <h4 className="text-xs font-black uppercase italic tracking-tighter leading-tight">{c.name}</h4>
-                        <p className={`text-[8px] font-black uppercase tracking-widest mt-1 ${selectedId?.id === c.id ? 'text-gray-600' : 'text-gray-500'}`}>{c.role}</p>
-                    </div>
-                </button>
-            ))}
-        </div>
-    );
-}
+        <div className="flex-1 flex overflow-hidden">
+            {/* Sidebar Contact List */}
+            <div className="w-72 border-r border-white/5 p-6 flex flex-col gap-4 bg-black/10 overflow-y-auto custom-scrollbar shrink-0">
+                <h3 className="text-[9px] font-black text-gray-500 uppercase tracking-[0.25em] mb-2">Escuadra Creativa</h3>
+                <div className="space-y-2">
+                    {members.map(m => {
+                        const initials = m.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'DZ';
+                        const colors = ['bg-indigo-500', 'bg-pink-500', 'bg-amber-500', 'bg-blue-500', 'bg-violet-500', 'bg-emerald-500'];
+                        const colorIdx = m.id ? m.id.charCodeAt(m.id.length - 1) % colors.length : 0;
+                        const avatarColor = colors[colorIdx] || 'bg-indigo-500';
 
-function ChatWorkspace({ selectedMember }) {
-    if (!selectedMember) {
-        return (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-                <div className="w-32 h-32 bg-white/5 rounded-full flex items-center justify-center mb-8 border border-white/5">
-                    <MessageSquare className="w-12 h-12 text-gray-700" />
-                </div>
-                <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Selecciona una Conexión</h3>
-                <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-4">Inicia una comunicación encriptada con el equipo</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="h-full flex flex-col">
-            <div className="flex items-center justify-between mb-12">
-                <div className="flex items-center gap-6">
-                    <div className={`w-20 h-20 rounded-[2rem] ${selectedMember.color} flex items-center justify-center text-white text-3xl font-black italic shadow-2xl`}>
-                        {selectedMember.avatar}
-                    </div>
-                    <div>
-                        <h2 className="text-5xl font-black text-white uppercase italic tracking-tighter leading-tight">{selectedMember.name}</h2>
-                        <div className="flex items-center gap-4 mt-3">
-                            <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-black text-indigo-400 uppercase tracking-widest">{selectedMember.role}</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{selectedMember.status}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="flex gap-4">
-                    <button className="p-5 bg-white/5 border border-white/10 rounded-3xl text-white hover:bg-white/10 transition-all"><Phone className="w-5 h-5" /></button>
-                    <button className="p-5 bg-white/5 border border-white/10 rounded-3xl text-white hover:bg-white/10 transition-all"><Globe className="w-5 h-5" /></button>
-                </div>
-            </div>
-
-            {/* Bubble Chat Area */}
-            <div className="flex-1 space-y-8 mb-12">
-                <div className="flex gap-4 max-w-2xl">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 shrink-0" />
-                    <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] rounded-tl-none">
-                        <p className="text-sm text-gray-300 leading-relaxed font-medium">Hola equipo, ¿cómo va el montaje del reel de Nike? El cliente está esperando una previa para hoy a las 5pm.</p>
-                        <p className="text-[9px] text-gray-600 font-bold uppercase mt-3">12:30 PM — David R.</p>
-                    </div>
-                </div>
-                <div className="flex gap-4 max-w-2xl ml-auto flex-row-reverse">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-500 shrink-0" />
-                    <div className="bg-indigo-600 p-6 rounded-[2rem] rounded-tr-none shadow-xl shadow-indigo-600/20">
-                        <p className="text-sm text-white leading-relaxed font-medium">¡Hola! Ya estoy terminando la colorización. En 30 minutos lo subo a Drive para que lo revises.</p>
-                        <p className="text-[9px] text-indigo-200 font-bold uppercase mt-3 italic tracking-widest">Leído — 12:45 PM</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Input Area */}
-            <div className="relative group">
-                <input 
-                    type="text" 
-                    placeholder="Escribe un mensaje táctico..."
-                    className="w-full bg-white/5 border border-white/10 rounded-[2.5rem] py-6 pl-8 pr-24 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all shadow-2xl"
-                />
-                <button className="absolute right-3 top-3 bottom-3 px-8 bg-indigo-500 hover:bg-indigo-400 text-white rounded-[2rem] shadow-xl shadow-indigo-500/20 transition-all group-hover:scale-105 active:scale-95">
-                    <Zap className="w-5 h-5" />
-                </button>
-            </div>
-        </div>
-    );
-}
-
-function MemberIntelligence({ selectedMember }) {
-    if (!selectedMember) return <div className="text-center py-20 text-gray-700 font-black uppercase text-[10px] tracking-widest">Inteligencia no cargada</div>;
-
-    return (
-        <div className="space-y-10">
-            <div className="bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border border-indigo-500/30 p-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-20"><Shield className="w-12 h-12" /></div>
-                <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-6 italic font-mono">Performance Node</h3>
-                <div className="space-y-6">
-                    <div className="flex justify-between items-end">
-                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Eficacia Operativa</span>
-                        <span className="text-3xl font-black text-white italic">94%</span>
-                    </div>
-                    <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-indigo-500 w-[94%]" />
-                    </div>
-                </div>
-            </div>
-
-            <div className="space-y-6">
-                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] px-2">Interés en Proyectos</h3>
-                <div className="space-y-4">
-                    <ProjectChip label="Campaña Nike Reel" value="$4,500" active />
-                    <ProjectChip label="VFX Empresa Tech" value="$2,100" />
-                    <ProjectChip label="Motion Graphics" value="$1,800" />
-                </div>
-            </div>
-
-            <div className="p-8 bg-white/[0.02] border border-white/5 rounded-[2.5rem] space-y-4">
-                <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Acciones Rápidas</h4>
-                <div className="grid grid-cols-2 gap-3">
-                    <QuickActionButton icon={<Star className="w-3 h-3" />} label="Premium" />
-                    <QuickActionButton icon={<Target className="w-3 h-3" />} label="Asignar" />
-                    <QuickActionButton icon={<Mail className="w-3 h-3" />} label="Email" />
-                    <QuickActionButton icon={<Flame className="w-3 h-3" />} label="Urgente" />
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function ProjectChip({ label, value, active = false }) {
-    return (
-        <div className={`p-5 rounded-2xl border flex items-center justify-between group transition-all cursor-pointer ${
-            active ? 'bg-indigo-500 text-white border-indigo-400 shadow-xl' : 'bg-white/5 border-white/5 hover:border-white/10'
-        }`}>
-            <div className="flex items-center gap-4">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${active ? 'bg-white/20' : 'bg-indigo-500/10'}`}>
-                    <Target className={`w-4 h-4 ${active ? 'text-white' : 'text-indigo-400'}`} />
-                </div>
-                <span className="text-[11px] font-black uppercase italic tracking-tighter">{label}</span>
-            </div>
-            <span className={`text-[10px] font-black ${active ? 'text-white' : 'text-emerald-400'}`}>{value}</span>
-        </div>
-    );
-}
-
-function QuickActionButton({ icon, label }) {
-    return (
-        <button className="flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-[9px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-all">
-            {icon} {label}
-        </button>
-    );
-}
-
-function CalendarMiniView() { return <div className="text-white text-center py-10 opacity-30 italic">Mini Calendar Coming...</div>; }
-function FullAgendaView() {
-    const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
-    const days = ['Lunes 04', 'Martes 05', 'Miércoles 06', 'Jueves 07', 'Viernes 08'];
-
-    return (
-        <div className="h-full flex flex-col">
-            <div className="flex items-center justify-between mb-12">
-                <div>
-                    <h2 className="text-5xl font-black text-white uppercase italic tracking-tighter leading-none">Cronograma Semanal</h2>
-                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-3">Operaciones — Mayo 2026</p>
-                </div>
-                <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/10">
-                    <button className="px-6 py-2 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest">Semana</button>
-                    <button className="px-6 py-2 rounded-xl text-gray-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all">Mes</button>
-                </div>
-            </div>
-
-            <div className="flex-1 border border-white/5 rounded-[3rem] bg-black/40 overflow-hidden flex flex-col">
-                <div className="flex border-b border-white/5 bg-white/[0.02]">
-                    <div className="w-20 border-r border-white/5" />
-                    {days.map(day => (
-                        <div key={day} className="flex-1 p-6 text-center border-r border-white/5 last:border-r-0">
-                            <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] italic">{day}</span>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                    {hours.map(hour => (
-                        <div key={hour} className="flex border-b border-white/[0.02] min-h-[100px]">
-                            <div className="w-20 p-4 text-right border-r border-white/5">
-                                <span className="text-[9px] font-mono text-gray-600">{hour}</span>
-                            </div>
-                            {[1, 2, 3, 4, 5].map(day => (
-                                <div key={day} className="flex-1 border-r border-white/5 last:border-r-0 relative p-2">
-                                    {day === 3 && hour === '09:00' && (
-                                        <div className="absolute inset-2 bg-indigo-500 rounded-3xl p-4 shadow-xl shadow-indigo-500/20 z-10 border border-indigo-400 group cursor-pointer hover:scale-[1.02] transition-transform">
-                                            <h4 className="text-[11px] font-black text-white uppercase italic truncate">Rodaje Nike</h4>
-                                            <p className="text-[8px] text-indigo-200 font-bold mt-1">Estudio Central</p>
-                                        </div>
-                                    )}
-                                    {day === 2 && hour === '14:00' && (
-                                        <div className="absolute inset-2 h-[200%] bg-emerald-500 rounded-3xl p-4 shadow-xl shadow-emerald-500/20 z-10 border border-emerald-400 cursor-pointer hover:scale-[1.02] transition-transform">
-                                            <h4 className="text-[11px] font-black text-white uppercase italic truncate">Edición Tech</h4>
-                                            <p className="text-[8px] text-emerald-200 font-bold mt-1">Post-Producción</p>
-                                        </div>
-                                    )}
+                        return (
+                            <button 
+                                key={m.id} 
+                                onClick={() => onSelectMember(m)}
+                                className={`w-full p-4 rounded-2xl border transition-all text-left flex items-center gap-3 group ${
+                                    selectedMember?.id === m.id 
+                                    ? 'bg-white text-black border-white shadow-xl' 
+                                    : 'bg-white/5 border-white/5 hover:border-white/10'
+                                }`}
+                            >
+                                <div className={`w-10 h-10 rounded-xl ${avatarColor} flex items-center justify-center text-white font-black text-xs shadow-lg group-hover:rotate-6 transition-transform shrink-0`}>
+                                    {initials}
                                 </div>
-                            ))}
-                        </div>
-                    ))}
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="text-xs font-black uppercase italic tracking-tighter leading-tight truncate">{m.name}</h4>
+                                    <p className={`text-[8px] font-black uppercase tracking-widest mt-1 truncate ${selectedMember?.id === m.id ? 'text-gray-600' : 'text-gray-400'}`}>
+                                        {m.role || 'CREATIVE'}
+                                    </p>
+                                </div>
+                            </button>
+                        );
+                    })}
                 </div>
+            </div>
+
+            {/* Chat Workspace */}
+            <div className="flex-1 flex flex-col p-6 bg-black/5 overflow-hidden">
+                {!selectedMember ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center">
+                        <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/5">
+                            <MessageSquare className="w-8 h-8 text-gray-600" />
+                        </div>
+                        <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Conecta con tu Escuadra</h3>
+                        <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.2em] mt-2">Selecciona un miembro del directorio para iniciar la comunicación</p>
+                    </div>
+                ) : (
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        {/* Member Header */}
+                        <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-6 shrink-0">
+                            <div>
+                                <h3 className="text-lg font-black text-white uppercase italic tracking-tighter">{selectedMember.name}</h3>
+                                <p className="text-[9px] text-indigo-400 font-black uppercase tracking-widest mt-1">{selectedMember.role || 'CREATIVE'}</p>
+                            </div>
+                            <span className="text-[9px] font-mono text-gray-500">ID: {selectedMember.id}</span>
+                        </div>
+
+                        {/* Messages Area */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2 mb-6">
+                            {messages.length === 0 ? (
+                                <div className="h-full flex items-center justify-center text-center">
+                                    <p className="text-xs text-gray-500 italic">No hay mensajes anteriores. ¡Escribe el primer mensaje para conectar!</p>
+                                </div>
+                            ) : (
+                                messages.map(msg => {
+                                    const isMe = msg.sender_id === myId;
+                                    return (
+                                        <div key={msg.id} className={`flex gap-3 max-w-[75%] ${isMe ? 'ml-auto flex-row-reverse' : ''}`}>
+                                            <div className={`p-4 rounded-[1.5rem] ${
+                                                isMe 
+                                                ? 'bg-indigo-600 text-white rounded-tr-none shadow-md shadow-indigo-600/10' 
+                                                : 'bg-white/5 border border-white/10 text-gray-300 rounded-tl-none'
+                                            }`}>
+                                                <p className="text-xs leading-relaxed">{msg.content}</p>
+                                                <span className="text-[7px] text-gray-500 uppercase mt-2 block font-mono">
+                                                    {new Date(msg.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                            <div ref={chatEndRef} />
+                        </div>
+
+                        {/* Input Form */}
+                        <form onSubmit={handleSendMessage} className="relative group shrink-0">
+                            <input 
+                                type="text" 
+                                value={messageText}
+                                onChange={e => setMessageText(e.target.value)}
+                                placeholder="Escribe un mensaje..."
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-6 pr-16 text-xs text-white focus:outline-none focus:border-indigo-500/50 transition-all"
+                            />
+                            <button 
+                                type="submit"
+                                disabled={sending || !messageText.trim()}
+                                className="absolute right-2 top-2 bottom-2 px-5 bg-indigo-500 hover:bg-indigo-400 disabled:bg-white/5 disabled:text-gray-500 text-white rounded-xl shadow-lg transition-all flex items-center justify-center cursor-pointer"
+                            >
+                                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                            </button>
+                        </form>
+                    </div>
+                )}
             </div>
         </div>
     );
 }
-function IntelligenceFeed() { return <div className="text-white text-center py-20 opacity-30 italic">Intelligence Feed Coming...</div>; }
-function EventIntelligence() { return <div className="text-white text-center py-10 opacity-30 italic">Event Details Coming...</div>; }
-function SystemHealthStats() { return <div className="text-white text-center py-10 opacity-30 italic">Health Stats Coming...</div>; }
+
+/* --- CALENDAR CONTENT (REAL DATA) --- */
+function CalendarContent({ tasks }) {
+    return (
+        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+            <div className="flex items-center justify-between shrink-0">
+                <div>
+                    <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Cronograma Real</h3>
+                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.2em] mt-1">Actividades y Rodajes desde la Base de Datos</p>
+                </div>
+            </div>
+
+            {tasks.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
+                    <Calendar className="w-12 h-12 text-gray-700 mb-4" />
+                    <p className="text-xs text-gray-500 italic">No hay tareas o eventos programados en el sistema.</p>
+                </div>
+            ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                    {tasks.map(task => (
+                        <div key={task.id} className="bg-[#0E0E18]/50 border border-white/5 p-5 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
+                            <div>
+                                <div className="flex justify-between items-start mb-3">
+                                    <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded text-[8px] font-black text-indigo-400 uppercase tracking-widest">
+                                        {task.assigned_role || 'TAREA'}
+                                    </span>
+                                    <span className="text-[9px] font-mono text-gray-500">{task.deadline}</span>
+                                </div>
+                                <h4 className="text-sm font-black text-white uppercase italic tracking-tighter mb-1">{task.title}</h4>
+                                <p className="text-[10px] text-emerald-400 font-bold mb-3">{task.client}</p>
+                                {task.notes && (
+                                    <p className="text-xs text-gray-500 leading-relaxed font-medium line-clamp-2">{task.notes}</p>
+                                )}
+                            </div>
+                            
+                            <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-center text-[9px] text-gray-500 font-bold uppercase tracking-widest">
+                                <span>Duración: {task.duration || '--'}</span>
+                                <span className={
+                                    task.status === 'confirmed' ? 'text-emerald-400' :
+                                    task.status === 'pre-pro' ? 'text-blue-400' :
+                                    'text-amber-400'
+                                }>{task.status}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+/* --- INTEL FEED (NOTIFICATIONS) --- */
+function NotificationsContent() {
+    return (
+        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar flex flex-col items-center justify-center text-center">
+            <Bell className="w-12 h-12 text-gray-700 mb-4 animate-pulse" />
+            <h3 className="text-lg font-black text-white uppercase italic tracking-tighter">Nodo de Inteligencia</h3>
+            <p className="text-xs text-gray-500 italic max-w-sm mt-2 leading-relaxed">
+                El canal de notificaciones y alertas en tiempo real está activo. Actualmente no hay alertas de rendimiento críticas reportadas por el motor de IA.
+            </p>
+        </div>
+    );
+}
