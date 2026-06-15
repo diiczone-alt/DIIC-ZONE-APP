@@ -157,12 +157,25 @@ export const AuthProvider = ({ children }) => {
                     setSession(initialSession);
                     setUser(initialSession.user);
                     if (initialSession.provider_token) {
-                        console.log('🗝️ [AuthContext] Captured provider_token on init:', initialSession.provider_token);
-                        localStorage.setItem('diic_google_token', initialSession.provider_token);
+                        const provider = initialSession.user?.app_metadata?.provider || initialSession.user?.identities?.[0]?.provider || 'google';
+                        console.log(`🗝️ [AuthContext] Captured provider_token on init for ${provider}:`, initialSession.provider_token);
+                        if (provider === 'google') {
+                            localStorage.setItem('diic_google_token', initialSession.provider_token);
+                        } else if (provider === 'facebook') {
+                            localStorage.setItem('diic_facebook_token', initialSession.provider_token);
+                            setTimeout(() => {
+                                syncMetaTokens(initialSession.user.id, initialSession.provider_token, initialSession.provider_refresh_token, initialSession.user.email);
+                            }, 500);
+                        }
                     }
                     if (initialSession.provider_refresh_token) {
-                        console.log('🗝️ [AuthContext] Captured provider_refresh_token on init:', initialSession.provider_refresh_token);
-                        localStorage.setItem('diic_google_refresh_token', initialSession.provider_refresh_token);
+                        const provider = initialSession.user?.app_metadata?.provider || initialSession.user?.identities?.[0]?.provider || 'google';
+                        console.log(`🗝️ [AuthContext] Captured provider_refresh_token on init for ${provider}:`, initialSession.provider_refresh_token);
+                        if (provider === 'google') {
+                            localStorage.setItem('diic_google_refresh_token', initialSession.provider_refresh_token);
+                        } else if (provider === 'facebook') {
+                            localStorage.setItem('diic_facebook_refresh_token', initialSession.provider_refresh_token);
+                        }
                     }
                     
                     const profileData = await fetchProfile(initialSession.user.id, initialSession.user.email, initialSession.user.user_metadata);
@@ -216,12 +229,23 @@ export const AuthProvider = ({ children }) => {
                     if (!active) return;
                     setSession(session);
                     if (session?.provider_token) {
-                        console.log('🗝️ [AuthContext] Captured provider_token on state change:', session.provider_token);
-                        localStorage.setItem('diic_google_token', session.provider_token);
+                        const provider = session.user?.app_metadata?.provider || session.user?.identities?.[0]?.provider || 'google';
+                        console.log(`🗝️ [AuthContext] Captured provider_token on state change for ${provider}:`, session.provider_token);
+                        if (provider === 'google') {
+                            localStorage.setItem('diic_google_token', session.provider_token);
+                        } else if (provider === 'facebook') {
+                            localStorage.setItem('diic_facebook_token', session.provider_token);
+                            syncMetaTokens(session.user.id, session.provider_token, session.provider_refresh_token, session.user.email);
+                        }
                     }
                     if (session?.provider_refresh_token) {
-                        console.log('🗝️ [AuthContext] Captured provider_refresh_token on state change:', session.provider_refresh_token);
-                        localStorage.setItem('diic_google_refresh_token', session.provider_refresh_token);
+                        const provider = session.user?.app_metadata?.provider || session.user?.identities?.[0]?.provider || 'google';
+                        console.log(`🗝️ [AuthContext] Captured provider_refresh_token on state change for ${provider}:`, session.provider_refresh_token);
+                        if (provider === 'google') {
+                            localStorage.setItem('diic_google_refresh_token', session.provider_refresh_token);
+                        } else if (provider === 'facebook') {
+                            localStorage.setItem('diic_facebook_refresh_token', session.provider_refresh_token);
+                        }
                     }
                     if (session?.user) {
                         const profile = await fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
@@ -401,6 +425,44 @@ export const AuthProvider = ({ children }) => {
             console.log('[AuthContext] Google Tokens synced successfully.');
         } catch (err) {
             console.error('[AuthContext] Google Token sync failed:', err.message);
+        } finally {
+            setIsSyncingTokens(false);
+        }
+    };
+
+    const syncMetaTokens = async (userId, accessToken, refreshToken, email, clientId = null) => {
+        if (isSyncingTokens) return;
+        setIsSyncingTokens(true);
+        console.log(`[AuthContext] Syncing Meta Tokens for user: ${userId}`);
+        try {
+            let finalClientId = clientId;
+            if (!finalClientId) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('client_id')
+                    .eq('id', userId)
+                    .maybeSingle();
+                finalClientId = profile?.client_id;
+            }
+
+            const { error } = await supabase
+                .from('brand_connections')
+                .upsert({
+                    user_id: userId,
+                    client_id: finalClientId,
+                    provider: 'facebook',
+                    provider_id: userId,
+                    access_token: accessToken,
+                    refresh_token: refreshToken || null,
+                    expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+                    status: 'ACTIVE',
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id,provider' });
+
+            if (error) throw error;
+            console.log('[AuthContext] Meta (Facebook) Tokens synced successfully to brand_connections.');
+        } catch (err) {
+            console.error('[AuthContext] Meta Token sync failed:', err.message);
         } finally {
             setIsSyncingTokens(false);
         }

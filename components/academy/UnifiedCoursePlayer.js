@@ -10,6 +10,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { ACADEMY_COURSES, FILMMAKER_ACADEMY_COURSES, DESIGNER_ACADEMY_COURSES, AUDIO_ACADEMY_COURSES } from '@/data/academyCourses';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 const getThemeColors = (role) => {
     const r = (role || '').toLowerCase();
@@ -192,6 +193,45 @@ export default function UnifiedCoursePlayer({ params }) {
         }
     }, [id]);
 
+    // Fetch progress from Supabase
+    useEffect(() => {
+        if (!course) return;
+
+        const syncFromDatabase = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                const { data: progressData, error } = await supabase
+                    .from('academy_progress')
+                    .select('lesson_id, completed')
+                    .eq('user_id', user.id)
+                    .eq('course_id', String(course.id));
+
+                if (error) throw error;
+
+                if (progressData && progressData.length > 0) {
+                    const loadedCompletions = { ...completedLessons };
+                    progressData.forEach(row => {
+                        loadedCompletions[row.lesson_id] = row.completed;
+                        localStorage.setItem(`diic_les_comp_${course.id}_${row.lesson_id}`, String(row.completed));
+                    });
+                    setCompletedLessons(loadedCompletions);
+
+                    // Re-calculate overall course progress
+                    const totalLessons = course.modules.reduce((sum, mod) => sum + mod.lessons.length, 0);
+                    const completedCount = Object.values(loadedCompletions).filter(Boolean).length;
+                    const progressPercentage = Math.round((completedCount / totalLessons) * 100);
+                    localStorage.setItem(`diic_academy_progress_${course.id}`, String(progressPercentage));
+                }
+            } catch (err) {
+                console.warn('[AcademyPlayer] Could not fetch database progress:', err.message);
+            }
+        };
+
+        syncFromDatabase();
+    }, [course]);
+
     // Reset image load error state when shifting lessons
     useEffect(() => {
         setImageError(false);
@@ -213,7 +253,7 @@ export default function UnifiedCoursePlayer({ params }) {
         );
     };
 
-    const handleToggleComplete = (lessonId) => {
+    const handleToggleComplete = async (lessonId) => {
         const newState = !completedLessons[lessonId];
         const updated = { ...completedLessons, [lessonId]: newState };
         setCompletedLessons(updated);
@@ -231,6 +271,27 @@ export default function UnifiedCoursePlayer({ params }) {
         
         if (newState) {
             toast.success('¡Lección completada! Tu progreso se ha guardado.');
+        }
+
+        // Sync to Supabase in the background
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { error } = await supabase
+                    .from('academy_progress')
+                    .upsert({
+                        user_id: user.id,
+                        course_id: String(course.id),
+                        lesson_id: lessonId,
+                        completed: newState,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'user_id,course_id,lesson_id' });
+                
+                if (error) throw error;
+                console.log('[AcademyPlayer] Progress synced to database.');
+            }
+        } catch (err) {
+            console.error('[AcademyPlayer] Error syncing progress to database:', err.message);
         }
     };
 

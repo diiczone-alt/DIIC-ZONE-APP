@@ -92,6 +92,7 @@ const COLUMNS = [
 export default function FilmmakerDashboard() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('board');
+    const [draggedOverCol, setDraggedOverCol] = useState(null);
     const [projects, setProjects] = useState([]);
     const [inbox, setInbox] = useState([]);
     const [teamMembers, setTeamMembers] = useState([]);
@@ -322,6 +323,7 @@ export default function FilmmakerDashboard() {
     };
 
     const handleDrop = async (e, status) => {
+        setDraggedOverCol(null);
         const projectId = e.dataTransfer.getData('projectId');
         if (projectId) {
             // Update locally first for immediate feedback
@@ -566,7 +568,14 @@ export default function FilmmakerDashboard() {
         setShowScriptModal(true);
     };
 
-    const handleDragOver = (e) => e.preventDefault();
+    const handleDragOver = (e, columnId) => {
+        e.preventDefault();
+        setDraggedOverCol(columnId);
+    };
+
+    const handleDragLeave = () => {
+        setDraggedOverCol(null);
+    };
 
     // --- CALENDAR HELPERS ---
     const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -668,9 +677,14 @@ export default function FilmmakerDashboard() {
                             {COLUMNS.map(col => (
                                 <div
                                     key={col.id}
-                                    className={`min-w-[300px] flex flex-col h-full rounded-2xl transition-colors ${col.bg}`}
+                                    className={`min-w-[300px] flex flex-col h-full rounded-2xl transition-all duration-200 ${
+                                        draggedOverCol === col.id 
+                                            ? 'bg-cyan-500/10 border border-cyan-500/20 scale-[1.01]' 
+                                            : col.bg
+                                    }`}
                                     onDrop={(e) => handleDrop(e, col.id)}
-                                    onDragOver={handleDragOver}
+                                    onDragOver={(e) => handleDragOver(e, col.id)}
+                                    onDragLeave={handleDragLeave}
                                 >
                                     <div className={`flex items-center justify-between mb-4 p-4 border-b-2 ${col.color}`}>
                                         <h3 className="font-bold text-white text-sm">{col.label}</h3>
@@ -1138,7 +1152,11 @@ export default function FilmmakerDashboard() {
 
 function ProjectCard({ project }) {
     return (
-        <motion.div layoutId={project.id} whileHover={{ y: -2 }} className="bg-[#0E0E18] border border-white/5 rounded-xl p-3 hover:border-white/20 transition-all shadow-lg group">
+        <motion.div 
+            layoutId={project.id} 
+            whileHover={{ y: -3, scale: 1.01 }} 
+            className="bg-[#0E0E18] border border-white/5 rounded-xl p-3 hover:border-cyan-500/30 hover:shadow-cyan-500/5 transition-all shadow-lg group cursor-grab active:cursor-grabbing"
+        >
             <div className="relative h-28 mb-3 rounded-lg overflow-hidden">
                 <img src={project.thumb} alt={project.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold text-white border border-white/10">{project.type}</div>

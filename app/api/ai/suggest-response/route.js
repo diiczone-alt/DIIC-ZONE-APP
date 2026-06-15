@@ -25,11 +25,59 @@ export async function POST(req) {
         else if (brandNameLower === 'christian') brandName = 'NovaUrology';
         else if (brandNameLower === 'oscar cujilema' || brandNameLower === 'dr. oscar cujilema') brandName = 'Dr. Oscar Cujilema';
         const industry = strategic.industry || context.industry || 'General';
-        const whatItDoes = strategic.whatItDoes || '';
-        const whatItOffers = strategic.whatItOffers || '';
-        const problemSolved = strategic.problemSolved || '';
-        const valueProp = strategic.valueProp || '';
-        const tone = strategic.tone || 'Profesional, cercano y sofisticado';
+        
+        const industryDefaults = {
+            'estetica': {
+                whatItDoes: 'Clínica de medicina estética y armonización facial avanzada.',
+                whatItOffers: 'Tratamientos no invasivos como aplicación de toxina botulínica, ácido hialurónico, rinomodelación y rejuvenecimiento facial.',
+                problemSolved: 'Ayuda a las personas a recuperar la confianza en su aspecto físico mediante resultados naturales y seguros.',
+                valueProp: 'Resultados médicos sutiles y elegantes, de la mano de profesionales certificados que priorizan la salud y la armonía natural.',
+                tone: 'Profesional, cálido, ético y sumamente sofisticado'
+            },
+            'urologia': {
+                whatItDoes: 'Consultorio urológico especializado en salud masculina y tratamientos de mínima invasión.',
+                whatItOffers: 'Consultas de especialidad, ecografía urológica, tratamiento de cálculos renales, próstata y disfunción eréctil.',
+                problemSolved: 'Resuelve problemas urinarios y reproductivos devolviendo la calidad de vida y tranquilidad al paciente.',
+                valueProp: 'Tratamiento confidencial, humano y de alta tecnología por especialistas de primer nivel.',
+                tone: 'Profesional, empático, serio y tranquilizador'
+            },
+            'odontologia': {
+                whatItDoes: 'Clínica odontológica de alta especialidad en rehabilitación oral y estética dental.',
+                whatItOffers: 'Implantes dentales, diseño de sonrisa, ortodoncia invisible y blanqueamiento dental.',
+                problemSolved: 'Resuelve problemas de masticación y estética de la sonrisa para mejorar la autoestima de los pacientes.',
+                valueProp: 'Tecnología digital de punta y odontología sin dolor con especialistas calificados.',
+                tone: 'Cercano, profesional, alegre y de confianza'
+            },
+            'gastronomia': {
+                whatItDoes: 'Restaurante de comida artesanal y experiencia gastronómica premium.',
+                whatItOffers: 'Platillos gourmet preparados al momento, servicio de coctelería y reservas de mesa.',
+                problemSolved: 'Ofrece un espacio único de celebración y disfrute con comida de altísima calidad y ambiente excepcional.',
+                valueProp: 'Ingredientes 100% frescos y locales combinados en recetas de autor que deleitan todos los sentidos.',
+                tone: 'Cálido, amigable, entusiasta y hospitalario'
+            }
+        };
+
+        const indKey = industry.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let industryFallback = {
+            whatItDoes: 'Servicios profesionales de alta calidad orientados a la satisfacción del cliente.',
+            whatItOffers: 'Consultoría personalizada, asesoramiento técnico y soluciones a la medida.',
+            problemSolved: 'Optimiza la eficiencia y resuelve las fricciones operativas y comerciales del cliente.',
+            valueProp: 'Atención personalizada por expertos y soluciones innovadoras con resultados medibles.',
+            tone: 'Profesional, atento, confiable y resolutivo'
+        };
+
+        for (const [key, defaults] of Object.entries(industryDefaults)) {
+            if (indKey.includes(key)) {
+                industryFallback = defaults;
+                break;
+            }
+        }
+
+        const whatItDoes = strategic.whatItDoes || industryFallback.whatItDoes;
+        const whatItOffers = strategic.whatItOffers || industryFallback.whatItOffers;
+        const problemSolved = strategic.problemSolved || industryFallback.problemSolved;
+        const valueProp = strategic.valueProp || industryFallback.valueProp;
+        const tone = strategic.tone || industryFallback.tone;
 
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-flash",
