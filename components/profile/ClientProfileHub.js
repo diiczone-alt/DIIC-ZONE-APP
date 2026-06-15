@@ -16,6 +16,9 @@ export default function ClientProfileHub() {
     const searchParams = useSearchParams();
     const [subTab, setSubTab] = useState('progress'); // 'progress', 'rewards', 'settings'
 
+    const queryClientId = searchParams.get('client');
+    const activeClientId = queryClientId || user?.client_id;
+
     useEffect(() => {
         setIsMounted(true);
         if (searchParams.get('success') === 'true') {
@@ -76,9 +79,9 @@ export default function ClientProfileHub() {
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
                     >
-                        {subTab === 'progress' && <ClientLevelSystem clientId={user?.client_id} />}
-                        {subTab === 'rewards' && <ClientRewards />}
-                        {subTab === 'settings' && <ClientAccountSettings />}
+                        {subTab === 'progress' && <ClientLevelSystem clientId={activeClientId} />}
+                        {subTab === 'rewards' && <ClientRewards clientId={activeClientId} />}
+                        {subTab === 'settings' && <ClientAccountSettings clientId={activeClientId} />}
                     </motion.div>
                 </AnimatePresence>
             </div>

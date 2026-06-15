@@ -10,10 +10,10 @@ import { agencyService } from '@/services/agencyService';
 import { aiService } from '@/services/aiService';
 import { toast } from 'sonner';
 
-export default function ClientRewards() {
+export default function ClientRewards({ clientId: propClientId }) {
     const router = useRouter();
     const { user } = useAuth();
-    const clientId = user?.client_id || 1;
+    const clientId = propClientId || user?.client_id || 1;
     const [isLoading, setIsLoading] = useState(true);
     const [rewardsData, setRewardsData] = useState(null);
 

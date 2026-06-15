@@ -42,7 +42,7 @@ const getPlanPrice = (plan, industry) => {
     }
 };
 
-export default function ClientAccountSettings() {
+export default function ClientAccountSettings({ clientId }) {
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
@@ -150,26 +150,45 @@ export default function ClientAccountSettings() {
             if (!user?.id) return;
             
             try {
-                // 1. Fetch Profile
-                const { data: profile, error: pError } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
+                // Determine target client ID
+                const targetClientId = clientId || searchParams.get('client') || user?.client_id || user?.user_metadata?.client_id;
                 
-                if (pError) throw pError;
+                // 1. Fetch Profile associated with client or fallback to logged in user
+                let profile = null;
+                if (targetClientId) {
+                    const { data: pData } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('client_id', targetClientId)
+                        .limit(1);
+                    if (pData && pData.length > 0) {
+                        profile = pData[0];
+                    }
+                }
+                
+                if (!profile) {
+                    const { data: userProfile, error: pError } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
+                    if (!pError) {
+                        profile = userProfile;
+                    }
+                }
 
                 // 2. Fetch Linked Client record if available
                 let clientRecord = null;
-                if (profile?.client_id) {
-                    clientRecord = await agencyService.getClientById(profile.client_id);
+                const finalClientId = targetClientId || profile?.client_id;
+                if (finalClientId) {
+                    clientRecord = await agencyService.getClientById(finalClientId);
                 }
 
                 setProfileData({
-                    full_name: profile?.full_name || user?.user_metadata?.full_name || '',
+                    full_name: profile?.full_name || clientRecord?.name || user?.user_metadata?.full_name || '',
                     brand_name: (clientRecord?.name || user?.user_metadata?.brand || '').replace(/[-_\s]+workspace\s*$/i, '').trim(),
                     phone: clientRecord?.whatsapp_number || profile?.whatsapp || '',
-                    email: user?.email || '',
+                    email: clientRecord?.email || profile?.email || user?.email || '',
                     location: clientRecord?.city || profile?.location || 'Santo Domingo',
                     country: clientRecord?.country || profile?.country || 'Ecuador',
                     address: clientRecord?.address || profile?.address || '',
@@ -218,24 +237,26 @@ export default function ClientAccountSettings() {
         };
 
         fetchSyncData();
-    }, [user]);
+    }, [user, clientId, searchParams]);
 
     const handleSave = async () => {
         if (!user?.id) return;
         setIsLoading(true);
         
         try {
-            // Find client_id first
-            const { data: profile } = await supabase
+            // Find client_id of the user
+            const { data: userProfileData } = await supabase
                 .from('profiles')
                 .select('client_id')
                 .eq('id', user.id)
                 .single();
 
-            let targetClientId = profile?.client_id;
+            // Determine target client ID
+            let targetClientId = clientId || searchParams.get('client') || userProfileData?.client_id;
 
-            // Auto-create HQ Client if not linked
-            if (!targetClientId) {
+            // Auto-create HQ Client if not linked and we are NOT an admin editing a query client
+            const isEditingSpecificClient = !!(clientId || searchParams.get('client'));
+            if (!targetClientId && !isEditingSpecificClient) {
                 console.log("No client_id found. Auto-creating HQ client record...");
                 const newClientRes = await agencyService.createClient({
                     name: profileData.brand_name || profileData.full_name || 'Nuevo Cliente',
@@ -268,63 +289,82 @@ export default function ClientAccountSettings() {
                 }
             }
 
-            // Perform Bidirectional Sync
-            await agencyService.syncClientProfile(targetClientId, {
-                full_name: profileData.full_name,
-                brand_name: profileData.brand_name,
-                bio: profileData.bio,
-                location: profileData.location,
-                whatsapp: profileData.phone,
-                marketing_type: profileData.marketing_type,
-                specialty: profileData.specialty,
-                plan: profileData.plan,
-                primary_color: profileData.primary_color,
-                secondary_color: profileData.secondary_color,
-                accent_color: profileData.accent_color,
-                logo_url: profileData.logo_url,
-                country: profileData.country,
-                address: profileData.address,
-                website: profileData.website,
-                goals: profileData.goals,
-                brochure_url: profileData.brochure_url,
-                price: profileData.price
-            });
-
-            // Update specific personal profile fields
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .update({ 
+            if (targetClientId) {
+                // Perform Bidirectional Sync
+                await agencyService.syncClientProfile(targetClientId, {
                     full_name: profileData.full_name,
+                    brand_name: profileData.brand_name,
+                    bio: profileData.bio,
                     location: profileData.location,
                     whatsapp: profileData.phone,
-                    industry: profileData.marketing_type,
+                    marketing_type: profileData.marketing_type,
                     specialty: profileData.specialty,
                     plan: profileData.plan,
+                    primary_color: profileData.primary_color,
+                    secondary_color: profileData.secondary_color,
+                    accent_color: profileData.accent_color,
+                    logo_url: profileData.logo_url,
                     country: profileData.country,
                     address: profileData.address,
                     website: profileData.website,
                     goals: profileData.goals,
                     brochure_url: profileData.brochure_url,
-                    drive_root_link: profileData.drive_root_link,
-                    drive_root_id: profileData.drive_root_id,
                     price: profileData.price
-                })
-                .eq('id', user.id);
-            
-            if (profileError) {
-                throw new Error("Failed to update profile: " + profileError.message);
+                });
+
+                // Sync to clients table
+                const { error: clientError } = await supabase
+                    .from('clients')
+                    .update({
+                        google_drive_folder_id: profileData.drive_root_id
+                    })
+                    .eq('id', targetClientId);
+                
+                if (clientError) {
+                    console.warn("Client table sync warning:", clientError.message);
+                }
             }
 
-            // Sync to clients table
-            const { error: clientError } = await supabase
-                .from('clients')
-                .update({
-                    google_drive_folder_id: profileData.drive_root_id
-                })
-                .eq('id', targetClientId);
-            
-            if (clientError) {
-                console.warn("Client table sync warning:", clientError.message);
+            // Sync to profiles table: find which profile is linked to this client_id,
+            // or default to current user if no specific client_id query parameter was used.
+            let targetProfileUserId = null;
+            if (isEditingSpecificClient && targetClientId) {
+                const { data: pData } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('client_id', targetClientId)
+                    .limit(1);
+                if (pData && pData.length > 0) {
+                    targetProfileUserId = pData[0].id;
+                }
+            } else {
+                targetProfileUserId = user.id;
+            }
+
+            if (targetProfileUserId) {
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update({ 
+                        full_name: profileData.full_name,
+                        location: profileData.location,
+                        whatsapp: profileData.phone,
+                        industry: profileData.marketing_type,
+                        specialty: profileData.specialty,
+                        plan: profileData.plan,
+                        country: profileData.country,
+                        address: profileData.address,
+                        website: profileData.website,
+                        goals: profileData.goals,
+                        brochure_url: profileData.brochure_url,
+                        drive_root_link: profileData.drive_root_link,
+                        drive_root_id: profileData.drive_root_id,
+                        price: profileData.price
+                    })
+                    .eq('id', targetProfileUserId);
+                
+                if (profileError) {
+                    throw new Error("Failed to update profile: " + profileError.message);
+                }
             }
 
             toast.success('Perfil y Hub de Datos sincronizados');
