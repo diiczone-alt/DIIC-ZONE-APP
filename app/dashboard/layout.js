@@ -7,7 +7,7 @@ import FloatingClientActions from '../../components/ui/FloatingClientActions';
 import UnifiedMessagingCenter from '../../components/shared/Messaging/UnifiedMessagingCenter';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { SidebarProvider, useSidebar } from '@/components/layout/SidebarContext';
+import { useSidebar } from '@/components/layout/SidebarContext';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -30,7 +30,7 @@ function DashboardContent({ children }) {
                 className={`flex-1 flex flex-col min-w-0 h-full relative transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden`}
             >
                 {/* ─── Role-Based Header ─── */}
-                {!shouldHideSidebar && !isClient && <SlimMasterHeader />}
+                {!shouldHideSidebar && <SlimMasterHeader isClient={isClient} />}
 
                 {/* ─── Floating Client Actions (Messages & Notifications) ─── */}
                 {isClient && (
@@ -149,7 +149,7 @@ function DashboardContent({ children }) {
                 </div>
 
                 {/* Main Content Area - Padding depends on suppression or route */}
-                <div className={`relative z-10 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${shouldHideSidebar || pathname === '/dashboard/strategy' ? '' : 'p-8'}`}>
+                <div className={`relative z-10 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${shouldHideSidebar || pathname === '/dashboard/strategy' ? '' : 'p-4 md:p-8'}`}>
                     {children}
                 </div>
             </main>
@@ -206,12 +206,10 @@ export default function DashboardLayout({ children }) {
     }
 
     return (
-        <SidebarProvider>
-            <PaywallGuard user={user}>
-                <DashboardContent>
-                    {children}
-                </DashboardContent>
-            </PaywallGuard>
-        </SidebarProvider>
+        <PaywallGuard user={user}>
+            <DashboardContent>
+                {children}
+            </DashboardContent>
+        </PaywallGuard>
     );
 }

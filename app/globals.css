@@ -123,3 +123,87 @@ div.pl-64 {
   transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+/* ─── Mobile Adaptations & Global Responsiveness ─── */
+@media (max-width: 1023px) {
+  /* Sidebars slide offscreen and act as fixed drawer overlays */
+  aside,
+  [class*="Sidebar"],
+  .sidebar-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    width: 280px !important;
+    max-width: 80vw !important;
+    z-index: 100 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    box-shadow: 20px 0 40px rgba(0, 0, 0, 0.6) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Slide in active mobile sidebar drawer */
+  body.mobile-sidebar-open aside,
+  body.mobile-sidebar-open [class*="Sidebar"],
+  body.mobile-sidebar-open .sidebar-container {
+    transform: translateX(0) !important;
+  }
+
+  /* Reset layout side-paddings and margins on mobile */
+  main.pl-64,
+  div.pl-64,
+  .pl-64,
+  .pl-\[72px\],
+  .pl-20,
+  .pl-24 {
+    padding-left: 0 !important;
+  }
+
+  .ml-64,
+  .ml-20,
+  .ml-24 {
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Dynamically adjust oversized margins/paddings on mobile */
+  .p-8, .p-10, .p-12, .p-16, .p-20 {
+    padding: 1rem !important; /* 16px */
+  }
+  
+  .px-8, .px-10, .px-12, .px-16, .px-20 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  .py-8, .py-10, .py-12, .py-16, .py-20 {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+  
+  .gap-10, .gap-12, .gap-16 {
+    gap: 1.5rem !important;
+  }
+  
+  /* Modern premium card border radius scale down for mobile */
+  .rounded-\[2\.5rem\],
+  .rounded-\[3rem\],
+  .rounded-\[40px\],
+  .rounded-3xl {
+    border-radius: 1.25rem !important;
+  }
+
+  .rounded-\[2rem\] {
+    border-radius: 1rem !important;
+  }
+}
+
+@media (max-width: 639px) {
+  /* Stack form column grids on small mobile viewports */
+  .grid-cols-2:not(.grid-cols-keep) {
+    grid-template-cols: repeat(1, minmax(0, 1fr)) !important;
+  }
+}
+

@@ -1,24 +1,35 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Bell, MessageSquare, Zap, ChevronDown, Command } from 'lucide-react';
+import { Search, Bell, MessageSquare, Zap, ChevronDown, Command, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+import { useSidebar } from '@/components/layout/SidebarContext';
 
-export default function SlimMasterHeader() {
+export default function SlimMasterHeader({ isClient }) {
     const { user } = useAuth();
     const [searchFocused, setSearchFocused] = useState(false);
+    const { setIsMobileOpen } = useSidebar();
 
     return (
-        <header className="h-14 border-b border-white/5 bg-[#050510]/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-[60]">
+        <header className={`h-14 border-b border-white/5 bg-[#050510]/80 backdrop-blur-md px-4 md:px-6 flex items-center justify-between sticky top-0 z-[60] ${isClient ? 'lg:hidden' : ''}`}>
             {/* Left: Search & Branding Context */}
-            <div className="flex items-center gap-6 flex-1">
+            <div className="flex items-center gap-4 md:gap-6 flex-1">
+                {/* Hamburger Button for Mobile */}
+                <button
+                    onClick={() => setIsMobileOpen(true)}
+                    className="p-2 text-gray-400 hover:text-white bg-white/5 rounded-lg lg:hidden transition-colors shrink-0"
+                    aria-label="Abrir menú"
+                >
+                    <Menu className="w-5 h-5" />
+                </button>
+
                 <div className="flex items-center gap-2 group cursor-pointer">
                     <div className="w-7 h-7 bg-white text-black rounded-lg flex items-center justify-center font-black italic text-sm">D</div>
                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-hover:text-white transition-colors">Ecosistema Pro</span>
                 </div>
 
-                <div className={`relative flex items-center transition-all duration-300 ${searchFocused ? 'w-96' : 'w-64'}`}>
+                <div className={`relative hidden md:flex items-center transition-all duration-300 ${searchFocused ? 'w-96' : 'w-64'}`}>
                     <Search className={`absolute left-3 w-3.5 h-3.5 transition-colors ${searchFocused ? 'text-indigo-400' : 'text-gray-600'}`} />
                     <input 
                         type="text"

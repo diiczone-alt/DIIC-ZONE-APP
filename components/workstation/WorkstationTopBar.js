@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { 
     Bell, MessageCircle, Calendar, Settings, 
     Search, User, ChevronDown, Zap, ShieldCheck,
-    LogOut, CreditCard, Layout
+    LogOut, CreditCard, Layout, Menu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useSidebar } from '@/components/layout/SidebarContext';
 
 // Global Modals
 import ControlCenterOverlay from './ControlCenterOverlay';
@@ -20,6 +21,7 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalView, setModalView] = useState('messages');
     const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const { setIsMobileOpen } = useSidebar();
 
     const handleLogout = async () => {
         try {
@@ -37,16 +39,26 @@ export default function WorkstationTopBar({ title, subtitle, role = 'Editor' }) 
 
     return (
         <>
-        <div className="h-20 border-b border-white/5 px-8 flex items-center justify-between bg-black/20 backdrop-blur-md relative z-30">
+        <div className="h-20 border-b border-white/5 px-4 md:px-8 flex items-center justify-between bg-black/20 backdrop-blur-md relative z-30">
             {/* Left: Dynamic Page Title */}
-            <div>
-                <div className="flex items-center gap-3 mb-0.5">
-                    <h1 className="text-xl font-black text-white italic tracking-tighter uppercase">{title}</h1>
-                    <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-black text-indigo-400 uppercase tracking-widest">
-                        {role} OS
-                    </span>
+            <div className="flex items-center gap-3">
+                {/* Hamburger Button for Mobile */}
+                <button
+                    onClick={() => setIsMobileOpen(true)}
+                    className="p-2 text-gray-400 hover:text-white bg-white/5 rounded-lg lg:hidden transition-colors shrink-0"
+                    aria-label="Abrir menú"
+                >
+                    <Menu className="w-5 h-5" />
+                </button>
+                <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                        <h1 className="text-sm md:text-xl font-black text-white italic tracking-tighter uppercase whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px] sm:max-w-none">{title}</h1>
+                        <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-[8px] font-black text-indigo-400 uppercase tracking-widest shrink-0">
+                            {role} OS
+                        </span>
+                    </div>
+                    <p className="text-[8px] md:text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60 hidden sm:block">{subtitle}</p>
                 </div>
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">{subtitle}</p>
             </div>
 
             {/* Right: Smart Controls */}
