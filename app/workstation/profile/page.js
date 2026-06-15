@@ -45,15 +45,40 @@ const SidebarMap = {
     EVENTS: EventSidebar,
 };
 
-const promiseTimeout = (promise, ms) => {
-    // Pass promise through directly to disable artificial database timeouts.
-    return promise;
+const promiseTimeout = (promise, ms = 3000) => {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout de conexión con el servidor')), ms)
+        )
+    ]);
+};
+
+const cleanDate = (dateStr) => {
+    if (!dateStr) return null;
+    const trimmed = dateStr.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+        const [day, month, year] = trimmed.split('/');
+        return `${year}-${month}-${day}`;
+    }
+    if (/^\d{4}\/\d{2}\/\d{2}$/.test(trimmed)) {
+        return trimmed.replace(/\//g, '-');
+    }
+    try {
+        const d = new Date(trimmed);
+        if (!isNaN(d.getTime())) {
+            return d.toISOString().split('T')[0];
+        }
+    } catch (e) {}
+    return trimmed;
 };
 
 const getAgeAndBirthday = (birthday) => {
-    if (!birthday) return { age: '--', formatted: 'No definido' };
+    const cleaned = cleanDate(birthday);
+    if (!cleaned) return { age: '--', formatted: 'No definido' };
     try {
-        const [year, month, day] = birthday.split('-');
+        const [year, month, day] = cleaned.split('-');
         const birthDate = new Date(year, month - 1, day);
         const today = new Date();
         let age = today.getFullYear() - birthDate.getFullYear();
@@ -279,6 +304,8 @@ export default function ProfilePage() {
         try {
             setSaving(true);
             
+            const cleanBirthDate = cleanDate(formData.birth_date);
+            
             // 1. Update Profiles
             try {
                 const { error: pUpdateError } = await promiseTimeout(
@@ -291,7 +318,7 @@ export default function ProfilePage() {
                             cv_url: formData.cv_url,
                             cv_summary: formData.cv_summary,
                             skills: formData.skills,
-                            birth_date: formData.birth_date || null,
+                            birth_date: cleanBirthDate,
                             specialty: formData.specialty
                         })
                         .eq('id', user.id),
@@ -369,7 +396,7 @@ export default function ProfilePage() {
                         cv_url: formData.cv_url,
                         cv_summary: formData.cv_summary,
                         skills: formData.skills,
-                        birth_date: formData.birth_date || null,
+                        birth_date: cleanBirthDate,
                         availability: formData.availability
                     };
 
