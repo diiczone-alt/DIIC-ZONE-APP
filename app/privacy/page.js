@@ -44,7 +44,7 @@ export default function PrivacyPage() {
                             <FileText className="w-4 h-4 text-indigo-400" /> 1. Introducción y Propietario
                         </h3>
                         <p>
-                            La presente Política de Privacidad describe cómo **DIIC ZONE** recopila, utiliza y protege los datos de los usuarios de nuestra plataforma de automatización y gestión comercial. El responsable del tratamiento de los datos es DIIC ZONE, accesible mediante el correo electrónico de soporte <span className="text-indigo-400 font-bold">diiczone@gmail.com</span>.
+                            La presente Política de Privacidad describe cómo **DIIC ZONE** recopila, utiliza y protege los datos de los usuarios de nuestra plataforma de automatización y gestión comercial. El responsable del tratamiento de los datos es DIIC ZONE, accesible mediante el correo electrónico de soporte <span className="text-indigo-400 font-bold">soporte@diiczone.com</span>.
                         </p>
                     </div>
 
@@ -85,7 +85,7 @@ export default function PrivacyPage() {
                         <ol className="list-decimal list-inside pl-4 space-y-2 text-xs text-gray-400 font-bold">
                             <li>Desvinculando su cuenta en la sección de <span className="text-white">"Conectividad"</span> dentro de su panel de DIIC ZONE. Esto purgará automáticamente los tokens de acceso de nuestra base de datos.</li>
                             <li>Ingresando a su cuenta de Facebook personal &gt; **Configuración y Privacidad &gt; Aplicaciones y sitios web**, seleccionando **Asistente DIIC ZONE** y haciendo clic en **Eliminar**.</li>
-                            <li>Enviando una solicitud directa por correo electrónico a <span className="text-white">diiczone@gmail.com</span> solicitando la eliminación de todos los registros de datos asociados a su cuenta. Responderemos en menos de 48 horas laborales.</li>
+                            <li>Enviando una solicitud directa por correo electrónico a <span className="text-white">soporte@diiczone.com</span> solicitando la eliminación de todos los registros de datos asociados a su cuenta. Responderemos en menos de 48 horas laborales.</li>
                         </ol>
                     </div>
                 </div>
