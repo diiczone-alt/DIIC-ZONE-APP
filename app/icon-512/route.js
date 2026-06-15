@@ -28,21 +28,21 @@ export async function GET() {
             filter: 'blur(20px)',
           }}
         />
-        {/* Monogram DZ */}
-        <div
+        {/* New D-Play logo */}
+        <svg 
+          viewBox="0 0 100 100" 
           style={{
+            width: '290px',
+            height: '290px',
             display: 'flex',
-            fontSize: '220px',
-            fontWeight: '900',
-            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-            color: '#ffffff',
-            letterSpacing: '-0.06em',
-            textShadow: '0 0 80px rgba(99, 102, 241, 0.7)',
-            fontStyle: 'italic',
           }}
         >
-          DZ
-        </div>
+          <path
+            d="M 28,20 L 52,20 C 68,20 80,32 80,50 C 80,68 68,80 52,80 L 28,80 Z M 43,38 L 43,62 L 63,50 Z"
+            fill="#ffffff"
+            fillRule="evenodd"
+          />
+        </svg>
       </div>
     ),
     {

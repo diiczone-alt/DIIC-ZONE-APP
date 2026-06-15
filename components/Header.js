@@ -4,6 +4,7 @@ import { Bell, Search, Star, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import NotificationCenter from '@/components/ui/NotificationCenter';
+import BrandLogo from '@/components/ui/BrandLogo';
 
 export default function Header({ userLevel = 1 }) {
     return (
@@ -12,8 +13,8 @@ export default function Header({ userLevel = 1 }) {
             {/* LEFT: Logo & Breadcrumbs */}
             <div className="flex items-center gap-8">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg">
-                        D
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-900/20">
+                        <BrandLogo className="w-5 h-5 text-white" />
                     </div>
                     <span className="text-xl font-black tracking-tight text-white hidden md:block">
                         DIIC <span className="text-gray-500">ZONE</span>

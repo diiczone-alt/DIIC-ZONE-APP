@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 export default function BrandLogo({ className = "w-6 h-6", color = "currentColor" }) {
     const svgRef = useRef(null);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const [isHovered, setIsHovered] = useState(false);
 
     useEffect(() => {
         const handleMouseMove = (e) => {
@@ -23,15 +24,15 @@ export default function BrandLogo({ className = "w-6 h-6", color = "currentColor
             // Distance
             const dist = Math.sqrt(dx * dx + dy * dy);
             
-            // Limit the maximum eye offset (say 3.5 units in SVG space)
-            const maxOffset = 3.5; 
+            // Limit the maximum offset in SVG coordinate space (out of 100)
+            const maxOffset = 2.5; 
             
             let offsetX = 0;
             let offsetY = 0;
             if (dist > 0) {
-                // Adjust scale factor (0.04) to control sensitivity
-                offsetX = (dx / dist) * Math.min(dist * 0.04, maxOffset);
-                offsetY = (dy / dist) * Math.min(dist * 0.04, maxOffset);
+                // Control sensitivity: 0.02
+                offsetX = (dx / dist) * Math.min(dist * 0.02, maxOffset);
+                offsetY = (dy / dist) * Math.min(dist * 0.02, maxOffset);
             }
             
             setMousePos({ x: offsetX, y: offsetY });
@@ -41,6 +42,9 @@ export default function BrandLogo({ className = "w-6 h-6", color = "currentColor
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, []);
 
+    // Unique ID for mask to prevent conflicts if multiple instances are rendered
+    const maskId = useRef(`play-mask-${Math.random().toString(36).substr(2, 9)}`);
+
     return (
         <svg 
             ref={svgRef}
@@ -48,66 +52,41 @@ export default function BrandLogo({ className = "w-6 h-6", color = "currentColor
             fill="none" 
             xmlns="http://www.w3.org/2000/svg"
             className={className}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
-            {/* Top Hook Curve to Right Peak */}
-            <path 
-                d="M 21,50 C 21,28 28,18 48,18 L 84,50" 
-                stroke={color} 
-                strokeWidth="4" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-            />
-            {/* Bottom Hook Curve to Right Peak */}
-            <path 
-                d="M 19,63 C 19,81 29,82 41,82 L 84,50" 
-                stroke={color} 
-                strokeWidth="4" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-            />
-            {/* Left Vertical Oval with Blink & Look Animation */}
-            <motion.ellipse 
-                cx="32" 
-                cy="48" 
-                rx="4.5" 
+            <defs>
+                <mask id={maskId.current}>
+                    {/* Everything white in the mask remains visible */}
+                    <rect x="0" y="0" width="100" height="100" fill="white" />
+                    {/* Everything black in the mask is punched out */}
+                    <motion.polygon 
+                        points="43,38 63,50 43,62" 
+                        fill="black" 
+                        animate={{ 
+                            x: mousePos.x, 
+                            y: mousePos.y,
+                            scale: isHovered ? 1.15 : 1
+                        }}
+                        transition={{ 
+                            scale: { type: "spring", stiffness: 300, damping: 15 },
+                            x: { type: "spring", stiffness: 150, damping: 15 },
+                            y: { type: "spring", stiffness: 150, damping: 15 }
+                        }}
+                        style={{ originX: "50px", originY: "50px" }}
+                    />
+                </mask>
+            </defs>
+
+            {/* D Shape */}
+            <motion.path 
+                d="M 28,20 L 52,20 C 68,20 80,32 80,50 C 80,68 68,80 52,80 L 28,80 Z" 
                 fill={color} 
+                mask={`url(#${maskId.current})`}
                 animate={{
-                    ry: [17, 17, 1.5, 17, 17],
-                    x: mousePos.x,
-                    y: mousePos.y
+                    filter: isHovered ? "drop-shadow(0px 0px 8px rgba(255,255,255,0.4))" : "drop-shadow(0px 0px 0px rgba(255,255,255,0))"
                 }}
-                transition={{
-                    ry: {
-                        duration: 4,
-                        repeat: Infinity,
-                        times: [0, 0.82, 0.85, 0.88, 1],
-                        ease: "easeInOut"
-                    },
-                    x: { type: "spring", stiffness: 120, damping: 14 },
-                    y: { type: "spring", stiffness: 120, damping: 14 }
-                }}
-            />
-            {/* Right Vertical Oval with Blink & Look Animation */}
-            <motion.ellipse 
-                cx="45" 
-                cy="48" 
-                rx="4.5" 
-                fill={color} 
-                animate={{
-                    ry: [17, 17, 1.5, 17, 17],
-                    x: mousePos.x,
-                    y: mousePos.y
-                }}
-                transition={{
-                    ry: {
-                        duration: 4,
-                        repeat: Infinity,
-                        times: [0, 0.82, 0.85, 0.88, 1],
-                        ease: "easeInOut"
-                    },
-                    x: { type: "spring", stiffness: 120, damping: 14 },
-                    y: { type: "spring", stiffness: 120, damping: 14 }
-                }}
+                transition={{ duration: 0.3 }}
             />
         </svg>
     );

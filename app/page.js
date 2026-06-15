@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
+import BrandLogo from '@/components/ui/BrandLogo';
 import { 
     ArrowRight, BarChart3, Bot, Clapperboard, Layers, Zap, 
     Shield, MessageSquare, Package, Activity, Users, DollarSign, 
@@ -210,8 +211,8 @@ export default function LandingPage() {
             <nav className="fixed w-full z-50 backdrop-blur-md border-b border-white/5 bg-[#050510]/80">
                 <div className="container mx-auto px-6 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-secondary flex items-center justify-center font-bold text-white">
-                            DZ
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-950/40">
+                            <BrandLogo className="w-5 h-5 text-white" />
                         </div>
                         <span className="font-display font-bold text-xl tracking-tight">DIIC ZONE</span>
                     </div>
