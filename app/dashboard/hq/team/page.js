@@ -190,6 +190,14 @@ export default function HQTeamPage() {
                     const parsedTeam = JSON.parse(cachedTeam);
                     const parsedClients = JSON.parse(cachedClients);
                     
+                    // Si el caché tiene array vacío (dato stale de problemas RLS anteriores), limpiarlo
+                    if (Array.isArray(parsedTeam) && parsedTeam.length === 0) {
+                        console.warn("⚠️ [HQ-Team] Cache vacío detectado, limpiando para forzar re-fetch...");
+                        localStorage.removeItem('diic_team');
+                        localStorage.removeItem('diic_clients');
+                        return false;
+                    }
+                    
                     if (Array.isArray(parsedTeam) && parsedTeam.length > 0) {
                         const cleanTeam = deduplicateTeam(parsedTeam);
                         setTeam(cleanTeam);
@@ -201,6 +209,8 @@ export default function HQTeamPage() {
                 }
             } catch (e) {
                 console.warn("⚠️ [HQ-Team] Cache load failed");
+                localStorage.removeItem('diic_team');
+                localStorage.removeItem('diic_clients');
             }
             return false;
         };
