@@ -23,7 +23,18 @@ export default function AutomationPage() {
 
     useEffect(() => {
         setIsClient(true);
-        // Optional: Check local storage to see if intro was already shown
+        
+        // Sincronizar pestaña activa desde el parámetro query 'tab' de la URL
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const tabParam = params.get('tab');
+            const validTabs = ['connectivity', 'crm', 'chatbot', 'automations', 'ads', 'commercial'];
+            if (tabParam && validTabs.includes(tabParam)) {
+                setActiveTab(tabParam);
+            }
+        }
+
+        // Check local storage to see if intro was already shown
         const hasSeenIntro = localStorage.getItem('diic_automation_intro_seen');
         if (hasSeenIntro) {
             setShowIntro(false);

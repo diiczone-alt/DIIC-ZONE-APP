@@ -489,17 +489,30 @@ export default function HQClientsPage() {
         e.preventDefault();
         if (!editingClient?.id) return;
 
-        setIsEditModalOpen(false);
-        const updatedData = { ...newClient };
-        setClients(prev => prev.map(c => c.id === editingClient.id ? { ...c, ...updatedData } : c));
-
+        setIsSubmitting(true);
+        const toastId = toast.loading("Guardando cambios en la base de datos...");
+        
         try {
+            const updatedData = { ...newClient };
             await agencyService.updateClient(editingClient.id, updatedData);
-            toast.success("Cambios Guardados");
+            
+            // Re-fetch clients to ensure the entire state is perfectly synchronized
+            await fetchClients();
+            
+            toast.success("Cambios Guardados", {
+                id: toastId,
+                description: "Los datos del cliente se han sincronizado con Supabase."
+            });
+            setIsEditModalOpen(false);
+            setEditingClient(null);
         } catch (error) {
             console.error("❌ [Sync] Save Failure:", error);
+            toast.error("Error al Guardar", {
+                id: toastId,
+                description: error.message || "No se pudo sincronizar con la base de datos real."
+            });
         } finally {
-            setEditingClient(null);
+            setIsSubmitting(false);
         }
     };
 
@@ -1036,12 +1049,12 @@ export default function HQClientsPage() {
             <AnimatePresence>
                 {isEditModalOpen && (
                     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="absolute inset-0 bg-black/40 backdrop-blur-md" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="absolute inset-0 bg-[#02020a]/30 backdrop-blur-sm" />
                         <motion.div 
                             initial={{ scale: 0.9, opacity: 0, y: 40 }} 
                             animate={{ scale: 1, opacity: 1, y: 0 }} 
                             exit={{ scale: 0.9, opacity: 0, y: 40 }} 
-                            className="relative bg-[#080814]/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row relative"
+                            className="relative bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row relative"
                             style={{ 
                                 width: `${modalWidth}px`, 
                                 height: `${modalHeight}px`,
@@ -1051,7 +1064,7 @@ export default function HQClientsPage() {
                         >
                             
                             {/* LEFT SIDEBAR: Visual Branding (Fixed) */}
-                            <div className="w-full md:w-[30%] h-full relative border-r border-white/5 bg-white/[0.01] backdrop-blur-md flex flex-col justify-between p-8 overflow-hidden">
+                            <div className="w-full md:w-[30%] h-full relative border-r border-white/5 bg-white/[0.02] flex flex-col justify-between p-8 overflow-hidden">
                                 {/* Ambient Background */}
                                 <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
                                     <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-indigo-600/20 rounded-full blur-[120px]" />
@@ -1072,7 +1085,7 @@ export default function HQClientsPage() {
                                     <div className="flex flex-col items-center">
                                         <div className="relative group mb-4">
                                             <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-[40px] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
-                                            <div className="relative w-24 h-24 rounded-3xl bg-[#0A0A1F] border border-white/10 flex items-center justify-center text-3xl font-black text-white shadow-2xl overflow-hidden">
+                                            <div className="relative w-24 h-24 rounded-3xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-3xl font-black text-white shadow-2xl overflow-hidden">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
                                                 {editingClient?.onboarding_data?.brand?.logo ? (
                                                     <img src={editingClient.onboarding_data.brand.logo} alt="Brand Logo" className="w-full h-full object-contain p-2 relative z-10" />
@@ -1183,6 +1196,7 @@ export default function HQClientsPage() {
                                                     </div>
 
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                                        {/* Column 1: Core Identity & Strategy */}
                                                         <div className="space-y-6">
                                                             <GlassInput 
                                                                 label="Nombre de la Marca" 
@@ -1190,6 +1204,14 @@ export default function HQClientsPage() {
                                                                 onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} 
                                                                 icon={Building2}
                                                                 placeholder="Nombre comercial..."
+                                                            />
+                                                            <GlassInput 
+                                                                label="Email Sync" 
+                                                                value={newClient.email} 
+                                                                onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} 
+                                                                icon={Mail}
+                                                                type="email"
+                                                                placeholder="cliente@ejemplo.com"
                                                             />
                                                             <PremiumDropdown 
                                                                 label="Ubicación Estratégica" 
@@ -1244,6 +1266,7 @@ export default function HQClientsPage() {
                                                             )}
                                                         </div>
 
+                                                        {/* Column 2: Operations & Commercial Details */}
                                                         <div className="space-y-6">
                                                             <GlassInput 
                                                                 label="WhatsApp de Contacto" 
@@ -1252,6 +1275,26 @@ export default function HQClientsPage() {
                                                                 icon={MessageSquare}
                                                                 placeholder="+593 ..."
                                                                 className="font-mono"
+                                                            />
+                                                            <GlassInput 
+                                                                label="Fecha de Nacimiento" 
+                                                                value={newClient.birth_date || ''} 
+                                                                onChange={(e) => setNewClient({ ...newClient, birth_date: e.target.value })} 
+                                                                icon={Cake}
+                                                                type="date"
+                                                            />
+                                                            <PremiumDropdown 
+                                                                label="Modelo de Negocio" 
+                                                                value={newClient.business_type} 
+                                                                onChange={(val) => setNewClient({ ...newClient, business_type: val })} 
+                                                                options={[
+                                                                    { value: 'Servicios', label: 'Servicios Profesionales' }, 
+                                                                    { value: 'Productos', label: 'E-commerce / Retail' }, 
+                                                                    { value: 'Personal', label: 'Marca Personal' },
+                                                                    { value: 'Educativo', label: 'Capacitación / Formación' },
+                                                                    { value: 'Infoproductos', label: 'Infoproductos / Cursos' }
+                                                                ]} 
+                                                                icon={Zap}
                                                             />
                                                             <PremiumDropdown 
                                                                 label="Plan Estratégico" 
@@ -1288,34 +1331,6 @@ export default function HQClientsPage() {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            <GlassInput 
-                                                                label="Email Sync" 
-                                                                value={newClient.email} 
-                                                                onChange={(e) => setNewClient({ ...newClient, email: e.target.value })} 
-                                                                icon={Mail}
-                                                                type="email"
-                                                                placeholder="cliente@ejemplo.com"
-                                                            />
-                                                            <GlassInput 
-                                                                label="Fecha de Nacimiento" 
-                                                                value={newClient.birth_date || ''} 
-                                                                onChange={(e) => setNewClient({ ...newClient, birth_date: e.target.value })} 
-                                                                icon={Cake}
-                                                                type="date"
-                                                            />
-                                                            <PremiumDropdown 
-                                                                label="Modelo de Negocio" 
-                                                                value={newClient.business_type} 
-                                                                onChange={(val) => setNewClient({ ...newClient, business_type: val })} 
-                                                                options={[
-                                                                    { value: 'Servicios', label: 'Servicios Profesionales' }, 
-                                                                    { value: 'Productos', label: 'E-commerce / Retail' }, 
-                                                                    { value: 'Personal', label: 'Marca Personal' },
-                                                                    { value: 'Educativo', label: 'Capacitación / Formación' },
-                                                                    { value: 'Infoproductos', label: 'Infoproductos / Cursos' }
-                                                                ]} 
-                                                                icon={Zap}
-                                                            />
                                                         </div>
                                                     </div>
 
@@ -1548,7 +1563,7 @@ export default function HQClientsPage() {
                                 </div>
 
                                 {/* Footer Action Bar */}
-                                <div className="px-10 py-10 border-t border-white/5 bg-black/40 backdrop-blur-md flex flex-col md:flex-row justify-between items-center gap-8">
+                                <div className="px-10 py-10 border-t border-white/5 bg-white/[0.01] flex flex-col md:flex-row justify-between items-center gap-8">
                                     <div className="flex items-center gap-6">
                                         <div className="flex items-center gap-2 text-indigo-500/40 text-[9px] font-black uppercase tracking-[0.3em]">
                                             <Shield className="w-3.5 h-3.5" /> SECURE_INIT
