@@ -273,9 +273,9 @@ export default function HQProgressPage() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
                         <h1 className="text-4xl font-black text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <Trophy className="w-9 h-9 text-yellow-500 animate-pulse" /> MI PROGRESO
+                            <Trophy className="w-9 h-9 text-yellow-500 animate-pulse" /> MI PROGRESO (CEO VIEW)
                         </h1>
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-2">Visión de Crecimiento & Conectividad del Ecosistema</p>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-2">DIIC ZONE OS — Estado de Desarrollo & Integración Tecnológica</p>
                     </div>
                     <button 
                         onClick={() => router.push('/dashboard/hq')}
@@ -283,6 +283,50 @@ export default function HQProgressPage() {
                     >
                         <ArrowLeft className="w-4 h-4" /> HQ Central
                     </button>
+                </div>
+
+                {/* CEO Platform Metrics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="bg-[#0A0A1F] border border-white/5 p-6 rounded-[32px] flex items-center gap-5 relative overflow-hidden group hover:border-indigo-500/20 transition-all">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center shrink-0">
+                            <Compass className="w-6 h-6 text-indigo-400 group-hover:rotate-45 transition-transform duration-500" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Rutas Compiladas</p>
+                            <h3 className="text-2xl font-black text-white mt-1">179 Rutas</h3>
+                            <p className="text-[8px] text-emerald-400 font-bold uppercase tracking-wider mt-0.5">Build Next.js exitoso</p>
+                        </div>
+                    </div>
+                    <div className="bg-[#0A0A1F] border border-white/5 p-6 rounded-[32px] flex items-center gap-5 relative overflow-hidden group hover:border-emerald-500/20 transition-all">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                            <HardDrive className="w-6 h-6 text-emerald-400" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Tablas de Datos</p>
+                            <h3 className="text-2xl font-black text-white mt-1">31 Tablas</h3>
+                            <p className="text-[8px] text-emerald-400 font-bold uppercase tracking-wider mt-0.5">Relaciones RLS Activas</p>
+                        </div>
+                    </div>
+                    <div className="bg-[#0A0A1F] border border-white/5 p-6 rounded-[32px] flex items-center gap-5 relative overflow-hidden group hover:border-purple-500/20 transition-all">
+                        <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center shrink-0">
+                            <Cpu className="w-6 h-6 text-purple-400" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Agentes IA Core</p>
+                            <h3 className="text-2xl font-black text-white mt-1">{aiAgentsCount || 6} Modelos</h3>
+                            <p className="text-[8px] text-purple-400 font-bold uppercase tracking-wider mt-0.5">Asistentes configurados</p>
+                        </div>
+                    </div>
+                    <div className="bg-[#0A0A1F] border border-white/5 p-6 rounded-[32px] flex items-center gap-5 relative overflow-hidden group hover:border-yellow-500/20 transition-all">
+                        <div className="w-12 h-12 rounded-2xl bg-yellow-500/10 flex items-center justify-center shrink-0">
+                            <Globe className="w-6 h-6 text-yellow-400" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Sedes Registradas</p>
+                            <h3 className="text-2xl font-black text-white mt-1">{branchOffices.length || 5} Sedes</h3>
+                            <p className="text-[8px] text-yellow-400 font-bold uppercase tracking-wider mt-0.5">Nodos en base de datos</p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Grid 1: Rocket Launcher & SVG Connections */}
@@ -295,9 +339,9 @@ export default function HQProgressPage() {
                             <div className="flex justify-between items-center mb-6">
                                 <div className="flex items-center gap-3">
                                     <Rocket className={`w-6 h-6 text-indigo-400 ${globalProgress === 100 ? 'animate-bounce' : 'animate-pulse'}`} />
-                                    <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Ruta de Lanzamiento</h3>
+                                    <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Madurez del Software</h3>
                                 </div>
-                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Global: {globalProgress}%</span>
+                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Despliegue: {globalProgress}%</span>
                             </div>
 
                             {/* Rocket Progress Gauge */}
@@ -319,9 +363,9 @@ export default function HQProgressPage() {
                                     <span className="absolute text-[10px] font-black text-white">{globalProgress}%</span>
                                 </div>
                                 <div className="space-y-1">
-                                    <h4 className="text-sm font-black text-white uppercase italic">Estatus Estelar</h4>
+                                    <h4 className="text-sm font-black text-white uppercase italic">Release DIIC OS</h4>
                                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">
-                                        {globalProgress < 40 ? 'Estabilizando Motores' : globalProgress < 80 ? 'Propulsión Fase 2 Activa' : 'Ignición Completa'}
+                                        {globalProgress < 40 ? 'Core OS Inicial' : globalProgress < 80 ? 'Workstations Estables' : 'IA Autónoma Completa'}
                                     </p>
                                 </div>
                             </div>
@@ -356,18 +400,18 @@ export default function HQProgressPage() {
                                     {activePhaseTab === 1 && (
                                         <>
                                             <div className="pb-4 border-b border-white/5">
-                                                <h4 className="text-xs font-black text-white uppercase">Fase 1: Validación</h4>
-                                                <p className="text-[10px] text-gray-500 mt-1">Aprobación y validación del modelo inicial con 10 clientes.</p>
+                                                <h4 className="text-xs font-black text-white uppercase">Fase 1: Núcleo & Seguridad</h4>
+                                                <p className="text-[10px] text-gray-500 mt-1">Estructura base de la base de datos, roles y sincronización realtime.</p>
                                             </div>
                                             <CheckItem checked={stats.clientsCount >= 10} label={`Meta de 10 clientes (${stats.clientsCount}/10)`} isDynamic />
                                             <CheckItem checked={milestones.fase1_rbac} label="Modelos Jerárquicos RBAC" onClick={() => toggleMilestone('fase1_rbac')} />
-                                            <CheckItem checked={milestones.fase1_sync} label="Sincronización Realtime Base" onClick={() => toggleMilestone('fase1_sync')} />
+                                            <CheckItem checked={milestones.fase1_sync} label="Sincronización Realtime" onClick={() => toggleMilestone('fase1_sync')} />
                                             
                                             <div className="pt-4 border-t border-white/5 flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
                                                     <Users className="w-4 h-4 text-emerald-400" />
                                                 </div>
-                                                <div className="text-[9px] text-gray-500 uppercase font-black">Equipo: Admin + Estrategia</div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-black">Módulos: HQ Core + Auth</div>
                                             </div>
                                         </>
                                     )}
@@ -375,19 +419,19 @@ export default function HQProgressPage() {
                                     {activePhaseTab === 2 && (
                                         <>
                                             <div className="pb-4 border-b border-white/5">
-                                                <h4 className="text-xs font-black text-white uppercase">Fase 2: Automatización & Escala</h4>
-                                                <p className="text-[10px] text-gray-500 mt-1">Integración de logística de imprenta y flujos en n8n.</p>
+                                                <h4 className="text-xs font-black text-white uppercase">Fase 2: Integración & Automatización</h4>
+                                                <p className="text-[10px] text-gray-500 mt-1">Creación de workstations creativas, logística de merch y flujos webhooks.</p>
                                             </div>
-                                            <CheckItem checked={stats.clientsCount >= 10} label="Desbloquear Módulo Expansión Map" isDynamic />
+                                            <CheckItem checked={stats.clientsCount >= 10} label="Mapa Operativo de Expansión" isDynamic />
                                             <CheckItem checked={milestones.fase2_imprenta} label="Conectar Imprenta Directa" onClick={() => toggleMilestone('fase2_imprenta')} />
-                                            <CheckItem checked={milestones.fase2_n8n} label="Implementar 12 flujos n8n" onClick={() => toggleMilestone('fase2_n8n')} />
+                                            <CheckItem checked={milestones.fase2_n8n} label="Integrar Webhooks n8n" onClick={() => toggleMilestone('fase2_n8n')} />
                                             <CheckItem checked={stats.clientsCount >= 20} label={`Escalar a 20 clientes (${stats.clientsCount}/20)`} isDynamic />
                                             
                                             <div className="pt-4 border-t border-white/5 flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
                                                     <Cpu className="w-4 h-4 text-indigo-400" />
                                                 </div>
-                                                <div className="text-[9px] text-gray-500 uppercase font-black">Equipo: CM Leads + Editores</div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-black">Módulos: Workstations + Print Shop</div>
                                             </div>
                                         </>
                                     )}
@@ -395,8 +439,8 @@ export default function HQProgressPage() {
                                     {activePhaseTab === 3 && (
                                         <>
                                             <div className="pb-4 border-b border-white/5">
-                                                <h4 className="text-xs font-black text-white uppercase">Fase 3: Expansión Territorial</h4>
-                                                <p className="text-[10px] text-gray-500 mt-1">Apertura masiva de sedes físicas e inteligencia artificial customizada.</p>
+                                                <h4 className="text-xs font-black text-white uppercase">Fase 3: Inteligencia Core & Escala</h4>
+                                                <p className="text-[10px] text-gray-500 mt-1">Implementación de agentes de IA autónomos y apertura de sedes físicas.</p>
                                             </div>
                                             <CheckItem checked={stats.clientsCount >= 20} label="Acceso total a Control Maestro" isDynamic />
                                             <CheckItem checked={milestones.fase3_manta} label="Apertura Sede Manta" onClick={() => toggleMilestone('fase3_manta')} />
@@ -407,7 +451,7 @@ export default function HQProgressPage() {
                                                 <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
                                                     <Server className="w-4 h-4 text-purple-400" />
                                                 </div>
-                                                <div className="text-[9px] text-gray-500 uppercase font-black">Equipo: IA Core + Nodos de Red</div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-black">Módulos: AI Agents + Nodes Multi-tenant</div>
                                             </div>
                                         </>
                                     )}
@@ -563,11 +607,39 @@ export default function HQProgressPage() {
                                 <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest">Fase 2 Activa</span>
                             </div>
                             
-                            <div className="space-y-5">
-                                <SedeStatus name="Santo Domingo (HQ Central)" status="Activa" cmCount={sdStats.cms} editorCount={sdStats.editors} />
-                                <SedeStatus name="Quito Sede" status={quitoStats.cms + quitoStats.editors > 0 ? "Activa" : "Estabilizando"} cmCount={quitoStats.cms} editorCount={quitoStats.editors} />
-                                <SedeStatus name="Guayaquil Sede" status={gyeStats.cms + gyeStats.editors > 0 ? "Activa" : "Inicial"} cmCount={gyeStats.cms} editorCount={gyeStats.editors} />
-                                <SedeStatus name="Manta Sede" status={mantaStats.cms + mantaStats.editors > 0 ? "Activa" : "Planificado"} cmCount={mantaStats.cms} editorCount={mantaStats.editors} isLocked={stats.clientsCount < 20} />
+                            <div className="space-y-5 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
+                                {branchOffices.length > 0 ? (
+                                    branchOffices.map((office) => {
+                                        let cityKey = 'quito';
+                                        const normCity = office.city.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                        if (normCity.includes('santo') || normCity.includes('domingo')) cityKey = 'santo_domingo';
+                                        else if (normCity.includes('quito')) cityKey = 'quito';
+                                        else if (normCity.includes('guayaquil')) cityKey = 'guayaquil';
+                                        else if (normCity.includes('manta')) cityKey = 'manta';
+                                        
+                                        const cityStats = getSedeStats(cityKey);
+                                        const displayStatus = office.status === 'active' ? 'Activo' : 'Inactivo';
+                                        
+                                        return (
+                                            <SedeStatus 
+                                                key={office.id}
+                                                name={`${office.city} (${office.name})`} 
+                                                status={displayStatus} 
+                                                cmCount={cityStats.cms} 
+                                                editorCount={cityStats.editors} 
+                                                director={office.director}
+                                                level={office.level}
+                                            />
+                                        );
+                                    })
+                                ) : (
+                                    <>
+                                        <SedeStatus name="Santo Domingo (HQ Central)" status="Activa" cmCount={sdStats.cms} editorCount={sdStats.editors} />
+                                        <SedeStatus name="Quito Sede" status={quitoStats.cms + quitoStats.editors > 0 ? "Activa" : "Estabilizando"} cmCount={quitoStats.cms} editorCount={quitoStats.editors} />
+                                        <SedeStatus name="Guayaquil Sede" status={gyeStats.cms + gyeStats.editors > 0 ? "Activa" : "Inicial"} cmCount={gyeStats.cms} editorCount={gyeStats.editors} />
+                                        <SedeStatus name="Manta Sede" status={mantaStats.cms + mantaStats.editors > 0 ? "Activa" : "Planificado"} cmCount={mantaStats.cms} editorCount={mantaStats.editors} isLocked={stats.clientsCount < 20} />
+                                    </>
+                                )}
                             </div>
                         </div>
 
