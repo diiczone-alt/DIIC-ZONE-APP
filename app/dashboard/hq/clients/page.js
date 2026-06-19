@@ -1087,20 +1087,136 @@ export default function HQClientsPage() {
                                             <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-[40px] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
                                             <div className="relative w-24 h-24 rounded-3xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-3xl font-black text-white shadow-2xl overflow-hidden">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
-                                                {editingClient?.onboarding_data?.brand?.logo ? (
-                                                    <img src={editingClient.onboarding_data.brand.logo} alt="Brand Logo" className="w-full h-full object-contain p-2 relative z-10" />
+                                                {newClient?.onboarding_data?.brand?.logo ? (
+                                                    <img src={newClient.onboarding_data.brand.logo} alt="Brand Logo" className="w-full h-full object-contain p-2 relative z-10" />
                                                 ) : (
-                                                    <span className="relative z-10">{editingClient?.name?.[0] || 'D'}</span>
+                                                    <span className="relative z-10">{newClient?.name?.[0] || 'D'}</span>
                                                 )}
                                             </div>
                                         </div>
                                         <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter text-center leading-tight">
-                                            {editingClient?.name || 'Partner'}
+                                            {newClient?.name || 'Partner'}
                                         </h2>
                                         <div className="h-[1px] w-12 bg-indigo-500/30 my-4" />
                                         <p className="text-[10px] font-black text-indigo-400/60 uppercase tracking-[0.3em] text-center">
                                             OPERATIONAL ECOSYSTEM
                                         </p>
+                                    </div>
+                                </div>
+
+                                {/* Center: Brand Specs Sheet (New, Dynamic and Scrollable) */}
+                                <div className="relative z-10 flex-1 my-4 overflow-y-auto custom-scrollbar pr-1 min-h-0 space-y-4">
+                                    {/* SECCIÓN 1: Identidad & Operaciones */}
+                                    <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl backdrop-blur-sm space-y-3">
+                                        <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest border-b border-white/5 pb-1 mb-2 flex items-center gap-1.5">
+                                            <Building2 className="w-3.5 h-3.5" /> Ficha de Negocio
+                                        </div>
+                                        <div className="space-y-2 text-[10px]">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">Plan:</span>
+                                                <span className="text-white font-bold">{newClient.plan || 'Presencia'}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">MRR:</span>
+                                                <span className="text-emerald-400 font-black">${newClient.price || 0} USD</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">Sede:</span>
+                                                <span className="text-white font-bold">{newClient.city || 'Santo Domingo'}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">Industria:</span>
+                                                <span className="text-white font-bold truncate max-w-[120px]">{newClient.industry || 'General'}</span>
+                                            </div>
+                                            {newClient.specialty && (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-500 uppercase font-black">Rama / Esp:</span>
+                                                    <span className="text-white font-bold truncate max-w-[120px]">{newClient.specialty}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">Modelo:</span>
+                                                <span className="text-white font-bold">{newClient.business_type || 'Personal'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* SECCIÓN 2: Contacto & Cuentas */}
+                                    <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl backdrop-blur-sm space-y-3">
+                                        <div className="text-[9px] font-black text-cyan-400 uppercase tracking-widest border-b border-white/5 pb-1 mb-2 flex items-center gap-1.5">
+                                            <Mail className="w-3.5 h-3.5" /> Contacto
+                                        </div>
+                                        <div className="space-y-2 text-[10px]">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">WhatsApp:</span>
+                                                <span className="text-white font-mono font-medium">{newClient.whatsapp_number || 'Sin registrar'}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">Email:</span>
+                                                <span className="text-white font-medium truncate max-w-[130px]" title={newClient.email}>{newClient.email || 'Sin registrar'}</span>
+                                            </div>
+                                            {newClient.birth_date && (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-500 uppercase font-black">Cumpleaños:</span>
+                                                    {(() => {
+                                                        const { isBirthday, age } = getBirthdayInfo(newClient.birth_date);
+                                                        return (
+                                                            <span className="text-white font-bold flex items-center gap-1">
+                                                                {newClient.birth_date.split('-').reverse().slice(0, 2).join('/')}
+                                                                {age !== null && ` (${age} años)`}
+                                                                {isBirthday && <Cake className="w-3.5 h-3.5 text-rose-400 animate-bounce" />}
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* SECCIÓN 3: Escuadra Asignada */}
+                                    <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl backdrop-blur-sm space-y-3">
+                                        <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest border-b border-white/5 pb-1 mb-2 flex items-center gap-1.5">
+                                            <Users className="w-3.5 h-3.5" /> Escuadra
+                                        </div>
+                                        <div className="space-y-2 text-[10px]">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">CM:</span>
+                                                <span className="text-indigo-300 font-bold truncate max-w-[120px]">{newClient.cm || 'Sin asignar'}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">Editor:</span>
+                                                <span className="text-indigo-300 font-bold truncate max-w-[120px]">{newClient.editor || 'Sin asignar'}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">Filmmaker:</span>
+                                                <span className="text-indigo-300 font-bold truncate max-w-[120px]">{newClient.filmmaker || 'Sin asignar'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* SECCIÓN 4: Calendario & Control */}
+                                    <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl backdrop-blur-sm space-y-3">
+                                        <div className="text-[9px] font-black text-amber-400 uppercase tracking-widest border-b border-white/5 pb-1 mb-2 flex items-center gap-1.5">
+                                            <Clock className="w-3.5 h-3.5" /> Cronograma
+                                        </div>
+                                        <div className="space-y-2 text-[10px]">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">Inicio:</span>
+                                                <span className="text-white font-mono font-medium">
+                                                    {newClient.start_date ? newClient.start_date.split('-').reverse().join('/') : 'Sin registrar'}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">Corte:</span>
+                                                <span className="text-amber-400 font-bold">Día {newClient.cutoff_day || 5} / {getNextCutoffDate(newClient.cutoff_day)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">Performance:</span>
+                                                <span className="text-indigo-400 font-bold">
+                                                    Nivel {newClient.growth_level || 1}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1176,7 +1292,7 @@ export default function HQClientsPage() {
                                 </div>
 
                                 {/* Content Grid (Optimized Padding) */}
-                                <div className="flex-1 overflow-y-auto p-8 pb-20 custom-scrollbar">
+                                <div className="flex-1 overflow-y-auto p-8 pb-6 custom-scrollbar">
                                     <form onSubmit={handleSaveEdit} id="edit-client-form">
                                         <AnimatePresence mode="wait">
                                             {activeEditTab === 'operative' && (
@@ -1562,23 +1678,23 @@ export default function HQClientsPage() {
                                     </form>
                                 </div>
 
-                                {/* Footer Action Bar */}
-                                <div className="px-10 py-10 border-t border-white/5 bg-white/[0.01] flex flex-col md:flex-row justify-between items-center gap-8">
-                                    <div className="flex items-center gap-6">
-                                        <div className="flex items-center gap-2 text-indigo-500/40 text-[9px] font-black uppercase tracking-[0.3em]">
-                                            <Shield className="w-3.5 h-3.5" /> SECURE_INIT
+                                {/* Footer Action Bar (Slimmed down to gain space) */}
+                                <div className="px-8 py-2.5 border-t border-white/5 bg-white/[0.01] flex flex-col md:flex-row justify-between items-center gap-4 mt-auto">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-1.5 text-indigo-500/40 text-[8px] font-black uppercase tracking-[0.3em]">
+                                            <Shield className="w-3 h-3" /> SECURE_INIT
                                         </div>
-                                        <div className="h-4 w-[1px] bg-white/5" />
-                                        <div className="flex items-center gap-4 text-white/20 text-[9px] font-black uppercase tracking-[0.2em]">
+                                        <div className="h-3 w-[1px] bg-white/5" />
+                                        <div className="flex items-center gap-3 text-white/20 text-[8px] font-black uppercase tracking-[0.2em]">
                                             <span>REV 0.04</span>
                                             <span>HQ:LATAM</span>
                                         </div>
                                     </div>
-                                    <div className="flex gap-8 w-full md:w-auto">
+                                    <div className="flex gap-4 w-full md:w-auto">
                                         <button 
                                             type="button" 
                                             onClick={() => setIsEditModalOpen(false)} 
-                                            className="px-6 py-4 text-gray-500 font-black uppercase tracking-[0.3em] text-[10px] hover:text-white transition-all active:scale-95"
+                                            className="px-4 py-1.5 text-gray-500 font-black uppercase tracking-[0.3em] text-[9px] hover:text-white transition-all active:scale-95"
                                         >
                                             Discard Changes
                                         </button>
@@ -1586,10 +1702,10 @@ export default function HQClientsPage() {
                                             form="edit-client-form"
                                             type="submit" 
                                             disabled={isSubmitting} 
-                                            className="group relative flex-1 md:flex-none px-12 py-4 bg-white text-black font-black rounded-2xl uppercase tracking-[0.2em] text-[10px] shadow-[0_20px_40px_rgba(255,255,255,0.05)] hover:shadow-[0_25px_50px_rgba(255,255,255,0.1)] active:scale-95 transition-all overflow-hidden flex items-center gap-4"
+                                            className="group relative flex-1 md:flex-none px-6 py-1.5 bg-white text-black font-black rounded-xl uppercase tracking-[0.2em] text-[9px] shadow-[0_15px_30px_rgba(255,255,255,0.05)] hover:shadow-[0_20px_40px_rgba(255,255,255,0.1)] active:scale-95 transition-all overflow-hidden flex items-center gap-2"
                                         >
                                             {isSubmitting ? 'Syncing...' : 'Deploy Roadmap'}
-                                            {!isSubmitting && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                                            {!isSubmitting && <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />}
                                         </button>
                                     </div>
                                 </div>
