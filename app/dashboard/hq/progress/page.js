@@ -32,6 +32,14 @@ export default function HQProgressPage() {
     const [teamList, setTeamList] = useState([]);
     const [branchOffices, setBranchOffices] = useState([]);
     const [aiAgentsCount, setAiAgentsCount] = useState(0);
+
+    // States for Add Sede Territorial (App Scalability action)
+    const [showAddBranchModal, setShowAddBranchModal] = useState(false);
+    const [newBranchCity, setNewBranchCity] = useState('Santo Domingo');
+    const [newBranchName, setNewBranchName] = useState('');
+    const [newBranchDirector, setNewBranchDirector] = useState('');
+    const [newBranchLevel, setNewBranchLevel] = useState('basico');
+    const [isSavingBranch, setIsSavingBranch] = useState(false);
     
     // Custom/Operational milestones state synced with localStorage
     const [milestones, setMilestones] = useState({
@@ -106,6 +114,46 @@ export default function HQProgressPage() {
         };
         fetchTotals();
     }, []);
+
+    const handleAddBranchOffice = async (e) => {
+        e.preventDefault();
+        if (!newBranchName || !newBranchDirector) {
+            toast.error("Por favor completa todos los campos.");
+            return;
+        }
+        setIsSavingBranch(true);
+        try {
+            const newBranch = {
+                city: newBranchCity,
+                name: newBranchName,
+                director: newBranchDirector,
+                level: newBranchLevel,
+                status: 'active'
+            };
+            const { data, error } = await supabase
+                .from('branch_offices')
+                .insert([newBranch])
+                .select();
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                setBranchOffices(prev => [...prev, data[0]]);
+                toast.success(`Sede en ${newBranchCity} desplegada correctamente`, {
+                    description: "Se ha registrado el nuevo nodo territorial en el ecosistema."
+                });
+                setShowAddBranchModal(false);
+                setNewBranchName('');
+                setNewBranchDirector('');
+                setNewBranchLevel('basico');
+            }
+        } catch (error) {
+            console.error("Error inserting branch office:", error);
+            toast.error("Fallo al crear la sede territorial.");
+        } finally {
+            setIsSavingBranch(false);
+        }
+    };
 
     const triggerConnectorTest = async () => {
         if (isTesting) return;
@@ -599,15 +647,19 @@ export default function HQProgressPage() {
                 {/* Grid 2: Recruitment and Terminal logs */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     
-                    {/* Sedes & Recruitment */}
-                    <div className="lg:col-span-1 bg-[#0A0A1F] border border-white/5 rounded-[40px] p-8 shadow-2xl flex flex-col justify-between">
+                                 <div className="lg:col-span-1 bg-[#0A0A1F] border border-white/5 rounded-[40px] p-8 shadow-2xl flex flex-col justify-between">
                         <div>
                             <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Sedes & Talent Pool</h3>
-                                <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest">Fase 2 Activa</span>
+                                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Sedes & Escala</h3>
+                                <button
+                                    onClick={() => setShowAddBranchModal(true)}
+                                    className="px-3 py-1 bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                                >
+                                    + Sede
+                                </button>
                             </div>
                             
-                            <div className="space-y-5 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
+                            <div className="space-y-5 max-h-[260px] overflow-y-auto pr-1 custom-scrollbar">
                                 {branchOffices.length > 0 ? (
                                     branchOffices.map((office) => {
                                         let cityKey = 'quito';
@@ -643,16 +695,55 @@ export default function HQProgressPage() {
                             </div>
                         </div>
 
-                        <div className="pt-8 border-t border-white/5 mt-8">
-                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">
-                                <span>Reclutamiento Global</span>
-                                <span className="text-white">{stats.teamCount} / 25 Nodes</span>
+                        <div className="pt-6 border-t border-white/5 mt-6 space-y-4">
+                            <div>
+                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">
+                                    <span>Reclutamiento Global</span>
+                                    <span className="text-white">{stats.teamCount} / 25 Nodes</span>
+                                </div>
+                                <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-full bg-purple-500" style={{ width: `${(stats.teamCount / 25) * 100}%` }} />
+                                </div>
                             </div>
-                            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-purple-500" style={{ width: `${(stats.teamCount / 25) * 100}%` }} />
+
+                            {/* Dynamic Workload Saturation & Capacity Scale */}
+                            <div className="bg-white/[0.02] border border-white/5 p-4 rounded-3xl space-y-3">
+                                <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-gray-400">
+                                    <span>Límite de Escala del OS</span>
+                                    <span className="text-white font-bold">{stats.clientsCount} / {stats.teamCount * 5 || 1} Clientes</span>
+                                </div>
+                                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden relative">
+                                    <div 
+                                        className={`h-full transition-all duration-500 ${
+                                            (stats.clientsCount / (stats.teamCount * 5 || 1)) > 0.85 
+                                                ? 'bg-rose-500 shadow-[0_0_10px_#ef4444]' 
+                                                : (stats.clientsCount / (stats.teamCount * 5 || 1)) > 0.6 
+                                                    ? 'bg-yellow-500 shadow-[0_0_10px_#eab308]' 
+                                                    : 'bg-emerald-500 shadow-[0_0_10px_#10b981]'
+                                        }`} 
+                                        style={{ width: `${Math.min((stats.clientsCount / (stats.teamCount * 5 || 1)) * 100, 100)}%` }} 
+                                    />
+                                </div>
+                                <div className="flex justify-between text-[8px] font-black uppercase tracking-wider">
+                                    <span className="text-gray-500">Saturación: {Math.round((stats.clientsCount / (stats.teamCount * 5 || 1)) * 100)}%</span>
+                                    <span className={
+                                        (stats.clientsCount / (stats.teamCount * 5 || 1)) > 0.85 
+                                            ? 'text-rose-400' 
+                                            : (stats.clientsCount / (stats.teamCount * 5 || 1)) > 0.6 
+                                                ? 'text-yellow-400' 
+                                                : 'text-emerald-400 font-bold'
+                                    }>
+                                        {(stats.clientsCount / (stats.teamCount * 5 || 1)) > 0.85 
+                                            ? 'Reclutar Urgente' 
+                                            : (stats.clientsCount / (stats.teamCount * 5 || 1)) > 0.6 
+                                                ? 'Capacidad Limite' 
+                                                : 'Óptima para Escalar 🚀'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
+
 
                     {/* Diagnostic Simulator & Ecosystem logs */}
                     <div className="lg:col-span-2 bg-[#0A0A1F] border border-white/5 rounded-[40px] p-10 shadow-2xl flex flex-col justify-between min-h-[350px]">
@@ -693,6 +784,119 @@ export default function HQProgressPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Modal de Despliegue de Nueva Sede (Escalabilidad de la App) */}
+                <AnimatePresence>
+                    {showAddBranchModal && (
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                        >
+                            <motion.div 
+                                initial={{ scale: 0.9, y: 20 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.9, y: 20 }}
+                                className="bg-[#0A0A1F] border border-white/10 p-8 rounded-[32px] w-full max-w-md shadow-2xl relative overflow-hidden"
+                            >
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                                
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                                        <Globe className="w-5 h-5 text-indigo-400 animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-wider text-white">Desplegar Nueva Sede</h3>
+                                        <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">DIIC ZONE OS — Escalabilidad Territorial</p>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleAddBranchOffice} className="space-y-5">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Ciudad / Región</label>
+                                        <select 
+                                            value={newBranchCity} 
+                                            onChange={(e) => setNewBranchCity(e.target.value)}
+                                            className="w-full bg-black/40 border border-white/5 rounded-2xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                                        >
+                                            <option value="Santo Domingo">Santo Domingo</option>
+                                            <option value="Quito">Quito</option>
+                                            <option value="Guayaquil">Guayaquil</option>
+                                            <option value="Manta">Manta</option>
+                                            <option value="Loja">Loja</option>
+                                            <option value="Cuenca">Cuenca</option>
+                                            <option value="Machala">Machala</option>
+                                            <option value="Ambato">Ambato</option>
+                                            <option value="Portoviejo">Portoviejo</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Nombre del Nodo</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Ej: Nodo Norte, Nodo Costa, HQ Central" 
+                                            value={newBranchName}
+                                            onChange={(e) => setNewBranchName(e.target.value)}
+                                            className="w-full bg-black/40 border border-white/5 rounded-2xl px-4 py-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Director de Sede</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Ej: Andrés P., Roberto G." 
+                                            value={newBranchDirector}
+                                            onChange={(e) => setNewBranchDirector(e.target.value)}
+                                            className="w-full bg-black/40 border border-white/5 rounded-2xl px-4 py-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Nivel Operativo</label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {['basico', 'operativo', 'premium'].map((lvl) => (
+                                                <button
+                                                    key={lvl}
+                                                    type="button"
+                                                    onClick={() => setNewBranchLevel(lvl)}
+                                                    className={`py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
+                                                        newBranchLevel === lvl 
+                                                            ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300 shadow-md' 
+                                                            : 'bg-black/20 border-white/5 text-gray-500 hover:text-white'
+                                                    }`}
+                                                >
+                                                    {lvl}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-3 pt-4">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setShowAddBranchModal(false)}
+                                            className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button 
+                                            type="submit"
+                                            disabled={isSavingBranch}
+                                            className="flex-1 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1"
+                                        >
+                                            {isSavingBranch ? 'Registrando...' : 'Desplegar'} <ArrowUpRight className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </form>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
             </main>
         </div>
