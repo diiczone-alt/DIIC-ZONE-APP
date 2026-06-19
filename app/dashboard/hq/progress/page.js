@@ -9,7 +9,7 @@ import {
     Cpu, Server, Lock, Globe, Trophy,
     ArrowUpRight, ArrowLeft, RefreshCw, Send, CheckCircle2,
     ShieldAlert, HardDrive, Smartphone, Compass, Printer, Clapperboard, DollarSign,
-    Rocket, Circle, CheckSquare, Square
+    Rocket, Circle, CheckSquare, Square, BookOpen
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 import { supabase } from '@/lib/supabase';
@@ -27,7 +27,11 @@ export default function HQProgressPage() {
         clientsCount: 0,
         teamCount: 0,
         pendingPayments: 0,
-        activeTasks: 0
+        activeTasks: 0,
+        transactionsCount: 0,
+        automationsCount: 0,
+        socialConnectionsCount: 0,
+        dbConnected: true
     });
     const [teamList, setTeamList] = useState([]);
     const [branchOffices, setBranchOffices] = useState([]);
@@ -48,7 +52,11 @@ export default function HQProgressPage() {
         fase2_imprenta: false,
         fase2_n8n: false,
         fase3_manta: false,
-        fase3_pricing: false
+        fase3_pricing: false,
+        fase4_transactions: false,
+        fase4_expenses: false,
+        fase5_qa: false,
+        fase5_strategies: false
     });
 
     useEffect(() => {
@@ -88,7 +96,7 @@ export default function HQProgressPage() {
                 
                 success = true;
                 successMessage = "Políticas RBAC y RLS Verificadas";
-                description = `Acceso administrativo de ${user?.email || 'CEO'} validado. Políticas de seguridad activas en Supabase.`;
+                description = `Acceso administrativo de ${user?.email || 'Administrador'} validado. Políticas de seguridad activas en Supabase.`;
             } 
             else if (key === 'fase1_sync') {
                 // Check Supabase latency
@@ -152,6 +160,46 @@ export default function HQProgressPage() {
                 successMessage = "Algoritmo de Precios Online";
                 description = `Tarifas base cargadas correctamente desde Supabase para cotización dinámica de planes.`;
             }
+            else if (key === 'fase4_transactions') {
+                // Check if financial_transactions has rows
+                const { data, error } = await supabase.from('financial_transactions').select('id').limit(1);
+                if (error) throw new Error("Fallo al verificar el historial financiero.");
+                if (!data || data.length === 0) throw new Error("No hay transacciones registradas en el historial financiero.");
+
+                success = true;
+                successMessage = "Pasarela & Transacciones Activas";
+                description = `Conexión financiera exitosa. Historial verificado en Supabase.`;
+            }
+            else if (key === 'fase4_expenses') {
+                // Check if agency_expenses has rows
+                const { data, error } = await supabase.from('agency_expenses').select('id').limit(1);
+                if (error) throw new Error("Fallo al verificar el libro diario.");
+                if (!data || data.length === 0) throw new Error("El libro diario de gastos de la agencia está vacío.");
+
+                success = true;
+                successMessage = "Libro de Gastos Sincronizado";
+                description = `Libro diario operativo y verificado en tiempo real con Supabase.`;
+            }
+            else if (key === 'fase5_qa') {
+                // Check if tasks has rows
+                const { data, error } = await supabase.from('tasks').select('id').limit(1);
+                if (error) throw new Error("Fallo al verificar las tareas QA.");
+                if (!data || data.length === 0) throw new Error("No hay tareas registradas en el flujo de producción.");
+
+                success = true;
+                successMessage = "Cola de Calidad QA Sincronizada";
+                description = `Flujo QA verificado. Cola de control de calidad operativa.`;
+            }
+            else if (key === 'fase5_strategies') {
+                // Check if strategies has rows
+                const { data, error } = await supabase.from('strategies').select('id').limit(1);
+                if (error) throw new Error("Fallo al verificar las estrategias.");
+                if (!data || data.length === 0) throw new Error("No hay estrategias registradas en la base de datos.");
+
+                success = true;
+                successMessage = "Estrategias de IA Sincronizadas";
+                description = `Planes estratégicos mapeados y activos en base de datos.`;
+            }
 
             toast.dismiss(toastId);
 
@@ -197,23 +245,54 @@ export default function HQProgressPage() {
                     agencyService.getTeam(),
                     agencyService.getTasks()
                 ]);
+
+                // Load actual branch offices, AI agents count, transactions count, automations count, social connections count, and other milestone resources
+                const [branchesRes, aiAgentsRes, transactionsRes, automationsRes, socialRes, servicesRes, expensesRes, strategiesRes, profilesRes] = await Promise.all([
+                    supabase.from('branch_offices').select('*'),
+                    supabase.from('ai_agents').select('id', { count: 'exact', head: true }),
+                    supabase.from('financial_transactions').select('id', { count: 'exact', head: true }),
+                    supabase.from('automations').select('id', { count: 'exact', head: true }),
+                    supabase.from('social_connections').select('id', { count: 'exact', head: true }),
+                    supabase.from('services').select('id', { count: 'exact', head: true }),
+                    supabase.from('agency_expenses').select('id', { count: 'exact', head: true }),
+                    supabase.from('strategies').select('id', { count: 'exact', head: true }),
+                    supabase.from('profiles').select('role').limit(1)
+                ]);
+
                 setStats({
                     clientsCount: clients?.length || 0,
                     teamCount: team?.length || 0,
                     activeTasks: tasks?.filter(t => t.status !== 'completed')?.length || 0,
-                    pendingPayments: clients?.filter(c => c.status === 'paused')?.length || 0
+                    pendingPayments: clients?.filter(c => c.status === 'paused')?.length || 0,
+                    transactionsCount: transactionsRes.count || 0,
+                    automationsCount: automationsRes.count || 0,
+                    socialConnectionsCount: socialRes.count || 0,
+                    dbConnected: true
                 });
-                setTeamList(team || []);
 
-                // Load actual branch offices and AI agents count
-                const [branchesRes, aiAgentsRes] = await Promise.all([
-                    supabase.from('branch_offices').select('*'),
-                    supabase.from('ai_agents').select('id', { count: 'exact', head: true })
-                ]);
+                setTeamList(team || []);
                 setBranchOffices(branchesRes.data || []);
                 setAiAgentsCount(aiAgentsRes.count || 0);
+
+                // Auto-verify all milestones based on real database presence
+                const dbVerifiedMilestones = {
+                    fase1_rbac: !profilesRes.error,
+                    fase1_sync: !branchesRes.error,
+                    fase2_imprenta: (branchesRes.data && branchesRes.data.length > 0),
+                    fase2_n8n: (automationsRes.count > 0),
+                    fase3_manta: (branchesRes.data && branchesRes.data.some(b => b.city.toLowerCase().includes('manta'))),
+                    fase3_pricing: (servicesRes.count > 0),
+                    fase4_transactions: (transactionsRes.count > 0),
+                    fase4_expenses: (expensesRes.count > 0),
+                    fase5_qa: (tasks && tasks.length > 0),
+                    fase5_strategies: (strategiesRes.count > 0)
+                };
+                setMilestones(dbVerifiedMilestones);
+                localStorage.setItem('diic_hq_milestones', JSON.stringify(dbVerifiedMilestones));
+
             } catch (err) {
                 console.error('Error fetching totals for progress:', err);
+                setStats(prev => ({ ...prev, dbConnected: false }));
             }
         };
         fetchTotals();
@@ -340,20 +419,29 @@ export default function HQProgressPage() {
     };
 
     // Connections network layout configurations
+    // Connections network layout configurations
     const nodes = [
-        { id: 'hq', label: 'Cerebro Central', status: 'ONLINE', x: 250, y: 200, href: '/dashboard/hq', icon: Cpu, desc: 'Comando principal e inteligencia de control de la app.', color: 'text-indigo-400', glow: 'shadow-[0_0_30px_rgba(99,102,241,0.5)]', border: 'border-indigo-500' },
+        { id: 'hq', label: 'Cerebro Central', status: stats.dbConnected ? 'ONLINE' : 'ERROR', x: 400, y: 240, href: '/dashboard/hq', icon: Cpu, desc: 'Comando principal e inteligencia de control de la app.', color: stats.dbConnected ? 'text-indigo-400' : 'text-rose-500', glow: stats.dbConnected ? 'shadow-[0_0_30px_rgba(99,102,241,0.5)]' : '', border: stats.dbConnected ? 'border-indigo-500' : 'border-rose-500' },
         
-        { id: 'creativa', label: 'Zona Creativa', status: 'CONECTADO', x: 90, y: 100, href: '/dashboard/creative-zone', icon: Clapperboard, desc: 'Espacio de creadores de contenido, subida de crudos e ideas.', color: 'text-emerald-400', glow: 'shadow-[0_0_20px_rgba(16,185,129,0.3)]', border: 'border-emerald-500' },
+        { id: 'creativa', label: 'Zona Creativa', status: stats.teamCount > 0 ? 'CONECTADO' : 'INACTIVO', x: 200, y: 140, href: '/dashboard/creative-zone', icon: Clapperboard, desc: 'Espacio de creadores de contenido, subida de crudos e ideas.', color: stats.teamCount > 0 ? 'text-emerald-400' : 'text-gray-500', glow: stats.teamCount > 0 ? 'shadow-[0_0_20px_rgba(16,185,129,0.3)]' : '', border: stats.teamCount > 0 ? 'border-emerald-500' : 'border-white/5' },
         
-        { id: 'imprenta', label: 'Imprenta Directa', status: 'LISTO', x: 410, y: 100, href: '/dashboard/print', icon: Printer, desc: 'Conector con talleres físicos para el despacho directo de merch.', color: 'text-yellow-400', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.3)]', border: 'border-yellow-500' },
+        { id: 'imprenta', label: 'Imprenta Directa', status: milestones.fase2_imprenta ? 'LISTO' : 'PENDIENTE', x: 600, y: 140, href: '/dashboard/print', icon: Printer, desc: 'Conector con talleres físicos para el despacho directo de merch.', color: milestones.fase2_imprenta ? 'text-yellow-400' : 'text-gray-500', glow: milestones.fase2_imprenta ? 'shadow-[0_0_20px_rgba(245,158,11,0.3)]' : '', border: milestones.fase2_imprenta ? 'border-yellow-500' : 'border-white/5' },
         
-        { id: 'finanzas', label: 'Finanzas & MRR', status: 'SINCRONIZADO', x: 90, y: 300, href: '/dashboard/hq/control?tab=finance', icon: DollarSign, desc: 'Mapeo de facturación de aliados y pagos automáticos a CMs.', color: 'text-cyan-400', glow: 'shadow-[0_0_20px_rgba(34,211,238,0.3)]', border: 'border-cyan-500' },
+        { id: 'finanzas', label: 'Finanzas & MRR', status: stats.transactionsCount > 0 ? 'SINCRONIZADO' : 'PENDIENTE', x: 200, y: 340, href: '/dashboard/hq/control?tab=finance', icon: DollarSign, desc: 'Mapeo de facturación de aliados y pagos automáticos a CMs.', color: stats.transactionsCount > 0 ? 'text-cyan-400' : 'text-gray-500', glow: stats.transactionsCount > 0 ? 'shadow-[0_0_20px_rgba(34,211,238,0.3)]' : '', border: stats.transactionsCount > 0 ? 'border-cyan-500' : 'border-white/5' },
         
-        { id: 'nodos', label: 'Sedes & Nodos', status: 'EXPANDIENDO', x: 410, y: 300, href: '/dashboard/hq/control?tab=nodes', icon: Globe, desc: 'Expansión operativa territorial y reclutamiento local en Ecuador.', color: 'text-purple-400', glow: 'shadow-[0_0_20px_rgba(168,85,247,0.3)]', border: 'border-purple-500' },
+        { id: 'nodos', label: 'Sedes & Nodos', status: branchOffices.length > 0 ? `${branchOffices.length} SEDES` : 'INICIAL', x: 600, y: 340, href: '/dashboard/hq/control?tab=nodes', icon: Globe, desc: 'Expansión operativa territorial y reclutamiento local en Ecuador.', color: branchOffices.length > 0 ? 'text-purple-400' : 'text-gray-500', glow: branchOffices.length > 0 ? 'shadow-[0_0_20px_rgba(168,85,247,0.3)]' : '', border: branchOffices.length > 0 ? 'border-purple-500' : 'border-white/5' },
         
-        { id: 'qa', label: 'Calidad QA', status: 'ACTIVO', x: 250, y: 340, href: '/dashboard/hq/control?tab=qa', icon: CheckCircle2, desc: 'Auditoría interna de piezas de video, grillas y copys antes de entrega.', color: 'text-rose-400', glow: 'shadow-[0_0_20px_rgba(244,63,94,0.3)]', border: 'border-rose-500' },
+        { id: 'qa', label: 'Calidad QA', status: milestones.fase5_qa ? 'ACTIVO' : 'INACTIVO', x: 400, y: 410, href: '/dashboard/hq/control?tab=qa', icon: CheckCircle2, desc: 'Auditoría interna de piezas de video, grillas y copys antes de entrega.', color: milestones.fase5_qa ? 'text-rose-400' : 'text-gray-500', glow: milestones.fase5_qa ? 'shadow-[0_0_20px_rgba(244,63,94,0.3)]' : '', border: milestones.fase5_qa ? 'border-rose-500' : 'border-white/5' },
         
-        { id: 'nicho', label: 'Aliados & Nichos', status: 'CONECTADO', x: 250, y: 60, href: '/dashboard/hq/control?tab=bi', icon: Briefcase, desc: 'Estrategias a la medida para sectores médico, legal y corporativo.', color: 'text-pink-400', glow: 'shadow-[0_0_20px_rgba(236,72,153,0.3)]', border: 'border-pink-500' }
+        { id: 'nicho', label: 'Aliados & Nichos', status: stats.clientsCount > 0 ? 'CONECTADO' : 'PENDIENTE', x: 400, y: 70, href: '/dashboard/hq/control?tab=bi', icon: Briefcase, desc: 'Estrategias a la medida para sectores médico, legal y corporativo.', color: stats.clientsCount > 0 ? 'text-pink-400' : 'text-gray-500', glow: stats.clientsCount > 0 ? 'shadow-[0_0_20px_rgba(236,72,153,0.3)]' : '', border: stats.clientsCount > 0 ? 'border-pink-500' : 'border-white/5' },
+
+        { id: 'automation', label: 'Webhooks n8n', status: stats.automationsCount > 0 ? 'AUTOMÁTICO' : 'PENDIENTE', x: 100, y: 240, href: '/dashboard/automation?tab=automations', icon: Zap, desc: 'Integración n8n y webhooks activos para sincronización de leads.', color: stats.automationsCount > 0 ? 'text-amber-500' : 'text-gray-500', glow: stats.automationsCount > 0 ? 'shadow-[0_0_20px_rgba(245,158,11,0.3)]' : '', border: stats.automationsCount > 0 ? 'border-amber-500' : 'border-white/5' },
+
+        { id: 'ai_agents', label: 'Agentes IA', status: aiAgentsCount > 0 ? `${aiAgentsCount} MODELOS` : 'INACTIVO', x: 700, y: 240, href: '/dashboard/hq/ai', icon: Server, desc: 'Modelos de lenguaje autónomos configurados para cada cliente.', color: aiAgentsCount > 0 ? 'text-violet-400' : 'text-gray-500', glow: aiAgentsCount > 0 ? 'shadow-[0_0_20px_rgba(139,92,246,0.3)]' : '', border: aiAgentsCount > 0 ? 'border-violet-500' : 'border-white/5' },
+
+        { id: 'social_roi', label: 'Redes Sync (ROI)', status: stats.socialConnectionsCount > 0 ? 'CONECTADO' : 'PENDIENTE', x: 400, y: 155, href: '/dashboard/automation?tab=commercial', icon: Smartphone, desc: 'Conexión OAuth activa de Facebook, Instagram y TikTok Ads.', color: stats.socialConnectionsCount > 0 ? 'text-orange-400' : 'text-gray-500', glow: stats.socialConnectionsCount > 0 ? 'shadow-[0_0_20px_rgba(251,146,60,0.3)]' : '', border: stats.socialConnectionsCount > 0 ? 'border-orange-500' : 'border-white/5' },
+
+        { id: 'academy', label: 'Academia de Nodos', status: stats.teamCount > 0 ? 'COMPILADO' : 'INICIAL', x: 400, y: 325, href: '/dashboard/hq/control?tab=training', icon: BookOpen, desc: 'Módulo de capacitación y onboarding para directores de sedes y nuevos talentos.', color: stats.teamCount > 0 ? 'text-indigo-300' : 'text-gray-500', glow: stats.teamCount > 0 ? 'shadow-[0_0_20px_rgba(99,102,241,0.3)]' : '', border: stats.teamCount > 0 ? 'border-indigo-500' : 'border-white/5' }
     ];
 
     const connections = [
@@ -363,8 +451,15 @@ export default function HQProgressPage() {
         { from: 'hq', to: 'nodos' },
         { from: 'hq', to: 'qa' },
         { from: 'hq', to: 'nicho' },
+        { from: 'hq', to: 'automation' },
+        { from: 'hq', to: 'ai_agents' },
+        { from: 'hq', to: 'social_roi' },
+        { from: 'hq', to: 'academy' },
         { from: 'creativa', to: 'qa' },
-        { from: 'nodos', to: 'imprenta' }
+        { from: 'nodos', to: 'imprenta' },
+        { from: 'nodos', to: 'academy' },
+        { from: 'automation', to: 'finanzas' },
+        { from: 'ai_agents', to: 'qa' }
     ];
 
     // Calculate individual Phase Progress rates
@@ -377,7 +472,19 @@ export default function HQProgressPage() {
     const f3Tasks = [stats.clientsCount >= 20, milestones.fase3_manta, milestones.fase3_pricing, stats.teamCount >= 25];
     const f3Progress = Math.round((f3Tasks.filter(Boolean).length / f3Tasks.length) * 100);
 
-    const globalTasks = [...f1Tasks, ...f2Tasks.slice(1), ...f3Tasks.slice(1)]; // 3 + 3 + 3 = 9 total milestones
+    const f4Tasks = [milestones.fase4_transactions, milestones.fase4_expenses, stats.clientsCount >= 10];
+    const f4Progress = Math.round((f4Tasks.filter(Boolean).length / f4Tasks.length) * 100);
+
+    const f5Tasks = [milestones.fase5_qa, milestones.fase5_strategies, branchOffices.length >= 5];
+    const f5Progress = Math.round((f5Tasks.filter(Boolean).length / f5Tasks.length) * 100);
+
+    const globalTasks = [
+        stats.clientsCount >= 10, milestones.fase1_rbac, milestones.fase1_sync,
+        milestones.fase2_imprenta, milestones.fase2_n8n, stats.clientsCount >= 20,
+        milestones.fase3_manta, milestones.fase3_pricing, stats.teamCount >= 25,
+        milestones.fase4_transactions, milestones.fase4_expenses,
+        milestones.fase5_qa, milestones.fase5_strategies, branchOffices.length >= 5
+    ];
     const globalProgress = Math.round((globalTasks.filter(Boolean).length / globalTasks.length) * 100);
 
     // Dynamic Sede Stats calculation based on loaded team members
@@ -425,9 +532,8 @@ export default function HQProgressPage() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
                         <h1 className="text-4xl font-black text-white tracking-tight italic uppercase flex items-center gap-3">
-                            <Trophy className="w-9 h-9 text-yellow-500 animate-pulse" /> MI PROGRESO (CEO VIEW)
+                            <Trophy className="w-9 h-9 text-yellow-500 animate-pulse" /> MI PROGRESO
                         </h1>
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-2">DIIC ZONE OS — Estado de Desarrollo & Integración Tecnológica</p>
                     </div>
                     <button 
                         onClick={() => router.push('/dashboard/hq')}
@@ -523,10 +629,14 @@ export default function HQProgressPage() {
                             </div>
 
                             {/* Phase Selector Tabs */}
-                            <div className="grid grid-cols-3 gap-2 bg-black/40 p-1 rounded-2xl border border-white/5 mb-8">
-                                {[1, 2, 3].map(phaseNum => {
+                            <div className="grid grid-cols-5 gap-1.5 bg-black/40 p-1 rounded-2xl border border-white/5 mb-8">
+                                {[1, 2, 3, 4, 5].map(phaseNum => {
                                     const isActive = activePhaseTab === phaseNum;
-                                    const progress = phaseNum === 1 ? f1Progress : phaseNum === 2 ? f2Progress : f3Progress;
+                                    const progress = 
+                                        phaseNum === 1 ? f1Progress : 
+                                        phaseNum === 2 ? f2Progress : 
+                                        phaseNum === 3 ? f3Progress : 
+                                        phaseNum === 4 ? f4Progress : f5Progress;
                                     return (
                                         <button
                                             key={phaseNum}
@@ -607,6 +717,44 @@ export default function HQProgressPage() {
                                             </div>
                                         </>
                                     )}
+
+                                    {activePhaseTab === 4 && (
+                                        <>
+                                            <div className="pb-4 border-b border-white/5">
+                                                <h4 className="text-xs font-black text-white uppercase">Fase 4: Estructuración Financiera & Pasarela</h4>
+                                                <p className="text-[10px] text-gray-500 mt-1">Sincronización de transacciones comerciales, libro de gastos y payouts automáticos.</p>
+                                            </div>
+                                            <CheckItem checked={milestones.fase4_transactions} label="Historial de Transacciones Stripe" onClick={() => toggleMilestone('fase4_transactions')} />
+                                            <CheckItem checked={milestones.fase4_expenses} label="Libro Diario de Gastos Activo" onClick={() => toggleMilestone('fase4_expenses')} />
+                                            <CheckItem checked={stats.clientsCount >= 10} label={`Meta de Aliados Facturando (${stats.clientsCount}/10)`} isDynamic />
+                                            
+                                            <div className="pt-4 border-t border-white/5 flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                                    <DollarSign className="w-4 h-4 text-emerald-400" />
+                                                </div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-black">Módulos: Finance Hub + Transaction logs</div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {activePhaseTab === 5 && (
+                                        <>
+                                            <div className="pb-4 border-b border-white/5">
+                                                <h4 className="text-xs font-black text-white uppercase">Fase 5: Calidad Operativa & Escala</h4>
+                                                <p className="text-[10px] text-gray-500 mt-1">Aseguramiento de calidad interna (QA) y expansión territorial multiproveedor.</p>
+                                            </div>
+                                            <CheckItem checked={milestones.fase5_qa} label="Monitoreo de Cola de Tareas QA" onClick={() => toggleMilestone('fase5_qa')} />
+                                            <CheckItem checked={milestones.fase5_strategies} label="Estrategias de IA en Ejecución" onClick={() => toggleMilestone('fase5_strategies')} />
+                                            <CheckItem checked={branchOffices.length >= 5} label={`Escalar a 5 Sedes Territoriales (${branchOffices.length}/5)`} isDynamic />
+                                            
+                                            <div className="pt-4 border-t border-white/5 flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                                    <CheckCircle2 className="w-4 h-4 text-indigo-400" />
+                                                </div>
+                                                <div className="text-[9px] text-gray-500 uppercase font-black">Módulos: Quality Control + Regional Nodes</div>
+                                            </div>
+                                        </>
+                                    )}
                                 </motion.div>
                             </AnimatePresence>
                         </div>
@@ -626,8 +774,8 @@ export default function HQProgressPage() {
                         </div>
 
                         {/* Interactive SVG Diagram */}
-                        <div className="relative w-full max-w-[550px] aspect-video mx-auto flex items-center justify-center py-6">
-                            <svg viewBox="0 0 500 400" className="w-full h-full overflow-visible">
+                        <div className="relative w-full max-w-[850px] aspect-[800/480] mx-auto flex items-center justify-center py-6">
+                            <svg viewBox="0 0 800 480" className="w-full h-full overflow-visible">
                                 <defs>
                                     <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                                         <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4" />
@@ -673,7 +821,7 @@ export default function HQProgressPage() {
                                             <circle 
                                                 cx={node.x} 
                                                 cy={node.y} 
-                                                r={isHovered ? 28 : 22} 
+                                                r={isHovered ? 38 : 30} 
                                                 fill="rgba(0,0,0,0.6)"
                                                 className={`transition-all duration-300 ${isHovered ? 'stroke-indigo-500 stroke-[3px]' : 'stroke-white/10 stroke-[1.5px]'}`}
                                             />
@@ -683,7 +831,7 @@ export default function HQProgressPage() {
                                                 <circle 
                                                     cx={node.x} 
                                                     cy={node.y} 
-                                                    r="38" 
+                                                    r="50" 
                                                     fill="none" 
                                                     stroke="rgba(99, 102, 241, 0.2)" 
                                                     strokeWidth="6"
@@ -693,25 +841,25 @@ export default function HQProgressPage() {
 
                                             {/* Node label and status on hover */}
                                             <foreignObject 
-                                                x={node.x - 70} 
-                                                y={node.y + 26} 
-                                                width="140" 
+                                                x={node.x - 90} 
+                                                y={node.y + 36} 
+                                                width="180" 
                                                 height="50"
                                                 className="overflow-visible pointer-events-none"
                                             >
                                                 <div className="text-center space-y-0.5">
-                                                    <div className="text-[9px] font-black uppercase text-white tracking-widest truncate">
+                                                    <div className="text-[10px] font-black uppercase text-white tracking-widest truncate">
                                                         {node.label}
                                                     </div>
-                                                    <div className={`text-[7px] font-black tracking-[0.2em] uppercase ${node.color}`}>
+                                                    <div className={`text-[8px] font-black tracking-[0.2em] uppercase ${node.color}`}>
                                                         {node.status}
                                                     </div>
                                                 </div>
                                             </foreignObject>
 
                                             {/* Icon Placement */}
-                                            <g transform={`translate(${node.x - 10}, ${node.y - 10})`}>
-                                                <IconNode className={`w-5 h-5 ${node.color} group-hover/node:scale-110 transition-transform`} />
+                                            <g transform={`translate(${node.x - 14}, ${node.y - 14})`}>
+                                                <IconNode className={`w-7 h-7 ${node.color} group-hover/node:scale-110 transition-transform`} />
                                             </g>
                                         </g>
                                     );
