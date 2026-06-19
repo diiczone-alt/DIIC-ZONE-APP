@@ -431,23 +431,8 @@ export default function HQClientsPage() {
     const handleOpenEdit = (client) => {
         setEditingClient(client);
         
-        let initialPrice = client.price || 0;
-        const calculatedPrice = getPlanPrice(client.plan, client.industry);
-        const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-        const normalizedInd = cleanNiche(client.industry);
-        const isMedicalOrHospital = normalizedInd.includes('medico') || normalizedInd.includes('hospital') || normalizedInd.includes('clinica');
-        
-        if (isMedicalOrHospital) {
-            if (client.price === 300 && calculatedPrice === 250) {
-                initialPrice = 250;
-            } else if (client.price === 800 && calculatedPrice === 700) {
-                initialPrice = 700;
-            } else if (!client.price) {
-                initialPrice = calculatedPrice;
-            }
-        } else if (!client.price) {
-            initialPrice = calculatedPrice;
-        }
+        // Preserve client price from database without automatically overriding it
+        let initialPrice = (client.price !== undefined && client.price !== null) ? client.price : getPlanPrice(client.plan, client.industry);
 
         setNewClient({
             ...client,
@@ -545,18 +530,8 @@ export default function HQClientsPage() {
     }) : [];
 
     const mrr = Array.isArray(clients) ? clients.reduce((acc, c) => {
-        let price = c.price || 0;
-        const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-        const normalizedInd = cleanNiche(c.industry);
-        const isMedOrHosp = normalizedInd.includes('medico') || normalizedInd.includes('hospital') || normalizedInd.includes('clinica');
-        if (isMedOrHosp) {
-            const calculated = getPlanPrice(c.plan, c.industry);
-            if (price === 300 && calculated === 250) {
-                price = 250;
-            } else if (price === 800 && calculated === 700) {
-                price = 700;
-            }
-        }
+        if (c.status !== 'active') return acc;
+        const price = (c.price !== undefined && c.price !== null) ? c.price : getPlanPrice(c.plan, c.industry);
         return acc + price;
     }, 0) : 0;
     const riskCount = Array.isArray(clients) ? clients.filter(c => (c?.priority || '').toUpperCase() === 'ALTA').length : 0;

@@ -94,6 +94,23 @@ export default function MasterCommandCenter() {
         };
     }, []);
 
+    // Handle initial tab routing via URL query parameter
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab');
+            const validTabs = [
+                'global', 'finance', 'risk', 'operations', 'team', 'qa', 
+                'nodes', 'docs', 'training', 'improvement', 'bi', 
+                'capacity', 'pricing', 'evolution', 'governance', 
+                'client-contracts', 'ai-chat'
+            ];
+            if (tab && validTabs.includes(tab)) {
+                setView(tab);
+            }
+        }
+    }, []);
+
     const handleFeatureClick = (feature) => {
         toast.info(`Accediendo a: ${feature}`, {
             description: "Esta sección está conectada al núcleo del sistema.",
