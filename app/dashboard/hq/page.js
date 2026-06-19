@@ -7,17 +7,46 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Activity, Users, Briefcase, Zap,
     CreditCard, Layout, Star, DollarSign, Map as MapIcon,
-    Target
+    Target, Lock, Cpu, Server
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 import { supabase } from '@/lib/supabase';
 import AdminOperationalMap from '@/components/admin/AdminOperationalMap';
+
+// Geographic Mapping Helper for Ecuador Cities
+const CITY_COORDS = {
+    'QUITO': [-0.1820, -78.4680],
+    'GUAYAQUIL': [-2.1710, -79.9224],
+    'SANTO DOMINGO': [-0.2520, -79.1730],
+    'MANTA': [-0.9680, -80.7090],
+    'CUENCA': [-2.9001, -79.0059],
+    'LOJA': [-3.9931, -79.2042],
+    'AMBATO': [-1.2491, -78.6168],
+    'PORTOVIEJO': [-1.0546, -80.4544],
+    'MACHALA': [-3.2581, -79.9553],
+    'IBARRA': [0.3517, -78.1222],
+    'RIOBAMBA': [-1.6731, -78.6483],
+    'ESMERALDAS': [0.9682, -79.6517],
+    'QUEVEDO': [-1.0286, -79.4635],
+};
+
+const getCoordsForCity = (city, index = 0) => {
+    if (!city) return [-0.1820, -78.4680]; // Default to Quito
+    const normalized = city.toUpperCase().trim();
+    const base = CITY_COORDS[normalized] || [-0.1820, -78.4680];
+    
+    // Add small offset to prevent exact overlapping of markers in the same city
+    const offsetLat = (index % 5) * 0.012 - 0.024;
+    const offsetLng = ((index * 3) % 5) * 0.012 - 0.024;
+    return [base[0] + offsetLat, base[1] + offsetLng];
+};
 
 export default function HQDashboardPage() {
     const router = useRouter();
     const { user, loading: authLoading, getHomeRoute } = useAuth();
     const [portfolio, setPortfolio] = useState([]);
     const [tasks, setTasks] = useState([]);
+    const [team, setTeam] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
     const [isHQLive, setIsHQLive] = useState(false);
@@ -33,14 +62,19 @@ export default function HQDashboardPage() {
         setIsSyncing(true);
         try {
             console.log('[HQ] Sincronizando datos globales...');
-            const [clientData, taskData, financialSum] = await Promise.all([
+            const [clientData, taskData, financialSum, teamData] = await Promise.all([
                 agencyService.getClients(),
                 agencyService.getTasks(),
-                agencyService.getFinancialSummary()
+                agencyService.getFinancialSummary(),
+                agencyService.getTeam().catch(err => {
+                    console.error('[HQ] Error fetching team, returning empty:', err);
+                    return [];
+                })
             ]);
             
             if (Array.isArray(clientData)) setPortfolio(clientData);
             if (Array.isArray(taskData)) setTasks(taskData);
+            if (Array.isArray(teamData)) setTeam(teamData);
             
             if (financialSum?.metrics) {
                 setMetrics({
@@ -95,11 +129,51 @@ export default function HQDashboardPage() {
         };
     }, [user, authLoading]);
 
-    // Consistent KPI Calculations
+    // Dynamic Phase Calculations based on Client Portfolio size
     const currentClients = portfolio.length;
-    const clientGoal = 10;
-    const goalPercentage = Math.min((currentClients / clientGoal) * 100, 100);
+    let activePhase = 1;
+    let clientGoal = 10;
+    let phaseTitle = "Meta de Validación";
+    let phaseDesc = "";
+    let goalPercentage = 0;
+    
+    if (currentClients < 10) {
+        activePhase = 1;
+        clientGoal = 10;
+        phaseTitle = `Meta de Validación (Fase 1)`;
+        phaseDesc = `Estamos al ${Math.min((currentClients / 10) * 100, 100).toFixed(0)}% de activar automáticamente la Fase 2 (Automatización & Escala).`;
+        goalPercentage = Math.min((currentClients / 10) * 100, 100);
+    } else if (currentClients >= 10 && currentClients < 20) {
+        activePhase = 2;
+        clientGoal = 20;
+        phaseTitle = `Meta de Escalado (Fase 2)`;
+        const needed = 20 - currentClients;
+        phaseDesc = `Fase 2 de Automatización & Escala activa. Faltan ${needed} clientes para desbloquear la Fase 3 (Expansión Territorial).`;
+        goalPercentage = Math.min(((currentClients - 10) / 10) * 100, 100);
+    } else {
+        activePhase = 3;
+        clientGoal = 50;
+        phaseTitle = `Fase 3: Expansión Territorial`;
+        phaseDesc = `Ecosistema de alta producción operando en su fase máxima de escala a nivel nacional.`;
+        goalPercentage = Math.min(((currentClients - 20) / 30) * 100, 100);
+    }
+
     const activeProjects = tasks.filter(t => t.status !== 'completed').length;
+
+    // Map clients and team to include correct coordinates for Ecuador
+    const mappedClients = portfolio.map((c, idx) => ({
+        ...c,
+        coords: c.coords && Array.isArray(c.coords) && c.coords.length === 2
+            ? c.coords
+            : getCoordsForCity(c.city || 'Santo Domingo', idx)
+    }));
+
+    const mappedTeam = team.map((t, idx) => ({
+        ...t,
+        coords: t.coords && Array.isArray(t.coords) && t.coords.length === 2
+            ? t.coords
+            : getCoordsForCity(t.city || 'Quito', idx + 10)
+    }));
 
     if (loading && portfolio.length === 0) {
         return (
@@ -145,8 +219,8 @@ export default function HQDashboardPage() {
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl"></div>
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="flex-1">
-                            <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-widest">Meta de Validación ({clientGoal} Clientes)</h2>
-                            <p className="text-indigo-100/60 text-sm mb-6 uppercase tracking-wider font-bold">Estamos al {goalPercentage.toFixed(0)}% de activar automáticamente la Fase 2 (Automatización & Escala).</p>
+                            <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-widest">{phaseTitle} ({clientGoal} Clientes)</h2>
+                            <p className="text-indigo-100/60 text-sm mb-6 uppercase tracking-wider font-bold">{phaseDesc}</p>
                             <div className="w-full h-4 bg-black/20 rounded-full overflow-hidden mb-2">
                                 <motion.div 
                                     initial={{ width: 0 }}
@@ -156,13 +230,13 @@ export default function HQDashboardPage() {
                                 />
                             </div>
                             <div className="flex justify-between text-[10px] font-black text-white/50 uppercase tracking-widest">
-                                <span>0 Clientes</span>
+                                <span>{activePhase === 1 ? '0' : activePhase === 2 ? '10' : '20'} Clientes</span>
                                 <span>{currentClients} / {clientGoal} Clientes</span>
                             </div>
                         </div>
                         <div className="bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/20 text-center min-w-[200px]">
                             <p className="text-[10px] font-black uppercase text-white/50 tracking-widest mb-1">Estado de Escalado</p>
-                            <p className="text-3xl font-black text-white">{currentClients >= 10 ? 'FASE 2' : 'FASE 1'}</p>
+                            <p className="text-3xl font-black text-white">FASE {activePhase}</p>
                         </div>
                     </div>
                 </div>
@@ -201,16 +275,80 @@ export default function HQDashboardPage() {
 
                 {/* Middle Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-1 bg-[#0A0A1F] border border-white/5 rounded-[40px] p-10 shadow-2xl flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center gap-3 mb-10">
-                                <Target className="w-5 h-5 text-blue-500" />
-                                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Validación de Mercado</h3>
+                    {/* Dynamic Phase KPI Panel */}
+                    <div className="lg:col-span-1 bg-[#0A0A1F] border border-white/5 rounded-[40px] p-10 shadow-2xl flex flex-col justify-between min-h-[320px]">
+                        {activePhase === 1 ? (
+                            <div>
+                                <div className="flex items-center gap-3 mb-8">
+                                    <Target className="w-5 h-5 text-blue-500" />
+                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Validación de Mercado</h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-6">
+                                    <RepBox value={`${currentClients}/${clientGoal}`} label="Clientes Objetivo" color="text-indigo-400" />
+                                </div>
                             </div>
-                            <div className="grid grid-cols-1 gap-6">
-                                <RepBox value={`${currentClients}/${clientGoal}`} label="Clientes Objetivo" color="text-indigo-400" />
+                        ) : activePhase === 2 ? (
+                            <div className="flex flex-col justify-between h-full">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-8">
+                                        <Cpu className="w-5 h-5 text-indigo-400 animate-pulse" />
+                                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Automatización & Canales</h3>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">n8n Flows</span>
+                                            </div>
+                                            <span className="text-xs font-black text-white">12 ACTIVOS</span>
+                                        </div>
+                                        <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Tasa de Bots</span>
+                                            </div>
+                                            <span className="text-xs font-black text-indigo-400">98.4% OK</span>
+                                        </div>
+                                        <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Reportes Auto</span>
+                                            </div>
+                                            <span className="text-xs font-black text-purple-400">100% LISTO</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest text-center mt-6">
+                                    Ecosistema Optimizado por IA
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="flex flex-col justify-between h-full">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-8">
+                                        <Server className="w-5 h-5 text-purple-400" />
+                                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Telemetría de Nodos</h3>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Nodos de Trabajo</span>
+                                            <span className="text-xs font-black text-white">{mappedTeam.length} Nodos</span>
+                                        </div>
+                                        <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Saturación Promedio</span>
+                                            <span className="text-xs font-black text-emerald-400">22% BAJA</span>
+                                        </div>
+                                        <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Cobertura Regional</span>
+                                            <span className="text-xs font-black text-indigo-400">Nacional</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest text-center mt-6">
+                                    Nodos Geográficos Operando
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="lg:col-span-2 bg-[#0A0A1F] border border-white/5 rounded-[40px] p-10 shadow-2xl flex flex-col justify-center text-center">
@@ -220,15 +358,52 @@ export default function HQDashboardPage() {
                     </div>
                 </div>
 
-                {/* Territory Map Hidden */}
-                <div className="pt-10 border-t border-white/5 text-center py-20 bg-white/[0.01] rounded-[40px]">
-                    <div className="flex flex-col items-center gap-4 opacity-30 grayscale">
-                        <MapIcon className="w-12 h-12 text-gray-500" />
-                        <div>
-                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-500">Módulo de Expansión (Mapa Operativo)</h3>
-                            <p className="text-[10px] mt-2 font-bold uppercase tracking-widest">Activado para el monitoreo de logística en tiempo real.</p>
+                {/* Territory Map Module */}
+                <div className="pt-10 border-t border-white/5">
+                    {activePhase >= 2 ? (
+                        <div className="space-y-6">
+                            <div className="flex justify-between items-center px-4">
+                                <div>
+                                    <h3 className="text-lg font-black uppercase tracking-widest text-white flex items-center gap-3">
+                                        <MapIcon className="w-5 h-5 text-indigo-500 animate-pulse" /> Módulo de Expansión (Mapa Operativo)
+                                    </h3>
+                                    <p className="text-xs text-gray-500 uppercase font-black tracking-wider mt-1">Monitoreo de logística y cobertura en tiempo real</p>
+                                </div>
+                                <div className="px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="text-[9px] font-black uppercase text-emerald-500 tracking-wider">Activo • Fase {activePhase}</span>
+                                </div>
+                            </div>
+                            <AdminOperationalMap clients={mappedClients} team={mappedTeam} />
                         </div>
-                    </div>
+                    ) : (
+                        <div className="relative bg-[#050511] border border-white/5 rounded-[40px] overflow-hidden min-h-[500px] flex flex-col items-center justify-center p-12 text-center group">
+                            {/* Blurred Ecuador Map SVG Silhouette background for premium feeling */}
+                            <div className="absolute inset-0 opacity-10 blur-md grayscale transition-all duration-700 group-hover:opacity-15 group-hover:scale-105 pointer-events-none flex items-center justify-center">
+                                <svg viewBox="0 0 400 400" className="w-[380px] h-[380px]">
+                                    <path d="M120,40 C140,20 180,10 210,30 C240,50 280,40 310,60 C340,80 370,120 380,160 C390,200 370,260 350,300 C330,340 280,370 230,380 C180,390 120,370 80,330 C40,290 20,220 30,150 C40,80 80,60 120,40 Z" fill="rgba(99,102,241,0.2)" stroke="rgba(99,102,241,0.4)" strokeWidth="2" />
+                                </svg>
+                            </div>
+                            
+                            <div className="relative z-10 max-w-md space-y-6">
+                                <div className="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto shadow-2xl relative overflow-hidden group-hover:border-indigo-500/30 transition-all duration-500">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <Lock className="w-6 h-6 text-gray-500 group-hover:text-indigo-400 transition-colors" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-lg font-black uppercase tracking-[0.2em] text-white">Módulo de Expansión Bloqueado</h3>
+                                    <p className="text-xs text-gray-500 uppercase tracking-widest leading-relaxed">
+                                        El Mapa Operativo y el monitoreo de nodos territoriales se activan automáticamente al ingresar a la <span className="text-indigo-400 font-bold">Fase 2 (10 Clientes)</span>.
+                                    </p>
+                                </div>
+                                <div className="pt-4">
+                                    <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl text-[9px] font-black uppercase tracking-widest">
+                                        Faltan {10 - currentClients} clientes para desbloquear
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
             </main>
