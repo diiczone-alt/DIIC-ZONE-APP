@@ -154,6 +154,36 @@ export default function HQClientsPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingClient, setEditingClient] = useState(null);
     const [activeEditTab, setActiveEditTab] = useState('operative');
+    const [modalWidth, setModalWidth] = useState(1150);
+    const [modalHeight, setModalHeight] = useState(700);
+
+    const handleResizeStart = (e, direction) => {
+        e.preventDefault();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startWidth = modalWidth;
+        const startHeight = modalHeight;
+
+        const handleMouseMove = (moveEvent) => {
+            if (direction.includes('e')) {
+                const newWidth = Math.max(700, Math.min(1600, startWidth + (moveEvent.clientX - startX)));
+                setModalWidth(newWidth);
+            }
+            if (direction.includes('s')) {
+                const newHeight = Math.max(500, Math.min(1000, startHeight + (moveEvent.clientY - startY)));
+                setModalHeight(newHeight);
+            }
+        };
+
+        const handleMouseUp = () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+    };
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [isHQLive, setIsHQLive] = useState(false);
@@ -1006,19 +1036,30 @@ export default function HQClientsPage() {
             <AnimatePresence>
                 {isEditModalOpen && (
                     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-lg" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative w-full max-w-6xl bg-[#080814] border border-white/10 rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row h-[85vh]">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="absolute inset-0 bg-black/40 backdrop-blur-md" />
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0, y: 40 }} 
+                            animate={{ scale: 1, opacity: 1, y: 0 }} 
+                            exit={{ scale: 0.9, opacity: 0, y: 40 }} 
+                            className="relative bg-[#080814]/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:flex-row relative"
+                            style={{ 
+                                width: `${modalWidth}px`, 
+                                height: `${modalHeight}px`,
+                                maxWidth: '95vw',
+                                maxHeight: '90vh'
+                            }}
+                        >
                             
                             {/* LEFT SIDEBAR: Visual Branding (Fixed) */}
-                            <div className="w-full md:w-[35%] h-full relative border-r border-white/5 bg-[#05050A] flex flex-col justify-between p-10 overflow-hidden">
+                            <div className="w-full md:w-[30%] h-full relative border-r border-white/5 bg-white/[0.01] backdrop-blur-md flex flex-col justify-between p-8 overflow-hidden">
                                 {/* Ambient Background */}
                                 <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
                                     <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-indigo-600/20 rounded-full blur-[120px]" />
                                     <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-cyan-600/10 rounded-full blur-[100px]" />
                                 </div>
 
-                                {/* Top: Brand Visual */}
-                                <div className="relative z-10 space-y-12">
+                                {/* Top: Brand Visual (Optimized Spacing) */}
+                                <div className="relative z-10 space-y-6">
                                     <div className="flex justify-between items-start">
                                         <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.5em] leading-none">
                                             0.6 — Final Identity
@@ -1029,9 +1070,9 @@ export default function HQClientsPage() {
                                     </div>
 
                                     <div className="flex flex-col items-center">
-                                        <div className="relative group mb-8">
+                                        <div className="relative group mb-4">
                                             <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-[40px] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
-                                            <div className="relative w-32 h-32 rounded-[32px] bg-[#0A0A1F] border border-white/10 flex items-center justify-center text-5xl font-black text-white shadow-2xl overflow-hidden">
+                                            <div className="relative w-24 h-24 rounded-3xl bg-[#0A0A1F] border border-white/10 flex items-center justify-center text-3xl font-black text-white shadow-2xl overflow-hidden">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
                                                 {editingClient?.onboarding_data?.brand?.logo ? (
                                                     <img src={editingClient.onboarding_data.brand.logo} alt="Brand Logo" className="w-full h-full object-contain p-2 relative z-10" />
@@ -1040,29 +1081,29 @@ export default function HQClientsPage() {
                                                 )}
                                             </div>
                                         </div>
-                                        <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter text-center leading-tight">
+                                        <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter text-center leading-tight">
                                             {editingClient?.name || 'Partner'}
                                         </h2>
-                                        <div className="h-[1px] w-12 bg-indigo-500/30 my-6" />
+                                        <div className="h-[1px] w-12 bg-indigo-500/30 my-4" />
                                         <p className="text-[10px] font-black text-indigo-400/60 uppercase tracking-[0.3em] text-center">
                                             OPERATIONAL ECOSYSTEM
                                         </p>
                                     </div>
                                 </div>
 
-                                {/* Bottom: Meta Data */}
-                                <div className="relative z-10 space-y-8">
-                                    <div className="space-y-4">
+                                {/* Bottom: Meta Data (Optimized Spacing) */}
+                                <div className="relative z-10 space-y-4">
+                                    <div className="space-y-2.5">
                                         <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500 border-b border-white/5 pb-2">
                                             <span>Security Protocol</span>
                                             <span className="text-indigo-400">ENCRYPTED</span>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <div className="flex-1 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
+                                            <div className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
                                                 <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Partner ID</span>
                                                 <span className="text-xs font-mono font-bold text-white tracking-widest">{editingClient?.id}</span>
                                             </div>
-                                            <div className="flex-1 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
+                                            <div className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
                                                 <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Status</span>
                                                 <div className="flex items-center gap-2">
                                                     <div className={`w-1.5 h-1.5 rounded-full ${editingClient?.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'}`} />
@@ -1073,7 +1114,8 @@ export default function HQClientsPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    
+                                </div>
+
                                     <div className="flex items-end justify-between opacity-20 group-hover:opacity-40 transition-opacity">
                                         <div className="space-y-1">
                                             <div className="w-16 h-[1px] bg-white" />
@@ -1086,13 +1128,13 @@ export default function HQClientsPage() {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* RIGHT CONTENT: Control Panel (Scrollable) */}
-                            <div className="flex-1 h-full flex flex-col bg-[#080814]">
-                                {/* Header / Nav */}
-                                <div className="px-10 py-8 border-b border-white/5 flex items-center justify-between">
-                                    <div className="flex p-1 bg-white/[0.03] border border-white/5 rounded-[18px]">
+                            {/* RIGHT CONTENT: Control Panel (Scrollable, Glassmorphic & Resizable) */}
+                            <div className="flex-1 h-full flex flex-col bg-transparent relative overflow-hidden">
+
+                                {/* Header / Nav (Optimized Spacing) */}
+                                <div className="px-8 py-4 border-b border-white/5 flex items-center justify-between">
+                                    <div className="flex p-1 bg-white/[0.02] border border-white/5 rounded-[18px]">
                                         {[
                                             { id: 'operative', label: 'Logística', icon: Layout },
                                             { id: 'team', label: 'Escuadra', icon: Users },
@@ -1102,8 +1144,9 @@ export default function HQClientsPage() {
                                         ].map(tab => (
                                             <button
                                                 key={tab.id}
+                                                type="button"
                                                 onClick={() => setActiveEditTab(tab.id)}
-                                                className={`flex items-center gap-2 px-6 py-3 rounded-[14px] transition-all text-[9.5px] font-black uppercase tracking-widest ${
+                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-[14px] transition-all text-[9.5px] font-black uppercase tracking-widest ${
                                                     activeEditTab === tab.id 
                                                         ? 'bg-white text-black shadow-xl ring-4 ring-white/5' 
                                                         : 'text-gray-500 hover:text-white hover:bg-white/5'
@@ -1114,13 +1157,13 @@ export default function HQClientsPage() {
                                             </button>
                                         ))}
                                     </div>
-                                    <button onClick={() => setIsEditModalOpen(false)} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all">
+                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all">
                                         <ArrowLeft className="w-5 h-5" />
                                     </button>
                                 </div>
 
-                                {/* Content Grid */}
-                                <div className="flex-1 overflow-y-auto p-10 pb-60 custom-scrollbar">
+                                {/* Content Grid (Optimized Padding) */}
+                                <div className="flex-1 overflow-y-auto p-8 pb-20 custom-scrollbar">
                                     <form onSubmit={handleSaveEdit} id="edit-client-form">
                                         <AnimatePresence mode="wait">
                                             {activeEditTab === 'operative' && (
@@ -1129,7 +1172,7 @@ export default function HQClientsPage() {
                                                     initial={{ opacity: 0, x: 10 }} 
                                                     animate={{ opacity: 1, x: 0 }} 
                                                     exit={{ opacity: 0, x: -10 }}
-                                                    className="space-y-12"
+                                                    className="space-y-8"
                                                 >
                                                     {/* Technical Specs Header */}
                                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1139,8 +1182,8 @@ export default function HQClientsPage() {
                                                         <SpecItem label="Sector" value={editingClient?.industry || 'General'} icon={Activity} />
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-                                                        <div className="space-y-10">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                                        <div className="space-y-6">
                                                             <GlassInput 
                                                                 label="Nombre de la Marca" 
                                                                 value={newClient.name} 
@@ -1201,7 +1244,7 @@ export default function HQClientsPage() {
                                                             )}
                                                         </div>
 
-                                                        <div className="space-y-10">
+                                                        <div className="space-y-6">
                                                             <GlassInput 
                                                                 label="WhatsApp de Contacto" 
                                                                 value={newClient.whatsapp_number} 
@@ -1219,6 +1262,7 @@ export default function HQClientsPage() {
                                                                     setNewClient({ ...newClient, plan: val, price: price });
                                                                 }} 
                                                                 options={PLAN_OPTIONS} 
+                                                                icon={Target}
                                                             />
                                                             <div className="space-y-1">
                                                                 <GlassInput 
@@ -1280,8 +1324,8 @@ export default function HQClientsPage() {
                                                         <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                                                             <DollarSign className="w-4 h-4" /> Suscripción & Licencia App (SaaS)
                                                         </h4>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-                                                            <div className="space-y-10">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                                            <div className="space-y-6">
                                                                 <GlassInput 
                                                                     label="Fecha de Inicio / Ingreso" 
                                                                     value={newClient.start_date || ''} 
@@ -1299,7 +1343,7 @@ export default function HQClientsPage() {
                                                                     max="31"
                                                                 />
                                                             </div>
-                                                            <div className="space-y-10">
+                                                            <div className="space-y-6">
                                                                 <GlassInput 
                                                                     label="Costo Licencia Uso App (USD)" 
                                                                     value={newClient.app_fee || 100} 
@@ -1345,17 +1389,17 @@ export default function HQClientsPage() {
                                                         </label>
                                                         <textarea
                                                             value={newClient.notes || ''}
-                                                            onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
-                                                            placeholder="Biografía corta ingresada por el cliente..."
-                                                            className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all min-h-[100px] resize-none text-sm"
-                                                        />
-                                                    </div>
-                                                </motion.div>
-                                            )}
+                                                                onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
+                                                                placeholder="Biografía corta ingresada por el cliente..."
+                                                                className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all min-h-[100px] resize-none text-sm"
+                                                            />
+                                                        </div>
+                                                    </motion.div>
+                                                )}
 
                                             {activeEditTab === 'team' && (
-                                                <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-10">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                                         <PremiumDropdown label="CM Responsable" icon={Star} value={newClient.cm} onChange={(val) => setNewClient({ ...newClient, cm: val })} options={cmOptions} />
                                                         <PremiumDropdown label="Editor Asignado" icon={Zap} value={newClient.editor} onChange={(val) => setNewClient({ ...newClient, editor: val })} options={editorOptions} />
                                                         <PremiumDropdown label="Filmmaker / Videógrafo" icon={Zap} value={newClient.filmmaker} onChange={(val) => setNewClient({ ...newClient, filmmaker: val })} options={filmmakerOptions} />
@@ -1374,49 +1418,49 @@ export default function HQClientsPage() {
                                                         const remainingMargin = (newClient.price || 0) - editorEarnings - filmmakerEarnings - CREATIVE_RATES.cm_base;
 
                                                         return (
-                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                                <div className="p-6 rounded-[2rem] bg-indigo-900/10 border border-indigo-500/20 relative overflow-hidden group">
+                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                                <div className="p-5 rounded-2xl bg-indigo-900/10 border border-indigo-500/20 relative overflow-hidden group">
                                                                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-3 flex items-center gap-2"><Layout className="w-3 h-3" /> Pago a Editor</h4>
-                                                                    <div className="text-3xl font-black text-white italic relative z-10">${editorEarnings}</div>
-                                                                    <div className="text-[10px] text-gray-500 mt-2 relative z-10">({reels} reels x ${CREATIVE_RATES.reel_edit}, {videos} vids x ${CREATIVE_RATES.vid_promo})</div>
+                                                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-2 flex items-center gap-2"><Layout className="w-3 h-3" /> Pago a Editor</h4>
+                                                                    <div className="text-2xl font-black text-white italic relative z-10">${editorEarnings}</div>
+                                                                    <div className="text-[10px] text-gray-500 mt-1 relative z-10">({reels} reels, {videos} vids)</div>
                                                                 </div>
-                                                                <div className="p-6 rounded-[2rem] bg-emerald-900/10 border border-emerald-500/20 relative overflow-hidden group">
+                                                                <div className="p-5 rounded-2xl bg-emerald-900/10 border border-emerald-500/20 relative overflow-hidden group">
                                                                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-emerald-400 mb-3 flex items-center gap-2"><Video className="w-3 h-3" /> Pago Filmmaker</h4>
-                                                                    <div className="text-3xl font-black text-white italic relative z-10">${filmmakerEarnings}</div>
-                                                                    <div className="text-[10px] text-gray-500 mt-2 relative z-10">Rodaje: {reels} reels x ${CREATIVE_RATES.reel_prod}</div>
+                                                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-emerald-400 mb-2 flex items-center gap-2"><Video className="w-3 h-3" /> Pago Filmmaker</h4>
+                                                                    <div className="text-2xl font-black text-white italic relative z-10">${filmmakerEarnings}</div>
+                                                                    <div className="text-[10px] text-gray-500 mt-1 relative z-10">Rodaje: {reels} reels</div>
                                                                 </div>
-                                                                <div className="p-6 rounded-[2rem] bg-amber-900/10 border border-amber-500/20 relative overflow-hidden group">
+                                                                <div className="p-5 rounded-2xl bg-amber-900/10 border border-amber-500/20 relative overflow-hidden group">
                                                                     <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-3 flex items-center gap-2"><DollarSign className="w-3 h-3" /> Margen Base</h4>
-                                                                    <div className="text-3xl font-black text-white italic relative z-10">${remainingMargin > 0 ? remainingMargin : 0}</div>
-                                                                    <div className="text-[10px] text-gray-500 mt-2 relative z-10">CM Base: ${CREATIVE_RATES.cm_base} descontado.</div>
+                                                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-2 flex items-center gap-2"><DollarSign className="w-3 h-3" /> Margen Base</h4>
+                                                                    <div className="text-2xl font-black text-white italic relative z-10">${remainingMargin > 0 ? remainingMargin : 0}</div>
+                                                                    <div className="text-[10px] text-gray-500 mt-1 relative z-10">CM Base: ${CREATIVE_RATES.cm_base} desc.</div>
                                                                 </div>
                                                             </div>
                                                         );
                                                     })()}
 
-                                                    <div className="p-8 rounded-[2rem] bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-6">
-                                                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
-                                                            <Shield className="w-6 h-6 text-indigo-400" />
+                                                    <div className="p-5 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 flex-shrink-0">
+                                                            <Shield className="w-5 h-5 text-indigo-400" />
                                                         </div>
                                                         <div>
                                                             <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 italic">Squad Synchronization Notice</h4>
-                                                            <p className="text-[11px] text-gray-500 font-medium leading-relaxed">Cualquier cambio en la escuadra afectará el cálculo de rentabilidad del cliente y las notificaciones de tareas automáticas del sistema central.</p>
+                                                            <p className="text-[10px] text-gray-500 font-medium leading-relaxed">Cualquier cambio en la escuadra afectará el cálculo de rentabilidad del cliente y las notificaciones de tareas automáticas del sistema central.</p>
                                                         </div>
                                                     </div>
                                                 </motion.div>
                                             )}
 
                                             {activeEditTab === 'strategy' && (
-                                                <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-10">
+                                                <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
                                                     
-                                                    <div className="flex items-center gap-3 text-[10px] font-black text-indigo-400 uppercase tracking-widest px-2 mb-6">
+                                                    <div className="flex items-center gap-3 text-[10px] font-black text-indigo-400 uppercase tracking-widest px-2 mb-4">
                                                         <Sparkles className="w-4 h-4" /> Perfil Estratégico Sincronizado
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {[
                                                             { title: 'Liderazgo / Fundadores', key: 'leadership' },
                                                             { title: '¿Qué Hace?', key: 'whatItDoes' },
@@ -1425,7 +1469,7 @@ export default function HQClientsPage() {
                                                             { title: '¿Qué Ofrece?', key: 'whatItOffers' },
                                                             { title: 'Contexto del Mercado', key: 'marketContext' }
                                                         ].map((item, i) => (
-                                                            <div key={i} className="p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 space-y-3 relative overflow-hidden group hover:border-indigo-500/30 transition-colors">
+                                                            <div key={i} className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2 relative overflow-hidden group hover:border-indigo-500/30 transition-colors">
                                                                 <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-indigo-500/10 transition-colors" />
                                                                 <p className="text-[9px] font-black text-indigo-400/80 uppercase tracking-widest relative z-10">{item.title}</p>
                                                                 <p className="text-gray-300 text-xs font-medium italic leading-relaxed relative z-10 line-clamp-4 group-hover:line-clamp-none transition-all">
@@ -1435,13 +1479,13 @@ export default function HQClientsPage() {
                                                         ))}
                                                     </div>
 
-                                                    <div className="p-8 rounded-[2rem] bg-emerald-500/[0.03] border border-emerald-500/10 flex justify-between items-center mt-6">
+                                                    <div className="p-5 rounded-2xl bg-emerald-500/[0.03] border border-emerald-500/10 flex justify-between items-center mt-4">
                                                         <div>
-                                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2">Meta Estratégica (Target)</span>
-                                                            <span className="text-emerald-400 font-black text-2xl italic tracking-tighter leading-none">{newClient.onboarding_data?.strategic?.target || newClient.target || 0} Seguidores / Leads</span>
+                                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Meta Estratégica (Target)</span>
+                                                            <span className="text-emerald-400 font-black text-xl italic tracking-tighter leading-none">{newClient.onboarding_data?.strategic?.target || newClient.target || 0} Seguidores / Leads</span>
                                                         </div>
-                                                        <div className="p-3 rounded-xl bg-black/20 border border-white/5">
-                                                            <p className="text-[10px] text-emerald-500/60 font-medium italic uppercase tracking-tight">"Sincronizado en tiempo real"</p>
+                                                        <div className="p-2.5 rounded-xl bg-black/20 border border-white/5">
+                                                            <p className="text-[9px] text-emerald-500/60 font-medium italic uppercase tracking-tight">"Sincronizado en tiempo real"</p>
                                                         </div>
                                                     </div>
 
@@ -1449,14 +1493,14 @@ export default function HQClientsPage() {
                                             )}
 
                                             {activeEditTab === 'growth' && (
-                                                <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="h-full flex flex-col items-center justify-center space-y-12 py-10">
-                                                    <div className="w-full max-w-lg space-y-12">
-                                                        <div className="text-center space-y-8">
+                                                <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="h-full flex flex-col items-center justify-center space-y-6 py-4">
+                                                    <div className="w-full max-w-lg space-y-6">
+                                                        <div className="text-center space-y-4">
                                                             <div className="space-y-2">
                                                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Current Growth Level</p>
                                                                 <div className="h-[1px] w-24 bg-indigo-500/30 mx-auto" />
                                                             </div>
-                                                            <div className="flex justify-center gap-6">
+                                                            <div className="flex justify-center gap-4">
                                                                 {[1, 2, 3, 4, 5].map(level => (
                                                                     <button
                                                                         key={level}
@@ -1534,6 +1578,27 @@ export default function HQClientsPage() {
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Absolute Resize Handles for the entire modal */}
+                            <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'e')} 
+                                className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize z-[200] hover:bg-indigo-500/10 transition-colors"
+                                title="Arrastra para cambiar el ancho"
+                            />
+                            <div 
+                                onMouseDown={(e) => handleResizeStart(e, 's')} 
+                                className="absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize z-[200] hover:bg-indigo-500/10 transition-colors"
+                                title="Arrastra para cambiar el alto"
+                            />
+                            <div 
+                                onMouseDown={(e) => handleResizeStart(e, 'se')} 
+                                className="absolute right-0 bottom-0 w-4 h-4 cursor-se-resize z-[201] hover:bg-indigo-500/20 transition-colors flex items-end justify-end p-0.5"
+                                title="Arrastra para cambiar el tamaño"
+                            >
+                                <svg width="8" height="8" viewBox="0 0 8 8" className="text-gray-500 opacity-60">
+                                    <path d="M6 0 L8 0 L8 8 L0 8 L0 6 L4 6 L4 4 L6 4 Z" fill="currentColor" />
+                                </svg>
                             </div>
                         </motion.div>
 
