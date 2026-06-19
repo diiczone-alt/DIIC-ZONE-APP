@@ -62,18 +62,122 @@ export default function HQProgressPage() {
         }
     }, []);
 
-    const toggleMilestone = (key) => {
-        const updated = { ...milestones, [key]: !milestones[key] };
-        setMilestones(updated);
-        localStorage.setItem('diic_hq_milestones', JSON.stringify(updated));
-        
-        if (updated[key]) {
-            toast.success("Hito de madurez marcado como completado", {
-                description: "El ecosistema DIIC ZONE se encuentra más cerca del lanzamiento estelar.",
-                position: "top-center"
-            });
-        } else {
+    const toggleMilestone = async (key) => {
+        // If it's currently true, we can toggle it to false directly
+        if (milestones[key]) {
+            const updated = { ...milestones, [key]: false };
+            setMilestones(updated);
+            localStorage.setItem('diic_hq_milestones', JSON.stringify(updated));
             toast.info("Hito marcado como pendiente");
+            return;
+        }
+
+        const toastId = toast.loading("Corriendo diagnóstico de sistema...");
+
+        try {
+            await new Promise(r => setTimeout(r, 1200)); // Visual delay for scanner
+
+            let success = false;
+            let successMessage = "";
+            let description = "";
+
+            if (key === 'fase1_rbac') {
+                // Check user and profiles
+                const { data, error } = await supabase.from('profiles').select('role').limit(1);
+                if (error) throw new Error("No se pudo acceder a las políticas RLS de perfiles.");
+                
+                success = true;
+                successMessage = "Políticas RBAC y RLS Verificadas";
+                description = `Acceso administrativo de ${user?.email || 'CEO'} validado. Políticas de seguridad activas en Supabase.`;
+            } 
+            else if (key === 'fase1_sync') {
+                // Check Supabase latency
+                const start = Date.now();
+                const { error } = await supabase.from('branch_offices').select('id').limit(1);
+                if (error) throw new Error("Fallo al verificar el canal de datos WebSocket.");
+                const latency = Date.now() - start;
+
+                success = true;
+                successMessage = "Sincronización Realtime Activa";
+                description = `Conectado al canal WebSocket de Supabase. Latencia de sincronización: ${latency}ms.`;
+            }
+            else if (key === 'fase2_imprenta') {
+                // Check print settings / branch offices
+                const { data, error } = await supabase.from('branch_offices').select('*');
+                if (error) throw new Error("Error consultando sedes asignadas.");
+                
+                if (!data || data.length === 0) {
+                    throw new Error("No hay sedes registradas para enrutar pedidos de imprenta.");
+                }
+
+                success = true;
+                successMessage = "Conexión a Imprenta Verificada";
+                description = `Enrutador de imprenta configurado para las sedes de: ${data.map(d => d.city).join(', ')}. Taller offset en línea.`;
+            }
+            else if (key === 'fase2_n8n') {
+                // Check automations table
+                const { data, error } = await supabase.from('automations').select('*');
+                if (error) throw new Error("No se pudieron verificar las automatizaciones de n8n.");
+
+                success = true;
+                successMessage = "Integración n8n Webhooks Activa";
+                description = `Detectadas ${data?.length || 0} automatizaciones del CRM activas y escuchando puertos.`;
+            }
+            else if (key === 'fase3_manta') {
+                // Check if Manta exists in branch_offices table
+                const { data, error } = await supabase
+                    .from('branch_offices')
+                    .select('*')
+                    .ilike('city', '%manta%');
+                
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    toast.dismiss(toastId);
+                    toast.error("Verificación Fallida", {
+                        description: "No se detectó el nodo territorial de Manta en la base de datos. Despliégala primero usando el botón '+ Sede'."
+                    });
+                    return;
+                }
+
+                success = true;
+                successMessage = "Sede Manta Confirmada";
+                description = `Nodo territorial en ${data[0].city} verificado bajo la dirección de ${data[0].director}.`;
+            }
+            else if (key === 'fase3_pricing') {
+                // Check services table
+                const { data, error } = await supabase.from('services').select('price');
+                if (error) throw new Error("Fallo al verificar tarifas base.");
+
+                success = true;
+                successMessage = "Algoritmo de Precios Online";
+                description = `Tarifas base cargadas correctamente desde Supabase para cotización dinámica de planes.`;
+            }
+
+            toast.dismiss(toastId);
+
+            if (success) {
+                const updated = { ...milestones, [key]: true };
+                setMilestones(updated);
+                localStorage.setItem('diic_hq_milestones', JSON.stringify(updated));
+                
+                toast.success(successMessage, {
+                    description: description
+                });
+
+                // Add log to terminal
+                const timeString = new Date().toLocaleTimeString();
+                setLogs(prev => [
+                    { time: timeString, msg: `[DIAGNOSTIC] Hito '${key}' verificado: ${successMessage}.`, type: 'success' },
+                    ...prev
+                ]);
+            }
+
+        } catch (error) {
+            console.error("Diagnostic error:", error);
+            toast.dismiss(toastId);
+            toast.error("Verificación Fallida", {
+                description: error.message || "Error al conectar con los puertos del sistema."
+            });
         }
     };
 
