@@ -7,7 +7,7 @@ import {
     Layout, Users, Clapperboard, Activity,
     DollarSign, Shield, Sparkles, Settings, ShieldCheck,
     CalendarDays, Package, MessageSquare, ChevronLeft, ChevronRight,
-    Trophy
+    Trophy, ChevronDown, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 export default function HQSidebar() {
     const pathname = usePathname();
     const { user, logout } = useAuth();
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     const [isCollapsed, setIsCollapsed] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -140,36 +141,118 @@ export default function HQSidebar() {
             </div>
 
             {/* User Profile / Logout */}
-            <div className={`border-t border-white/5 bg-black/20 pb-10 transition-all duration-300 ${isCollapsed ? 'p-2' : 'p-6'}`}>
-                <div className={`flex items-center w-full mb-4 transition-all duration-300 ${isCollapsed ? 'justify-center px-0 py-2' : 'gap-3 px-4 py-3'}`}>
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 border border-white/10 flex items-center justify-center font-black text-white shadow-lg uppercase shrink-0">
-                        {user?.full_name ? user.full_name[0] : (user?.email ? user.email[0] : 'A')}
-                    </div>
-                    {!isCollapsed && (
-                        <div className="flex-1 min-w-0 ml-3 transition-all duration-300 overflow-hidden">
-                            <div className="text-xs font-black text-white uppercase tracking-widest truncate">
-                                {user?.full_name || 'Admin'}
+            <div className={`border-t border-white/5 bg-black/20 pb-8 transition-all duration-300 ${isCollapsed ? 'p-2' : 'p-4'} shrink-0 relative`}>
+                <div className="relative">
+                    {/* Trigger: Clickable Profile Card */}
+                    <button 
+                        type="button"
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                        className={`flex items-center rounded-2xl border border-white/5 hover:bg-white/5 transition-all relative overflow-hidden w-full text-left bg-indigo-500/[0.03] ${isCollapsed ? 'p-1.5 justify-center' : 'p-3 gap-3'}`}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
+                        
+                        <div className="relative shrink-0 transition-all">
+                            {/* Colorful Avatar Border (HQ Indigo-Purple Style) */}
+                            <div 
+                                className="w-9 h-9 rounded-xl p-[1.5px] shadow-lg shadow-black/20 bg-gradient-to-tr from-indigo-500 to-purple-600"
+                            >
+                                <div className="w-full h-full rounded-[9px] bg-[#08081a] flex items-center justify-center text-white font-black text-xs uppercase">
+                                    {user?.full_name 
+                                        ? user.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() 
+                                        : (user?.email ? user.email.substring(0, 2).toUpperCase() : 'AD')}
+                                </div>
                             </div>
-                            <div className="text-[9px] text-gray-500 uppercase font-black tracking-tighter truncate">
-                                {user?.role === 'ADMIN' ? 'Director General' : (user?.role || 'Staff')}
+                            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#08081a] rounded-full flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full border border-[#08081a] bg-indigo-500 shadow-[0_0_8px_#6366f1]" />
                             </div>
                         </div>
-                    )}
-                </div>
 
-                <button
-                    onClick={handleLogout}
-                    className={`flex items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all group font-black uppercase border border-rose-500/20 cursor-pointer ${isCollapsed ? 'p-3 w-10 h-10 mx-auto' : 'w-full py-4 px-4 text-[10px] tracking-[0.2em] gap-3'}`}
-                    title={isCollapsed ? "Cerrar Sesión" : undefined}
-                >
-                    <Settings className="w-4 h-4 shrink-0 group-hover:rotate-90 transition-transform duration-500" />
-                    {!isCollapsed && (
-                        <span className="text-[10px] tracking-[0.2em] whitespace-nowrap">
-                            Cerrar Sesión
-                        </span>
-                    )}
-                </button>
+                        {!isCollapsed && (
+                            <div className="flex-1 min-w-0 flex items-center justify-between">
+                                <div className="truncate pr-1">
+                                    <h4 className="text-[10px] font-black text-white truncate uppercase tracking-widest leading-tight">
+                                        {user?.full_name || 'Admin DIIC'}
+                                    </h4>
+                                    <p className="text-[8px] text-indigo-400 font-black uppercase tracking-wider opacity-80 leading-none mt-0.5">
+                                        {user?.role === 'ADMIN' ? 'Director General' : (user?.role || 'Staff')}
+                                    </p>
+                                </div>
+                                <ChevronDown className={`w-3.5 h-3.5 text-gray-500 shrink-0 transition-transform duration-300 ${showProfileMenu ? 'rotate-180' : ''}`} />
+                            </div>
+                        )}
+                    </button>
+
+                    {/* Popover Profile Menu */}
+                    <AnimatePresence>
+                        {showProfileMenu && (
+                            <>
+                                {/* Backdrop to close dropdown */}
+                                <div className="fixed inset-0 z-40 cursor-default" onClick={() => setShowProfileMenu(false)} />
+                                
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    className="absolute bottom-14 left-0 w-60 bg-[#0E0E18]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-2 z-50 overflow-hidden"
+                                >
+                                    <div className="p-4 border-b border-white/5 mb-2">
+                                        <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Usuario Administrativo</p>
+                                        <p className="text-xs font-bold text-white truncate">
+                                            {user?.full_name || 'Admin DIIC'}
+                                        </p>
+                                        <p className="text-[9px] text-indigo-400 font-bold uppercase tracking-widest mt-1 truncate">{user?.email}</p>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <Link href="/dashboard/hq/settings" onClick={() => setShowProfileMenu(false)} className="block w-full">
+                                            <ProfileMenuItem 
+                                                as="div"
+                                                icon={<Settings className="w-4 h-4" />} 
+                                                label="Configuración" 
+                                            />
+                                        </Link>
+                                        
+                                        <div className="h-px bg-white/5 my-2 mx-2" />
+                                        
+                                        <ProfileMenuItem 
+                                            icon={<LogOut className="w-4 h-4" />} 
+                                            label="Cerrar Sesión" 
+                                            variant="danger"
+                                            onClick={handleLogout}
+                                        />
+                                    </div>
+
+                                    {/* App Info */}
+                                    <div className="p-4 mt-2 bg-black/20 rounded-xl border border-white/5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Nivel 5 / Admin</span>
+                                            <span className="text-[8px] font-black text-indigo-400 uppercase">DIIC ZONE</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
         </aside>
+    );
+}
+
+function ProfileMenuItem({ icon, label, onClick, variant = 'default', as = 'button' }) {
+    const Component = as;
+    return (
+        <Component 
+            type={Component === 'button' ? 'button' : undefined}
+            onClick={onClick}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                variant === 'danger' 
+                ? 'text-red-400 hover:bg-red-500/10' 
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+        >
+            {icon}
+            {label}
+        </Component>
     );
 }
