@@ -22,6 +22,7 @@ export default function HQProgressPage() {
     const [testProgress, setTestProgress] = useState(0);
     const [activeHoverNode, setActiveHoverNode] = useState(null);
     const [activePhaseTab, setActivePhaseTab] = useState(2); // Default to Phase 2 (Active)
+    const [showPlaybookModal, setShowPlaybookModal] = useState(false);
     
     const [stats, setStats] = useState({
         clientsCount: 0,
@@ -758,6 +759,15 @@ export default function HQProgressPage() {
                                 </motion.div>
                             </AnimatePresence>
                         </div>
+                        <div className="pt-4 border-t border-white/5 mt-4">
+                            <button
+                                onClick={() => setShowPlaybookModal(true)}
+                                className="w-full py-4 bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 group/playbook cursor-pointer"
+                            >
+                                <BookOpen className="w-4 h-4 group-hover/playbook:rotate-12 transition-transform" />
+                                Ver Guía de Crecimiento
+                            </button>
+                        </div>
                     </div>
 
                     {/* Right: SVG Connection Network Diagram */}
@@ -1145,6 +1155,205 @@ export default function HQProgressPage() {
                                         </button>
                                     </div>
                                 </form>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Modal de Playbook de Crecimiento */}
+                <AnimatePresence>
+                    {showPlaybookModal && (
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                        >
+                            <motion.div 
+                                initial={{ scale: 0.9, y: 20 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.9, y: 20 }}
+                                className="bg-[#0A0A1F] border border-white/10 p-8 rounded-[32px] w-full max-w-2xl shadow-2xl relative overflow-hidden"
+                            >
+                                <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                                
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                                            <Trophy className="w-5 h-5 text-indigo-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black uppercase tracking-wider text-white">Guía de Crecimiento & Automatización</h3>
+                                            <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Fase {activePhaseTab} — Plan de Logro</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setShowPlaybookModal(false)}
+                                        className="text-xs font-black uppercase text-gray-500 hover:text-white transition-colors cursor-pointer"
+                                    >
+                                        Cerrar
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar text-left">
+                                    {activePhaseTab === 1 && (
+                                        <div className="space-y-4">
+                                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                                <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2">Meta Principal: Validación de Mercado</h4>
+                                                <p className="text-xs text-gray-400 leading-relaxed">
+                                                    El objetivo central de la Fase 1 es consolidar tus primeros 10 clientes para validar el valor de tu oferta de servicios y estabilizar el sistema de base de datos.
+                                                </p>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Estrategias de Automatización</h5>
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    <div className="p-4 bg-black/40 border border-white/5 rounded-xl">
+                                                        <p className="text-xs font-bold text-white mb-1">1. Políticas RLS y RBAC</p>
+                                                        <p className="text-[10px] text-gray-400">Protección del core de base de datos en Supabase para que los clientes solo vean su información privada.</p>
+                                                    </div>
+                                                    <div className="p-4 bg-black/40 border border-white/5 rounded-xl">
+                                                        <p className="text-xs font-bold text-white mb-1">2. Sincronización Realtime</p>
+                                                        <p className="text-[10px] text-gray-400">Implementación de canales WebSocket para actualizar los estados de tareas y chat sin refrescar el navegador.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activePhaseTab === 2 && (
+                                        <div className="space-y-6">
+                                            <div className="p-5 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
+                                                <h4 className="text-xs font-black text-indigo-300 uppercase tracking-wider mb-2">Meta Principal: 20 Clientes Activos</h4>
+                                                <p className="text-xs text-gray-300 leading-relaxed">
+                                                    Escalar el portafolio mediante flujos automáticos que reduzcan la carga administrativa sobre el director y los CMs.
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Pilares de Automatización</h5>
+                                                
+                                                <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-1.5">
+                                                    <p className="text-xs font-bold text-white flex items-center gap-2">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                                        Prospección & CRM Automático (n8n)
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-400 leading-relaxed">
+                                                        Los mensajes entrantes de Facebook, Instagram y WhatsApp se capturan instantáneamente mediante webhooks de n8n para insertarse automáticamente en tu pipeline de ventas.
+                                                    </p>
+                                                </div>
+
+                                                <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-1.5">
+                                                    <p className="text-xs font-bold text-white flex items-center gap-2">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                        Onboarding Autoguiado de Clientes
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-400 leading-relaxed">
+                                                        Al habilitar el servicio, el cliente recibe un acceso exclusivo a su Client Hub, donde sube sus datos de marca y contraseñas de manera segura y autogestionada.
+                                                    </p>
+                                                </div>
+
+                                                <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-1.5">
+                                                    <p className="text-xs font-bold text-white flex items-center gap-2">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                                        Logística Física (Imprenta Offset)
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-400 leading-relaxed">
+                                                        Los pedidos de merchandising de los clientes se derivan automáticamente a los talleres offset asociados más cercanos a la sede territorial correspondiente.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                                <h5 className="text-[10px] font-black text-white uppercase tracking-widest mb-2">Flujo de Producción del Equipo (Nodos)</h5>
+                                                <p className="text-xs text-gray-400 leading-relaxed">
+                                                    Los CMs y editores suben piezas crudas a sus workstations. Las piezas pasan a la cola de control de calidad (QA) y se aprueban de forma centralizada antes del envío.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activePhaseTab === 3 && (
+                                        <div className="space-y-4">
+                                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                                <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2">Meta Principal: Expansión Territorial (50 Clientes)</h4>
+                                                <p className="text-xs text-gray-400 leading-relaxed">
+                                                    Establecer nodos físicos en las principales ciudades del país (Santo Domingo, Quito, Guayaquil y Manta) y habilitar agentes inteligentes autónomos.
+                                                </p>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Tecnología de Inteligencia Core</h5>
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    <div className="p-4 bg-black/40 border border-white/5 rounded-xl">
+                                                        <p className="text-xs font-bold text-white mb-1">1. Modelos de IA Core Autónomos</p>
+                                                        <p className="text-[10px] text-gray-400">Implementación de agentes de IA entrenados con la información específica de cada marca para responder leads de forma autónoma.</p>
+                                                    </div>
+                                                    <div className="p-4 bg-black/40 border border-white/5 rounded-xl">
+                                                        <p className="text-xs font-bold text-white mb-1">2. Tarificación Base Automatizada</p>
+                                                        <p className="text-[10px] text-gray-400">Algoritmo de cotización dinámica que calcula precios a la medida basados en la complejidad de los requerimientos de la marca.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activePhaseTab === 4 && (
+                                        <div className="space-y-4">
+                                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                                <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2">Meta Principal: Consolidación Financiera</h4>
+                                                <p className="text-xs text-gray-400 leading-relaxed">
+                                                    Sincronización automatizada de facturación mensual recurrente (MRR), registro de gastos operativos e integración de pasarelas de pago.
+                                                </p>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Mecanismos Financieros</h5>
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    <div className="p-4 bg-black/40 border border-white/5 rounded-xl">
+                                                        <p className="text-xs font-bold text-white mb-1">1. Historial de Transacciones Stripe</p>
+                                                        <p className="text-[10px] text-gray-400">Sincronización automática de cobros y facturas del CRM con Stripe para conciliación bancaria.</p>
+                                                    </div>
+                                                    <div className="p-4 bg-black/40 border border-white/5 rounded-xl">
+                                                        <p className="text-xs font-bold text-white mb-1">2. Libro Diario Automatizado</p>
+                                                        <p className="text-[10px] text-gray-400">Registro de egresos y comisiones de los nodos automatizados para calcular la rentabilidad neta (God Mode) al instante.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activePhaseTab === 5 && (
+                                        <div className="space-y-4">
+                                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                                <h4 className="text-xs font-black text-white uppercase tracking-wider mb-2">Meta Principal: Control de Calidad Absoluto</h4>
+                                                <p className="text-xs text-gray-400 leading-relaxed">
+                                                    Lograr el aseguramiento de calidad (QA) en entregas y escalar la red local a más de 5 sedes territoriales operando a máxima capacidad.
+                                                </p>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Sistemas de Control</h5>
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    <div className="p-4 bg-black/40 border border-white/5 rounded-xl">
+                                                        <p className="text-xs font-bold text-white mb-1">1. Auditoría Centralizada QA</p>
+                                                        <p className="text-[10px] text-gray-400">Revisiones internas de videos, copys y parrillas creativas con métricas de aprobación obligatorias.</p>
+                                                    </div>
+                                                    <div className="p-4 bg-black/40 border border-white/5 rounded-xl">
+                                                        <p className="text-xs font-bold text-white mb-1">2. Red Local Multiproveedor</p>
+                                                        <p className="text-[10px] text-gray-400">Gestión de logística y proveedores locales sincronizada a nivel nacional bajo el ecosistema de sedes.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mt-8 pt-4 border-t border-white/5 flex justify-end">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowPlaybookModal(false)}
+                                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer"
+                                    >
+                                        Entendido
+                                    </button>
+                                </div>
                             </motion.div>
                         </motion.div>
                     )}
