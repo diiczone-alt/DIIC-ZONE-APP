@@ -2,16 +2,19 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Users, Briefcase, X, Layers, ArrowUpRight } from 'lucide-react';
+import { MapPin, Users, Briefcase, X, Layers, ArrowUpRight, Maximize2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 export default function AdminOperationalMap({ clients = [], team = [] }) {
+    const router = useRouter();
     const [filter, setFilter] = useState('both');
     const [selectedPoint, setSelectedPoint] = useState(null);
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const markersGroupRef = useRef(null);
+    const connectionsGroupRef = useRef(null);
 
     const cityWorkload = useMemo(() => {
         const counts = {};
@@ -31,6 +34,45 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         }
         return points.filter(p => p.coords && Array.isArray(p.coords) && p.coords.length === 2);
     }, [filter, clients, team]);
+
+    // Operational connections: Connect clients to their assigned CM/Editor/Filmmaker
+    const operationalConnections = useMemo(() => {
+        const list = [];
+        // Only draw connections in 'both' (Vista Estratégica) mode
+        if (filter !== 'both') return [];
+
+        clients.forEach(client => {
+            const clientCoords = client.coords;
+            if (!clientCoords || !Array.isArray(clientCoords) || clientCoords.length < 2) return;
+
+            const normalize = (n) => (n || '').toLowerCase().trim();
+
+            // Assigned names for CM, Editor, Filmmaker
+            const assignments = [
+                { name: client.cm, roleType: 'CM' },
+                { name: client.editor, roleType: 'Editor' },
+                { name: client.filmmaker, roleType: 'Filmmaker' }
+            ];
+
+            assignments.forEach(assign => {
+                if (!assign.name || normalize(assign.name) === 'sin asignar') return;
+
+                // Find team member with matching name
+                const member = team.find(t => normalize(t.name) === normalize(assign.name));
+                if (member && member.coords && Array.isArray(member.coords) && member.coords.length === 2) {
+                    list.push({
+                        from: clientCoords,
+                        to: member.coords,
+                        clientName: client.name,
+                        memberName: member.name,
+                        role: assign.roleType
+                    });
+                }
+            });
+        });
+
+        return list;
+    }, [clients, team, filter]);
 
     // Initialize Leaflet Map
     useEffect(() => {
@@ -62,7 +104,11 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
             position: 'bottomleft'
         }).addTo(map);
 
-        // Layer group for markers
+        // Layer group for connections (lines)
+        const connectionsGroup = L.layerGroup().addTo(map);
+        connectionsGroupRef.current = connectionsGroup;
+
+        // Layer group for markers (dots)
         const markersGroup = L.layerGroup().addTo(map);
         markersGroupRef.current = markersGroup;
 
@@ -80,14 +126,41 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         };
     }, []);
 
-    // Update Markers
+    // Update Markers & Connections
     useEffect(() => {
         const map = mapInstanceRef.current;
         const markersGroup = markersGroupRef.current;
-        if (!map || !markersGroup) return;
+        const connectionsGroup = connectionsGroupRef.current;
+        if (!map || !markersGroup || !connectionsGroup) return;
 
         markersGroup.clearLayers();
+        connectionsGroup.clearLayers();
 
+        // 1. Draw Operational Connections (Polylines)
+        operationalConnections.forEach((conn) => {
+            const polyline = L.polyline([conn.from, conn.to], {
+                color: conn.role === 'CM' ? '#6366f1' : (conn.role === 'Editor' ? '#3b82f6' : '#ec4899'),
+                weight: 1.5,
+                opacity: 0.35,
+                dashArray: '4, 6',
+                className: 'connection-line'
+            });
+
+            // Tooltip showing relationship
+            polyline.bindTooltip(
+                `<div class="text-[8px] font-black tracking-widest text-indigo-300 uppercase">
+                    ${conn.clientName.split(' ')[0]} ➔ ${conn.memberName.split(' ')[0]} (${conn.role})
+                </div>`,
+                {
+                    sticky: true,
+                    className: 'connection-tooltip border border-white/10 rounded-xl bg-[#050511]/90 shadow-2xl p-2'
+                }
+            );
+
+            polyline.addTo(connectionsGroup);
+        });
+
+        // 2. Draw Nodes (Markers)
         filteredPoints.forEach((p, idx) => {
             const coords = p.coords;
             const isClient = p.pointType === 'client';
@@ -106,9 +179,9 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
             const iconHtml = `
                 <div class="relative flex items-center justify-center w-8 h-8 -translate-x-1/2 -translate-y-1/2 group-marker">
                     <div class="absolute w-6 h-6 rounded-full ${pingColorClass} animate-ping opacity-60"></div>
-                    <div class="w-3 h-3 rounded-full ${dotColorClass} border border-white shadow-xl transition-all duration-300 hover:scale-125"></div>
+                    <div class="w-3.5 h-3.5 rounded-full ${dotColorClass} border border-white shadow-xl transition-all duration-300 hover:scale-125"></div>
                     <div class="marker-label absolute -top-8 px-2 py-0.5 bg-[#0A0A1F]/90 border border-white/10 rounded-md text-[8px] font-black text-white uppercase tracking-wider whitespace-nowrap opacity-0 scale-95 origin-bottom pointer-events-none transition-all duration-200 shadow-2xl">
-                        ${cityName.toUpperCase()}
+                        ${p.name.toUpperCase()} (${cityName.toUpperCase()})
                     </div>
                 </div>
             `;
@@ -122,8 +195,13 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
 
             const marker = L.marker([coords[0], coords[1]], { icon: customIcon });
 
+            // Interactive flyTo + select on click
             marker.on('click', () => {
                 setSelectedPoint(p);
+                map.flyTo([coords[0], coords[1]], 12, {
+                    animate: true,
+                    duration: 1.2
+                });
             });
 
             marker.addTo(markersGroup);
@@ -132,9 +210,32 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         // Fit bounds to show all active markers with some padding if we have markers
         if (filteredPoints.length > 0) {
             const bounds = L.latLngBounds(filteredPoints.map(p => p.coords));
-            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
+            map.fitBounds(bounds, { padding: [80, 80], maxZoom: 10 });
         }
-    }, [filteredPoints, cityWorkload]);
+    }, [filteredPoints, operationalConnections, cityWorkload]);
+
+    // Handle "Recentrar" button
+    const handleRecenter = () => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        if (filteredPoints.length > 0) {
+            const bounds = L.latLngBounds(filteredPoints.map(p => p.coords));
+            map.fitBounds(bounds, { padding: [80, 80] });
+        } else {
+            map.setView([-1.8312, -78.1834], 7);
+        }
+    };
+
+    // Handle profile redirection button
+    const handleViewProfile = () => {
+        if (!selectedPoint) return;
+        if (selectedPoint.pointType === 'client') {
+            router.push('/dashboard/hq/clients');
+        } else {
+            router.push('/dashboard/hq/team');
+        }
+    };
 
     return (
         <div className="relative bg-[#050511] border border-white/5 rounded-[40px] overflow-hidden min-h-[600px] w-full group/map shadow-2xl">
@@ -182,6 +283,24 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
                 .leaflet-control-attribution a {
                     color: #818cf8 !important;
                 }
+                .connection-line {
+                    transition: stroke 0.3s, stroke-width 0.3s, opacity 0.3s;
+                    cursor: pointer;
+                }
+                .connection-line:hover {
+                    stroke-width: 3.5px !important;
+                    stroke: #10b981 !important; /* Glow green when hovering connection */
+                    opacity: 0.85 !important;
+                }
+                .connection-tooltip {
+                    background: rgba(10, 10, 31, 0.95) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+                    border-radius: 8px !important;
+                }
+                .leaflet-tooltip-left:before, .leaflet-tooltip-right:before {
+                    border: none !important;
+                }
             `}} />
 
             {/* Map Container */}
@@ -193,26 +312,33 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('/noise.svg')] z-10" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#050511]/30 via-transparent to-transparent pointer-events-none z-10" />
 
-            {/* Filter Controls */}
+            {/* Filter & Control Controls */}
             <div className="absolute top-10 left-10 z-20 flex flex-col gap-3">
                 <button 
                     onClick={() => setFilter('both')}
-                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl shadow-lg ${filter === 'both' ? 'bg-indigo-500/90 text-white border-indigo-400' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}
+                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl shadow-lg ${filter === 'both' ? 'bg-indigo-500/90 text-white border-indigo-400' : 'bg-[#0A0A1F]/70 text-gray-400 border-white/5 hover:bg-[#0A0A1F]/90'}`}
                 >
                     <Layers className="w-4 h-4" /> <span className="text-[10px] font-black uppercase tracking-widest">Vista Estratégica</span>
                 </button>
                 <div className="h-2" />
                 <button 
                     onClick={() => setFilter('clients')}
-                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl shadow-lg ${filter === 'clients' ? 'bg-emerald-500/90 text-white border-emerald-400' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}
+                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl shadow-lg ${filter === 'clients' ? 'bg-emerald-500/90 text-white border-emerald-400' : 'bg-[#0A0A1F]/70 text-gray-400 border-white/5 hover:bg-[#0A0A1F]/90'}`}
                 >
                     <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> <span className="text-[10px] font-black uppercase tracking-widest">Socios ({clients.length})</span>
                 </button>
                 <button 
                     onClick={() => setFilter('team')}
-                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl shadow-lg ${filter === 'team' ? 'bg-blue-500/90 text-white border-blue-400' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}
+                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl shadow-lg ${filter === 'team' ? 'bg-blue-500/90 text-white border-blue-400' : 'bg-[#0A0A1F]/70 text-gray-400 border-white/5 hover:bg-[#0A0A1F]/90'}`}
                 >
                     <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" /> <span className="text-[10px] font-black uppercase tracking-widest">Nodos ({team.length})</span>
+                </button>
+                <div className="h-2" />
+                <button 
+                    onClick={handleRecenter}
+                    className="p-4 rounded-2xl border bg-[#0A0A1F]/70 text-gray-400 border-white/5 hover:bg-[#0A0A1F]/90 transition-all flex items-center gap-3 backdrop-blur-xl shadow-lg"
+                >
+                    <Maximize2 className="w-4 h-4" /> <span className="text-[10px] font-black uppercase tracking-widest">Recentrar Mapa</span>
                 </button>
             </div>
 
@@ -270,7 +396,10 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
                             </div>
                         </div>
 
-                        <button className="mt-auto w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-750 transition-colors shadow-lg">
+                        <button 
+                            onClick={handleViewProfile}
+                            className="mt-auto w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-750 transition-colors shadow-lg"
+                        >
                             Ver Perfil Estratégico <ArrowUpRight className="w-4 h-4" />
                         </button>
                     </motion.div>
