@@ -42,15 +42,10 @@ const CITY_COORDS = {
     'QUEVEDO': [-1.0286, -79.4635],
 };
 
-const getCoordsForCity = (city, index = 0) => {
+const getCoordsForCity = (city) => {
     if (!city) return [-0.1820, -78.4680]; // Default to Quito
     const normalized = city.toUpperCase().trim();
-    const base = CITY_COORDS[normalized] || [-0.1820, -78.4680];
-    
-    // Add small offset to prevent exact overlapping of markers in the same city
-    const offsetLat = (index % 5) * 0.012 - 0.024;
-    const offsetLng = ((index * 3) % 5) * 0.012 - 0.024;
-    return [base[0] + offsetLat, base[1] + offsetLng];
+    return CITY_COORDS[normalized] || [-0.1820, -78.4680];
 };
 
 export default function HQDashboardPage() {

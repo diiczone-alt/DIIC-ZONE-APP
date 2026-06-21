@@ -7,6 +7,13 @@ import { useRouter } from 'next/navigation';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
+// Local dictionary of known addresses to load exact positions instantly
+const PRECODED_ADDRESSES = {
+    'CARDENAL DE LA TORRE': [-0.2721, -78.5392], // Santiago's exact home address in Quito
+    'SANTO DOMINGO ': [-0.2520, -79.1730], // Daniel's address
+    'CIUDAD: SANTO DOMINGO': [-0.2520, -79.1730], // Usuario Google's address
+};
+
 export default function AdminOperationalMap({ clients = [], team = [] }) {
     const router = useRouter();
     const [filter, setFilter] = useState('both');
@@ -17,6 +24,9 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
     const markersGroupRef = useRef(null);
     const connectionsGroupRef = useRef(null);
 
+    // Geocoded coordinates state (caches Nominatim lookups)
+    const [geocodedCoords, setGeocodedCoords] = useState({});
+
     const cityWorkload = useMemo(() => {
         const counts = {};
         team.forEach(m => {
@@ -24,6 +34,14 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         });
         return counts;
     }, [team]);
+
+    // Helper to get coordinates of a node (prioritizes geocoded street address, falls back to city center)
+    const getCoords = (p) => {
+        if (geocodedCoords[p.id]) {
+            return geocodedCoords[p.id];
+        }
+        return p.coords; // Falls back to exact city center coordinates passed from parent
+    };
 
     const filteredPoints = useMemo(() => {
         let points = [];
@@ -33,18 +51,20 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         if (filter === 'team' || filter === 'both') {
             points = [...points, ...team.map(t => ({ ...t, pointType: 'team' }))];
         }
-        return points.filter(p => p.coords && Array.isArray(p.coords) && p.coords.length === 2);
-    }, [filter, clients, team]);
+        return points.filter(p => {
+            const coords = getCoords(p);
+            return coords && Array.isArray(coords) && coords.length === 2;
+        });
+    }, [filter, clients, team, geocodedCoords]);
 
-    // Operational connections: Connect clients to their assigned CM/Editor/Filmmaker
+    // Operational connections: Connect clients to their assigned CM/Editor/Filmmaker at their exact address coordinates
     const operationalConnections = useMemo(() => {
         const list = [];
-        // Only draw connections in 'both' (Vista Estratégica) mode
         if (filter !== 'both') return [];
 
         clients.forEach(client => {
-            const clientCoords = client.coords;
-            if (!clientCoords || !Array.isArray(clientCoords) || clientCoords.length < 2) return;
+            const clientCoords = getCoords(client);
+            if (!clientCoords || clientCoords.length < 2) return;
 
             const normalize = (n) => (n || '').toLowerCase().trim();
 
@@ -59,20 +79,74 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
 
                 // Find team member with matching name
                 const member = team.find(t => normalize(t.name) === normalize(assign.name));
-                if (member && member.coords && Array.isArray(member.coords) && member.coords.length === 2) {
-                    list.push({
-                        from: clientCoords,
-                        to: member.coords,
-                        clientName: client.name,
-                        memberName: member.name,
-                        role: assign.roleType
-                    });
+                if (member) {
+                    const memberCoords = getCoords(member);
+                    if (memberCoords && memberCoords.length === 2) {
+                        list.push({
+                            from: clientCoords,
+                            to: memberCoords,
+                            clientName: client.name,
+                            memberName: member.name,
+                            role: assign.roleType
+                        });
+                    }
                 }
             });
         });
 
         return list;
-    }, [clients, team, filter]);
+    }, [clients, team, filter, geocodedCoords]);
+
+    // Async Geocoding Effect (OpenStreetMap Nominatim lookup for street-level addresses)
+    useEffect(() => {
+        const performGeocoding = async () => {
+            const coordsCache = { ...geocodedCoords };
+            let updated = false;
+
+            const allPoints = [...clients, ...team];
+            
+            for (const p of allPoints) {
+                const key = p.id;
+                if (coordsCache[key]) continue;
+
+                const addressStr = (p.address || '').trim();
+                const cityStr = (p.city || '').trim();
+
+                // If no specific address details are provided, default to city center
+                if (!addressStr || addressStr.toUpperCase() === cityStr.toUpperCase()) {
+                    continue;
+                }
+
+                // Check in local precoded dictionary first (instant load)
+                const normalizedAddress = addressStr.toUpperCase();
+                if (PRECODED_ADDRESSES[normalizedAddress]) {
+                    coordsCache[key] = PRECODED_ADDRESSES[normalizedAddress];
+                    updated = true;
+                    continue;
+                }
+
+                // Query OpenStreetMap Nominatim with a 1 second delay to respect rate limit policy
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                try {
+                    const query = `${addressStr}, ${cityStr || ''}, Ecuador`.trim();
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        coordsCache[key] = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+                        updated = true;
+                    }
+                } catch (e) {
+                    console.error("Geocoding failed for:", addressStr, e);
+                }
+            }
+
+            if (updated) {
+                setGeocodedCoords(coordsCache);
+            }
+        };
+
+        performGeocoding();
+    }, [clients, team]);
 
     // Initialize Leaflet Map
     useEffect(() => {
@@ -87,7 +161,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
             center: [-1.8312, -78.1834], // Center of Ecuador
             zoom: 7,
             zoomControl: false,
-            scrollWheelZoom: true, // Enabled scroll zoom by user request
+            scrollWheelZoom: true,
             attributionControl: true
         });
 
@@ -162,7 +236,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
 
         // 2. Draw Nodes (Markers)
         filteredPoints.forEach((p, idx) => {
-            const coords = p.coords;
+            const coords = getCoords(p);
             const isClient = p.pointType === 'client';
             const cityName = p.city || 'Desconocido';
             const cityLoad = cityWorkload[cityName] || 0;
@@ -209,7 +283,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
 
         // Fit bounds to show all active markers with some padding if we have markers
         if (filteredPoints.length > 0) {
-            const bounds = L.latLngBounds(filteredPoints.map(p => p.coords));
+            const bounds = L.latLngBounds(filteredPoints.map(p => getCoords(p)));
             map.fitBounds(bounds, { padding: [80, 80], maxZoom: 10 });
         }
     }, [filteredPoints, operationalConnections, cityWorkload]);
@@ -220,7 +294,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         if (!map) return;
 
         if (filteredPoints.length > 0) {
-            const bounds = L.latLngBounds(filteredPoints.map(p => p.coords));
+            const bounds = L.latLngBounds(filteredPoints.map(p => getCoords(p)));
             map.fitBounds(bounds, { padding: [80, 80] });
         } else {
             map.setView([-1.8312, -78.1834], 7);
@@ -374,15 +448,22 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
                                 {selectedPoint.pointType === 'client' ? <Briefcase className="w-5 h-5" /> : <Users className="w-5 h-5" />}
                             </div>
                             <button onClick={() => setSelectedPoint(null)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
-                                <X className="w-4 h-4 text-gray-400 hover:text-white" />
+                                <X className="w-4 h-4 text-gray-450 hover:text-white" />
                             </button>
                         </div>
 
                         <div className="mt-4">
                             <h3 className="text-xl font-black text-white italic tracking-tighter mb-0.5">{selectedPoint.name}</h3>
-                            <p className="text-gray-400 text-[9px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-1.5">
+                            <p className="text-gray-400 text-[9px] font-black uppercase tracking-[0.2em] mb-2 flex items-center gap-1.5">
                                 <MapPin className="w-3 h-3 text-indigo-400" /> {selectedPoint.city}
                             </p>
+                            
+                            {/* Display real exact address in detail panel */}
+                            {selectedPoint.address && (
+                                <p className="text-gray-500 text-[8px] font-bold uppercase tracking-wider mb-4 leading-relaxed bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/5">
+                                    <span className="text-indigo-400">Dir:</span> {selectedPoint.address}
+                                </p>
+                            )}
 
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center py-2 border-b border-white/5">
@@ -407,7 +488,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
                                     <>
                                         <div className="flex justify-between items-center py-2 border-b border-white/5">
                                             <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Plan Contratado</span>
-                                            <span className="text-xs font-bold text-indigo-450">{selectedPoint.plan || 'General'}</span>
+                                            <span className="text-xs font-bold text-indigo-400">{selectedPoint.plan || 'General'}</span>
                                         </div>
                                         <div className="flex justify-between items-center py-2 border-b border-white/5">
                                             <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Encargado CM</span>
