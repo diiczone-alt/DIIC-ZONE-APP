@@ -21,7 +21,7 @@ export default function HQProgressPage() {
     const [isTesting, setIsTesting] = useState(false);
     const [testProgress, setTestProgress] = useState(0);
     const [activeHoverNode, setActiveHoverNode] = useState(null);
-    const [activePhaseTab, setActivePhaseTab] = useState(2); // Default to Phase 2 (Active)
+    const [activePhaseTab, setActivePhaseTab] = useState(1); // Default to Phase 1 (Validación)
     const [showPlaybookModal, setShowPlaybookModal] = useState(false);
     
     const [stats, setStats] = useState({
@@ -261,7 +261,7 @@ export default function HQProgressPage() {
                 ]);
 
                 setStats({
-                    clientsCount: clients?.length || 0,
+                    clientsCount: clients?.filter(c => c.status === 'active')?.length || 0,
                     teamCount: team?.length || 0,
                     activeTasks: tasks?.filter(t => t.status !== 'completed')?.length || 0,
                     pendingPayments: clients?.filter(c => c.status === 'paused')?.length || 0,
@@ -290,6 +290,17 @@ export default function HQProgressPage() {
                 };
                 setMilestones(dbVerifiedMilestones);
                 localStorage.setItem('diic_hq_milestones', JSON.stringify(dbVerifiedMilestones));
+
+                // Dynamically set active phase tab based on actual milestone compliance
+                const activeClientsVal = clients?.filter(c => c.status === 'active')?.length || 0;
+                const f1Ok = activeClientsVal >= 10 && dbVerifiedMilestones.fase1_rbac && dbVerifiedMilestones.fase1_sync;
+                const f2Ok = f1Ok && activeClientsVal >= 20 && dbVerifiedMilestones.fase2_imprenta && dbVerifiedMilestones.fase2_n8n;
+
+                let currentRealPhase = 1;
+                if (f2Ok) currentRealPhase = 3;
+                else if (f1Ok) currentRealPhase = 2;
+                
+                setActivePhaseTab(currentRealPhase);
 
             } catch (err) {
                 console.error('Error fetching totals for progress:', err);

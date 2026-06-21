@@ -63,26 +63,48 @@ export default function HQDashboardPage() {
         pending: 0,
         risk: 0
     });
+    const [milestones, setMilestones] = useState({
+        fase1_rbac: false,
+        fase1_sync: false,
+        fase2_imprenta: false,
+        fase2_n8n: false
+    });
 
     const loadGlobalData = async (isBackground = false) => {
         if (!isBackground) setLoading(true);
         setIsSyncing(true);
         try {
             console.log('[HQ] Sincronizando datos globales...');
-            const [clientData, taskData, financialSum, teamData] = await Promise.all([
+            const [clientData, taskData, financialSum, teamData, profilesRes, branchesRes, automationsRes] = await Promise.all([
                 agencyService.getClients(),
                 agencyService.getTasks(),
                 agencyService.getFinancialSummary(),
                 agencyService.getTeam().catch(err => {
                     console.error('[HQ] Error fetching team, returning empty:', err);
                     return [];
-                })
+                }),
+                supabase.from('profiles').select('role').limit(1),
+                supabase.from('branch_offices').select('*'),
+                supabase.from('automations').select('id', { count: 'exact', head: true })
             ]);
             
             if (Array.isArray(clientData)) setPortfolio(clientData);
             if (Array.isArray(taskData)) setTasks(taskData);
             if (Array.isArray(teamData)) setTeam(teamData);
             
+            // Auto-verify all milestones based on real database presence
+            const rbacOk = !profilesRes.error;
+            const syncOk = !branchesRes.error;
+            const imprentaOk = !!(branchesRes.data && branchesRes.data.length > 0);
+            const n8nOk = !!(automationsRes.count > 0);
+
+            setMilestones({
+                fase1_rbac: rbacOk,
+                fase1_sync: syncOk,
+                fase2_imprenta: imprentaOk,
+                fase2_n8n: n8nOk
+            });
+
             if (financialSum?.metrics) {
                 setMetrics({
                     income: financialSum.metrics.income || 0,
@@ -137,27 +159,56 @@ export default function HQDashboardPage() {
         };
     }, [user, authLoading]);
 
-    // Dynamic Phase Calculations based on Client Portfolio size
-    const currentClients = portfolio.length;
+    // Dynamic Phase Calculations based on Client Portfolio size & verified milestones
+    const currentClients = portfolio.filter(c => c.status === 'active').length;
+    
+    const f1Complete = currentClients >= 10 && milestones.fase1_rbac && milestones.fase1_sync;
+    const f2Complete = f1Complete && currentClients >= 20 && milestones.fase2_imprenta && milestones.fase2_n8n;
+
     let activePhase = 1;
     let clientGoal = 10;
     let phaseTitle = "Meta de Validación";
     let phaseDesc = "";
     let goalPercentage = 0;
-    
-    if (currentClients < 10) {
+
+    if (!f1Complete) {
         activePhase = 1;
         clientGoal = 10;
         phaseTitle = `Meta de Validación (Fase 1)`;
-        phaseDesc = `Estamos al ${Math.min((currentClients / 10) * 100, 100).toFixed(0)}% de activar automáticamente la Fase 2 (Automatización & Escala).`;
-        goalPercentage = Math.min((currentClients / 10) * 100, 100);
-    } else if (currentClients >= 10 && currentClients < 20) {
+        
+        const missingDetails = [];
+        if (currentClients < 10) missingDetails.push(`faltan ${10 - currentClients} clientes`);
+        if (!milestones.fase1_rbac) missingDetails.push("seguridad RBAC pendiente");
+        if (!milestones.fase1_sync) missingDetails.push("sincronización realtime pendiente");
+        
+        const detailsStr = missingDetails.length > 0 ? ` (${missingDetails.join(', ')})` : '';
+        phaseDesc = `Fase 1 activa. Requisitos para subir a Fase 2 pendientes${detailsStr}.`;
+        
+        const completedTasks = [
+            currentClients >= 10,
+            milestones.fase1_rbac,
+            milestones.fase1_sync
+        ].filter(Boolean).length;
+        goalPercentage = Math.min((completedTasks / 3) * 100, 100);
+    } else if (f1Complete && !f2Complete) {
         activePhase = 2;
         clientGoal = 20;
         phaseTitle = `Meta de Escalado (Fase 2)`;
-        const needed = 20 - currentClients;
-        phaseDesc = `Fase 2 de Automatización & Escala activa. Faltan ${needed} clientes para desbloquear la Fase 3 (Expansión Territorial).`;
-        goalPercentage = Math.min(((currentClients - 10) / 10) * 100, 100);
+        
+        const missingDetails = [];
+        if (currentClients < 20) missingDetails.push(`faltan ${20 - currentClients} clientes`);
+        if (!milestones.fase2_imprenta) missingDetails.push("imprenta directa pendiente");
+        if (!milestones.fase2_n8n) missingDetails.push("webhooks n8n pendientes");
+        
+        const detailsStr = missingDetails.length > 0 ? ` (${missingDetails.join(', ')})` : '';
+        phaseDesc = `Fase 2 de Automatización & Escala activa. Requisitos para Fase 3 pendientes${detailsStr}.`;
+        
+        const completedTasks = [
+            currentClients >= 20,
+            milestones.fase2_imprenta,
+            milestones.fase2_n8n
+        ].filter(Boolean).length;
+        goalPercentage = Math.min((completedTasks / 3) * 100, 100);
     } else {
         activePhase = 3;
         clientGoal = 50;
