@@ -30,6 +30,27 @@ const CITY_COORDS = {
     'RIOBAMBA': [-1.6731, -78.6483],
     'ESMERALDAS': [0.9682, -79.6517],
     'QUEVEDO': [-1.0286, -79.4635],
+    'LATACUNGA': [-0.9316, -78.6058],
+    'TULCAN': [0.8119, -77.7176],
+    'TENA': [-0.9938, -77.8129],
+    'PUYO': [-1.4821, -77.9991],
+    'MACAS': [-2.3087, -78.1114],
+    'ZAMORA': [-4.0692, -78.9567],
+    'LAGO AGRIO': [0.0847, -76.8828],
+    'NUEVA LOJA': [0.0847, -76.8828],
+    'COCA': [-0.4667, -76.9833],
+    'GUARANDA': [-1.5905, -79.0025],
+    'BABAHOYO': [-1.8022, -79.5344],
+    'SALINAS': [-2.2170, -80.9585],
+    'SANTA ELENA': [-2.2268, -80.8584],
+    'OTAVALO': [0.2295, -78.2625],
+    'SANGOLQUI': [-0.3306, -78.4398],
+    'DAULE': [-1.8622, -79.9790],
+    'CHONE': [-0.6981, -80.0936],
+    'MILAGRO': [-2.1286, -79.5914],
+    'PASAJE': [-3.3255, -79.8066],
+    'SANTA ROSA': [-3.4478, -79.9599],
+    'LA LIBERTAD': [-2.2310, -80.9117]
 };
 
 export default function AdminOperationalMap({ clients = [], team = [] }) {
@@ -38,7 +59,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
     const [selectedPoint, setSelectedPoint] = useState(null);
     const containerRef = useRef(null);
     const mapRef = useRef(null);
-    const mapInstanceRef = useRef(null);
+    const [mapInstance, setMapInstance] = useState(null);
     const markersGroupRef = useRef(null);
     const connectionsGroupRef = useRef(null);
 
@@ -79,14 +100,49 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         });
     }, [filter, clients, team, geocodedCoords]);
 
-    // Operational connections: Connect clients to their assigned CM/Editor/Filmmaker at their exact address coordinates
+    // Grouping by raw coordinates and applying 0.003 degree offset to duplicates
+    const pointsWithCoords = useMemo(() => {
+        const groups = {};
+        filteredPoints.forEach(p => {
+            const rawCoords = getCoords(p);
+            if (!rawCoords || rawCoords.length < 2) return;
+            const key = `${rawCoords[0].toFixed(5)},${rawCoords[1].toFixed(5)}`;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(p);
+        });
+
+        const list = [];
+        Object.entries(groups).forEach(([key, groupPoints]) => {
+            const [rawLat, rawLng] = key.split(',').map(Number);
+            if (groupPoints.length === 1) {
+                list.push({
+                    ...groupPoints[0],
+                    mapCoords: [rawLat, rawLng]
+                });
+            } else {
+                groupPoints.forEach((p, idx) => {
+                    const angle = (idx * 2 * Math.PI) / groupPoints.length;
+                    const offsetLat = rawLat + 0.003 * Math.sin(angle);
+                    const offsetLng = rawLng + 0.003 * Math.cos(angle);
+                    list.push({
+                        ...p,
+                        mapCoords: [offsetLat, offsetLng]
+                    });
+                });
+            }
+        });
+        return list;
+    }, [filteredPoints, geocodedCoords]);
+
+    // Operational connections: Connect clients to their assigned CM/Editor/Filmmaker using pointsWithCoords coordinates
     const operationalConnections = useMemo(() => {
         const list = [];
         if (filter !== 'both') return [];
 
         clients.forEach(client => {
-            const clientCoords = getCoords(client);
-            if (!clientCoords || clientCoords.length < 2) return;
+            const clientPt = pointsWithCoords.find(pt => pt.id === client.id && pt.pointType === 'client');
+            if (!clientPt) return;
+            const clientCoords = clientPt.mapCoords;
 
             const normalize = (n) => (n || '').toLowerCase().trim();
 
@@ -99,25 +155,23 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
             assignments.forEach(assign => {
                 if (!assign.name || normalize(assign.name) === 'sin asignar') return;
 
-                // Find team member with matching name
-                const member = team.find(t => normalize(t.name) === normalize(assign.name));
-                if (member) {
-                    const memberCoords = getCoords(member);
-                    if (memberCoords && memberCoords.length === 2) {
-                        list.push({
-                            from: clientCoords,
-                            to: memberCoords,
-                            clientName: client.name,
-                            memberName: member.name,
-                            role: assign.roleType
-                        });
-                    }
+                // Find team member with matching name in pointsWithCoords
+                const memberPt = pointsWithCoords.find(pt => pt.pointType === 'team' && normalize(pt.name) === normalize(assign.name));
+                if (memberPt) {
+                    const memberCoords = memberPt.mapCoords;
+                    list.push({
+                        from: clientCoords,
+                        to: memberCoords,
+                        clientName: client.name,
+                        memberName: memberPt.name,
+                        role: assign.roleType
+                    });
                 }
             });
         });
 
         return list;
-    }, [clients, team, filter, geocodedCoords]);
+    }, [clients, team, filter, pointsWithCoords]);
 
     // Async Geocoding Effect (OpenStreetMap Nominatim lookup for street-level addresses)
     useEffect(() => {
@@ -174,11 +228,6 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
     useEffect(() => {
         if (!mapRef.current) return;
 
-        // Clean up previous instance if any
-        if (mapInstanceRef.current) {
-            mapInstanceRef.current.remove();
-        }
-
         const map = L.map(mapRef.current, {
             center: [-1.8312, -78.1834], // Center of Ecuador
             zoom: 7,
@@ -186,8 +235,6 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
             scrollWheelZoom: true,
             attributionControl: true
         });
-
-        mapInstanceRef.current = map;
 
         // Load CartoDB Dark Matter tile layer (Perfect dark theme for dashboards)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -214,17 +261,23 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
             [1.45, -75.12]    // North-East
         ]);
 
+        setMapInstance(map);
+
+        // Invalidate size after 300ms to correct any display issues due to layout/rendering timing
+        const sizeTimeout = setTimeout(() => {
+            map.invalidateSize();
+        }, 300);
+
         return () => {
-            if (mapInstanceRef.current) {
-                mapInstanceRef.current.remove();
-                mapInstanceRef.current = null;
-            }
+            clearTimeout(sizeTimeout);
+            map.remove();
+            setMapInstance(null);
         };
     }, []);
 
     // Update Markers & Connections
     useEffect(() => {
-        const map = mapInstanceRef.current;
+        const map = mapInstance;
         const markersGroup = markersGroupRef.current;
         const connectionsGroup = connectionsGroupRef.current;
         if (!map || !markersGroup || !connectionsGroup) return;
@@ -257,8 +310,8 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         });
 
         // 2. Draw Nodes (Markers)
-        filteredPoints.forEach((p, idx) => {
-            const coords = getCoords(p);
+        pointsWithCoords.forEach((p, idx) => {
+            const coords = p.mapCoords;
             const isClient = p.pointType === 'client';
             const cityName = p.city || 'Desconocido';
             const cityLoad = cityWorkload[cityName] || 0;
@@ -304,19 +357,19 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         });
 
         // Fit bounds to show all active markers with some padding if we have markers
-        if (filteredPoints.length > 0) {
-            const bounds = L.latLngBounds(filteredPoints.map(p => getCoords(p)));
+        if (pointsWithCoords.length > 0) {
+            const bounds = L.latLngBounds(pointsWithCoords.map(p => p.mapCoords));
             map.fitBounds(bounds, { padding: [80, 80], maxZoom: 10 });
         }
-    }, [filteredPoints, operationalConnections, cityWorkload]);
+    }, [mapInstance, pointsWithCoords, operationalConnections, cityWorkload]);
 
     // Handle "Recentrar" button
     const handleRecenter = () => {
-        const map = mapInstanceRef.current;
+        const map = mapInstance;
         if (!map) return;
 
-        if (filteredPoints.length > 0) {
-            const bounds = L.latLngBounds(filteredPoints.map(p => getCoords(p)));
+        if (pointsWithCoords.length > 0) {
+            const bounds = L.latLngBounds(pointsWithCoords.map(p => p.mapCoords));
             map.fitBounds(bounds, { padding: [80, 80] });
         } else {
             map.setView([-1.8312, -78.1834], 7);

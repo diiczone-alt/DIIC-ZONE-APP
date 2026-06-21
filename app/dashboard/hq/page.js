@@ -30,6 +30,7 @@ const CITY_COORDS = {
     'QUITO': [-0.1820, -78.4680],
     'GUAYAQUIL': [-2.1710, -79.9224],
     'SANTO DOMINGO': [-0.2520, -79.1730],
+    'SANTO DOMINGO ': [-0.2520, -79.1730],
     'MANTA': [-0.9680, -80.7090],
     'CUENCA': [-2.9001, -79.0059],
     'LOJA': [-3.9931, -79.2042],
@@ -40,6 +41,27 @@ const CITY_COORDS = {
     'RIOBAMBA': [-1.6731, -78.6483],
     'ESMERALDAS': [0.9682, -79.6517],
     'QUEVEDO': [-1.0286, -79.4635],
+    'LATACUNGA': [-0.9316, -78.6058],
+    'TULCAN': [0.8119, -77.7176],
+    'TENA': [-0.9938, -77.8129],
+    'PUYO': [-1.4821, -77.9991],
+    'MACAS': [-2.3087, -78.1114],
+    'ZAMORA': [-4.0692, -78.9567],
+    'LAGO AGRIO': [0.0847, -76.8828],
+    'NUEVA LOJA': [0.0847, -76.8828],
+    'COCA': [-0.4667, -76.9833],
+    'GUARANDA': [-1.5905, -79.0025],
+    'BABAHOYO': [-1.8022, -79.5344],
+    'SALINAS': [-2.2170, -80.9585],
+    'SANTA ELENA': [-2.2268, -80.8584],
+    'OTAVALO': [0.2295, -78.2625],
+    'SANGOLQUI': [-0.3306, -78.4398],
+    'DAULE': [-1.8622, -79.9790],
+    'CHONE': [-0.6981, -80.0936],
+    'MILAGRO': [-2.1286, -79.5914],
+    'PASAJE': [-3.3255, -79.8066],
+    'SANTA ROSA': [-3.4478, -79.9599],
+    'LA LIBERTAD': [-2.2310, -80.9117]
 };
 
 const getCoordsForCity = (city) => {
@@ -76,9 +98,18 @@ export default function HQDashboardPage() {
         try {
             console.log('[HQ] Sincronizando datos globales...');
             const [clientData, taskData, financialSum, teamData, profilesRes, branchesRes, automationsRes] = await Promise.all([
-                agencyService.getClients(),
-                agencyService.getTasks(),
-                agencyService.getFinancialSummary(),
+                agencyService.getClients().catch(err => {
+                    console.error('[HQ] Error fetching clients, returning empty:', err);
+                    return [];
+                }),
+                agencyService.getTasks().catch(err => {
+                    console.error('[HQ] Error fetching tasks, returning empty:', err);
+                    return [];
+                }),
+                agencyService.getFinancialSummary().catch(err => {
+                    console.error('[HQ] Error fetching financial summary, returning null:', err);
+                    return null;
+                }),
                 agencyService.getTeam().catch(err => {
                     console.error('[HQ] Error fetching team, returning empty:', err);
                     return [];
@@ -97,23 +128,35 @@ export default function HQDashboardPage() {
                 })
             ]);
             
-            if (Array.isArray(clientData)) setPortfolio(clientData);
-            if (Array.isArray(taskData)) setTasks(taskData);
-            if (Array.isArray(teamData)) setTeam(teamData);
+            if (Array.isArray(clientData)) {
+                setPortfolio(clientData);
+                try {
+                    localStorage.setItem('diic_clients', JSON.stringify(clientData));
+                } catch(e) {}
+            }
+            if (Array.isArray(taskData)) {
+                setTasks(taskData);
+            }
+            if (Array.isArray(teamData)) {
+                setTeam(teamData);
+                try {
+                    localStorage.setItem('diic_team', JSON.stringify(teamData));
+                } catch(e) {}
+            }
             
             // Auto-verify all milestones based on real database presence
             const rbacOk = !profilesRes.error;
             const syncOk = !branchesRes.error;
             const imprentaOk = !!(branchesRes.data && branchesRes.data.length > 0);
             const n8nOk = !!(automationsRes.count > 0);
-
+ 
             setMilestones({
                 fase1_rbac: rbacOk,
                 fase1_sync: syncOk,
                 fase2_imprenta: imprentaOk,
                 fase2_n8n: n8nOk
             });
-
+ 
             if (financialSum?.metrics) {
                 setMetrics({
                     income: financialSum.metrics.income || 0,
@@ -169,7 +212,7 @@ export default function HQDashboardPage() {
     }, [user, authLoading]);
 
     // Dynamic Phase Calculations based on Client Portfolio size & verified milestones
-    const currentClients = portfolio.filter(c => c.status === 'active').length;
+    const currentClients = portfolio.filter(c => (c.status || '').toLowerCase() === 'active').length;
     
     const f1Complete = currentClients >= 10 && milestones.fase1_rbac && milestones.fase1_sync;
     const f2Complete = f1Complete && currentClients >= 20 && milestones.fase2_imprenta && milestones.fase2_n8n;
@@ -428,50 +471,21 @@ export default function HQDashboardPage() {
 
                 {/* Territory Map Module */}
                 <div className="pt-10 border-t border-white/5">
-                    {activePhase >= 2 ? (
-                        <div className="space-y-6">
-                            <div className="flex justify-between items-center px-4">
-                                <div>
-                                    <h3 className="text-lg font-black uppercase tracking-widest text-white flex items-center gap-3">
-                                        <MapIcon className="w-5 h-5 text-indigo-500 animate-pulse" /> Módulo de Expansión (Mapa Operativo)
-                                    </h3>
-                                    <p className="text-xs text-gray-500 uppercase font-black tracking-wider mt-1">Monitoreo de logística y cobertura en tiempo real</p>
-                                </div>
-                                <div className="px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[9px] font-black uppercase text-emerald-500 tracking-wider">Activo • Fase {activePhase}</span>
-                                </div>
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center px-4">
+                            <div>
+                                <h3 className="text-lg font-black uppercase tracking-widest text-white flex items-center gap-3">
+                                    <MapIcon className="w-5 h-5 text-indigo-500 animate-pulse" /> Módulo de Expansión (Mapa Operativo)
+                                </h3>
+                                <p className="text-xs text-gray-500 uppercase font-black tracking-wider mt-1">Monitoreo de logística y cobertura en tiempo real</p>
                             </div>
-                            <AdminOperationalMap clients={mappedClients} team={mappedTeam} />
-                        </div>
-                    ) : (
-                        <div className="relative bg-[#050511] border border-white/5 rounded-[40px] overflow-hidden min-h-[500px] flex flex-col items-center justify-center p-12 text-center group">
-                            {/* Blurred Ecuador Map SVG Silhouette background for premium feeling */}
-                            <div className="absolute inset-0 opacity-10 blur-md grayscale transition-all duration-700 group-hover:opacity-15 group-hover:scale-105 pointer-events-none flex items-center justify-center">
-                                <svg viewBox="0 0 400 400" className="w-[380px] h-[380px]">
-                                    <path d="M120,40 C140,20 180,10 210,30 C240,50 280,40 310,60 C340,80 370,120 380,160 C390,200 370,260 350,300 C330,340 280,370 230,380 C180,390 120,370 80,330 C40,290 20,220 30,150 C40,80 80,60 120,40 Z" fill="rgba(99,102,241,0.2)" stroke="rgba(99,102,241,0.4)" strokeWidth="2" />
-                                </svg>
-                            </div>
-                            
-                            <div className="relative z-10 max-w-md space-y-6">
-                                <div className="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto shadow-2xl relative overflow-hidden group-hover:border-indigo-500/30 transition-all duration-500">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <Lock className="w-6 h-6 text-gray-500 group-hover:text-indigo-400 transition-colors" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-lg font-black uppercase tracking-[0.2em] text-white">Módulo de Expansión Bloqueado</h3>
-                                    <p className="text-xs text-gray-500 uppercase tracking-widest leading-relaxed">
-                                        El Mapa Operativo y el monitoreo de nodos territoriales se activan automáticamente al ingresar a la <span className="text-indigo-400 font-bold">Fase 2 (10 Clientes)</span>.
-                                    </p>
-                                </div>
-                                <div className="pt-4">
-                                    <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl text-[9px] font-black uppercase tracking-widest">
-                                        Faltan {10 - currentClients} clientes para desbloquear
-                                    </div>
-                                </div>
+                            <div className="px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-[9px] font-black uppercase text-emerald-500 tracking-wider">Activo • Fase {activePhase}</span>
                             </div>
                         </div>
-                    )}
+                        <AdminOperationalMap clients={mappedClients} team={mappedTeam} />
+                    </div>
                 </div>
 
             </main>

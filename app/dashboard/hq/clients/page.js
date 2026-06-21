@@ -209,7 +209,8 @@ export default function HQClientsPage() {
         cutoff_day: 5,
         app_fee: 100,
         has_crm: true,
-        has_agents: true
+        has_agents: true,
+        address: ''
     });
 
     const fetchClients = async (isBackground = false) => {
@@ -894,13 +895,26 @@ export default function HQClientsPage() {
                                                 options={INDUSTRY_OPTIONS} 
                                                 icon={Briefcase}
                                             />
-                                            <PremiumDropdown 
+                                             <PremiumDropdown 
                                                 label="Ciudad Base" 
                                                 value={newClient.city} 
                                                 onChange={(val) => setNewClient({ ...newClient, city: val })} 
                                                 options={ECUADOR_CITIES} 
                                                 searchable={true}
                                                 icon={Globe}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                                Dirección Domicilio / Oficina
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                value={newClient.address || ''} 
+                                                onChange={(e) => setNewClient({ ...newClient, address: e.target.value })} 
+                                                className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-indigo-500/50 transition-all placeholder:text-gray-700" 
+                                                placeholder="Ej: Av. Principal y Calle Secundaria"
                                             />
                                         </div>
 
@@ -1040,7 +1054,7 @@ export default function HQClientsPage() {
                                             onClick={() => {
                                                 setIsModalOpen(false);
                                                 setShowSuccessView(false);
-                                                setNewClient({ name: '', plan: 'Presencia', price: 250, target: 0, cm: '', email: '', password_initial: '', whatsapp_number: '', google_drive_folder_id: '', notes: '', birth_date: '', onboarding_data: {} });
+                                                setNewClient({ name: '', plan: 'Presencia', price: 250, target: 0, cm: '', email: '', password_initial: '', whatsapp_number: '', google_drive_folder_id: '', notes: '', birth_date: '', onboarding_data: {}, address: '' });
                                             }} 
                                             className="w-full py-4 text-gray-500 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all"
                                         >
@@ -1345,6 +1359,13 @@ export default function HQClientsPage() {
                                                                 options={ECUADOR_CITIES} 
                                                                 searchable={true}
                                                                 icon={Globe}
+                                                            />
+                                                            <GlassInput 
+                                                                label="Dirección Domicilio / Oficina" 
+                                                                value={newClient.address || ''} 
+                                                                onChange={(e) => setNewClient({ ...newClient, address: e.target.value })} 
+                                                                icon={MapPin}
+                                                                placeholder="Ej: Av. 12 de Octubre y Patria"
                                                             />
                                                             {(!editingClient?.industry || editingClient?.industry === '' || editingClient?.industry === 'Otro' || editingClient?.industry === 'General') ? (
                                                                 <PremiumDropdown 

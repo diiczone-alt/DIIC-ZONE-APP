@@ -48,6 +48,32 @@ const getPlanPrice = (plan, industry) => {
     }
 };
 
+const geocodeAddress = async (address, city) => {
+    const addressStr = (address || '').trim();
+    const cityStr = (city || '').trim();
+    if (!addressStr) return null;
+
+    if (addressStr.toUpperCase() === cityStr.toUpperCase()) {
+        return null;
+    }
+
+    try {
+        const query = `${addressStr}, ${cityStr || ''}, Ecuador`.trim();
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`, {
+            headers: {
+                'User-Agent': 'DiicZoneHQApp/1.0 (contact: info@diiczone.com)'
+            }
+        });
+        const data = await response.json();
+        if (data && data.length > 0) {
+            return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        }
+    } catch (e) {
+        console.error("Geocoding failed for address:", address, e);
+    }
+    return null;
+};
+
 export const agencyService = {
     // --- CLIENTS (CONNECTED TO REAL DB) ---
     getClients: async () => {
@@ -224,7 +250,7 @@ export const agencyService = {
                 'onboarding_data', 'notes', 'created_at',
                 'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty',
                 'birth_date', 'country', 'address', 'website', 'goals', 'brochure_url',
-                'start_date', 'cutoff_day', 'app_fee', 'has_crm', 'has_agents'
+                'start_date', 'cutoff_day', 'app_fee', 'has_crm', 'has_agents', 'coords'
             ];
             
             const sanitizedData = {};
@@ -238,6 +264,13 @@ export const agencyService = {
                 status: clientData.status || 'active',
                 created_at: new Date().toISOString()
             };
+
+            if (newClient.address && !newClient.coords) {
+                try {
+                    const coords = await geocodeAddress(newClient.address, newClient.city);
+                    if (coords) newClient.coords = coords;
+                } catch(e) {}
+            }
 
             if (!newClient.price) {
                 let planVal = newClient.plan || 'Presencia';
@@ -295,12 +328,25 @@ export const agencyService = {
                 'onboarding_data', 'notes',
                 'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty',
                 'birth_date', 'country', 'address', 'website', 'goals', 'brochure_url',
-                'start_date', 'cutoff_day', 'app_fee', 'has_crm', 'has_agents'
+                'start_date', 'cutoff_day', 'app_fee', 'has_crm', 'has_agents', 'coords'
             ];
             const sanitizedUpdates = {};
             validFields.forEach(field => {
                 if (updates[field] !== undefined) sanitizedUpdates[field] = updates[field];
             });
+
+            if (updates.address !== undefined || updates.city !== undefined) {
+                const targetAddress = updates.address !== undefined ? updates.address : '';
+                const targetCity = updates.city !== undefined ? updates.city : '';
+                try {
+                    const coords = await geocodeAddress(targetAddress, targetCity);
+                    if (coords) {
+                        sanitizedUpdates.coords = coords;
+                    } else {
+                        sanitizedUpdates.coords = null;
+                    }
+                } catch(e) {}
+            }
 
             toast.info("Iniciando actualización en BD...", { id: 'debug-db' });
             
@@ -398,6 +444,18 @@ export const agencyService = {
                 resolvedPrice = String(getPlanPrice(planVal, updates.industry || existingClient.industry));
             }
 
+            let resolvedCoords = updates.coords || existingClient.coords;
+            if (updates.address !== undefined || updates.city !== undefined) {
+                const targetAddress = updates.address !== undefined ? updates.address : existingClient.address;
+                const targetCity = updates.city !== undefined ? updates.city : existingClient.city;
+                if ((targetAddress && targetAddress !== existingClient.address) || (targetCity && targetCity !== existingClient.city) || !resolvedCoords) {
+                    try {
+                        const coords = await geocodeAddress(targetAddress, targetCity);
+                        if (coords) resolvedCoords = coords;
+                    } catch(e) {}
+                }
+            }
+
             // 1. Update Profile (User-facing side)
             const profileUpdates = {
                 full_name: resolvedName,
@@ -417,7 +475,8 @@ export const agencyService = {
                 app_fee: resolvedAppFee,
                 has_crm: resolvedHasCrm,
                 has_agents: resolvedHasAgents,
-                price: resolvedPrice
+                price: resolvedPrice,
+                coords: resolvedCoords
             };
             
             // Clean undefined fields
@@ -451,7 +510,8 @@ export const agencyService = {
                 app_fee: resolvedAppFee,
                 has_crm: resolvedHasCrm,
                 has_agents: resolvedHasAgents,
-                price: resolvedPrice
+                price: resolvedPrice,
+                coords: resolvedCoords
             };
 
             // Clean undefined fields
@@ -557,6 +617,20 @@ export const agencyService = {
     deleteClient: async (id) => {
         console.log("Deleting Client Permanently:", id);
         try {
+            // 1. Nullify reference in profiles and change role to USER to avoid auto-sync recreation
+            await supabase
+                .from('profiles')
+                .update({ client_id: null, role: 'USER' })
+                .eq('client_id', id);
+
+            // 2. Clean up other related records
+            await supabase.from('content').delete().eq('client_id', id);
+            await supabase.from('strategies').delete().eq('client_id', id);
+            await supabase.from('crm_leads').delete().eq('client_id', id);
+            await supabase.from('social_connections').delete().eq('client_id', id);
+            await supabase.from('brand_connections').delete().eq('client_id', id);
+
+            // 3. Delete from clients table
             const { error } = await supabase
                 .from('clients')
                 .delete()
@@ -564,6 +638,20 @@ export const agencyService = {
 
             if (error) throw error;
             console.log("Client deleted from Supabase", id);
+
+            // 4. Update local cache
+            if (typeof window !== 'undefined') {
+                try {
+                    const stored = localStorage.getItem('diic_clients');
+                    if (stored) {
+                        const curr = JSON.parse(stored);
+                        const filtered = curr.filter(c => c.id !== id);
+                        localStorage.setItem('diic_clients', JSON.stringify(filtered));
+                    }
+                } catch (e) {
+                    console.warn("⚠️ LocalStorage cache update skipped on deletion");
+                }
+            }
         } catch (error) {
             console.error("Error deleting client in Supabase:", error);
             throw error;
@@ -905,21 +993,30 @@ export const agencyService = {
             const validFields = [
                 'id', 'name', 'role', 'status', 'city', 'whatsapp', 
                 'salary', 'email', 'cv_url', 'cv_summary', 'skills',
-                'birth_date'
+                'birth_date', 'address', 'coords'
             ];
             const sanitizedData = {};
             validFields.forEach(field => {
                 if (memberData[field] !== undefined) sanitizedData[field] = memberData[field];
             });
 
+            const newMember = {
+                ...sanitizedData,
+                id: memberData.id || `M-${Math.floor(Math.random() * 9000) + 1000}`,
+                status: memberData.status || 'activo',
+                created_at: new Date().toISOString()
+            };
+
+            if (newMember.address && !newMember.coords) {
+                try {
+                    const coords = await geocodeAddress(newMember.address, newMember.city);
+                    if (coords) newMember.coords = coords;
+                } catch(e) {}
+            }
+
             const { data, error } = await supabase
                 .from('team')
-                .insert([{
-                    ...sanitizedData,
-                    id: memberData.id || `M-${Math.floor(Math.random() * 9000) + 1000}`,
-                    status: memberData.status || 'activo',
-                    created_at: new Date().toISOString()
-                }])
+                .insert([newMember])
                 .select();
 
             if (error) throw error;
@@ -947,7 +1044,7 @@ export const agencyService = {
                 'name', 'role', 'status', 'city', 'coords', 
                 'availability', 'activetasks', 'salary', 
                 'squad_lead_id', 'cv_url', 'cv_summary', 'skills', 
-                'whatsapp', 'email', 'birth_date'
+                'whatsapp', 'email', 'birth_date', 'address'
             ];
             
             const sanitizedUpdates = {};
@@ -960,6 +1057,19 @@ export const agencyService = {
                     sanitizedUpdates[field] = value;
                 }
             });
+
+            if (updates.address !== undefined || updates.city !== undefined) {
+                const targetAddress = updates.address !== undefined ? updates.address : '';
+                const targetCity = updates.city !== undefined ? updates.city : '';
+                try {
+                    const coords = await geocodeAddress(targetAddress, targetCity);
+                    if (coords) {
+                        sanitizedUpdates.coords = coords;
+                    } else {
+                        sanitizedUpdates.coords = null;
+                    }
+                } catch(e) {}
+            }
 
             console.log(`[${timestamp}] Sanitized Updates:`, Object.keys(sanitizedUpdates));
 

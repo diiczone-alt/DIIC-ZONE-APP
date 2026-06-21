@@ -119,7 +119,9 @@ export default function ProfilePage() {
         skills: [],
         birth_date: '',
         availability: 'full-time',
-        specialty: ''
+        specialty: '',
+        address: '',
+        coords: null
     });
 
     useEffect(() => {
@@ -272,7 +274,9 @@ export default function ProfilePage() {
                     skills: activeProfile.skills || team?.skills || user.skills || [],
                     birth_date: activeProfile.birth_date || team?.birth_date || user.birth_date || user.user_metadata?.birth_date || '',
                     availability: team?.availability || user.availability || 'full-time',
-                    specialty: activeProfile.specialty || user.specialty || ''
+                    specialty: activeProfile.specialty || user.specialty || '',
+                    address: activeProfile.address || team?.address || '',
+                    coords: activeProfile.coords || team?.coords || null
                 });
 
             } catch (err) {
@@ -305,6 +309,24 @@ export default function ProfilePage() {
             setSaving(true);
             
             const cleanBirthDate = cleanDate(formData.birth_date);
+
+            let resolvedCoords = formData.coords || null;
+            if (formData.address && formData.address !== profileData?.address) {
+                try {
+                    const query = `${formData.address}, ${formData.location || ''}, Ecuador`.trim();
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`, {
+                        headers: {
+                            'User-Agent': 'DiicZoneApp/1.0 (contact: info@diiczone.com)'
+                        }
+                    });
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        resolvedCoords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+                    }
+                } catch(e) {
+                    console.error("Geocoding failed for profile save:", e);
+                }
+            }
             
             // 1. Update Profiles
             try {
@@ -319,7 +341,9 @@ export default function ProfilePage() {
                             cv_summary: formData.cv_summary,
                             skills: formData.skills,
                             birth_date: cleanBirthDate,
-                            specialty: formData.specialty
+                            specialty: formData.specialty,
+                            address: formData.address,
+                            coords: resolvedCoords
                         })
                         .eq('id', user.id),
                     3000
@@ -343,6 +367,8 @@ export default function ProfilePage() {
                         skills: formData.skills,
                         birth_date: formData.birth_date,
                         specialty: formData.specialty,
+                        address: formData.address,
+                        coords: resolvedCoords,
                         xp: profileData?.xp || 0,
                         level: profileData?.level || 1,
                         rank: profileData?.rank || 'Talento en Ascenso'
@@ -397,7 +423,9 @@ export default function ProfilePage() {
                         cv_summary: formData.cv_summary,
                         skills: formData.skills,
                         birth_date: cleanBirthDate,
-                        availability: formData.availability
+                        availability: formData.availability,
+                        address: formData.address,
+                        coords: resolvedCoords
                     };
 
                     if (existingTeam?.id) {
@@ -664,6 +692,14 @@ export default function ProfilePage() {
                                     value={formData.location} 
                                     isEditing={isEditing}
                                     onChange={(v) => setFormData({...formData, location: v})}
+                                />
+                                <InfoItem 
+                                    icon={<MapPin className="w-4 h-4" />} 
+                                    label="Dirección Domicilio" 
+                                    value={formData.address || ''} 
+                                    isEditing={isEditing}
+                                    onChange={(v) => setFormData({...formData, address: v})}
+                                    placeholder="Ej: Calle Principal 123"
                                 />
                                 <InfoItem 
                                     icon={<Mail className="w-4 h-4" />} 

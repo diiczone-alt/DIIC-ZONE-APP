@@ -100,7 +100,8 @@ export default function HQTeamPage() {
         whatsapp: '',
         city: 'Quito',
         salary: 0,
-        birth_date: ''
+        birth_date: '',
+        address: ''
     });
 
     const isHQLive = useRealtimeSync(['team', 'clients', 'profiles'], () => fetchData(true));
@@ -1052,6 +1053,7 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                                         <CardInput label="Salario Base (USD)" value={formData.salary || ''} onChange={(v) => setFormData({...formData, salary: v})} icon={DollarSign} type="number" />
                                         <CardInput label="WhatsApp" value={formData.whatsapp || ''} onChange={(v) => setFormData({...formData, whatsapp: v})} icon={MessageSquare} />
                                         <CardInput label="Ubicación" value={formData.city || ''} onChange={(v) => setFormData({...formData, city: v})} icon={MapPin} isSelect options={ECUADOR_CITIES.map(c => c.value)} />
+                                        <CardInput label="Dirección Domicilio" value={formData.address || ''} onChange={(v) => setFormData({...formData, address: v})} icon={MapPin} />
                                         <CardInput label="Fecha de Nacimiento" value={formData.birth_date || ''} onChange={(v) => setFormData({...formData, birth_date: v})} icon={Cake} type="date" />
                                         {!isEstratega && <CardInput label="Líder de Mando" value={formData.squad_lead_id || ''} onChange={(v) => setFormData({...formData, squad_lead_id: v})} icon={Shield} isSelect options={eligibleLeaders.map(l => ({ value: l.id, label: l.name }))} />}
                                     </div>
@@ -1293,6 +1295,12 @@ function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitti
                             icon={Globe}
                         />
                     </div>
+                    <input 
+                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-6 text-white outline-none text-sm" 
+                        placeholder="Dirección Domicilio (Calle, Número)" 
+                        value={newMember.address || ''} 
+                        onChange={(e) => setNewMember({ ...newMember, address: e.target.value })} 
+                    />
                     <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest text-[11px] hover:bg-indigo-500 transition-all opacity-100 disabled:opacity-50">
                         {isSubmitting ? 'Registrando...' : 'Confirmar Ingreso'}
                     </button>
