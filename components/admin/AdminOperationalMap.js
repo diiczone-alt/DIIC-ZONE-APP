@@ -11,6 +11,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
     const router = useRouter();
     const [filter, setFilter] = useState('both');
     const [selectedPoint, setSelectedPoint] = useState(null);
+    const containerRef = useRef(null);
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const markersGroupRef = useRef(null);
@@ -47,7 +48,6 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
 
             const normalize = (n) => (n || '').toLowerCase().trim();
 
-            // Assigned names for CM, Editor, Filmmaker
             const assignments = [
                 { name: client.cm, roleType: 'CM' },
                 { name: client.editor, roleType: 'Editor' },
@@ -87,7 +87,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
             center: [-1.8312, -78.1834], // Center of Ecuador
             zoom: 7,
             zoomControl: false,
-            scrollWheelZoom: false,
+            scrollWheelZoom: true, // Enabled scroll zoom by user request
             attributionControl: true
         });
 
@@ -238,7 +238,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
     };
 
     return (
-        <div className="relative bg-[#050511] border border-white/5 rounded-[40px] overflow-hidden min-h-[600px] w-full group/map shadow-2xl">
+        <div ref={containerRef} className="relative bg-[#050511] border border-white/5 rounded-[40px] overflow-hidden min-h-[600px] w-full group/map shadow-2xl">
             {/* Styles Injection */}
             <style dangerouslySetInnerHTML={{__html: `
                 .custom-leaflet-marker {
@@ -352,55 +352,77 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
                 </div>
             </div>
 
-            {/* Detail Overlay */}
+            {/* Detail Overlay - Transparent glassmorphism, draggable and optimized vertical space */}
             <AnimatePresence>
                 {selectedPoint && (
                     <motion.div 
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 50 }}
-                        className="absolute right-10 top-10 bottom-10 w-80 bg-[#0A0A1F]/95 backdrop-blur-2xl border border-white/10 rounded-[40px] p-8 z-30 flex flex-col shadow-2xl"
+                        drag
+                        dragConstraints={containerRef}
+                        dragElastic={0.1}
+                        dragMomentum={false}
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="absolute right-10 top-10 w-80 bg-[#0A0A1F]/60 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 z-30 flex flex-col shadow-2xl cursor-default select-none overflow-hidden"
+                        style={{ touchAction: 'none' }}
                     >
-                        <button onClick={() => setSelectedPoint(null)} className="self-end p-2 hover:bg-white/5 rounded-full">
-                            <X className="w-5 h-5 text-gray-500" />
-                        </button>
-
-                        <div className="mt-6 flex-1">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${selectedPoint.pointType === 'client' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'}`}>
-                                {selectedPoint.pointType === 'client' ? <Briefcase className="w-6 h-6" /> : <Users className="w-6 h-6" />}
+                        {/* Draggable handle bar */}
+                        <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-4 cursor-grab active:cursor-grabbing flex-shrink-0" />
+                        
+                        <div className="flex justify-between items-start">
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${selectedPoint.pointType === 'client' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                                {selectedPoint.pointType === 'client' ? <Briefcase className="w-5 h-5" /> : <Users className="w-5 h-5" />}
                             </div>
-                            <h3 className="text-2xl font-black text-white italic tracking-tighter mb-1">{selectedPoint.name}</h3>
-                            <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                                <MapPin className="w-3 h-3 text-indigo-500" /> {selectedPoint.city}
+                            <button onClick={() => setSelectedPoint(null)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+                                <X className="w-4 h-4 text-gray-400 hover:text-white" />
+                            </button>
+                        </div>
+
+                        <div className="mt-4">
+                            <h3 className="text-xl font-black text-white italic tracking-tighter mb-0.5">{selectedPoint.name}</h3>
+                            <p className="text-gray-400 text-[9px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-1.5">
+                                <MapPin className="w-3 h-3 text-indigo-400" /> {selectedPoint.city}
                             </p>
 
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center py-3 border-b border-white/5">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Sector</span>
-                                    <span className="text-sm font-bold text-white">{selectedPoint.type || selectedPoint.role}</span>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Sector / Rol</span>
+                                    <span className="text-xs font-bold text-white">{selectedPoint.type || selectedPoint.role}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-3 border-b border-white/5">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Estado</span>
-                                    <span className={`text-sm font-bold ${selectedPoint.pointType === 'client' ? 'text-emerald-500' : 'text-blue-400'}`}>
-                                        {selectedPoint.status || selectedPoint.availability}
+                                <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Estado</span>
+                                    <span className={`text-xs font-bold ${selectedPoint.pointType === 'client' ? 'text-emerald-400' : 'text-blue-400'}`}>
+                                        {(selectedPoint.status || selectedPoint.availability || '').toUpperCase()}
                                     </span>
                                 </div>
                                 {selectedPoint.pointType === 'team' && (
-                                    <div className="flex justify-between items-center py-3 border-b border-white/5">
-                                        <span className="text-[10px] font-bold text-gray-500 uppercase">Carga Local</span>
-                                        <span className={`text-sm font-black ${cityWorkload[selectedPoint.city] > 8 ? 'text-red-500' : 'text-blue-400'}`}>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Carga Local</span>
+                                        <span className={`text-xs font-black ${cityWorkload[selectedPoint.city] > 8 ? 'text-red-500' : 'text-blue-400'}`}>
                                             {cityWorkload[selectedPoint.city]} Tasks
                                         </span>
                                     </div>
+                                )}
+                                {selectedPoint.pointType === 'client' && (
+                                    <>
+                                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Plan Contratado</span>
+                                            <span className="text-xs font-bold text-indigo-450">{selectedPoint.plan || 'General'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Encargado CM</span>
+                                            <span className="text-xs font-bold text-white">{selectedPoint.cm || 'Sin asignar'}</span>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         </div>
 
                         <button 
                             onClick={handleViewProfile}
-                            className="mt-auto w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-750 transition-colors shadow-lg"
+                            className="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase text-[9px] tracking-widest flex items-center justify-center gap-2 transition-colors shadow-lg"
                         >
-                            Ver Perfil Estratégico <ArrowUpRight className="w-4 h-4" />
+                            Ver Perfil Estratégico <ArrowUpRight className="w-3.5 h-3.5" />
                         </button>
                     </motion.div>
                 )}
