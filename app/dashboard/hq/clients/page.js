@@ -289,6 +289,14 @@ export default function HQClientsPage() {
                 schema: 'public', 
                 table: 'team' 
             }, () => fetchClients(true))
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'profiles' 
+            }, () => {
+                console.log("🔄 [Clients] Realtime Profile Update Detected");
+                fetchClients(true);
+            })
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') setIsHQLive(true);
                 if (status === 'CLOSED' || status === 'CHANNEL_ERROR') setIsHQLive(false);

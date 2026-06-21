@@ -127,6 +127,7 @@ export default function HQDashboardPage() {
             .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => loadGlobalData(true))
             .on('postgres_changes', { event: '*', schema: 'public', table: 'team' }, () => loadGlobalData(true))
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => loadGlobalData(true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => loadGlobalData(true))
             .subscribe((status) => {
                 setIsHQLive(status === 'SUBSCRIBED');
             });

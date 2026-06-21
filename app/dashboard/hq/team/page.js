@@ -103,7 +103,7 @@ export default function HQTeamPage() {
         birth_date: ''
     });
 
-    const isHQLive = useRealtimeSync(['team', 'clients'], () => fetchData(true));
+    const isHQLive = useRealtimeSync(['team', 'clients', 'profiles'], () => fetchData(true));
 
     const openAudit = useCallback((member) => {
         setSelectedMember(member);
