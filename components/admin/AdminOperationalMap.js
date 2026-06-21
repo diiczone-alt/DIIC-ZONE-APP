@@ -74,17 +74,33 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         return counts;
     }, [team]);
 
-    // Helper to get coordinates of a node (prioritizes geocoded street address, falls back to city center)
+    // Helper to get coordinates of a node (prioritizes manual coords, then geocoded street address, no fallbacks)
     const getCoords = (p) => {
-        if (geocodedCoords[p.id]) {
-            return geocodedCoords[p.id];
-        }
         if (p.coords && Array.isArray(p.coords) && p.coords.length === 2) {
             return p.coords;
         }
-        const cityKey = (p.city || '').toUpperCase().trim();
-        return CITY_COORDS[cityKey] || [-0.1820, -78.4680]; // Default fallback center (Quito)
+        if (geocodedCoords[p.id]) {
+            return geocodedCoords[p.id];
+        }
+        return null; // Return null if no real coordinates exist (do not simulate/fake)
     };
+
+    const missingCoords = useMemo(() => {
+        const list = [];
+        clients.forEach(c => {
+            const hasRealCoords = (c.coords && Array.isArray(c.coords) && c.coords.length === 2) || geocodedCoords[c.id];
+            if (!hasRealCoords) {
+                list.push({ id: c.id, name: c.name, type: 'socio' });
+            }
+        });
+        team.forEach(t => {
+            const hasRealCoords = (t.coords && Array.isArray(t.coords) && t.coords.length === 2) || geocodedCoords[t.id];
+            if (!hasRealCoords) {
+                list.push({ id: t.id, name: t.name, type: 'nodo' });
+            }
+        });
+        return list;
+    }, [clients, team, geocodedCoords]);
 
     const filteredPoints = useMemo(() => {
         let points = [];
@@ -491,14 +507,33 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
                 </button>
             </div>
 
-            {/* Satellite Stats (Saturation) */}
-            <div className="absolute top-10 right-10 z-20 space-y-4">
+            {/* Satellite Stats (Saturation) & Missing Locations Notification */}
+            <div className="absolute top-10 right-10 z-20 space-y-4 w-72">
                 <div className="bg-[#0A0A1F]/80 backdrop-blur-md border border-white/5 p-4 rounded-2xl text-right shadow-lg">
                     <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Carga Global</div>
                     <div className="text-2xl font-black text-white italic">
                         {Object.values(cityWorkload).reduce((a, b) => a + b, 0)} <span className="text-[10px] opacity-40">TASKS</span>
                     </div>
                 </div>
+
+                {missingCoords.length > 0 && (
+                    <div className="bg-[#0A0A1F]/90 backdrop-blur-md border border-red-500/10 p-4 rounded-[2rem] shadow-lg space-y-2 max-h-[300px] overflow-y-auto">
+                        <div className="flex items-center gap-2 text-red-400">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                            <div className="text-[9px] font-black uppercase tracking-wider">Sin ubicación ({missingCoords.length})</div>
+                        </div>
+                        <div className="space-y-1.5 text-left">
+                            {missingCoords.map(item => (
+                                <div key={item.id} className="text-[9px] font-bold text-gray-400 flex justify-between border-b border-white/5 pb-1">
+                                    <span className="truncate max-w-[150px]">{item.name}</span>
+                                    <span className={`text-[7px] px-1.5 py-0.5 rounded font-black uppercase ${item.type === 'socio' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                                        {item.type}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Detail Overlay - Transparent glassmorphism, draggable and optimized vertical space */}

@@ -1370,6 +1370,34 @@ function DashboardContent() {
                  Bienvenido a tu <span className="text-indigo-400">Ecosistema {clientData?.name || 'Digital'}</span>. Tu marca se encuentra en un estado de <span className="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.3)]">crecimiento constante</span>. 
                  <span className="text-gray-600 block text-xs mt-1 uppercase tracking-widest font-black">Revisa tus últimos activos y reportes debajo.</span>
               </p>
+
+              {/* Warning Notification for missing Location/Coordinates */}
+              {(!clientData?.coords || !clientData?.address) && (
+                  <motion.div 
+                     initial={{ opacity: 0, y: -10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 rounded-[2rem] bg-amber-500/[0.03] border border-amber-500/20 backdrop-blur-xl relative overflow-hidden w-full max-w-3xl"
+                  >
+                     <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-[50px] pointer-events-none" />
+                     <div className="flex items-center gap-4 relative z-10">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                           <MapPin className="w-6 h-6 animate-bounce" />
+                        </div>
+                        <div className="space-y-1">
+                           <h4 className="text-xs font-black text-white uppercase tracking-wider italic">Falta Registrar Ubicación</h4>
+                           <p className="text-[11px] text-gray-400 leading-relaxed font-semibold">
+                              Aún no has registrado tu dirección exacta. Por favor, completa tu información para ubicarte en el mapa de operaciones de DIIC ZONE.
+                           </p>
+                        </div>
+                     </div>
+                     <button 
+                        onClick={() => setActiveDrawer('info')}
+                        className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-black font-black uppercase text-[9px] tracking-widest rounded-xl transition-all shadow-lg shrink-0"
+                     >
+                        Completar Ubicación
+                     </button>
+                  </motion.div>
+              )}
            </div>
         </section>
       )}
