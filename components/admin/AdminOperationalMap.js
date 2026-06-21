@@ -14,6 +14,24 @@ const PRECODED_ADDRESSES = {
     'CIUDAD: SANTO DOMINGO': [-0.2520, -79.1730], // Usuario Google's address
 };
 
+// Fallback City Centers
+const CITY_COORDS = {
+    'QUITO': [-0.1820, -78.4680],
+    'GUAYAQUIL': [-2.1710, -79.9224],
+    'SANTO DOMINGO': [-0.2520, -79.1730],
+    'SANTO DOMINGO ': [-0.2520, -79.1730],
+    'MANTA': [-0.9680, -80.7090],
+    'CUENCA': [-2.9001, -79.0059],
+    'LOJA': [-3.9931, -79.2042],
+    'AMBATO': [-1.2491, -78.6168],
+    'PORTOVIEJO': [-1.0546, -80.4544],
+    'MACHALA': [-3.2581, -79.9553],
+    'IBARRA': [0.3517, -78.1222],
+    'RIOBAMBA': [-1.6731, -78.6483],
+    'ESMERALDAS': [0.9682, -79.6517],
+    'QUEVEDO': [-1.0286, -79.4635],
+};
+
 export default function AdminOperationalMap({ clients = [], team = [] }) {
     const router = useRouter();
     const [filter, setFilter] = useState('both');
@@ -40,7 +58,11 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         if (geocodedCoords[p.id]) {
             return geocodedCoords[p.id];
         }
-        return p.coords; // Falls back to exact city center coordinates passed from parent
+        if (p.coords && Array.isArray(p.coords) && p.coords.length === 2) {
+            return p.coords;
+        }
+        const cityKey = (p.city || '').toUpperCase().trim();
+        return CITY_COORDS[cityKey] || [-0.1820, -78.4680]; // Default fallback center (Quito)
     };
 
     const filteredPoints = useMemo(() => {
@@ -448,7 +470,7 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
                                 {selectedPoint.pointType === 'client' ? <Briefcase className="w-5 h-5" /> : <Users className="w-5 h-5" />}
                             </div>
                             <button onClick={() => setSelectedPoint(null)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
-                                <X className="w-4 h-4 text-gray-450 hover:text-white" />
+                                <X className="w-4 h-4 text-gray-400 hover:text-white" />
                             </button>
                         </div>
 

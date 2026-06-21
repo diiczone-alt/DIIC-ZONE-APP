@@ -20,6 +20,19 @@ import PremiumDropdown from '@/components/shared/PremiumDropdown';
 import { ECUADOR_CITIES } from '@/lib/constants';
 import SquadCanvasBoard from '@/components/team/SquadCanvasBoard';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
+import dynamic from 'next/dynamic';
+
+const AdminOperationalMap = dynamic(() => import('@/components/admin/AdminOperationalMap'), {
+    ssr: false,
+    loading: () => (
+        <div className="bg-[#050511] border border-white/5 rounded-[40px] min-h-[600px] flex items-center justify-center text-center p-10">
+            <div className="space-y-4">
+                <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto" />
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Cargando Mapa Operativo...</div>
+            </div>
+        </div>
+    )
+});
 
 const deduplicateTeam = (teamArray) => {
     if (!Array.isArray(teamArray)) return [];
@@ -406,6 +419,7 @@ export default function HQTeamPage() {
                     <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1 h-fit">
                         <button onClick={() => setViewMode('squads')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'squads' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Escuadrones</button>
                         <button onClick={() => setViewMode('departments')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'departments' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Departamentos</button>
+                        <button onClick={() => setViewMode('map')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'map' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Mapa</button>
                     </div>
                     <button 
                         onClick={() => setIsAddModalOpen(true)}
@@ -434,6 +448,18 @@ export default function HQTeamPage() {
                     <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-32 pb-40">
                         {viewMode === 'squads' ? (
                             <SquadCanvasBoard team={team} allClients={clients} onAudit={openAudit} refreshTeam={() => fetchData(true)} />
+                        ) : viewMode === 'map' ? (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center px-4">
+                                    <div>
+                                        <h3 className="text-lg font-black uppercase tracking-widest text-white flex items-center gap-3">
+                                            <Globe className="w-5 h-5 text-emerald-500 animate-pulse" /> Mapa Operativo de Talentos
+                                        </h3>
+                                        <p className="text-xs text-gray-500 uppercase font-black tracking-wider mt-1">Monitoreo de geolocalización y flujos de trabajo en tiempo real</p>
+                                    </div>
+                                </div>
+                                <AdminOperationalMap clients={clients} team={team} />
+                            </div>
                         ) : (
                             getDepartments().map((dept) => dept.members.length > 0 && (
                                 <div key={dept.id} className="space-y-10">
