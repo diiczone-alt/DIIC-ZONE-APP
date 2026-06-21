@@ -122,8 +122,8 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
             } else {
                 groupPoints.forEach((p, idx) => {
                     const angle = (idx * 2 * Math.PI) / groupPoints.length;
-                    const offsetLat = rawLat + 0.003 * Math.sin(angle);
-                    const offsetLng = rawLng + 0.003 * Math.cos(angle);
+                    const offsetLat = rawLat + 0.018 * Math.sin(angle);
+                    const offsetLng = rawLng + 0.018 * Math.cos(angle);
                     list.push({
                         ...p,
                         mapCoords: [offsetLat, offsetLng]
