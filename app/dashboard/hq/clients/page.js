@@ -1806,7 +1806,7 @@ export default function HQClientsPage() {
             <AnimatePresence>
                 {isDeleteModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDeleteModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDeleteModalOpen(false)} className="absolute inset-0 bg-transparent" />
                         <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative z-10 bg-[#0A0A1F] border border-white/10 p-10 rounded-[40px] max-w-md w-full text-center">
                             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-6" />
                             <h3 className="text-xl font-black text-white mb-2">¿Eliminar Socio?</h3>
