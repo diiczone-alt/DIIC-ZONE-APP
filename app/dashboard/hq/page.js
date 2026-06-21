@@ -11,7 +11,19 @@ import {
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 import { supabase } from '@/lib/supabase';
-import AdminOperationalMap from '@/components/admin/AdminOperationalMap';
+import dynamic from 'next/dynamic';
+
+const AdminOperationalMap = dynamic(() => import('@/components/admin/AdminOperationalMap'), {
+    ssr: false,
+    loading: () => (
+        <div className="bg-[#050511] border border-white/5 rounded-[40px] min-h-[600px] flex items-center justify-center text-center p-10">
+            <div className="space-y-4">
+                <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto" />
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Cargando Mapa Operativo...</div>
+            </div>
+        </div>
+    )
+});
 
 // Geographic Mapping Helper for Ecuador Cities
 const CITY_COORDS = {

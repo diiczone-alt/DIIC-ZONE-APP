@@ -1,24 +1,17 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Users, Briefcase, X, Layers, ArrowUpRight } from 'lucide-react';
-
-// Detailed Stylized SVG Path for Ecuador
-const ECUADOR_SVG_PATH = "M120,40 C140,20 180,10 210,30 C240,50 280,40 310,60 C340,80 370,120 380,160 C390,200 370,260 350,300 C330,340 280,370 230,380 C180,390 120,370 80,330 C40,290 20,220 30,150 C40,80 80,60 120,40 Z";
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 export default function AdminOperationalMap({ clients = [], team = [] }) {
     const [filter, setFilter] = useState('both');
     const [selectedPoint, setSelectedPoint] = useState(null);
-
-    // Precise Coordinate Projection for Ecuador
-    const projectCoords = (lat, lng) => {
-        const xMin = -81.5, xMax = -75.0; 
-        const yMin = -5.5, yMax = 1.8;
-        const x = ((lng - xMin) / (xMax - xMin)) * 400;
-        const y = 400 - (((lat - yMin) / (yMax - yMin)) * 400);
-        return { x, y };
-    };
+    const mapRef = useRef(null);
+    const mapInstanceRef = useRef(null);
+    const markersGroupRef = useRef(null);
 
     const cityWorkload = useMemo(() => {
         const counts = {};
@@ -39,101 +32,198 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
         return points.filter(p => p.coords && Array.isArray(p.coords) && p.coords.length === 2);
     }, [filter, clients, team]);
 
+    // Initialize Leaflet Map
+    useEffect(() => {
+        if (!mapRef.current) return;
+
+        // Clean up previous instance if any
+        if (mapInstanceRef.current) {
+            mapInstanceRef.current.remove();
+        }
+
+        const map = L.map(mapRef.current, {
+            center: [-1.8312, -78.1834], // Center of Ecuador
+            zoom: 7,
+            zoomControl: false,
+            scrollWheelZoom: false,
+            attributionControl: true
+        });
+
+        mapInstanceRef.current = map;
+
+        // Load CartoDB Dark Matter tile layer (Perfect dark theme for dashboards)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        L.control.zoom({
+            position: 'bottomleft'
+        }).addTo(map);
+
+        // Layer group for markers
+        const markersGroup = L.layerGroup().addTo(map);
+        markersGroupRef.current = markersGroup;
+
+        // Set initial bounds to fit Ecuador's coordinates
+        map.fitBounds([
+            [-5.012, -81.25], // South-West
+            [1.45, -75.12]    // North-East
+        ]);
+
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+            }
+        };
+    }, []);
+
+    // Update Markers
+    useEffect(() => {
+        const map = mapInstanceRef.current;
+        const markersGroup = markersGroupRef.current;
+        if (!map || !markersGroup) return;
+
+        markersGroup.clearLayers();
+
+        filteredPoints.forEach((p, idx) => {
+            const coords = p.coords;
+            const isClient = p.pointType === 'client';
+            const cityName = p.city || 'Desconocido';
+            const cityLoad = cityWorkload[cityName] || 0;
+            const isSaturated = cityLoad > 8;
+
+            // Dot colors: green for clients, blue for normal nodes, red for saturated nodes
+            let dotColorClass = 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]';
+            let pingColorClass = 'bg-emerald-500/30';
+            if (!isClient) {
+                dotColorClass = isSaturated ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.8)]' : 'bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.8)]';
+                pingColorClass = isSaturated ? 'bg-red-500/30' : 'bg-blue-500/30';
+            }
+
+            const iconHtml = `
+                <div class="relative flex items-center justify-center w-8 h-8 -translate-x-1/2 -translate-y-1/2 group-marker">
+                    <div class="absolute w-6 h-6 rounded-full ${pingColorClass} animate-ping opacity-60"></div>
+                    <div class="w-3 h-3 rounded-full ${dotColorClass} border border-white shadow-xl transition-all duration-300 hover:scale-125"></div>
+                    <div class="marker-label absolute -top-8 px-2 py-0.5 bg-[#0A0A1F]/90 border border-white/10 rounded-md text-[8px] font-black text-white uppercase tracking-wider whitespace-nowrap opacity-0 scale-95 origin-bottom pointer-events-none transition-all duration-200 shadow-2xl">
+                        ${cityName.toUpperCase()}
+                    </div>
+                </div>
+            `;
+
+            const customIcon = L.divIcon({
+                html: iconHtml,
+                className: 'custom-leaflet-marker',
+                iconSize: [32, 32],
+                iconAnchor: [0, 0]
+            });
+
+            const marker = L.marker([coords[0], coords[1]], { icon: customIcon });
+
+            marker.on('click', () => {
+                setSelectedPoint(p);
+            });
+
+            marker.addTo(markersGroup);
+        });
+
+        // Fit bounds to show all active markers with some padding if we have markers
+        if (filteredPoints.length > 0) {
+            const bounds = L.latLngBounds(filteredPoints.map(p => p.coords));
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
+        }
+    }, [filteredPoints, cityWorkload]);
+
     return (
-        <div className="relative bg-[#050511] border border-white/5 rounded-[40px] overflow-hidden min-h-[600px] flex items-center justify-center p-10 group/map">
-            
-            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('/noise.svg')]" />
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
+        <div className="relative bg-[#050511] border border-white/5 rounded-[40px] overflow-hidden min-h-[600px] w-full group/map shadow-2xl">
+            {/* Styles Injection */}
+            <style dangerouslySetInnerHTML={{__html: `
+                .custom-leaflet-marker {
+                    background: transparent !important;
+                    border: none !important;
+                }
+                .custom-leaflet-marker:hover .marker-label {
+                    opacity: 1;
+                    transform: scale(1) translateY(-2px);
+                }
+                .leaflet-bar {
+                    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+                    border-radius: 16px !important;
+                    overflow: hidden;
+                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
+                    backdrop-filter: blur(8px);
+                    background: rgba(10, 10, 31, 0.8) !important;
+                }
+                .leaflet-bar a {
+                    background-color: transparent !important;
+                    color: #a5b4fc !important;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+                    font-weight: bold;
+                    transition: all 0.2s;
+                }
+                .leaflet-bar a:hover {
+                    background-color: #6366f1 !important;
+                    color: white !important;
+                }
+                .leaflet-control-attribution {
+                    background: rgba(5, 5, 17, 0.8) !important;
+                    color: #64748b !important;
+                    font-size: 8px !important;
+                    text-transform: uppercase;
+                    font-weight: 800;
+                    letter-spacing: 0.05em;
+                    border-top-left-radius: 12px;
+                    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+                    border-bottom: none !important;
+                    border-right: none !important;
+                }
+                .leaflet-control-attribution a {
+                    color: #818cf8 !important;
+                }
+            `}} />
+
+            {/* Map Container */}
+            <div className="absolute inset-0 w-full h-full z-0">
+                <div ref={mapRef} className="w-full h-full" />
+            </div>
+
+            {/* Noise and Gradient overlay for tech look (pointer-events-none is crucial!) */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('/noise.svg')] z-10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#050511]/30 via-transparent to-transparent pointer-events-none z-10" />
 
             {/* Filter Controls */}
             <div className="absolute top-10 left-10 z-20 flex flex-col gap-3">
                 <button 
                     onClick={() => setFilter('both')}
-                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl ${filter === 'both' ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}
+                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl shadow-lg ${filter === 'both' ? 'bg-indigo-500/90 text-white border-indigo-400' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}
                 >
                     <Layers className="w-4 h-4" /> <span className="text-[10px] font-black uppercase tracking-widest">Vista Estratégica</span>
                 </button>
-                <div className="h-4" />
+                <div className="h-2" />
                 <button 
                     onClick={() => setFilter('clients')}
-                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl ${filter === 'clients' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}
+                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl shadow-lg ${filter === 'clients' ? 'bg-emerald-500/90 text-white border-emerald-400' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}
                 >
-                    <div className="w-2 h-2 rounded-full bg-emerald-400" /> <span className="text-[10px] font-black uppercase tracking-widest">Socios ({clients.length})</span>
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> <span className="text-[10px] font-black uppercase tracking-widest">Socios ({clients.length})</span>
                 </button>
                 <button 
                     onClick={() => setFilter('team')}
-                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl ${filter === 'team' ? 'bg-blue-500 text-white border-blue-400' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}
+                    className={`p-4 rounded-2xl border transition-all flex items-center gap-3 backdrop-blur-xl shadow-lg ${filter === 'team' ? 'bg-blue-500/90 text-white border-blue-400' : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'}`}
                 >
-                    <div className="w-2 h-2 rounded-full bg-blue-400" /> <span className="text-[10px] font-black uppercase tracking-widest">Nodos ({team.length})</span>
+                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" /> <span className="text-[10px] font-black uppercase tracking-widest">Nodos ({team.length})</span>
                 </button>
             </div>
 
             {/* Satellite Stats (Saturation) */}
             <div className="absolute top-10 right-10 z-20 space-y-4">
-                <div className="bg-white/5 backdrop-blur-md border border-white/5 p-4 rounded-2xl text-right">
+                <div className="bg-[#0A0A1F]/80 backdrop-blur-md border border-white/5 p-4 rounded-2xl text-right shadow-lg">
                     <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Carga Global</div>
                     <div className="text-2xl font-black text-white italic">
                         {Object.values(cityWorkload).reduce((a, b) => a + b, 0)} <span className="text-[10px] opacity-40">TASKS</span>
                     </div>
                 </div>
-            </div>
-
-            {/* Map Area */}
-            <div className="relative w-full max-w-[550px] aspect-square flex items-center justify-center p-12">
-                <svg viewBox="0 0 400 400" className="w-full h-full overflow-visible">
-                    <defs>
-                        <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
-                            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.4" />
-                            <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
-                        </radialGradient>
-                        <radialGradient id="warningGlow" cx="50%" cy="50%" r="50%">
-                            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
-                            <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
-                        </radialGradient>
-                    </defs>
-
-                    {/* Ecuador Map */}
-                    <path d={ECUADOR_SVG_PATH} fill="rgba(0,0,0,0.4)" transform="translate(10, 10)" className="blur-xl" />
-                    <motion.path
-                        d={ECUADOR_SVG_PATH}
-                        fill="rgba(99,102,241,0.03)"
-                        stroke="rgba(99,102,241,0.2)"
-                        strokeWidth="2"
-                        initial={{ opacity: 0, pathLength: 0 }}
-                        animate={{ opacity: 1, pathLength: 1 }}
-                        transition={{ duration: 2 }}
-                    />
-
-                    {/* Points Layer */}
-                    {filteredPoints.map((p, i) => {
-                        const coords = p.coords || [];
-                        if (coords.length < 2) return null;
-                        
-                        const { x, y } = projectCoords(coords[0], coords[1]);
-                        const isClient = p.pointType === 'client';
-                        const cityName = p.city || 'Desconocido';
-                        const cityLoad = cityWorkload[cityName] || 0;
-                        const isSaturated = cityLoad > 8;
-                        const dotColor = isClient ? '#10b981' : (isSaturated ? '#ef4444' : '#3b82f6');
-                        
-                        return (
-                            <motion.g 
-                                key={`${p.id || i}-${i}`}
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: i * 0.05 }}
-                                className="cursor-pointer group/pin"
-                                onClick={() => setSelectedPoint(p)}
-                            >
-                                <circle cx={x} cy={y} r={isSaturated ? "20" : "10"} fill={dotColor} className="opacity-10 animate-ping" />
-                                <circle cx={x} cy={y} r="4" fill={dotColor} stroke="white" strokeWidth="1.5" />
-                                <text x={x} y={y - 12} textAnchor="middle" className="text-[7px] font-black fill-white tracking-tighter opacity-0 group-hover/pin:opacity-100 transition-opacity">
-                                    {cityName.toUpperCase()}
-                                </text>
-                            </motion.g>
-                        );
-                    })}
-                </svg>
             </div>
 
             {/* Detail Overlay */}
@@ -180,14 +270,14 @@ export default function AdminOperationalMap({ clients = [], team = [] }) {
                             </div>
                         </div>
 
-                        <button className="mt-auto w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2">
+                        <button className="mt-auto w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-750 transition-colors shadow-lg">
                             Ver Perfil Estratégico <ArrowUpRight className="w-4 h-4" />
                         </button>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <div className="absolute top-10 right-10 text-right pointer-events-none opacity-40">
+            <div className="absolute bottom-6 left-10 pointer-events-none opacity-40 z-20">
                 <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none">Global Network</div>
                 <div className="text-xl font-black text-white italic tracking-tighter uppercase">DIIC ZONE HQ</div>
             </div>
