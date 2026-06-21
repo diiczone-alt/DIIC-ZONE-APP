@@ -83,9 +83,18 @@ export default function HQDashboardPage() {
                     console.error('[HQ] Error fetching team, returning empty:', err);
                     return [];
                 }),
-                supabase.from('profiles').select('role').limit(1),
-                supabase.from('branch_offices').select('*'),
-                supabase.from('automations').select('id', { count: 'exact', head: true })
+                supabase.from('profiles').select('role').limit(1).catch(err => {
+                    console.error('[HQ] Profiles query failed:', err);
+                    return { error: err };
+                }),
+                supabase.from('branch_offices').select('*').catch(err => {
+                    console.error('[HQ] Branch offices query failed:', err);
+                    return { error: err };
+                }),
+                supabase.from('automations').select('id', { count: 'exact', head: true }).catch(err => {
+                    console.error('[HQ] Automations query failed:', err);
+                    return { error: err };
+                })
             ]);
             
             if (Array.isArray(clientData)) setPortfolio(clientData);
