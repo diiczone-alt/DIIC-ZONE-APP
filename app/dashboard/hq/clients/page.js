@@ -567,6 +567,7 @@ export default function HQClientsPage() {
             toast.success("Socio eliminado");
         } catch (error) {
             console.error("Error deleting client:", error);
+            toast.error("Error al eliminar el socio. Por favor, intente de nuevo.");
         } finally {
             setIsSubmitting(false);
         }
@@ -1806,7 +1807,7 @@ export default function HQClientsPage() {
                 {isDeleteModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDeleteModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-                        <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-[#0A0A1F] border border-white/10 p-10 rounded-[40px] max-w-md w-full text-center">
+                        <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative z-10 bg-[#0A0A1F] border border-white/10 p-10 rounded-[40px] max-w-md w-full text-center">
                             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-6" />
                             <h3 className="text-xl font-black text-white mb-2">¿Eliminar Socio?</h3>
                             <p className="text-gray-500 mb-8">Esta acción es permanente.</p>
