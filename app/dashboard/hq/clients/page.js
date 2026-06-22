@@ -117,22 +117,43 @@ const getPlanPrice = (plan, industry) => {
     }
 };
 
-const getNextCutoffDate = (cutoffDay) => {
-    if (cutoffDay === undefined || cutoffDay === null) cutoffDay = 5;
-    const today = new Date();
-    let year = today.getFullYear();
-    let month = today.getMonth(); // 0-indexed
-    
-    if (today.getDate() >= cutoffDay) {
-        month += 1;
-        if (month > 11) {
-            month = 0;
-            year += 1;
-        }
+const safeFormatDate = (dateStr, options = { day: 'numeric', month: 'short', year: 'numeric' }) => {
+    if (!dateStr) return '-';
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return '-';
+        return date.toLocaleDateString('es-ES', options);
+    } catch (e) {
+        return '-';
     }
-    
-    const cutoffDate = new Date(year, month, cutoffDay);
-    return cutoffDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+};
+
+const getNextCutoffDate = (cutoffDay) => {
+    let day = parseInt(cutoffDay, 10);
+    if (isNaN(day) || day < 1 || day > 31) {
+        day = 5;
+    }
+    try {
+        const today = new Date();
+        let year = today.getFullYear();
+        let month = today.getMonth(); // 0-indexed
+        
+        if (today.getDate() >= day) {
+            month += 1;
+            if (month > 11) {
+                month = 0;
+                year += 1;
+            }
+        }
+        
+        const cutoffDate = new Date(year, month, day);
+        if (isNaN(cutoffDate.getTime())) {
+            return '-';
+        }
+        return cutoffDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    } catch (e) {
+        return '-';
+    }
 };
 
 export default function HQClientsPage() {
@@ -256,11 +277,15 @@ export default function HQClientsPage() {
                 const cachedTeam = localStorage.getItem('diic_team');
                 
                 if (cachedClients && cachedTeam) {
-                    setClients(JSON.parse(cachedClients));
-                    setTeam(JSON.parse(cachedTeam));
-                    setLoading(false); // Immediate unlock
-                    console.log("⚡ [Clients] Loaded from Cache");
-                    return true;
+                    const parsedClients = JSON.parse(cachedClients);
+                    const parsedTeam = JSON.parse(cachedTeam);
+                    if (Array.isArray(parsedClients) && Array.isArray(parsedTeam)) {
+                        setClients(parsedClients);
+                        setTeam(parsedTeam);
+                        setLoading(false); // Immediate unlock
+                        console.log("⚡ [Clients] Loaded from Cache");
+                        return true;
+                    }
                 }
             } catch (e) {
                 console.warn("⚠️ [Clients] Cache load failed");
@@ -437,6 +462,9 @@ export default function HQClientsPage() {
         if (!birthDateStr) return { isBirthday: false, isBirthdayWeek: false, age: null };
         try {
             const birthDate = new Date(birthDateStr);
+            if (isNaN(birthDate.getTime())) {
+                return { isBirthday: false, isBirthdayWeek: false, age: null };
+            }
             const today = new Date();
             
             // Age calculation
@@ -468,6 +496,7 @@ export default function HQClientsPage() {
     };
 
     const handleOpenEdit = (client) => {
+        if (!client) return;
         setEditingClient(client);
         
         // Preserve client price from database without automatically overriding it
@@ -476,7 +505,7 @@ export default function HQClientsPage() {
         setNewClient({
             ...client,
             price: initialPrice,
-            birth_date: client.birth_date || '',
+            birth_date: typeof client.birth_date === 'string' ? client.birth_date.split('T')[0] : '',
             onboarding_data: client.onboarding_data || {},
             editor: client.editor || '',
             filmmaker: client.filmmaker || '',
@@ -484,7 +513,7 @@ export default function HQClientsPage() {
             business_type: client.business_type || '',
             industry: client.industry || '',
             city: client.city || '',
-            start_date: client.start_date ? client.start_date.split('T')[0] : new Date().toISOString().split('T')[0],
+            start_date: typeof client.start_date === 'string' ? client.start_date.split('T')[0] : new Date().toISOString().split('T')[0],
             cutoff_day: client.cutoff_day !== undefined && client.cutoff_day !== null ? client.cutoff_day : 5,
             app_fee: client.app_fee !== undefined && client.app_fee !== null ? client.app_fee : 100,
             has_crm: client.has_crm !== undefined && client.has_crm !== null ? client.has_crm : true,
@@ -575,21 +604,22 @@ export default function HQClientsPage() {
     };
 
     const filteredClients = Array.isArray(clients) ? clients.filter(c => {
-        const matchesSearch = (c?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-        if (activeFilter === 'risk') return matchesSearch && (c?.priority || '').toUpperCase() === 'ALTA';
-        if (activeFilter === 'pending') return matchesSearch && c?.status === 'paused';
-        if (activeFilter === 'active') return matchesSearch && c?.status === 'active';
+        if (!c) return false;
+        const matchesSearch = (c.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+        if (activeFilter === 'risk') return matchesSearch && (c.priority || '').toUpperCase() === 'ALTA';
+        if (activeFilter === 'pending') return matchesSearch && c.status === 'paused';
+        if (activeFilter === 'active') return matchesSearch && c.status === 'active';
         return matchesSearch;
     }) : [];
 
     const mrr = Array.isArray(clients) ? clients.reduce((acc, c) => {
-        if (c.status !== 'active') return acc;
-        const price = (c.price !== undefined && c.price !== null) ? c.price : getPlanPrice(c.plan, c.industry);
-        return acc + price;
+        if (!c || c.status !== 'active') return acc;
+        const price = (c.price !== undefined && c.price !== null) ? Number(c.price) : getPlanPrice(c.plan, c.industry);
+        return acc + (isNaN(price) ? 0 : price);
     }, 0) : 0;
-    const riskCount = Array.isArray(clients) ? clients.filter(c => (c?.priority || '').toUpperCase() === 'ALTA').length : 0;
-    const pendingCount = Array.isArray(clients) ? clients.filter(c => c?.status === 'paused').length : 0;
-    const activeCount = Array.isArray(clients) ? clients.filter(c => c?.status === 'active').length : 0;
+    const riskCount = Array.isArray(clients) ? clients.filter(c => c && (c.priority || '').toUpperCase() === 'ALTA').length : 0;
+    const pendingCount = Array.isArray(clients) ? clients.filter(c => c && c.status === 'paused').length : 0;
+    const activeCount = Array.isArray(clients) ? clients.filter(c => c && c.status === 'active').length : 0;
 
     return (
         <div className="p-8 space-y-8 relative">
@@ -796,7 +826,7 @@ export default function HQClientsPage() {
                                                         Cierre Reporte: {getNextCutoffDate(client?.cutoff_day)}
                                                     </div>
                                                     <div className="text-[9px] text-gray-500 font-medium">
-                                                        Inicio: {client?.start_date ? new Date(client.start_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                                                        Inicio: {safeFormatDate(client?.start_date)}
                                                     </div>
                                                     <div className="text-[9px] text-gray-600 font-bold">
                                                         +${client?.app_fee !== undefined ? client.app_fee : 100} App Fee
@@ -1178,7 +1208,7 @@ export default function HQClientsPage() {
                                                 <span className="text-gray-500 uppercase font-black">Email:</span>
                                                 <span className="text-white font-medium truncate max-w-[130px]" title={newClient.email}>{newClient.email || 'Sin registrar'}</span>
                                             </div>
-                                            {newClient.birth_date && (
+                                            {newClient.birth_date && typeof newClient.birth_date === 'string' && (
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-gray-500 uppercase font-black">Cumpleaños:</span>
                                                     {(() => {
@@ -1186,7 +1216,7 @@ export default function HQClientsPage() {
                                                         return (
                                                             <span className="text-white font-bold flex items-center gap-1">
                                                                 {newClient.birth_date.split('-').reverse().slice(0, 2).join('/')}
-                                                                {age !== null && ` (${age} años)`}
+                                                                {age !== null && !isNaN(age) && ` (${age} años)`}
                                                                 {isBirthday && <Cake className="w-3.5 h-3.5 text-rose-400 animate-bounce" />}
                                                             </span>
                                                         );
@@ -1226,7 +1256,7 @@ export default function HQClientsPage() {
                                             <div className="flex justify-between items-center">
                                                 <span className="text-gray-500 uppercase font-black">Inicio:</span>
                                                 <span className="text-white font-mono font-medium">
-                                                    {newClient.start_date ? newClient.start_date.split('-').reverse().join('/') : 'Sin registrar'}
+                                                    {typeof newClient.start_date === 'string' ? newClient.start_date.split('-').reverse().join('/') : 'Sin registrar'}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between items-center">
