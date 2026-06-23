@@ -26,6 +26,92 @@ import UnifiedMessagingCenter from '../../components/shared/Messaging/UnifiedMes
 import { driveService } from '@/services/driveService';
 import { toast } from 'sonner';
 
+// Fallback City Centers for Ecuador
+const CITY_COORDS = {
+    'QUITO': [-0.1820, -78.4680],
+    'GUAYAQUIL': [-2.1710, -79.9224],
+    'SANTO DOMINGO': [-0.2520, -79.1730],
+    'SANTO DOMINGO ': [-0.2520, -79.1730],
+    'MANTA': [-0.9680, -80.7090],
+    'CUENCA': [-2.9001, -79.0059],
+    'LOJA': [-3.9931, -79.2042],
+    'AMBATO': [-1.2491, -78.6168],
+    'PORTOVIEJO': [-1.0546, -80.4544],
+    'MACHALA': [-3.2581, -79.9553],
+    'IBARRA': [0.3517, -78.1222],
+    'RIOBAMBA': [-1.6731, -78.6483],
+    'ESMERALDAS': [0.9682, -79.6517],
+    'QUEVEDO': [-1.0286, -79.4635],
+    'LATACUNGA': [-0.9316, -78.6058],
+    'TULCAN': [0.8119, -77.7176],
+    'TENA': [-0.9938, -77.8129],
+    'PUYO': [-1.4821, -77.9991],
+    'MACAS': [-2.3087, -78.1114],
+    'ZAMORA': [-4.0692, -78.9567],
+    'LAGO AGRIO': [0.0847, -76.8828],
+    'NUEVA LOJA': [0.0847, -76.8828],
+    'COCA': [-0.4667, -76.9833],
+    'GUARANDA': [-1.5905, -79.0025],
+    'BABAHOYO': [-1.8022, -79.5344],
+    'SALINAS': [-2.2170, -80.9585],
+    'SANTA ELENA': [-2.2268, -80.8584],
+    'OTAVALO': [0.2295, -78.2625],
+    'SANGOLQUI': [-0.3306, -78.4398],
+    'DAULE': [-1.8622, -79.9790],
+    'CHONE': [-0.6981, -80.0936],
+    'MILAGRO': [-2.1286, -79.5914],
+    'PASAJE': [-3.3255, -79.8066],
+    'SANTA ROSA': [-3.4478, -79.9599],
+    'LA LIBERTAD': [-2.2310, -80.9117]
+};
+
+// Curated Countries List
+const COUNTRIES_LIST = ['Ecuador', 'Colombia', 'Perú', 'Estados Unidos', 'España', 'México', 'Chile', 'Argentina', 'Venezuela', 'Panamá'];
+
+// Ecuador Cities List sorted alphabetically
+const ECUADOR_CITIES_LIST = [
+  'Quito', 'Guayaquil', 'Cuenca', 'Manta', 'Loja', 'Santo Domingo', 
+  'Portoviejo', 'Machala', 'Ambato', 'Riobamba', 'Ibarra', 'Quevedo', 
+  'Esmeraldas', 'Latacunga', 'Tulcán', 'Tena', 'Puyo', 'Macas', 
+  'Zamora', 'Lago Agrio', 'Coca', 'Guaranda', 'Babahoyo', 'Salinas', 
+  'Santa Elena', 'Otavalo', 'Sangolquí', 'Daule', 'Chone', 'Milagro', 
+  'Pasaje', 'Santa Rosa', 'La Libertad'
+].sort();
+
+// Extracts coordinates from a Google Maps URL
+const extractCoordsFromUrl = (url) => {
+  if (!url) return null;
+  try {
+    // 1. Check for @lat,lng
+    const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (atMatch) {
+      return [parseFloat(atMatch[1]), parseFloat(atMatch[2])];
+    }
+    
+    // 2. Check for query/q parameters
+    const queryMatch = url.match(/[?&](?:query|q)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
+    if (queryMatch) {
+      return [parseFloat(queryMatch[1]), parseFloat(queryMatch[2])];
+    }
+    
+    // 3. Check for !3d lat !4d lng (Google Maps internal parameters)
+    const dMatch = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+    if (dMatch) {
+      return [parseFloat(dMatch[1]), parseFloat(dMatch[2])];
+    }
+  } catch (e) {
+    console.error("Error parsing Google Maps URL:", e);
+  }
+  return null;
+};
+
+// Helper to get coordinates for standard Ecuador cities
+const getCoordsForCity = (city) => {
+  if (!city) return null;
+  const normalized = city.trim().toUpperCase().replace(/Á/g, 'A').replace(/É/g, 'E').replace(/Í/g, 'I').replace(/Ó/g, 'O').replace(/Ú/g, 'U');
+  return CITY_COORDS[normalized] || null;
+};
+
 // ─── Stat Card Component ─────────────────────────────────────────
 function StatCard({ title, value, delta, icon: Icon, color, chartData }) {
   return (
@@ -446,6 +532,20 @@ function DashboardContent() {
             if (data.company_profile?.address) updates.address = data.company_profile.address;
             if (data.company_profile?.website) updates.website = data.company_profile.website;
             if (data.company_profile?.email) updates.email = data.company_profile.email;
+            
+            // Extract coordinates from location link (address) or fallback to city coordinates
+            let resolvedCoords = null;
+            if (data.company_profile?.address) {
+                resolvedCoords = extractCoordsFromUrl(data.company_profile.address);
+            }
+            if (!resolvedCoords && data.company_profile?.city) {
+                resolvedCoords = getCoordsForCity(data.company_profile.city);
+            }
+            
+            updates.coords = resolvedCoords;
+            if (updatedOnboardingData.company_profile) {
+                updatedOnboardingData.company_profile.coords = resolvedCoords;
+            }
         }
         
         if (moduleId === 'growth') {
@@ -778,28 +878,84 @@ function DashboardContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">País</label>
-                    <input 
-                      value={infoForm.country}
-                      onChange={(e) => setInfoForm({...infoForm, country: e.target.value})}
-                      className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
-                    />
+                    <select 
+                      value={COUNTRIES_LIST.includes(infoForm.country) ? infoForm.country : (infoForm.country ? 'Otro' : 'Ecuador')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Otro') {
+                          setInfoForm({...infoForm, country: '', city: ''});
+                        } else {
+                          setInfoForm({...infoForm, country: val, city: ''});
+                        }
+                      }}
+                      className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer appearance-none"
+                    >
+                      {COUNTRIES_LIST.map(c => <option key={c} value={c} className="bg-[#111126] text-white">{c}</option>)}
+                      <option value="Otro" className="bg-[#111126] text-white">Otro...</option>
+                    </select>
+                    {!COUNTRIES_LIST.includes(infoForm.country) && (
+                      <div className="mt-2">
+                        <input 
+                          placeholder="Escribe el país..."
+                          value={infoForm.country}
+                          onChange={(e) => setInfoForm({...infoForm, country: e.target.value})}
+                          className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Ciudad</label>
-                    <input 
-                      value={infoForm.city}
-                      onChange={(e) => setInfoForm({...infoForm, city: e.target.value})}
-                      className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
-                    />
+                    {infoForm.country === 'Ecuador' ? (
+                      <>
+                        <select 
+                          value={ECUADOR_CITIES_LIST.includes(infoForm.city) ? infoForm.city : (infoForm.city ? 'Otro' : '')}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === 'Otro') {
+                              setInfoForm({...infoForm, city: ''});
+                            } else {
+                              setInfoForm({...infoForm, city: val});
+                            }
+                          }}
+                          className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer appearance-none"
+                        >
+                          <option value="" disabled className="bg-[#111126] text-white">Selecciona ciudad...</option>
+                          {ECUADOR_CITIES_LIST.map(c => <option key={c} value={c} className="bg-[#111126] text-white">{c}</option>)}
+                          <option value="Otro" className="bg-[#111126] text-white">Otra ciudad...</option>
+                        </select>
+                        {(!infoForm.city || !ECUADOR_CITIES_LIST.includes(infoForm.city)) && (
+                          <div className="mt-2">
+                            <input 
+                              placeholder="Escribe la ciudad..."
+                              value={infoForm.city}
+                              onChange={(e) => setInfoForm({...infoForm, city: e.target.value})}
+                              className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <input 
+                        placeholder="Escribe la ciudad..."
+                        value={infoForm.city}
+                        onChange={(e) => setInfoForm({...infoForm, city: e.target.value})}
+                        className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Dirección</label>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Link de Ubicación (Google Maps / Waze)</label>
                   <input 
+                    placeholder="Ej: https://maps.app.goo.gl/... o https://www.google.com/maps/..."
                     value={infoForm.address}
                     onChange={(e) => setInfoForm({...infoForm, address: e.target.value})}
                     className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
+                  <p className="text-[9px] font-semibold text-gray-500 italic mt-1 leading-normal">
+                    Pega el enlace de Google Maps o Waze para ubicar tu negocio en el mapa de operaciones de DIIC ZONE.
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Sitio Web</label>
