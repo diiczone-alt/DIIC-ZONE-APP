@@ -30,6 +30,7 @@ export const onboardingService = {
 
             let clientId = currentProfile?.client_id;
             let teamId = currentProfile?.team_id;
+            let creativeCode = null;
 
             // --- GENERAR SLUGS PARA NAMESPACING ---
             const sluggify = (text) => text.toLowerCase()
@@ -162,6 +163,28 @@ export const onboardingService = {
                     };
 
                     const dbRole = mapRoleToDb(formData.role);
+
+                    // Check if team member already has a code
+                    let existingCode = null;
+                    if (teamId) {
+                        try {
+                            const { data: existingTeam } = await supabase
+                                .from('team')
+                                .select('code')
+                                .eq('id', teamId)
+                                .maybeSingle();
+                            if (existingTeam?.code) {
+                                existingCode = existingTeam.code;
+                            }
+                        } catch (codeErr) {
+                            console.warn('[OnboardingService] Error checking existing team code:', codeErr);
+                        }
+                    }
+
+                    const sluggifyName = (fullName || 'CORP').replace(/[^a-zA-Z]/g, '').toUpperCase();
+                    const namePart = sluggifyName.substring(0, 4) || 'CORP';
+                    const randomPart = Math.floor(1000 + Math.random() * 9000);
+                    creativeCode = existingCode || `DIIC-${namePart}-${randomPart}`;
                     
                     const { data: teamData, error: teamError } = await supabase
                         .from('team')
@@ -178,7 +201,8 @@ export const onboardingService = {
                             cv_summary: formData.cv_summary || '',
                             skills: formData.skills || [],
                             whatsapp: formData.whatsapp || '',
-                            birth_date: birthDate
+                            birth_date: birthDate,
+                            code: creativeCode
                         }, { onConflict: 'id' })
                         .select()
                         .single();
@@ -196,8 +220,8 @@ export const onboardingService = {
                     full_name: fullName,
                     email: user.email, // Guardar email en profiles para reconciliaciones futuras
                     role: profileType === 'creative' ? (formData.role || 'CREATIVE').toUpperCase() : profileType.toUpperCase(),
-                    client_id: clientId,
-                    team_id: teamId,
+                    client_id: clientId || null,
+                    team_id: teamId || null,
                     industry: industryName,
                     specialty: formData.niche || 'General',
                     industry_slug: industrySlug,
@@ -251,6 +275,60 @@ export const onboardingService = {
                 });
             } catch (authErr) {
                 console.error('[OnboardingService] Error actualizando Auth Metadata:', authErr);
+            }
+
+            // 5. Crear notificaciones para los Administradores
+            try {
+                const { data: admins } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('role', 'ADMIN');
+
+                if (admins && admins.length > 0) {
+                    const notificationsToInsert = admins.map(admin => {
+                        let title, message, link, type;
+                        if (profileType === 'client') {
+                            title = 'Nuevo Cliente Registrado';
+                            message = `El cliente "${brandName}" (${fullName}) ha completado el onboarding. Asigna un Community Manager y Estratega.`;
+                            link = '/dashboard/hq/clients';
+                            type = 'NEW_CLIENT';
+                        } else {
+                            title = 'Nuevo Creativo Registrado';
+                            message = `El creativo "${fullName}" (${formData.role || 'Creativo'}) se ha registrado. Código asignado: ${creativeCode}.`;
+                            link = '/dashboard/hq/team';
+                            type = 'NEW_CREATIVE';
+                        }
+
+                        return {
+                            user_id: admin.id,
+                            title,
+                            message,
+                            type,
+                            status: 'unread',
+                            link,
+                            metadata: {
+                                profile_id: user.id,
+                                name: fullName,
+                                brand: brandName,
+                                email: user.email,
+                                code: profileType === 'creative' ? creativeCode : null,
+                                role: profileType === 'creative' ? formData.role : 'CLIENT'
+                            }
+                        };
+                    });
+
+                    const { error: insertErr } = await supabase
+                        .from('notifications')
+                        .insert(notificationsToInsert);
+                    
+                    if (insertErr) {
+                        console.warn('[OnboardingService] Error al insertar notificaciones de admin:', insertErr);
+                    } else {
+                        console.log('[OnboardingService] Notificaciones de admin creadas correctamente.');
+                    }
+                }
+            } catch (notifErr) {
+                console.error('[OnboardingService] Error crítico creando notificaciones de admin:', notifErr);
             }
 
             return { success: true, clientId, industry_slug: industrySlug, client_slug: brandSlug, isUpdate: !!currentProfile?.client_id };

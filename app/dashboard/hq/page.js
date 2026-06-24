@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Activity, Users, Briefcase, Zap,
     CreditCard, Layout, Star, DollarSign, Map as MapIcon,
-    Target, Lock, Cpu, Server
+    Target, Lock, Cpu, Server, Bell, BellOff, Check, ExternalLink
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 import { supabase } from '@/lib/supabase';
@@ -91,6 +91,63 @@ export default function HQDashboardPage() {
         fase2_imprenta: false,
         fase2_n8n: false
     });
+
+    const [notifications, setNotifications] = useState([]);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    const fetchNotifications = async () => {
+        if (!user) return;
+        try {
+            const { data, error } = await supabase
+                .from('notifications')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(30);
+            if (error) throw error;
+            setNotifications(data || []);
+            setUnreadCount(data?.filter(n => n.status !== 'read').length || 0);
+        } catch (err) {
+            console.error('Error fetching admin notifications:', err);
+        }
+    };
+
+    const handleMarkAsRead = async (notifId) => {
+        try {
+            const { error } = await supabase
+                .from('notifications')
+                .update({ status: 'read' })
+                .eq('id', notifId);
+            if (error) throw error;
+            
+            setNotifications(prev => 
+                prev.map(n => n.id === notifId ? { ...n, status: 'read' } : n)
+            );
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (err) {
+            console.error('Error marking notification as read:', err);
+        }
+    };
+
+    const handleMarkAllAsRead = async () => {
+        if (unreadCount === 0) return;
+        try {
+            const { error } = await supabase
+                .from('notifications')
+                .update({ status: 'read' })
+                .eq('user_id', user.id)
+                .eq('status', 'unread');
+            if (error) throw error;
+            
+            setNotifications(prev => 
+                prev.map(n => ({ ...n, status: 'read' }))
+            );
+            setUnreadCount(0);
+        } catch (err) {
+            console.error('Error marking all as read:', err);
+        }
+    };
 
     const loadGlobalData = async (isBackground = false) => {
         if (!isBackground) setLoading(true);
@@ -206,8 +263,23 @@ export default function HQDashboardPage() {
                 setIsHQLive(status === 'SUBSCRIBED');
             });
 
+        // 3. Notifications Sync & Load
+        fetchNotifications();
+        const notifChannel = supabase
+            .channel(`user-notifications-${user.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'notifications',
+                filter: `user_id=eq.${user.id}`
+            }, () => {
+                fetchNotifications();
+            })
+            .subscribe();
+
         return () => {
             supabase.removeChannel(hqChannel);
+            supabase.removeChannel(notifChannel);
         };
     }, [user, authLoading]);
 
@@ -308,7 +380,7 @@ export default function HQDashboardPage() {
                             <span className={`text-[8px] font-black tracking-[0.2em] uppercase ${isHQLive ? 'text-emerald-500' : 'text-red-500'}`}>HQ {isHQLive ? 'LIVE' : 'OFFLINE'}</span>
                         </div>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-4 relative">
                         <AnimatePresence>
                             {isSyncing && (
                                 <motion.div 
@@ -322,6 +394,109 @@ export default function HQDashboardPage() {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+
+                        {/* Bell Icon Trigger */}
+                        <div className="relative">
+                            <button 
+                                onClick={() => setShowNotifications(!showNotifications)}
+                                className={`p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all relative flex items-center justify-center ${showNotifications ? 'border-indigo-500 bg-indigo-500/10' : ''}`}
+                            >
+                                <Bell className="w-5 h-5 text-gray-300 hover:text-white" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 bg-indigo-500 text-[10px] font-black text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#050511] shadow-[0_0_10px_rgba(99,102,241,0.5)]">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {/* Dropdown Panel */}
+                            <AnimatePresence>
+                                {showNotifications && (
+                                    <>
+                                        {/* Dropdown Backdrop to close */}
+                                        <div 
+                                            className="fixed inset-0 z-40" 
+                                            onClick={() => setShowNotifications(false)}
+                                        />
+                                        
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                                            className="absolute right-0 mt-3 w-[400px] bg-[#0E0E18]/95 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-2xl z-50 overflow-hidden"
+                                        >
+                                            <div className="flex justify-between items-center pb-4 border-b border-white/5 mb-4">
+                                                <h3 className="text-sm font-black uppercase tracking-wider text-white">Centro de Notificaciones</h3>
+                                                {unreadCount > 0 && (
+                                                    <button 
+                                                        onClick={handleMarkAllAsRead}
+                                                        className="text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
+                                                    >
+                                                        Marcar todo leído
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="max-h-[350px] overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+                                                {notifications.length === 0 ? (
+                                                    <div className="py-12 flex flex-col items-center justify-center text-center">
+                                                        <BellOff className="w-8 h-8 text-gray-700 mb-2" />
+                                                        <p className="text-gray-500 text-xs italic">Sin notificaciones de momento</p>
+                                                    </div>
+                                                ) : (
+                                                    notifications.map(notif => (
+                                                        <div 
+                                                            key={notif.id}
+                                                            className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                                                                notif.status === 'unread' 
+                                                                    ? 'bg-indigo-500/5 border-indigo-500/20 hover:border-indigo-500/40' 
+                                                                    : 'bg-white/[0.02] border-white/5 opacity-60'
+                                                            }`}
+                                                        >
+                                                            <div>
+                                                                <div className="flex justify-between items-start">
+                                                                    <h4 className="text-xs font-black text-white leading-tight">{notif.title}</h4>
+                                                                    <span className="text-[8px] text-gray-500 font-bold">
+                                                                        {new Date(notif.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-[10px] text-gray-400 mt-1 leading-snug">{notif.message}</p>
+                                                            </div>
+
+                                                            <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                                                {notif.link ? (
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            if (notif.status === 'unread') handleMarkAsRead(notif.id);
+                                                                            router.push(notif.link);
+                                                                            setShowNotifications(false);
+                                                                        }}
+                                                                        className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
+                                                                    >
+                                                                        <span>Gestionar</span>
+                                                                        <ExternalLink className="w-2.5 h-2.5" />
+                                                                    </button>
+                                                                ) : <div />}
+
+                                                                {notif.status === 'unread' && (
+                                                                    <button 
+                                                                        onClick={() => handleMarkAsRead(notif.id)}
+                                                                        className="p-1 text-gray-500 hover:text-white rounded hover:bg-white/5 transition-all"
+                                                                        title="Marcar como leída"
+                                                                    >
+                                                                        <Check className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
                 </div>
 
