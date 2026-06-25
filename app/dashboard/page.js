@@ -4,6 +4,9 @@ import { useState, Suspense, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import { motion, AnimatePresence } from 'framer-motion';
+import dynamic from 'next/dynamic';
+
+const LocationSelector = dynamic(() => import('@/components/shared/Map/LocationSelector'), { ssr: false });
 import {
   Bell, MessageSquare, Search, Plus, Activity, 
   CheckCircle2, AlertCircle, Users, Play, 
@@ -110,6 +113,14 @@ const getCoordsForCity = (city) => {
   if (!city) return null;
   const normalized = city.trim().toUpperCase().replace(/Á/g, 'A').replace(/É/g, 'E').replace(/Í/g, 'I').replace(/Ó/g, 'O').replace(/Ú/g, 'U');
   return CITY_COORDS[normalized] || null;
+};
+
+// Helper to wrap promises with a timeout to prevent hanging UI
+const withTimeout = (promise, ms = 8000) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("La solicitud al servidor tardó demasiado (Timeout). Revisa tu conexión de red o inténtalo de nuevo.")), ms))
+  ]);
 };
 
 // ─── Stat Card Component ─────────────────────────────────────────
@@ -229,11 +240,13 @@ function DashboardContent() {
   const [activeDrawer, setActiveDrawer] = useState(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerSubTab, setDrawerSubTab] = useState('perfil'); // For Drawer 1: perfil / diagnostico
+  const [isResolvingUrl, setIsResolvingUrl] = useState(false);
 
   // Form states for modules
   const [infoForm, setInfoForm] = useState({
     company_name: '', country: 'Ecuador', city: '', address: '', website: '', email: '', phone: '', anniversary_date: '', description: '',
-    services_offered: '', main_product: '', time_in_market: '', clients_count: '', team_size: '', revenue: ''
+    services_offered: '', main_product: '', time_in_market: '', clients_count: '', team_size: '', revenue: '',
+    coords: null
   });
 
   const [brandForm, setBrandForm] = useState({
@@ -298,7 +311,8 @@ function DashboardContent() {
                   time_in_market: bd.time_in_market || '',
                   clients_count: bd.clients_count || '',
                   team_size: bd.team_size || '',
-                  revenue: bd.revenue || ''
+                  revenue: bd.revenue || '',
+                  coords: cp.coords || client.coords || null
                 });
 
                 setBrandForm({
@@ -510,6 +524,30 @@ function DashboardContent() {
     }
   ];
 
+  const handleVerifyMapLink = async () => {
+    if (!infoForm.address) return;
+    setIsResolvingUrl(true);
+    try {
+      const res = await fetch('/api/resolve-maps-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: infoForm.address })
+      });
+      const data = await res.json();
+      if (data.success && data.coords) {
+        setInfoForm(prev => ({ ...prev, coords: data.coords }));
+        toast.success('Ubicación verificada y pin actualizado en el mapa.');
+      } else {
+        toast.error('No pudimos extraer coordenadas del link de ubicación. Intenta seleccionarlo directamente en el mapa.');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Error al verificar el enlace de ubicación.');
+    } finally {
+      setIsResolvingUrl(false);
+    }
+  };
+
   // Save changes to database for a module drawer
   const handleSaveModule = async (moduleId, data) => {
     if (!clientData?.id) return;
@@ -532,10 +570,17 @@ function DashboardContent() {
             if (data.company_profile?.address) updates.address = data.company_profile.address;
             if (data.company_profile?.website) updates.website = data.company_profile.website;
             if (data.company_profile?.email) updates.email = data.company_profile.email;
+            if (data.company_profile?.phone) updates.whatsapp_number = data.company_profile.phone;
             
-            // Extract coordinates from location link (address) or fallback to city coordinates
-            let resolvedCoords = null;
-            if (data.company_profile?.address) {
+            if (data.company_profile?.anniversary_date) {
+                updates.birth_date = data.company_profile.anniversary_date;
+            } else {
+                updates.birth_date = null;
+            }
+            
+            // Extract coordinates from manual selection or url fallback
+            let resolvedCoords = data.company_profile?.coords;
+            if (!resolvedCoords && data.company_profile?.address) {
                 resolvedCoords = extractCoordsFromUrl(data.company_profile.address);
             }
             if (!resolvedCoords && data.company_profile?.city) {
@@ -553,10 +598,13 @@ function DashboardContent() {
             if (data.growth_level?.price) updates.price = data.growth_level.price;
         }
         
-        const { error } = await supabase
-            .from('clients')
-            .update(updates)
-            .eq('id', clientData.id);
+        const { error } = await withTimeout(
+            supabase
+                .from('clients')
+                .update(updates)
+                .eq('id', clientData.id),
+            8000
+        );
             
         if (error) throw error;
         
@@ -915,7 +963,8 @@ function DashboardContent() {
                             if (val === 'Otro') {
                               setInfoForm({...infoForm, city: ''});
                             } else {
-                              setInfoForm({...infoForm, city: val});
+                              const newCoords = getCoordsForCity(val);
+                              setInfoForm({...infoForm, city: val, coords: newCoords});
                             }
                           }}
                           className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer appearance-none"
@@ -947,14 +996,36 @@ function DashboardContent() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Link de Ubicación (Google Maps / Waze)</label>
-                  <input 
-                    placeholder="Ej: https://maps.app.goo.gl/... o https://www.google.com/maps/..."
-                    value={infoForm.address}
-                    onChange={(e) => setInfoForm({...infoForm, address: e.target.value})}
-                    className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  <div className="flex gap-2">
+                    <input 
+                      placeholder="Ej: https://maps.app.goo.gl/... o https://www.google.com/maps/..."
+                      value={infoForm.address}
+                      onChange={(e) => setInfoForm({...infoForm, address: e.target.value})}
+                      className="flex-1 bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      disabled={isResolvingUrl || !infoForm.address}
+                      onClick={handleVerifyMapLink}
+                      className="px-4 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 hover:border-indigo-500/50 text-indigo-400 hover:text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 disabled:pointer-events-none active:scale-95 shrink-0"
+                    >
+                      {isResolvingUrl ? 'Verificando...' : 'Verificar'}
+                    </button>
+                  </div>
+                  <p className="text-[9px] font-semibold text-gray-500 italic mt-1 leading-normal">
+                    Pega el enlace de Google Maps o Waze y presiona verificar para ubicar tu negocio en el mapa.
+                  </p>
+                </div>
+
+                {/* Selector de Mapa Interactivo */}
+                <div className="space-y-1.5 pt-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Ubicación en el Mapa</label>
+                  <LocationSelector 
+                    value={infoForm.coords}
+                    onChange={(coords) => setInfoForm(prev => ({ ...prev, coords }))}
                   />
                   <p className="text-[9px] font-semibold text-gray-500 italic mt-1 leading-normal">
-                    Pega el enlace de Google Maps o Waze para ubicar tu negocio en el mapa de operaciones de DIIC ZONE.
+                    Puedes hacer clic en el mapa o arrastrar el pin para seleccionar la ubicación exacta de tu negocio. (Opcional)
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -1076,6 +1147,7 @@ function DashboardContent() {
                   phone: infoForm.phone,
                   anniversary_date: infoForm.anniversary_date,
                   description: infoForm.description,
+                  coords: infoForm.coords,
                   completed: true
                 },
                 business_diagnosis: {
