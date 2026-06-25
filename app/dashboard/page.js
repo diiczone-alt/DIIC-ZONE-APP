@@ -1022,7 +1022,15 @@ function DashboardContent() {
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Ubicación en el Mapa</label>
                   <LocationSelector 
                     value={infoForm.coords}
-                    onChange={(coords) => setInfoForm(prev => ({ ...prev, coords }))}
+                    onChange={(coords) => {
+                      const [lat, lng] = coords;
+                      const generatedLink = `https://www.google.com/maps/place/${lat.toFixed(6)},${lng.toFixed(6)}/@${lat.toFixed(6)},${lng.toFixed(6)},17z`;
+                      setInfoForm(prev => ({ 
+                        ...prev, 
+                        coords, 
+                        address: generatedLink 
+                      }));
+                    }}
                   />
                   <p className="text-[9px] font-semibold text-gray-500 italic mt-1 leading-normal">
                     Puedes hacer clic en el mapa o arrastrar el pin para seleccionar la ubicación exacta de tu negocio. (Opcional)
