@@ -7,11 +7,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Activity, Users, Briefcase, Zap,
     CreditCard, Layout, Star, DollarSign, Map as MapIcon,
-    Target, Lock, Cpu, Server, Bell, BellOff, Check, ExternalLink
+    Target, Lock, Cpu, Server, Bell, BellOff, Check, ExternalLink,
+    ArrowUpRight
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 import { supabase } from '@/lib/supabase';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 
 const AdminOperationalMap = dynamic(() => import('@/components/admin/AdminOperationalMap'), {
     ssr: false,
@@ -374,7 +376,7 @@ export default function HQDashboardPage() {
                 {/* Header */}
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-6">
-                        <h1 className="text-4xl font-black text-white tracking-tight italic uppercase">GOD <span className="text-indigo-500">MODE</span></h1>
+                        <h1 className="text-4xl font-black text-white tracking-tight italic uppercase">COMANDO <span className="text-indigo-500">CENTRAL</span></h1>
                         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition-all duration-500 ${isHQLive ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'bg-red-500/10 border-red-500/20 animate-pulse'}`}>
                             <div className={`w-1.5 h-1.5 rounded-full ${isHQLive ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]' : 'bg-red-500'}`} />
                             <span className={`text-[8px] font-black tracking-[0.2em] uppercase ${isHQLive ? 'text-emerald-500' : 'text-red-500'}`}>HQ {isHQLive ? 'LIVE' : 'OFFLINE'}</span>
@@ -501,40 +503,46 @@ export default function HQDashboardPage() {
                 </div>
 
                 {/* Sales Roadmap Banner */}
-                <div className="bg-indigo-600 rounded-[32px] p-8 relative overflow-hidden shadow-2xl shadow-indigo-500/20">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl"></div>
-                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
-                        <div className="flex-1">
-                            <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-widest">{phaseTitle} ({clientGoal} Clientes)</h2>
-                            <p className="text-indigo-100/60 text-sm mb-6 uppercase tracking-wider font-bold">{phaseDesc}</p>
-                            <div className="w-full h-4 bg-black/20 rounded-full overflow-hidden mb-2">
-                                <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${goalPercentage}%` }}
-                                    transition={{ duration: 1.5 }}
-                                    className="h-full bg-white shadow-lg"
-                                />
+                <Link href="/dashboard/hq/progress" className="block group">
+                    <div className="bg-indigo-600 hover:bg-indigo-750/90 rounded-[32px] p-8 relative overflow-hidden shadow-2xl shadow-indigo-500/20 border border-transparent hover:border-white/25 transition-all duration-300">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl"></div>
+                        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+                            <div className="flex-1 w-full">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <h2 className="text-2xl font-black text-white uppercase tracking-widest">{phaseTitle} ({clientGoal} Clientes)</h2>
+                                    <ArrowUpRight className="w-5 h-5 text-white/50 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" />
+                                </div>
+                                <p className="text-indigo-100/60 text-sm mb-6 uppercase tracking-wider font-bold">{phaseDesc}</p>
+                                <div className="w-full h-4 bg-black/20 rounded-full overflow-hidden mb-2">
+                                    <motion.div 
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${goalPercentage}%` }}
+                                        transition={{ duration: 1.5 }}
+                                        className="h-full bg-white shadow-lg"
+                                    />
+                                </div>
+                                <div className="flex justify-between text-[10px] font-black text-white/50 uppercase tracking-widest">
+                                    <span>{activePhase === 1 ? '0' : activePhase === 2 ? '10' : '20'} Clientes</span>
+                                    <span>{currentClients} / {clientGoal} Clientes</span>
+                                </div>
                             </div>
-                            <div className="flex justify-between text-[10px] font-black text-white/50 uppercase tracking-widest">
-                                <span>{activePhase === 1 ? '0' : activePhase === 2 ? '10' : '20'} Clientes</span>
-                                <span>{currentClients} / {clientGoal} Clientes</span>
+                            <div className="bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/20 text-center min-w-[200px]">
+                                <p className="text-[10px] font-black uppercase text-white/50 tracking-widest mb-1">Estado de Escalado</p>
+                                <p className="text-3xl font-black text-white">FASE {activePhase}</p>
                             </div>
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/20 text-center min-w-[200px]">
-                            <p className="text-[10px] font-black uppercase text-white/50 tracking-widest mb-1">Estado de Escalado</p>
-                            <p className="text-3xl font-black text-white">FASE {activePhase}</p>
                         </div>
                     </div>
-                </div>
+                </Link>
 
                 {/* Top Stats - 4 Units */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <MetricCard
-                        title="Utilidad Neta (God Mode)"
+                        title="Utilidad Neta (Comando Central)"
                         value={`$${(metrics.netProfit || 0).toLocaleString()}`}
                         change={`Facturación: $${(metrics.income || 0).toLocaleString()}`}
                         icon={DollarSign}
                         color="text-yellow-500"
+                        href="/dashboard/hq/payments"
                     />
                     <MetricCard
                         title="Aliados Activos"
@@ -542,6 +550,7 @@ export default function HQDashboardPage() {
                         change={`${portfolio.filter(c => c.status === 'active').length} Operativos`}
                         icon={Users}
                         color="text-indigo-400"
+                        href="/dashboard/hq/clients"
                     />
                     <MetricCard
                         title="Carga de Producción"
@@ -549,6 +558,7 @@ export default function HQDashboardPage() {
                         change={`${tasks.filter(t => t.priority === 'high').length} Urgentes`}
                         icon={Briefcase}
                         color="text-purple-400"
+                        href="/dashboard/hq/control"
                     />
                     <MetricCard
                         title="Salud de Operaciones"
@@ -556,18 +566,25 @@ export default function HQDashboardPage() {
                         change="HQ Realtime Active"
                         icon={Activity}
                         color="text-emerald-500"
+                        href="/dashboard/hq/control"
                     />
                 </div>
 
                 {/* Middle Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Dynamic Phase KPI Panel */}
-                    <div className="lg:col-span-1 bg-[#0A0A1F] border border-white/5 rounded-[40px] p-10 shadow-2xl flex flex-col justify-between min-h-[320px]">
+                    <Link 
+                        href={activePhase === 1 ? "/dashboard/hq/clients" : activePhase === 2 ? "/dashboard/hq/control" : "/dashboard/hq/team"}
+                        className="lg:col-span-1 bg-[#0A0A1F] border border-white/5 rounded-[40px] p-10 shadow-2xl flex flex-col justify-between min-h-[320px] hover:border-indigo-500/30 hover:bg-[#0E0E2F]/40 hover:shadow-indigo-500/5 transition-all group cursor-pointer block"
+                    >
                         {activePhase === 1 ? (
                             <div>
-                                <div className="flex items-center gap-3 mb-8">
-                                    <Target className="w-5 h-5 text-blue-500" />
-                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Validación de Mercado</h3>
+                                <div className="flex justify-between items-center mb-8">
+                                    <div className="flex items-center gap-3">
+                                        <Target className="w-5 h-5 text-blue-500" />
+                                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Validación de Mercado</h3>
+                                    </div>
+                                    <ArrowUpRight className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors" />
                                 </div>
                                 <div className="grid grid-cols-1 gap-6">
                                     <RepBox value={`${currentClients}/${clientGoal}`} label="Clientes Objetivo" color="text-indigo-400" />
@@ -576,9 +593,12 @@ export default function HQDashboardPage() {
                         ) : activePhase === 2 ? (
                             <div className="flex flex-col justify-between h-full">
                                 <div>
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <Cpu className="w-5 h-5 text-indigo-400 animate-pulse" />
-                                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Automatización & Canales</h3>
+                                    <div className="flex justify-between items-center mb-8">
+                                        <div className="flex items-center gap-3">
+                                            <Cpu className="w-5 h-5 text-indigo-400 animate-pulse" />
+                                            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Automatización & Canales</h3>
+                                        </div>
+                                        <ArrowUpRight className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors" />
                                     </div>
                                     <div className="space-y-4">
                                         <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
@@ -611,9 +631,12 @@ export default function HQDashboardPage() {
                         ) : (
                             <div className="flex flex-col justify-between h-full">
                                 <div>
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <Server className="w-5 h-5 text-purple-400" />
-                                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Telemetría de Nodos</h3>
+                                    <div className="flex justify-between items-center mb-8">
+                                        <div className="flex items-center gap-3">
+                                            <Server className="w-5 h-5 text-purple-400" />
+                                            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Telemetría de Nodos</h3>
+                                        </div>
+                                        <ArrowUpRight className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors" />
                                     </div>
                                     <div className="space-y-4">
                                         <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center justify-between">
@@ -635,7 +658,7 @@ export default function HQDashboardPage() {
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </Link>
 
                     <div className="lg:col-span-2 bg-[#0A0A1F] border border-white/5 rounded-[40px] p-10 shadow-2xl flex flex-col justify-center text-center">
                         <Zap className="w-12 h-12 text-yellow-500 mx-auto mb-6" />
@@ -668,9 +691,9 @@ export default function HQDashboardPage() {
     );
 }
 
-function MetricCard({ title, value, change, icon: Icon, color }) {
-    return (
-        <div className="bg-[#0A0A1F] border border-white/5 rounded-[32px] p-8 hover:border-white/10 transition-all group relative overflow-hidden shadow-2xl">
+function MetricCard({ title, value, change, icon: Icon, color, href }) {
+    const CardContent = (
+        <>
             <div className="flex items-center justify-between mb-10">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">{title}</span>
                 <Icon className={`w-10 h-10 opacity-10 group-hover:opacity-20 transition-all absolute top-6 right-6 ${color}`} />
@@ -681,6 +704,23 @@ function MetricCard({ title, value, change, icon: Icon, color }) {
                     {change}
                 </p>
             </div>
+        </>
+    );
+
+    if (href) {
+        return (
+            <Link 
+                href={href}
+                className="bg-[#0A0A1F] border border-white/5 rounded-[32px] p-8 hover:border-indigo-500/30 hover:bg-[#0E0E2F]/40 hover:shadow-indigo-500/5 transition-all group relative overflow-hidden shadow-2xl block cursor-pointer"
+            >
+                {CardContent}
+            </Link>
+        );
+    }
+
+    return (
+        <div className="bg-[#0A0A1F] border border-white/5 rounded-[32px] p-8 hover:border-white/10 transition-all group relative overflow-hidden shadow-2xl">
+            {CardContent}
         </div>
     );
 }

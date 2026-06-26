@@ -1324,7 +1324,7 @@ export default function HQProgressPage() {
                                                     </div>
                                                     <div className="p-4 bg-black/40 border border-white/5 rounded-xl">
                                                         <p className="text-xs font-bold text-white mb-1">2. Libro Diario Automatizado</p>
-                                                        <p className="text-[10px] text-gray-400">Registro de egresos y comisiones de los nodos automatizados para calcular la rentabilidad neta (God Mode) al instante.</p>
+                                                        <p className="text-[10px] text-gray-400">Registro de egresos y comisiones de los nodos automatizados para calcular la rentabilidad neta (Comando Central) al instante.</p>
                                                     </div>
                                                 </div>
                                             </div>

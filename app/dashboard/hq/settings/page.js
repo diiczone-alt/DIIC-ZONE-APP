@@ -118,7 +118,7 @@ export default function GodModeSettingsPage() {
                     {/* Columna Derecha: Seguridad y Versión */}
                     <div className="lg:col-span-5 space-y-8">
                         
-                        {/* SEGURIDAD GOD MODE */}
+                        {/* SEGURIDAD HQ CENTRAL */}
                         <section className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-10 border-amber-500/10 group/sec">
                             <h3 className="text-xs font-black text-amber-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]" />

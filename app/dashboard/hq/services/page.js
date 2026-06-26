@@ -288,7 +288,7 @@ export default function HQServicesPage() {
             <div className="flex justify-between items-end">
                 <div>
                     <h1 className="text-4xl font-black text-white mb-2 uppercase tracking-tighter italic">DIIC <span className="text-indigo-500">MONETIZACIÓN</span></h1>
-                    <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.3em]">God Mode Dashboard v5.0 — Estrategia de Precios 2026</p>
+                    <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.3em]">Comando Central Dashboard v5.0 — Estrategia de Precios 2026</p>
                 </div>
             </div>
 
