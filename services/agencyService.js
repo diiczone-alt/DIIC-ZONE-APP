@@ -80,9 +80,10 @@ const extractCoordsFromUrl = (url) => {
     return null;
 };
 
-const geocodeAddress = async (address, city) => {
+const geocodeAddress = async (address, city, country) => {
     const addressStr = (address || '').trim();
     const cityStr = (city || '').trim();
+    const countryStr = (country || 'Ecuador').trim();
     if (!addressStr) return null;
 
     // First try to extract coordinates directly if the address is a map URL
@@ -96,13 +97,25 @@ const geocodeAddress = async (address, city) => {
     }
 
     try {
-        const query = `${addressStr}, ${cityStr || ''}, Ecuador`.trim();
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`, {
+        // 1. Try direct geocoding first
+        let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addressStr)}`, {
             headers: {
                 'User-Agent': 'DiicZoneHQApp/1.0 (contact: info@diiczone.com)'
             }
         });
-        const data = await response.json();
+        let data = await response.json();
+        if (data && data.length > 0) {
+            return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        }
+
+        // 2. Try with city and country context if direct lookup failed
+        const query = `${addressStr}, ${cityStr ? cityStr + ',' : ''} ${countryStr}`.replace(/,\s*,/g, ',').trim().replace(/^,|,$/g, '');
+        response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`, {
+            headers: {
+                'User-Agent': 'DiicZoneHQApp/1.0 (contact: info@diiczone.com)'
+            }
+        });
+        data = await response.json();
         if (data && data.length > 0) {
             return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
         }
@@ -305,7 +318,7 @@ export const agencyService = {
 
             if (newClient.address && !newClient.coords) {
                 try {
-                    const coords = await geocodeAddress(newClient.address, newClient.city);
+                    const coords = await geocodeAddress(newClient.address, newClient.city, newClient.country);
                     if (coords) newClient.coords = coords;
                 } catch(e) {}
             }
@@ -378,8 +391,9 @@ export const agencyService = {
             } else if (updates.address !== undefined || updates.city !== undefined) {
                 const targetAddress = updates.address !== undefined ? updates.address : '';
                 const targetCity = updates.city !== undefined ? updates.city : '';
+                const targetCountry = updates.country !== undefined ? updates.country : '';
                 try {
-                    const coords = await geocodeAddress(targetAddress, targetCity);
+                    const coords = await geocodeAddress(targetAddress, targetCity, targetCountry);
                     if (coords) {
                         sanitizedUpdates.coords = coords;
                     }
@@ -486,9 +500,10 @@ export const agencyService = {
             if (updates.address !== undefined || updates.city !== undefined) {
                 const targetAddress = updates.address !== undefined ? updates.address : existingClient.address;
                 const targetCity = updates.city !== undefined ? updates.city : existingClient.city;
+                const targetCountry = updates.country !== undefined ? updates.country : existingClient.country;
                 if ((targetAddress && targetAddress !== existingClient.address) || (targetCity && targetCity !== existingClient.city) || !resolvedCoords) {
                     try {
-                        const coords = await geocodeAddress(targetAddress, targetCity);
+                        const coords = await geocodeAddress(targetAddress, targetCity, targetCountry);
                         if (coords) resolvedCoords = coords;
                     } catch(e) {}
                 }

@@ -313,15 +313,27 @@ export default function ProfilePage() {
             let resolvedCoords = formData.coords || null;
             if (formData.address && formData.address !== profileData?.address) {
                 try {
-                    const query = `${formData.address}, ${formData.location || ''}, Ecuador`.trim();
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`, {
+                    // 1. Try direct geocoding first
+                    let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(formData.address)}`, {
                         headers: {
                             'User-Agent': 'DiicZoneApp/1.0 (contact: info@diiczone.com)'
                         }
                     });
-                    const data = await response.json();
+                    let data = await response.json();
                     if (data && data.length > 0) {
                         resolvedCoords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+                    } else {
+                        // 2. Try with location and country context if direct lookup failed
+                        const query = `${formData.address}, ${formData.location || ''}, Ecuador`.trim();
+                        response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`, {
+                            headers: {
+                                'User-Agent': 'DiicZoneApp/1.0 (contact: info@diiczone.com)'
+                            }
+                        });
+                        data = await response.json();
+                        if (data && data.length > 0) {
+                            resolvedCoords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+                        }
                     }
                 } catch(e) {
                     console.error("Geocoding failed for profile save:", e);
