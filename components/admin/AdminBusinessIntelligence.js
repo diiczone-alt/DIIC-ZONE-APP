@@ -13,22 +13,36 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { agencyService } from '@/services/agencyService';
+import { supabase } from '@/lib/supabase';
+
 
 export default function AdminBusinessIntelligence() {
     const [scenRatio, setScenRatio] = useState(1); // Scenario Simulator: 1.0 (Current) to 1.5 (+50%)
     const [loading, setLoading] = useState(true);
     const [financialData, setFinancialData] = useState(null);
     const [scaleData, setScaleData] = useState(null);
+    const [clients, setClients] = useState([]);
+    const [rates, setRates] = useState([]);
+    const [services, setServices] = useState([]);
+    const [team, setTeam] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [fin, sc] = await Promise.all([
+                const [fin, sc, dbClients, dbRates, dbServices, dbTeam] = await Promise.all([
                     agencyService.getFinancialSummary(),
-                    agencyService.getScaleData()
+                    agencyService.getScaleData(),
+                    agencyService.getClients(),
+                    agencyService.getProductionRates(),
+                    supabase.from('services').select('*'),
+                    agencyService.getTeam()
                 ]);
                 setFinancialData(fin);
                 setScaleData(sc);
+                setClients(dbClients || []);
+                setRates(dbRates || []);
+                setServices(dbServices.data || []);
+                setTeam(dbTeam || []);
             } catch (error) {
                 console.error("Error fetching BI data:", error);
             } finally {
@@ -83,12 +97,61 @@ export default function AdminBusinessIntelligence() {
         ];
     }, [financialData, scaleData, scenRatio]);
 
-    const serviceMargins = [
-        { name: "Automatizaciones IA", margin: 78, trend: "+12%", color: "bg-emerald-500" },
-        { name: "Planes Médicos Pro", margin: 65, trend: "+5%", color: "bg-blue-500" },
-        { name: "Edición Cinematic", margin: 52, trend: "-2%", color: "bg-indigo-500" },
-        { name: "Fotografía Onsite", margin: 42, trend: "-8%", color: "bg-yellow-500" }
-    ];
+    const clientMargins = useMemo(() => {
+        if (!clients.length || !rates.length) return [];
+
+        const costMap = {};
+        rates.forEach(r => {
+            costMap[r.id] = Number(r.cost_internal) || 0;
+        });
+
+        const cm = team.find(t => t.role?.toLowerCase().includes('community'));
+        const cmSal = cm ? Number(cm.salary) : 150;
+        const activeClientsCount = clients.filter(c => c.status === 'active').length || 7;
+        const cmCostPerClient = cmSal / activeClientsCount;
+
+        return clients
+            .filter(c => c.status === 'active' && Number(c.price) > 0)
+            .map(client => {
+                const planId = client.plan?.toLowerCase() || 'presencia';
+                let planDef = services.find(s => s.id === planId || s.name?.toLowerCase().includes(planId));
+                
+                let deliverables = planDef ? planDef.deliverables : null;
+                if (!deliverables) {
+                    if (planId.includes('presencia')) deliverables = { posts: 6, videos: 3 };
+                    else if (planId.includes('crecimiento')) deliverables = { posts: 8, videos: 5 };
+                    else if (planId.includes('autoridad')) deliverables = { posts: 11, videos: 7 };
+                    else if (planId.includes('control')) deliverables = { posts: 16, videos: 10 };
+                    else deliverables = { posts: 8, videos: 5 };
+                }
+
+                const price = Number(client.price) || 0;
+                
+                // Cost Calculation
+                const costPosts = (Number(deliverables.posts) || 0) * (costMap['post_simple'] || 2.50);
+                const videoRate = price >= 500 ? (costMap['reel_prod'] || 25) : (costMap['reel_edit'] || 5);
+                const costVideos = (Number(deliverables.videos || deliverables.reels) || 0) * videoRate;
+                
+                const totalCost = costPosts + costVideos + cmCostPerClient;
+                const profit = price - totalCost;
+                const margin = price > 0 ? Math.round((profit / price) * 100) : 0;
+
+                let color = "bg-emerald-500";
+                if (margin < 40) color = "bg-red-500";
+                else if (margin < 60) color = "bg-yellow-500";
+
+                return {
+                    id: client.id,
+                    name: client.name,
+                    price,
+                    margin,
+                    cost: totalCost,
+                    color,
+                    plan: planDef?.name || client.plan || 'Plan Personalizado'
+                };
+            })
+            .sort((a, b) => b.margin - a.margin);
+    }, [clients, rates, services, team]);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 text-left">
@@ -136,46 +199,59 @@ export default function AdminBusinessIntelligence() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* RENTABILIDAD & SERVICIOS */}
-                <div className="lg:col-span-2 bg-[#0A0A12] border border-white/10 rounded-[40px] p-8 relative overflow-hidden text-left">
-                    <div className="flex justify-between items-center mb-10">
+                <div className="lg:col-span-2 bg-[#0A0A12] border border-white/10 rounded-[40px] p-8 relative overflow-hidden text-left flex flex-col justify-between">
+                    <div className="flex justify-between items-center mb-6">
                         <div>
                             <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
-                                <Target className="w-5 h-5 text-emerald-400" /> Radar de Rentabilidad
+                                <Target className="w-5 h-5 text-emerald-400" /> Fichas de Rentabilidad de Clientes
                             </h3>
-                            <p className="text-xs text-gray-500 font-medium mt-1">Comparativa de Margen de Contribución por Servicio</p>
+                            <p className="text-xs text-gray-500 font-medium mt-1">Margen de Contribución Real (Facturación vs Producción + CM)</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div className="space-y-8">
-                            {serviceMargins.map((svc, i) => (
-                                <div key={i} className="space-y-2">
-                                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                        <span className="text-gray-400">{svc.name}</span>
-                                        <span className="text-white">{svc.margin}%</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                        <div className="space-y-4 max-h-[380px] overflow-y-auto pr-2 custom-scrollbar">
+                            {clientMargins.map((client, i) => (
+                                <div key={i} className="space-y-2 p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-all">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <span className="text-xs font-black text-white block truncate max-w-[150px]">{client.name}</span>
+                                            <span className="text-[8px] text-gray-500 font-bold uppercase tracking-wider block mt-0.5">{client.plan}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-xs font-mono font-black text-indigo-300 block">${client.price}/mes</span>
+                                            <span className={`text-[9px] font-black uppercase tracking-wider ${client.margin < 40 ? 'text-red-400' : client.margin < 60 ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                                                Margen: {client.margin}%
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                                         <motion.div
                                             initial={{ width: 0 }}
-                                            animate={{ width: `${svc.margin}%` }}
+                                            animate={{ width: `${Math.max(5, Math.min(client.margin, 100))}%` }}
                                             transition={{ duration: 1.5, ease: "circOut" }}
-                                            className={`h-full rounded-full ${svc.color}`}
+                                            className={`h-full rounded-full ${client.color}`}
                                         />
                                     </div>
                                 </div>
                             ))}
+                            {clientMargins.length === 0 && (
+                                <div className="py-20 text-center text-gray-500 italic font-bold">
+                                    Cargando fichas financieras...
+                                </div>
+                            )}
                         </div>
 
                         <div className="bg-indigo-600/5 border border-indigo-500/20 rounded-3xl p-6">
                             <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <Lightbulb className="w-4 h-4" /> Insight Estratégico
+                                <Lightbulb className="w-4 h-4" /> Insight Estratégico de Escala
                             </h4>
                             <p className="text-xs text-gray-300 leading-relaxed font-medium">
-                                "El margen de <span className="text-emerald-400 font-black">Automatizaciones IA</span> es un <span className="text-white font-black text-sm">78% mayor</span> que el promedio de servicios físicos. Se recomienda pivotar el 40% del presupuesto de marketing hacia soluciones de software para maximizar la utilidad bruta de Q2."
+                                "Los clientes con márgenes menores al <span className="text-yellow-400 font-black">50%</span> representan un riesgo operativo. Para escalar de manera ordenada, limita las grabaciones presenciales en planes por debajo de los <span className="text-white font-black">$300/mes</span> y automatiza las revisiones con calendarios digitales."
                             </p>
                             <div className="mt-6 pt-6 border-t border-white/5">
-                                <button className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
-                                    Ver plan de pivotaje <ChevronDown className="w-3 h-3" />
+                                <button onClick={() => toast.info("Generando plan de optimización...")} className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
+                                    Generar Plan de Optimización <ChevronDown className="w-3 h-3" />
                                 </button>
                             </div>
                         </div>

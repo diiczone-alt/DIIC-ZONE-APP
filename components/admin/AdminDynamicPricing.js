@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     DollarSign, TrendingUp, Zap,
     Users, BarChart3, Settings2,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { agencyService } from '@/services/agencyService';
 
 export default function AdminDynamicPricing() {
     // 1. STATE FOR RULES
@@ -35,7 +36,57 @@ export default function AdminDynamicPricing() {
 
     const [finalPrice, setFinalPrice] = useState(0);
 
-    // 3. PRICING LOGIC
+    // 3. Campaign Cost Calculator State
+    const [calcRates, setCalcRates] = useState({
+        post_simple: 2.50,
+        carousel_premium: 15.00,
+        reel_edit: 5.00,
+        reel_prod: 25.00,
+        cm_salary: 150
+    });
+    
+    const [campaign, setCampaign] = useState({
+        posts: 8,
+        carousels: 2,
+        reelsEdit: 4,
+        reelsProd: 4,
+        viatical: 0,
+        cmShare: 7, // managed clients
+        desiredMargin: 50 // 50%
+    });
+
+    // 4. Load real rates from Database
+    useEffect(() => {
+        const loadCalculatorData = async () => {
+            try {
+                const [dbRates, dbTeam] = await Promise.all([
+                    agencyService.getProductionRates(),
+                    agencyService.getTeam()
+                ]);
+                
+                const rateMap = {};
+                dbRates.forEach(r => {
+                    rateMap[r.id] = Number(r.cost_internal);
+                });
+                
+                const cm = dbTeam.find(t => t.role?.toLowerCase().includes('community'));
+                const cmSal = cm ? Number(cm.salary) : 150;
+                
+                setCalcRates({
+                    post_simple: rateMap['post_simple'] || 2.50,
+                    carousel_premium: rateMap['carousel_premium'] || 15.00,
+                    reel_edit: rateMap['reel_edit'] || 5.00,
+                    reel_prod: rateMap['reel_prod'] || 25.00,
+                    cm_salary: cmSal
+                });
+            } catch (err) {
+                console.error("Error loading calculator rates:", err);
+            }
+        };
+        loadCalculatorData();
+    }, []);
+
+    // 5. PRICING LOGIC
     const calculatePrice = () => {
         let price = sim.basePrice;
         price *= rules.load[sim.loadStatus];
@@ -51,9 +102,27 @@ export default function AdminDynamicPricing() {
         setFinalPrice(calculatePrice());
     }, [sim, rules]);
 
+    // 6. Campaign cost calculations
+    const calculatedCost = useMemo(() => {
+        const costPosts = campaign.posts * calcRates.post_simple;
+        const costCarousels = campaign.carousels * calcRates.carousel_premium;
+        const costReelsEdit = campaign.reelsEdit * calcRates.reel_edit;
+        const costReelsProd = campaign.reelsProd * calcRates.reel_prod;
+        const costCM = calcRates.cm_salary / (campaign.cmShare || 7);
+        
+        return costPosts + costCarousels + costReelsEdit + costReelsProd + costCM + Number(campaign.viatical || 0);
+    }, [campaign, calcRates]);
+
+    const suggestedPrice = useMemo(() => {
+        const marginMultiplier = 1 - (campaign.desiredMargin / 100);
+        if (marginMultiplier <= 0) return calculatedCost;
+        return calculatedCost / marginMultiplier;
+    }, [calculatedCost, campaign.desiredMargin]);
+
     const handleSaveRules = () => {
         toast.success("Reglas de Pricing Inteligente actualizadas correctamente");
     };
+
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 text-left">
@@ -120,6 +189,143 @@ export default function AdminDynamicPricing() {
                             <MultiplierInput label="Intermedio" value={rules.complexity.medium} onChange={(v) => setRules({ ...rules, complexity: { ...rules.complexity, medium: v } })} />
                             <MultiplierInput label="Avanzado" value={rules.complexity.advanced} onChange={(v) => setRules({ ...rules, complexity: { ...rules.complexity, advanced: v } })} />
                             <MultiplierInput label="Maestro" value={rules.complexity.master} onChange={(v) => setRules({ ...rules, complexity: { ...rules.complexity, master: v } })} />
+                        </div>
+                    </div>
+
+                    {/* CALCULADORA DE CAMPAÑAS BASADA EN COSTOS */}
+                    <div className="bg-[#0A0A12] border border-white/5 rounded-[40px] p-8 text-left space-y-6">
+                        <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                            <div>
+                                <h3 className="text-lg font-black text-white flex items-center gap-2">
+                                    <Calculator className="w-5 h-5 text-indigo-400" /> Presupuestador de Campañas
+                                </h3>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Costeo en base a entregables & nóminas reales</p>
+                            </div>
+                            <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-black text-indigo-400 uppercase tracking-widest">
+                                Holding Model
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Inputs */}
+                            <div className="space-y-4">
+                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-white/5 pb-2">Entregables (Cantidad mensual)</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[9px] text-gray-500 font-bold uppercase block mb-1">Posts Simples</label>
+                                        <input
+                                            type="number"
+                                            value={campaign.posts}
+                                            onChange={(e) => setCampaign({ ...campaign, posts: Math.max(0, parseInt(e.target.value) || 0) })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] text-gray-500 font-bold uppercase block mb-1">Carruseles/Premium</label>
+                                        <input
+                                            type="number"
+                                            value={campaign.carousels}
+                                            onChange={(e) => setCampaign({ ...campaign, carousels: Math.max(0, parseInt(e.target.value) || 0) })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] text-gray-500 font-bold uppercase block mb-1">Reels (Edición)</label>
+                                        <input
+                                            type="number"
+                                            value={campaign.reelsEdit}
+                                            onChange={(e) => setCampaign({ ...campaign, reelsEdit: Math.max(0, parseInt(e.target.value) || 0) })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] text-gray-500 font-bold uppercase block mb-1">Reels (Grabación + Edit)</label>
+                                        <input
+                                            type="number"
+                                            value={campaign.reelsProd}
+                                            onChange={(e) => setCampaign({ ...campaign, reelsProd: Math.max(0, parseInt(e.target.value) || 0) })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-white/5 pb-2 pt-2">Estructura & Gestión</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[9px] text-gray-500 font-bold uppercase block mb-1">Cuentas por CM</label>
+                                        <input
+                                            type="number"
+                                            value={campaign.cmShare}
+                                            onChange={(e) => setCampaign({ ...campaign, cmShare: Math.max(1, parseInt(e.target.value) || 1) })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] text-gray-500 font-bold uppercase block mb-1">Viáticos/Extras ($)</label>
+                                        <input
+                                            type="number"
+                                            value={campaign.viatical}
+                                            onChange={(e) => setCampaign({ ...campaign, viatical: Math.max(0, parseFloat(e.target.value) || 0) })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Cost Breakdown & Output */}
+                            <div className="bg-[#0f0f24] border border-white/5 rounded-3xl p-6 flex flex-col justify-between">
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-white/5 pb-2">Estructura de Costo</h4>
+                                    
+                                    <div className="space-y-2 text-xs">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Diseños/Posts:</span>
+                                            <span className="text-white font-mono">${(campaign.posts * calcRates.post_simple + campaign.carousels * calcRates.carousel_premium).toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Videos/Edición:</span>
+                                            <span className="text-white font-mono">${(campaign.reelsEdit * calcRates.reel_edit + campaign.reelsProd * calcRates.reel_prod).toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Fracción CM:</span>
+                                            <span className="text-white font-mono">${(calcRates.cm_salary / campaign.cmShare).toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between border-t border-white/5 pt-2 font-bold text-indigo-300">
+                                            <span>Costo de Producción:</span>
+                                            <span className="font-mono">${calculatedCost.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="text-[9px] text-gray-500 font-bold uppercase">Margen Deseado</label>
+                                            <span className="text-xs font-black text-emerald-400">{campaign.desiredMargin}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="10"
+                                            max="85"
+                                            step="5"
+                                            value={campaign.desiredMargin}
+                                            onChange={(e) => setCampaign({ ...campaign, desiredMargin: parseInt(e.target.value) })}
+                                            className="w-full accent-emerald-500 cursor-pointer bg-white/10 rounded-full h-1"
+                                        />
+                                    </div>
+
+                                    <div className="flex justify-between items-end bg-emerald-500/5 border border-emerald-500/10 p-4 rounded-2xl">
+                                        <div>
+                                            <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block">Venta Sugerida</span>
+                                            <span className="text-[8px] text-gray-500 uppercase tracking-wider block">Modelo Sin Pérdidas</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-2xl font-black text-white font-mono">${Math.ceil(suggestedPrice)}</span>
+                                            <span className="text-[9px] text-gray-400 block font-mono">/mes</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
