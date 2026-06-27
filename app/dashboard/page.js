@@ -588,32 +588,41 @@ function DashboardContent() {
             if (!resolvedCoords && data.company_profile?.address) {
                 resolvedCoords = extractCoordsFromUrl(data.company_profile.address);
                 if (!resolvedCoords) {
-                    // Try geocoding on the fly (first direct, then fallback with city/country)
+                    // Try geocoding on the fly (combined first, then direct)
                     try {
                         const rawQuery = data.company_profile.address;
-                        let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(rawQuery)}`, {
-                            headers: {
-                                'User-Agent': 'DiicZoneApp/1.0 (contact: info@diiczone.com)'
-                            }
-                        });
-                        let resData = await response.json();
-                        if (resData && resData.length > 0) {
-                            resolvedCoords = [parseFloat(resData[0].lat), parseFloat(resData[0].lon)];
-                        } else {
-                            const city = data.company_profile.city || '';
-                            const country = data.company_profile.country || '';
-                            if (city || country) {
-                                const combined = `${rawQuery}, ${city}, ${country}`
-                                    .replace(/,\s*,/g, ',').trim().replace(/^,|,$/g, '');
-                                response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(combined)}`, {
+                        const city = data.company_profile.city || '';
+                        const country = data.company_profile.country || '';
+                        let matched = false;
+
+                        if (city || country) {
+                            const combined = `${rawQuery}, ${city}, ${country}`
+                                .replace(/,\s*,/g, ',').trim().replace(/^,|,$/g, '');
+                            try {
+                                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(combined)}`, {
                                     headers: {
                                         'User-Agent': 'DiicZoneApp/1.0 (contact: info@diiczone.com)'
                                     }
                                 });
-                                resData = await response.json();
+                                const resData = await response.json();
                                 if (resData && resData.length > 0) {
                                     resolvedCoords = [parseFloat(resData[0].lat), parseFloat(resData[0].lon)];
+                                    matched = true;
                                 }
+                            } catch (e) {
+                                console.error("Geocoding failed for combined query during save:", e);
+                            }
+                        }
+
+                        if (!matched) {
+                            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(rawQuery)}`, {
+                                headers: {
+                                    'User-Agent': 'DiicZoneApp/1.0 (contact: info@diiczone.com)'
+                                }
+                            });
+                            const resData = await response.json();
+                            if (resData && resData.length > 0) {
+                                resolvedCoords = [parseFloat(resData[0].lat), parseFloat(resData[0].lon)];
                             }
                         }
                     } catch (e) {

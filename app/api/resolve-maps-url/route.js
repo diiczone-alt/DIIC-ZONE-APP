@@ -103,18 +103,20 @@ export async function POST(req) {
       }
     } else {
       // It's a text address
-      // 1. Try direct geocoding first
-      coords = await geocodeAddress(finalUrl);
-      methodUsed = 'direct_geocoding';
-
-      // 2. Try geocoding with city/country context if direct lookup failed
-      if (!coords && (city || country)) {
+      // 1. Try geocoding with city/country context first (to respect local scope)
+      if (city || country) {
         const combinedQuery = `${finalUrl}, ${city || ''}, ${country || ''}`
           .replace(/,\s*,/g, ',')
           .trim()
           .replace(/^,|,$/g, '');
         coords = await geocodeAddress(combinedQuery);
         methodUsed = 'combined_geocoding';
+      }
+
+      // 2. Try direct geocoding as fallback (for specific/foreign addresses)
+      if (!coords) {
+        coords = await geocodeAddress(finalUrl);
+        methodUsed = 'direct_geocoding';
       }
     }
 

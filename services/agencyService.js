@@ -97,8 +97,9 @@ const geocodeAddress = async (address, city, country) => {
     }
 
     try {
-        // 1. Try direct geocoding first
-        let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addressStr)}`, {
+        // 1. Try with city and country context first (to respect local scope)
+        const query = `${addressStr}, ${cityStr ? cityStr + ',' : ''} ${countryStr}`.replace(/,\s*,/g, ',').trim().replace(/^,|,$/g, '');
+        let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`, {
             headers: {
                 'User-Agent': 'DiicZoneHQApp/1.0 (contact: info@diiczone.com)'
             }
@@ -108,9 +109,8 @@ const geocodeAddress = async (address, city, country) => {
             return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
         }
 
-        // 2. Try with city and country context if direct lookup failed
-        const query = `${addressStr}, ${cityStr ? cityStr + ',' : ''} ${countryStr}`.replace(/,\s*,/g, ',').trim().replace(/^,|,$/g, '');
-        response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`, {
+        // 2. Try direct geocoding as fallback (for specific/foreign addresses)
+        response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addressStr)}`, {
             headers: {
                 'User-Agent': 'DiicZoneHQApp/1.0 (contact: info@diiczone.com)'
             }
