@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import AdminTalentPayments from './AdminTalentPayments';
 import AdminTalentTraining from './AdminTalentTraining';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminTeamReputation({ teamData = [], activeRisks = [] }) {
     const [searchTerm, setSearchTerm] = useState('');
@@ -21,29 +22,86 @@ export default function AdminTeamReputation({ teamData = [], activeRisks = [] })
 
     // Map real team to visualization format
     const creatives = teamData.map(member => {
-        // Simple logic to map score to a level based on load and role for now, 
-        // until we have a real reputation score in DB
-        const baseScore = member.load > 90 ? 10 : (member.load > 70 ? 14 : 18);
-        const level = baseScore >= 18 ? "ÉLITE" : (baseScore >= 14 ? "PRO" : "ACTIVO");
+        const rep = member.reputation || { quality: 95, timing: 95, communication: 95, organization: 95, errors: 0, clients_happy: 95 };
+        const qualityVal = Number(rep.quality) || 95;
+        const timingVal = Number(rep.timing) || 95;
+        const commVal = Number(rep.communication) || 95;
+        const orgVal = Number(rep.organization) || 95;
+        const happyVal = Number(rep.clients_happy) || 95;
+        const errorsCount = Number(rep.errors) || 0;
+
+        const averagePct = (qualityVal + timingVal + commVal + orgVal + happyVal) / 5;
+        const baseScore = Math.round((averagePct / 100) * 20 * 10) / 10;
+        
+        const level = averagePct >= 95 ? "ÉLITE" : (averagePct >= 85 ? "PRO" : "ACTIVO");
         
         return {
             id: member.id,
             name: member.name,
             role: member.role,
             points: { 
-                quality: Math.floor(baseScore / 4.5), 
-                timing: Math.floor(baseScore / 6), 
-                corrections: 3, 
-                prof: 3, 
-                client: 4 
+                quality: Math.round((qualityVal / 100) * 4), 
+                timing: Math.round((timingVal / 100) * 3), 
+                corrections: Math.max(0, 3 - errorsCount), 
+                prof: Math.round((commVal / 100) * 3), 
+                client: Math.round((happyVal / 100) * 4) 
             },
             score: baseScore,
             level: level,
             history: `Activo con ${member.activeTasksCount} tareas asignadas.`,
             color: level === "ÉLITE" ? "purple" : (level === "PRO" ? "blue" : "emerald"),
-            load: member.load
+            load: member.load,
+            reputation: rep,
+            salary: Number(member.salary) || 150
         };
     });
+
+    const [evalCreative, setEvalCreative] = useState(null);
+    const [evalScores, setEvalScores] = useState({
+        quality: 95,
+        timing: 95,
+        communication: 95,
+        organization: 95,
+        errors: 0,
+        clients_happy: 95
+    });
+    const [saving, setSaving] = useState(false);
+
+    const handleOpenEvaluate = (creative) => {
+        setEvalCreative(creative);
+        setEvalScores(creative.reputation || {
+            quality: 95,
+            timing: 95,
+            communication: 95,
+            organization: 95,
+            errors: 0,
+            clients_happy: 95
+        });
+    };
+
+    const handleSaveEvaluation = async () => {
+        setSaving(true);
+        try {
+            const { error } = await supabase
+                .from('team')
+                .update({ reputation: evalScores })
+                .eq('id', evalCreative.id);
+
+            if (error) throw error;
+
+            toast.success(`Evaluación de ${evalCreative.name} guardada correctamente`);
+            setEvalCreative(null);
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } catch (err) {
+            console.error("Error saving evaluation:", err);
+            toast.error("Error al guardar la evaluación");
+        } finally {
+            setSaving(false);
+        }
+    };
+
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 text-left">
@@ -125,9 +183,9 @@ export default function AdminTeamReputation({ teamData = [], activeRisks = [] })
                                         <div className="text-right">Nivel</div>
                                     </div>
 
-                                    {creatives.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map((c, i) => (
-                                        <CreativeRow key={i} data={c} />
-                                    ))}
+                                     {creatives.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map((c, i) => (
+                                         <CreativeRow key={i} data={c} onEvaluate={handleOpenEvaluate} />
+                                     ))}
                                 </div>
                             </div>
 
@@ -204,6 +262,128 @@ export default function AdminTeamReputation({ teamData = [], activeRisks = [] })
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <AnimatePresence>
+                {evalCreative && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.95, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 20 }}
+                            className="bg-[#0A0A12] border border-white/10 w-full max-w-lg rounded-[32px] p-6 space-y-6 relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+                            
+                            <div>
+                                <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+                                    <Award className="w-5 h-5 text-purple-400" /> Evaluar Desempeño
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-wider">
+                                    Colaborador: <span className="text-white">{evalCreative.name}</span> (${evalCreative.role})
+                                </p>
+                            </div>
+
+                            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar text-xs">
+                                {/* Quality Slider */}
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-center text-[10px] uppercase font-bold text-gray-400">
+                                        <span>Calidad de Entregas (Posts/Reels)</span>
+                                        <span className="text-purple-400 font-mono">{evalScores.quality}%</span>
+                                    </div>
+                                    <input 
+                                        type="range" min="0" max="100" value={evalScores.quality} 
+                                        onChange={(e) => setEvalScores({...evalScores, quality: parseInt(e.target.value)})}
+                                        className="w-full accent-purple-500 cursor-pointer bg-white/10 rounded-full h-1"
+                                    />
+                                </div>
+
+                                {/* Timing Slider */}
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-center text-[10px] uppercase font-bold text-gray-400">
+                                        <span>Puntualidad en Tareas</span>
+                                        <span className="text-blue-400 font-mono">{evalScores.timing}%</span>
+                                    </div>
+                                    <input 
+                                        type="range" min="0" max="100" value={evalScores.timing} 
+                                        onChange={(e) => setEvalScores({...evalScores, timing: parseInt(e.target.value)})}
+                                        className="w-full accent-blue-500 cursor-pointer bg-white/10 rounded-full h-1"
+                                    />
+                                </div>
+
+                                {/* Communication Slider */}
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-center text-[10px] uppercase font-bold text-gray-400">
+                                        <span>Comunicación con Clientes & Equipo</span>
+                                        <span className="text-emerald-400 font-mono">{evalScores.communication}%</span>
+                                    </div>
+                                    <input 
+                                        type="range" min="0" max="100" value={evalScores.communication} 
+                                        onChange={(e) => setEvalScores({...evalScores, communication: parseInt(e.target.value)})}
+                                        className="w-full accent-emerald-500 cursor-pointer bg-white/10 rounded-full h-1"
+                                    />
+                                </div>
+
+                                {/* Organization Slider */}
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-center text-[10px] uppercase font-bold text-gray-400">
+                                        <span>Organización de Calendarios / Tareas</span>
+                                        <span className="text-yellow-400 font-mono">{evalScores.organization}%</span>
+                                    </div>
+                                    <input 
+                                        type="range" min="0" max="100" value={evalScores.organization} 
+                                        onChange={(e) => setEvalScores({...evalScores, organization: parseInt(e.target.value)})}
+                                        className="w-full accent-yellow-500 cursor-pointer bg-white/10 rounded-full h-1"
+                                    />
+                                </div>
+
+                                {/* Clients Happy Slider */}
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-center text-[10px] uppercase font-bold text-gray-400">
+                                        <span>Satisfacción del Cliente</span>
+                                        <span className="text-pink-400 font-mono">{evalScores.clients_happy}%</span>
+                                    </div>
+                                    <input 
+                                        type="range" min="0" max="100" value={evalScores.clients_happy} 
+                                        onChange={(e) => setEvalScores({...evalScores, clients_happy: parseInt(e.target.value)})}
+                                        className="w-full accent-pink-500 cursor-pointer bg-white/10 rounded-full h-1"
+                                    />
+                                </div>
+
+                                {/* Errors Input */}
+                                <div className="space-y-1 pt-2">
+                                    <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Errores Críticos en el Mes</label>
+                                    <input 
+                                        type="number" min="0" max="10" value={evalScores.errors} 
+                                        onChange={(e) => setEvalScores({...evalScores, errors: parseInt(e.target.value) || 0})}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white font-mono outline-none focus:border-purple-500/50 transition-all text-xs"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                                <button 
+                                    onClick={() => setEvalCreative(null)}
+                                    className="px-4 py-2 text-xs font-black text-gray-400 hover:text-white transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    onClick={handleSaveEvaluation}
+                                    disabled={saving}
+                                    className="px-6 py-2 bg-purple-500 hover:bg-purple-400 disabled:opacity-50 text-white text-xs font-black rounded-xl transition-all flex items-center gap-2"
+                                >
+                                    {saving ? 'Guardando...' : 'Guardar Evaluación'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
@@ -246,24 +426,39 @@ function AdminIncentivesView({ creatives }) {
                             <div>Cumplimiento</div>
                             <div className="text-right">Bono Sugerido</div>
                         </div>
-                        {creatives.filter(c => c.score >= 12).map((c, i) => (
-                            <div key={i} className="grid grid-cols-4 items-center p-4 rounded-xl bg-white/5 border border-transparent hover:border-pink-500/20 transition-all group">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 rounded-full bg-${c.color}-500/20 flex items-center justify-center font-bold text-${c.color}-400 text-xs`}>{c.name.substring(0, 1)}</div>
-                                    <div className="text-xs font-bold text-white uppercase">{c.name}</div>
-                                </div>
-                                <div className="text-[10px] font-black text-gray-400 uppercase">{c.level}</div>
-                                <div>
-                                    <div className="flex gap-1">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        {creatives.map((c, i) => {
+                            const rep = c.reputation || { quality: 95, timing: 95, communication: 95, organization: 95, errors: 0, clients_happy: 95 };
+                            const timingB = (rep.timing >= 95 && rep.errors <= 1) ? 20 : 0;
+                            const orgB = (rep.organization >= 95) ? 20 : 0;
+                            const satB = (rep.clients_happy >= 95) ? 20 : 0;
+                            const totalBonus = timingB + orgB + satB;
+
+                            return (
+                                <div key={i} className="grid grid-cols-4 items-center p-4 rounded-xl bg-white/5 border border-transparent hover:border-pink-500/20 transition-all group">
+                                    <div className="flex items-center gap-3 col-span-1">
+                                        <div className={`w-8 h-8 rounded-full bg-${c.color}-500/20 flex items-center justify-center font-bold text-${c.color}-400 text-xs`}>{c.name.substring(0, 1)}</div>
+                                        <div>
+                                            <div className="text-xs font-bold text-white uppercase truncate max-w-[100px]">{c.name}</div>
+                                            <div className="text-[9px] text-gray-500 font-bold uppercase truncate max-w-[100px]">{c.role}</div>
+                                        </div>
                                     </div>
-                                    <div className="text-[9px] text-gray-500 font-bold uppercase mt-1">Consistency (3m)</div>
+                                    <div className="text-[10px] font-black text-gray-400 uppercase">{c.level}</div>
+                                    <div>
+                                        <div className="flex flex-col gap-1">
+                                            {timingB > 0 && <span className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold max-w-max uppercase tracking-wider">⏱️ Puntualidad (+$20)</span>}
+                                            {orgB > 0 && <span className="text-[8px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 font-bold max-w-max uppercase tracking-wider">🗂️ Organización (+$20)</span>}
+                                            {satB > 0 && <span className="text-[8px] px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-400 font-bold max-w-max uppercase tracking-wider">💖 Satisfacción (+$20)</span>}
+                                            {totalBonus === 0 && <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 font-bold max-w-max uppercase tracking-wider">Sin Bonos</span>}
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-xs font-bold text-white font-mono block">${c.salary} base</span>
+                                        <span className="text-[10px] font-black text-emerald-400 font-mono block">+{totalBonus > 0 ? `+$${totalBonus}` : '$0'} bono</span>
+                                        <span className="text-xs font-black text-purple-400 font-mono block border-t border-white/5 pt-1 mt-1">Total: ${c.salary + totalBonus}</span>
+                                    </div>
                                 </div>
-                                <div className="text-right font-black text-emerald-400">+10% Fee</div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -309,7 +504,7 @@ function ScalingRule({ time, benefit, icon: Icon }) {
 
 // --- HELPER COMPONENTS ---
 
-function CreativeRow({ data }) {
+function CreativeRow({ data, onEvaluate }) {
     const levelColors = {
         purple: "bg-purple-500/10 text-purple-400 border-purple-500/20",
         blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -342,10 +537,17 @@ function CreativeRow({ data }) {
                 <div className="text-[9px] text-gray-500 uppercase font-bold">Total</div>
             </div>
 
-            <div className="text-right">
+            <div className="text-right flex items-center justify-end gap-2">
                 <span className={`px-2 py-1 rounded text-[10px] font-black border ${levelColors[data.color]}`}>
                     {data.level}
                 </span>
+                <button 
+                    onClick={() => onEvaluate(data)}
+                    className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-purple-500/20 hover:border-purple-500/30 transition-all active:scale-95"
+                    title="Evaluar Desempeño"
+                >
+                    <Award className="w-3.5 h-3.5" />
+                </button>
             </div>
         </motion.div>
     );

@@ -123,6 +123,493 @@ export default function AdminDynamicPricing() {
         toast.success("Reglas de Pricing Inteligente actualizadas correctamente");
     };
 
+    const handleGenerateCampaignPDF = () => {
+        const propId = `DZ-PROP-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        const dateStr = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+        
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast.error("Por favor, permite las ventanas emergentes (popups) para generar la propuesta.");
+            return;
+        }
+
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <title>Propuesta Comercial - DIIC ZONE</title>
+                <style>
+                    body {
+                        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                        color: #1a1a2e;
+                        margin: 0;
+                        padding: 40px;
+                        line-height: 1.6;
+                    }
+                    .header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        border-b: 2px solid #6366f1;
+                        padding-bottom: 20px;
+                        margin-bottom: 40px;
+                    }
+                    .logo {
+                        font-size: 24px;
+                        font-weight: 900;
+                        color: #0A0A1F;
+                        letter-spacing: -1px;
+                        font-style: italic;
+                    }
+                    .logo span {
+                        color: #6366f1;
+                    }
+                    .info-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin-bottom: 40px;
+                    }
+                    .info-block h4 {
+                        margin: 0 0 8px 0;
+                        font-size: 11px;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        color: #6b7280;
+                    }
+                    .info-block p {
+                        margin: 0;
+                        font-size: 14px;
+                        font-weight: bold;
+                    }
+                    h2 {
+                        font-size: 18px;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        color: #0d0d2b;
+                        border-bottom: 1px solid #e5e7eb;
+                        padding-bottom: 8px;
+                        margin-top: 30px;
+                        margin-bottom: 20px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 40px;
+                    }
+                    th, td {
+                        text-align: left;
+                        padding: 12px;
+                        border-bottom: 1px solid #e5e7eb;
+                        font-size: 13px;
+                    }
+                    th {
+                        background-color: #f9fafb;
+                        color: #4b5563;
+                        font-weight: bold;
+                        text-transform: uppercase;
+                        font-size: 10px;
+                        letter-spacing: 1px;
+                    }
+                    .total-row {
+                        font-weight: bold;
+                        font-size: 16px;
+                        background-color: #f3f4f6;
+                    }
+                    .terms {
+                        font-size: 12px;
+                        color: #6b7280;
+                        margin-bottom: 60px;
+                    }
+                    .signatures {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 80px;
+                        margin-top: 60px;
+                        text-align: center;
+                    }
+                    .sig-line {
+                        border-top: 1px solid #9ca3af;
+                        padding-top: 10px;
+                        font-size: 13px;
+                    }
+                    @media print {
+                        body {
+                            padding: 20px;
+                        }
+                        button {
+                            display: none;
+                        }
+                    }
+                    .print-btn {
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        padding: 12px 24px;
+                        background-color: #6366f1;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+                        font-size: 12px;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                    }
+                    .print-btn:hover {
+                        background-color: #4f46e5;
+                    }
+                </style>
+            </head>
+            <body>
+                <button class="print-btn" onclick="window.print()">Imprimir / Guardar PDF</button>
+                
+                <div class="header">
+                    <div class="logo">DIIC<span>ZONE</span></div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 14px; font-weight: bold; color: #6366f1;">PROPUESTA COMERCIAL</div>
+                        <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">ID: ${propId}</div>
+                    </div>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-block">
+                        <h4>Preparado para:</h4>
+                        <p id="client-name-placeholder" style="cursor: pointer; color: #6366f1;" onclick="const name = prompt('Nombre del Cliente/Marca:'); if(name) this.innerText = name;">[Haz clic aquí para escribir el nombre de la marca]</p>
+                    </div>
+                    <div class="info-block" style="text-align: right;">
+                        <h4>Fecha de Emisión:</h4>
+                        <p>${dateStr}</p>
+                    </div>
+                </div>
+
+                <h2>Detalle del Plan de Contenidos</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Servicio / Entregable</th>
+                            <th style="text-align: center;">Cantidad Mensual</th>
+                            <th>Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${campaign.posts > 0 ? `
+                        <tr>
+                            <td><strong>Posts de Diseño Simples</strong></td>
+                            <td style="text-align: center;">${campaign.posts}</td>
+                            <td>Diseño gráfico estratégico y optimizado para redes sociales.</td>
+                        </tr>` : ''}
+                        ${campaign.carousels > 0 ? `
+                        <tr>
+                            <td><strong>Carruseles / Post Premium</strong></td>
+                            <td style="text-align: center;">${campaign.carousels}</td>
+                            <td>Contenido gráfico deslizante de alto impacto educativo y de ventas.</td>
+                        </tr>` : ''}
+                        ${campaign.reelsEdit > 0 ? `
+                        <tr>
+                            <td><strong>Edición de Reels / TikToks</strong></td>
+                            <td style="text-align: center;">${campaign.reelsEdit}</td>
+                            <td>Edición de video dinámico con ganchos visuales, subtítulos y efectos.</td>
+                        </tr>` : ''}
+                        ${campaign.reelsProd > 0 ? `
+                        <tr>
+                            <td><strong>Videos (Rodaje + Edición)</strong></td>
+                            <td style="text-align: center;">${campaign.reelsProd}</td>
+                            <td>Sesiones de filmación onsite en Santo Domingo + postproducción viral.</td>
+                        </tr>` : ''}
+                        <tr>
+                            <td><strong>Gestión y Community Manager</strong></td>
+                            <td style="text-align: center;">Incluido</td>
+                            <td>Coordinación de piezas, programación y monitoreo de la cuenta.</td>
+                        </tr>
+                        ${campaign.viatical > 0 ? `
+                        <tr>
+                            <td><strong>Cargos Adicionales (Viáticos/Extras)</strong></td>
+                            <td style="text-align: center;">-</td>
+                            <td>Gastos de logística, transporte o requerimientos de filmación especiales.</td>
+                        </tr>` : ''}
+                        <tr class="total-row">
+                            <td>Valor Total de Campaña</td>
+                            <td style="text-align: center;">-</td>
+                            <td style="color: #6366f1;">$${Math.ceil(suggestedPrice)}/mes</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>Términos del Contrato</h2>
+                <div class="terms">
+                    <p>1. <strong>Vigencia del Acuerdo:</strong> La vigencia sugerida de este plan de trabajo es de tres (3) meses renovables.</p>
+                    <p>2. <strong>Condiciones de Pago:</strong> Los pagos se realizarán de manera mensual durante los primeros cinco (5) días de cada ciclo de facturación.</p>
+                    <p>3. <strong>Coordinación:</strong> El cliente proporcionará los accesos e información oportuna para evitar retrasos en el calendario de publicaciones.</p>
+                </div>
+
+                <div class="signatures">
+                    <div>
+                        <div style="height: 60px;"></div>
+                        <div class="sig-line">
+                            <strong>Dicson</strong><br>
+                            CEO, DIIC ZONE
+                        </div>
+                    </div>
+                    <div>
+                        <div style="height: 60px;"></div>
+                        <div class="sig-line">
+                            <strong>Aceptado por el Cliente</strong><br>
+                            Firma Autorizada
+                        </div>
+                    </div>
+                </div>
+                
+                <script>
+                    window.onload = function() {
+                        setTimeout(function() {
+                            const clientPlaceholder = document.getElementById('client-name-placeholder');
+                            const name = prompt('Ingresa el nombre del Cliente o Marca para la propuesta:');
+                            if (name) {
+                                clientPlaceholder.innerText = name;
+                            }
+                        }, 300);
+                    };
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+    };
+
+    const handleGenerateSimulatorPDF = () => {
+        const propId = `DZ-SIM-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        const dateStr = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+        
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast.error("Por favor, permite las ventanas emergentes (popups) para generar la propuesta.");
+            return;
+        }
+
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <title>Presupuesto Estimado - DIIC ZONE</title>
+                <style>
+                    body {
+                        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                        color: #1a1a2e;
+                        margin: 0;
+                        padding: 40px;
+                        line-height: 1.6;
+                    }
+                    .header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        border-b: 2px solid #10b981;
+                        padding-bottom: 20px;
+                        margin-bottom: 40px;
+                    }
+                    .logo {
+                        font-size: 24px;
+                        font-weight: 900;
+                        color: #0A0A1F;
+                        letter-spacing: -1px;
+                        font-style: italic;
+                    }
+                    .logo span {
+                        color: #10b981;
+                    }
+                    .info-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin-bottom: 40px;
+                    }
+                    .info-block h4 {
+                        margin: 0 0 8px 0;
+                        font-size: 11px;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        color: #6b7280;
+                    }
+                    .info-block p {
+                        margin: 0;
+                        font-size: 14px;
+                        font-weight: bold;
+                    }
+                    h2 {
+                        font-size: 18px;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        color: #0d0d2b;
+                        border-bottom: 1px solid #e5e7eb;
+                        padding-bottom: 8px;
+                        margin-top: 30px;
+                        margin-bottom: 20px;
+                    }
+                    .summary-box {
+                        background-color: #f9fafb;
+                        border: 1px solid #e5e7eb;
+                        border-radius: 12px;
+                        padding: 24px;
+                        margin-bottom: 40px;
+                    }
+                    .summary-item {
+                        display: flex;
+                        justify-content: space-between;
+                        font-size: 14px;
+                        margin-bottom: 10px;
+                    }
+                    .total-row {
+                        border-top: 2px solid #e5e7eb;
+                        padding-top: 15px;
+                        font-weight: bold;
+                        font-size: 18px;
+                        color: #10b981;
+                    }
+                    .terms {
+                        font-size: 12px;
+                        color: #6b7280;
+                        margin-bottom: 60px;
+                    }
+                    .signatures {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 80px;
+                        margin-top: 60px;
+                        text-align: center;
+                    }
+                    .sig-line {
+                        border-top: 1px solid #9ca3af;
+                        padding-top: 10px;
+                        font-size: 13px;
+                    }
+                    @media print {
+                        body {
+                            padding: 20px;
+                        }
+                        button {
+                            display: none;
+                        }
+                    }
+                    .print-btn {
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        padding: 12px 24px;
+                        background-color: #10b981;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);
+                        font-size: 12px;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                    }
+                    .print-btn:hover {
+                        background-color: #059669;
+                    }
+                </style>
+            </head>
+            <body>
+                <button class="print-btn" onclick="window.print()">Imprimir / Guardar PDF</button>
+                
+                <div class="header">
+                    <div class="logo">DIIC<span>ZONE</span></div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 14px; font-weight: bold; color: #10b981;">COTIZACIÓN DE SERVICIOS</div>
+                        <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">ID: ${propId}</div>
+                    </div>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-block">
+                        <h4>Preparado para:</h4>
+                        <p id="client-name-placeholder" style="cursor: pointer; color: #10b981;" onclick="const name = prompt('Nombre del Cliente/Marca:'); if(name) this.innerText = name;">[Haz clic aquí para escribir el nombre de la marca]</p>
+                    </div>
+                    <div class="info-block" style="text-align: right;">
+                        <h4>Fecha de Emisión:</h4>
+                        <p>${dateStr}</p>
+                    </div>
+                </div>
+
+                <h2>Resumen de Estimación Comercial</h2>
+                <div class="summary-box">
+                    <div class="summary-item">
+                        <span style="color: #6b7280;">Precio Base del Proyecto:</span>
+                        <span style="font-weight: bold;">$${sim.basePrice}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span style="color: #6b7280;">Ajuste por Carga Operativa (x${rules.load[sim.loadStatus].toFixed(2)}):</span>
+                        <span>${sim.loadStatus === 'high' ? 'Alta Demanda' : sim.loadStatus === 'medium' ? 'Demanda Media' : 'Baja Demanda'}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span style="color: #6b7280;">Ajuste por Nivel de Urgencia (x${rules.urgency[sim.urgencyType].toFixed(2)}):</span>
+                        <span>${sim.urgencyType === 'urgent' ? 'Urgente (24h)' : sim.urgencyType === 'fast' ? 'Rápida (2-3 días)' : 'Estándar'}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span style="color: #6b7280;">Multiplicador de Complejidad (x${rules.complexity[sim.complexityLevel].toFixed(2)}):</span>
+                        <span style="text-transform: capitalize;">${sim.complexityLevel}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span style="color: #6b7280;">Nivel de Cliente / Descuento (${rules.loyalty[sim.clientLevel]}%):</span>
+                        <span>Nivel ${sim.clientLevel.replace('lvl', '')}</span>
+                    </div>
+                    <div class="summary-item total-row">
+                        <span>Valor Total Estimado:</span>
+                        <span>$${Math.round(finalPrice)}/mes</span>
+                    </div>
+                </div>
+
+                <h2>Términos del Acuerdo</h2>
+                <div class="terms">
+                    <p>1. Esta cotización tiene una validez de quince (15) días a partir de su emisión.</p>
+                    <p>2. El valor total incluye todos los cargos correspondientes a la complejidad técnica del proyecto y plazos indicados.</p>
+                </div>
+
+                <div class="signatures">
+                    <div>
+                        <div style="height: 60px;"></div>
+                        <div class="sig-line">
+                            <strong>Dicson</strong><br>
+                            CEO, DIIC ZONE
+                        </div>
+                    </div>
+                    <div>
+                        <div style="height: 60px;"></div>
+                        <div class="sig-line">
+                            <strong>Aceptado por el Cliente</strong><br>
+                            Firma Autorizada
+                        </div>
+                    </div>
+                </div>
+                
+                <script>
+                    window.onload = function() {
+                        setTimeout(function() {
+                            const clientPlaceholder = document.getElementById('client-name-placeholder');
+                            const name = prompt('Ingresa el nombre del Cliente o Marca para la propuesta:');
+                            if (name) {
+                                clientPlaceholder.innerText = name;
+                            }
+                        }, 300);
+                    };
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+    };
+
+
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 text-left">
@@ -324,6 +811,12 @@ export default function AdminDynamicPricing() {
                                             <span className="text-[9px] text-gray-400 block font-mono">/mes</span>
                                         </div>
                                     </div>
+                                    <button 
+                                        onClick={handleGenerateCampaignPDF}
+                                        className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 mt-2"
+                                    >
+                                        <Sparkles className="w-3 h-3" /> Descargar Propuesta PDF
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -394,7 +887,10 @@ export default function AdminDynamicPricing() {
                                         <p className="text-[9px] font-bold text-gray-500 mt-1 italic">Incluye ajustes dinámicos</p>
                                     </div>
                                 </div>
-                                <button className="w-full py-4 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-2">
+                                <button 
+                                    onClick={handleGenerateSimulatorPDF}
+                                    className="w-full py-4 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                >
                                     <Sparkles className="w-3 h-3 text-emerald-500" /> Generar Oferta PDF
                                 </button>
                             </div>
