@@ -142,7 +142,7 @@ export default function AdminFinancialCore() {
             <div className="min-h-[500px]">
                 <AnimatePresence mode="wait">
                     {activeTab === 'revenue' && <RevenueModule key="revenue" data={financial?.transactions || []} />}
-                    {activeTab === 'distribution' && <DistributionModule key="dist" />}
+                    {activeTab === 'distribution' && <DistributionModule key="dist" totalIncome={metrics.income} />}
                     {activeTab === 'costs' && <CostsModule key="costs" scale={scale} />}
                     {activeTab === 'profit' && <ProfitModule key="profit" metrics={metrics} scale={scale} />}
                     {activeTab === 'projection' && <ProjectionModule key="proj" scale={scale} />}
@@ -198,23 +198,23 @@ function RevenueModule() {
     );
 }
 
-function DistributionModule() {
+function DistributionModule({ totalIncome }) {
     const splits = [
-        { label: "Producción Creativa", value: "25%", amount: "$0", desc: "Edición, Diseño, Guiones", color: "blue", icon: Briefcase },
-        { label: "Nodo Territorial", value: "15%", amount: "$0", desc: "Producción local, eventos", color: "indigo", icon: Users },
-        { label: "Tecnología / IA", value: "20%", amount: "$0", desc: "Servidores, licencias, bots", color: "purple", icon: Cpu },
-        { label: "Operación & Admin", value: "10%", amount: "$0", desc: "Soporte, impuestos, legal", color: "pink", icon: ShieldCheck },
-        { label: "Utilidad DIIC ZONE", value: "30%", amount: "$0", desc: "Ganancia real acumulada", color: "emerald", icon: DollarSign },
+        { label: "Producción Creativa", value: "35%", amount: `$${((totalIncome || 0) * 0.35).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, desc: "CM, Editores, Filmmakers, Variables", color: "blue", icon: Briefcase },
+        { label: "Operación & SaaS", value: "20%", amount: `$${((totalIncome || 0) * 0.20).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, desc: "Software, viáticos, logística, legal", color: "pink", icon: ShieldCheck },
+        { label: "Fondo de Reinversión", value: "20%", amount: `$${((totalIncome || 0) * 0.20).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, desc: "Cámaras, drones, desarrollo de app, pauta", color: "purple", icon: Cpu },
+        { label: "Utilidad de Reserva", value: "15%", amount: `$${((totalIncome || 0) * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, desc: "Caja chica y fondo de emergencia holding", color: "emerald", icon: DollarSign },
+        { label: "Sueldo CEO (Dicson)", value: "10%", amount: `$${((totalIncome || 0) * 0.10).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, desc: "Sueldo fijo operativo del director", color: "indigo", icon: Users },
     ];
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {splits.map((s, i) => (
-                    <div key={i} className={`p-6 rounded-3xl border border-white/10 bg-[#0A0A12] relative overflow-hidden group hover:border-${s.color}-500/30 transition-all`}>
-                        <div className={`absolute top-0 right-0 w-24 h-24 bg-${s.color}-500/5 rounded-full blur-3xl`} />
+                    <div key={i} className={`p-6 rounded-3xl border border-white/10 bg-[#0A0A12] relative overflow-hidden group hover:border-yellow-500/30 transition-all`}>
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-3xl" />
                         <div className="flex justify-between items-start mb-6">
-                            <div className={`p-3 rounded-2xl bg-${s.color}-500/10 text-${s.color}-400`}>
+                            <div className="p-3 rounded-2xl bg-white/5 text-yellow-500">
                                 <s.icon className="w-6 h-6" />
                             </div>
                             <div className="text-right">
@@ -231,7 +231,7 @@ function DistributionModule() {
                                 initial={{ width: 0 }}
                                 animate={{ width: s.value }}
                                 transition={{ duration: 1, delay: i * 0.1 }}
-                                className={`h-full bg-${s.color}-500`}
+                                className="h-full bg-yellow-500"
                             />
                         </div>
                     </div>
@@ -239,11 +239,11 @@ function DistributionModule() {
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
-                <PieChart className="w-12 h-12 text-emerald-500 mx-auto mb-4 opacity-50" />
-                <h4 className="text-lg font-bold text-white mb-2">Motor de Reparto Automático Activo</h4>
+                <PieChart className="w-12 h-12 text-yellow-500 mx-auto mb-4 opacity-50" />
+                <h4 className="text-lg font-bold text-white mb-2">Motor de Reparto de Holding Activo</h4>
                 <p className="text-sm text-gray-500 max-w-lg mx-auto">
-                    Cada pago recibido se liquida internamente según el modelo DIIC ZONE PRO.
-                    Las carteras de Nodos y Creativos se actualizan en tiempo real.
+                    Cada pago recibido por la agencia se liquida automáticamente según el modelo de Holding de 5 vías de DIIC ZONE.
+                    Las cuentas de reinversión y sueldos se calculan de manera dinámica.
                 </p>
             </div>
         </motion.div>
