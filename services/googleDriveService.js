@@ -25,22 +25,36 @@ export const googleDriveService = {
                 throw new Error('No Google connection found for this client.');
             }
 
-            // 2. Logic to create folders (In a real scenario, this would call a Supabase Edge Function 
-            // to avoid exposing the Google Client Secret on the front-end, or use the access token directly)
-            
-            // MOCKING the folder creation for now until Edge Function is ready
-            const rootFolderName = `DIIC_ZONE_${client.name}`;
-            console.log(`[GoogleDrive] Creating root folder: ${rootFolderName}`);
-            
-            const folderId = 'mock_folder_' + Math.random().toString(36).substr(2, 9);
-            
+            // 2. Call the setup API route
+            const response = await fetch('/api/drive/setup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    accessToken: client.google_access_token,
+                    brandName: client.name
+                })
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Failed to setup folders via Google API');
+            }
+
+            const folderId = result.rootId;
+            const folderLink = result.rootLink;
+
             // 3. Save root folder ID back to DB
             await supabase
                 .from('clients')
-                .update({ google_drive_folder_id: folderId })
+                .update({ 
+                    google_drive_folder_id: folderId,
+                    google_connected_email: folderLink
+                })
                 .eq('id', clientId);
 
-            return { success: true, folderId };
+            return { success: true, folderId, folderLink };
         } catch (err) {
             console.error('[GoogleDrive] Initialization failed:', err.message);
             return { success: false, error: err.message };

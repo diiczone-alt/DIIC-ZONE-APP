@@ -11,6 +11,8 @@ export default function ConfigureOrder() {
     const type = searchParams.get('type');
 
     const [quantity, setQuantity] = useState(100);
+    const [material, setMaterial] = useState('Estándar (300g Mate)');
+    const estimatedPrice = (20 + (quantity * 0.15)).toFixed(2);
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#050511]">
@@ -47,7 +49,11 @@ export default function ConfigureOrder() {
 
                         <div>
                             <label className="block text-sm font-bold text-gray-400 mb-3">Material / Acabado</label>
-                            <select className="w-full bg-[#0E0E18] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-yellow-500 appearance-none cursor-pointer">
+                            <select 
+                                value={material}
+                                onChange={(e) => setMaterial(e.target.value)}
+                                className="w-full bg-[#0E0E18] border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-yellow-500 appearance-none cursor-pointer"
+                            >
                                 <option>Estándar (300g Mate)</option>
                                 <option>Premium (350g Soft Touch)</option>
                                 <option>Ecológico (Kraft Reciclado)</option>
@@ -88,11 +94,11 @@ export default function ConfigureOrder() {
                             <div className="h-px bg-white/5 my-4" />
                             <div className="flex justify-between text-lg font-bold text-white">
                                 <span>Total Estimado</span>
-                                <span>${(20 + (quantity * 0.15)).toFixed(2)}</span>
+                                <span>${estimatedPrice}</span>
                             </div>
                         </div>
 
-                        <Link href={`/workstation/print/providers`}>
+                        <Link href={`/workstation/print/providers?product=${productId}&type=${type}&quantity=${quantity}&material=${encodeURIComponent(material)}&price=${estimatedPrice}`}>
                             <button className="w-full py-4 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-yellow-600/20">
                                 Seleccionar Proveedor <ArrowRight className="w-5 h-5" />
                             </button>

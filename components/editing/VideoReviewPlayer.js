@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, MessageSquare, Clock, Send } from 'lucide-react';
 
-export default function VideoReviewPlayer({ src, initialComments = [] }) {
+export default function VideoReviewPlayer({ src, initialComments = [], comments: propComments, onAddComment }) {
     const videoRef = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
-    const [comments, setComments] = useState(initialComments);
+    
+    const [localComments, setLocalComments] = useState(initialComments);
+    const comments = propComments !== undefined ? propComments : localComments;
     const [newComment, setNewComment] = useState('');
 
     const togglePlay = () => {
@@ -43,7 +45,11 @@ export default function VideoReviewPlayer({ src, initialComments = [] }) {
             avatar: 'DZ',
             color: 'bg-primary'
         };
-        setComments([...comments, comment].sort((a, b) => a.timestamp - b.timestamp));
+        if (onAddComment) {
+            onAddComment(comment);
+        } else {
+            setLocalComments([...localComments, comment].sort((a, b) => a.timestamp - b.timestamp));
+        }
         setNewComment('');
     };
 

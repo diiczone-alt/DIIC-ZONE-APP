@@ -536,6 +536,49 @@ export default function HQClientsPage() {
             
             // Re-fetch clients to ensure the entire state is perfectly synchronized
             await fetchClients();
+
+            // Sincronizar Roadmap con Google Calendar
+            try {
+                const summary = await agencyService.getStrategySummary(editingClient.id);
+                if (summary && summary.nodes && summary.nodes.length > 0) {
+                    const startBase = new Date();
+                    const eventsToSync = summary.nodes.map((node, index) => {
+                        const start = new Date(startBase);
+                        start.setDate(start.getDate() + (index * 3));
+                        start.setHours(10, 0, 0, 0);
+                        
+                        const end = new Date(start);
+                        end.setHours(11, 0, 0, 0);
+
+                        return {
+                            summary: `${node.type?.toUpperCase()}: ${node.data?.title || 'Contenido Estratégico'}`,
+                            description: `Fase: ${node.data?.stage || 'Sin fase'}. Plataformas: ${Array.isArray(node.data?.platforms) ? node.data.platforms.join(', ') : 'redes'}. Sincronizado desde DIIC ZONE.`,
+                            start: start.toISOString(),
+                            end: end.toISOString()
+                        };
+                    });
+
+                    const syncResponse = await fetch('/api/calendar/sync', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            clientId: editingClient.id,
+                            events: eventsToSync
+                        })
+                    });
+                    
+                    const syncResult = await syncResponse.json();
+                    if (syncResponse.ok && syncResult.success) {
+                        toast.success(`Google Calendar Sincronizado: ${syncResult.syncedCount} eventos cargados.`, {
+                            description: `Calendario: ${syncResult.calendarId}`
+                        });
+                    }
+                }
+            } catch (calErr) {
+                console.error("Google Calendar Sync Error:", calErr);
+            }
             
             toast.success("Cambios Guardados", {
                 id: toastId,

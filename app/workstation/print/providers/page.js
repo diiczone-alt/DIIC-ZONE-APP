@@ -1,9 +1,22 @@
 'use client';
 
-import { MapPin, Star, Truck, ArrowRight } from 'lucide-react';
+import { MapPin, Star, Truck, ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 export default function ProviderMap() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const [submitting, setSubmitting] = useState(false);
+
+    const product = searchParams.get('product') || 'business-cards';
+    const quantity = parseInt(searchParams.get('quantity') || '100', 10);
+    const material = searchParams.get('material') || 'Estándar (300g Mate)';
+    const price = parseFloat(searchParams.get('price') || '20.00');
+
     // Mock Providers
     const providers = [
         { id: 1, name: "Imprenta Rápida Centro", rating: 4.8, distance: "1.2 km", time: "24h", price: "Económico" },
@@ -11,9 +24,49 @@ export default function ProviderMap() {
         { id: 3, name: "Print & Go Norte", rating: 4.5, distance: "5.0 km", time: "4h Express", price: "Alto" },
     ];
 
+    const handleSelectProvider = async (provider) => {
+        setSubmitting(true);
+        const toastId = toast.loading(`Enviando pedido a ${provider.name}...`);
+        
+        try {
+            // Find a valid client to attach the order
+            const { data: clients } = await supabase.from('clients').select('id').limit(1);
+            const clientId = clients && clients.length > 0 ? clients[0].id : 'C-SEBAS-709';
+
+            const { error } = await supabase
+                .from('print_orders')
+                .insert([{
+                    client_id: clientId,
+                    product_id: product,
+                    quantity: quantity,
+                    material: material,
+                    price: price,
+                    status: 'new',
+                    provider_name: provider.name
+                }]);
+
+            if (error) throw error;
+
+            toast.success("¡Pedido Recibido!", {
+                id: toastId,
+                description: `Tu pedido de ${product.replace('-', ' ')} ha sido enviado a producción.`
+            });
+
+            router.push('/workstation/print/dashboard');
+        } catch (err) {
+            console.error("Error creating print order:", err);
+            toast.error("Error al procesar el pedido", { id: toastId });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#050511]">
             <header className="h-20 border-b border-white/5 flex items-center px-8 bg-[#050511]/90 backdrop-blur-md shrink-0 z-10">
+                <Link href={`/workstation/print/configure?product=${product}`} className="mr-6 p-2 rounded-full hover:bg-white/5 text-gray-400 hover:text-white transition-colors">
+                    <ArrowLeft className="w-6 h-6" />
+                </Link>
                 <div>
                     <h1 className="text-xl font-bold text-white">Selecciona tu Proveedor</h1>
                     <p className="text-sm text-gray-400">Elige dónde quieres que se produzca tu pedido.</p>
@@ -36,7 +89,11 @@ export default function ProviderMap() {
                                 <span className="flex items-center gap-1"><Truck className="w-3 h-3" /> {p.time}</span>
                                 <span className="text-emerald-400">{p.price}</span>
                             </div>
-                            <button className="w-full py-2 bg-white/5 hover:bg-white/10 text-white text-xs font-bold rounded-lg border border-white/10 transition-colors">
+                            <button 
+                                onClick={() => handleSelectProvider(p)}
+                                disabled={submitting}
+                                className="w-full py-2 bg-white/5 hover:bg-white/10 text-white text-xs font-bold rounded-lg border border-white/10 transition-colors disabled:opacity-50"
+                            >
                                 Seleccionar este proveedor
                             </button>
                         </div>

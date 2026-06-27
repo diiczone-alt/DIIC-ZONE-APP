@@ -1,13 +1,69 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
     Printer, Package, Clock, CheckCircle,
-    MoreHorizontal, Download, AlertTriangle
+    MoreHorizontal, Download, AlertTriangle, ArrowRight
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 export default function PrintProviderDashboard() {
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchOrders = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('print_orders')
+                .select('*, clients(name)')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setOrders(data || []);
+        } catch (err) {
+            console.error("Error loading print orders:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchOrders();
+    }, []);
+
+    const handleUpdateStatus = async (orderId, newStatus) => {
+        const toastId = toast.loading(`Actualizando estado a ${newStatus}...`);
+        try {
+            const { error } = await supabase
+                .from('print_orders')
+                .update({ status: newStatus })
+                .eq('id', orderId);
+
+            if (error) throw error;
+
+            toast.success("Estado actualizado con éxito.", { id: toastId });
+            fetchOrders();
+        } catch (err) {
+            console.error("Error updating print order status:", err);
+            toast.error("Error al actualizar estado", { id: toastId });
+        }
+    };
+
+    const newOrders = orders.filter(o => o.status === 'new');
+    const productionOrders = orders.filter(o => o.status === 'production');
+    const readyOrders = orders.filter(o => o.status === 'ready');
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#050510] flex items-center justify-center font-black text-yellow-500 uppercase tracking-widest animate-pulse">
+                Cargando Production Hub...
+            </div>
+        );
+    }
+
     return (
-        <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#050511]">
             {/* Header */}
             <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-[#050511]/90 backdrop-blur-md z-10 shrink-0">
                 <div>
@@ -32,9 +88,9 @@ export default function PrintProviderDashboard() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <StatCard title="Por Producir" value="8" icon={Clock} color="text-yellow-400" />
-                    <StatCard title="En Proceso" value="12" icon={Printer} color="text-blue-400" />
-                    <StatCard title="Listos / Entregar" value="5" icon={Package} color="text-emerald-400" />
+                    <StatCard title="Por Aceptar" value={newOrders.length} icon={Clock} color="text-yellow-400" />
+                    <StatCard title="En Proceso" value={productionOrders.length} icon={Printer} color="text-blue-400" />
+                    <StatCard title="Listos / Entregar" value={readyOrders.length} icon={Package} color="text-emerald-400" />
                     <StatCard title="Incidencias" value="0" icon={AlertTriangle} color="text-red-400" />
                 </div>
 
@@ -42,27 +98,48 @@ export default function PrintProviderDashboard() {
                 <div className="space-y-8">
 
                     {/* New Orders Section */}
-                    <Section title="Nuevas Órdenes (Por Aceptar)" count={3}>
-                        <OrderCard
-                            id="#ORD-001" client="Boutique Ella" product="Tarjetas Presentación x500"
-                            status="new" date="Hace 10 min"
-                        />
-                        <OrderCard
-                            id="#ORD-003" client="Dr. Pérez" product="Recetarios x100"
-                            status="new" date="Hace 45 min"
-                        />
+                    <Section title="Nuevas Órdenes (Por Aceptar)" count={newOrders.length}>
+                        {newOrders.length === 0 ? (
+                            <p className="text-xs text-gray-500 col-span-full">No hay nuevas órdenes pendientes.</p>
+                        ) : (
+                            newOrders.map(order => (
+                                <OrderCard
+                                    key={order.id}
+                                    order={order}
+                                    onUpdate={handleUpdateStatus}
+                                />
+                            ))
+                        )}
                     </Section>
 
                     {/* Production Section */}
-                    <Section title="En Producción" count={5}>
-                        <OrderCard
-                            id="#ORD-992" client="Evento Tech" product="Lona 3x2m"
-                            status="production" date="Entrega: Hoy 5PM"
-                        />
-                        <OrderCard
-                            id="#ORD-990" client="Burger King" product="Flyers A5 x2000"
-                            status="production" date="Entrega: Mañana"
-                        />
+                    <Section title="En Producción" count={productionOrders.length}>
+                        {productionOrders.length === 0 ? (
+                            <p className="text-xs text-gray-500 col-span-full">No hay órdenes en producción activa.</p>
+                        ) : (
+                            productionOrders.map(order => (
+                                <OrderCard
+                                    key={order.id}
+                                    order={order}
+                                    onUpdate={handleUpdateStatus}
+                                />
+                            ))
+                        )}
+                    </Section>
+
+                    {/* Ready Section */}
+                    <Section title="Listas para Entrega" count={readyOrders.length}>
+                        {readyOrders.length === 0 ? (
+                            <p className="text-xs text-gray-500 col-span-full">No hay órdenes listas para entrega.</p>
+                        ) : (
+                            readyOrders.map(order => (
+                                <OrderCard
+                                    key={order.id}
+                                    order={order}
+                                    onUpdate={handleUpdateStatus}
+                                />
+                            ))
+                        )}
                     </Section>
 
                 </div>
@@ -100,33 +177,56 @@ function Section({ title, count, children }) {
     );
 }
 
-function OrderCard({ id, client, product, status, date }) {
-    const isNew = status === 'new';
+function OrderCard({ order, onUpdate }) {
+    const isNew = order.status === 'new';
+    const isProduction = order.status === 'production';
+    const isReady = order.status === 'ready';
 
     return (
-        <div className="bg-[#0E0E18] border border-white/5 rounded-2xl p-6 hover:border-white/20 transition-all group">
-            <div className="flex justify-between items-start mb-4">
-                <span className="text-xs font-mono text-gray-500">{id}</span>
-                <button className="text-gray-500 hover:text-white">
-                    <MoreHorizontal className="w-4 h-4" />
-                </button>
+        <div className="bg-[#0E0E18] border border-white/5 rounded-2xl p-6 hover:border-white/20 transition-all group flex flex-col justify-between">
+            <div>
+                <div className="flex justify-between items-start mb-4">
+                    <span className="text-xs font-mono text-gray-500">#ORD-{order.id}</span>
+                    <button className="text-gray-500 hover:text-white">
+                        <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                </div>
+
+                <h3 className="text-white font-bold mb-1 group-hover:text-yellow-400 transition-colors">
+                    {order.clients?.name || 'Cliente Particular'}
+                </h3>
+                <p className="text-sm text-gray-400 capitalize">{order.product_id?.replace('-', ' ')}</p>
+                <p className="text-xs text-gray-500 mt-1">Cantidad: {order.quantity} | Acabado: {order.material}</p>
+                <p className="text-xs font-bold text-yellow-500 mt-1">Valor: ${parseFloat(order.price).toFixed(2)}</p>
             </div>
 
-            <h3 className="text-white font-bold mb-1 group-hover:text-yellow-400 transition-colors">{client}</h3>
-            <p className="text-sm text-gray-400 mb-4">{product}</p>
-
-            <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
-                <span className={`text-[10px] font-bold uppercase ${isNew ? 'text-blue-400' : 'text-emerald-400'}`}>
-                    {date}
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
+                <span className={`text-[10px] font-bold uppercase ${isNew ? 'text-blue-400' : isProduction ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    {order.status}
                 </span>
 
-                {isNew ? (
-                    <button className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold rounded-lg transition-colors">
+                {isNew && (
+                    <button 
+                        onClick={() => onUpdate(order.id, 'production')}
+                        className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold rounded-lg transition-colors"
+                    >
                         Aceptar
                     </button>
-                ) : (
-                    <button className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1">
-                        <Download className="w-3 h-3" /> Archivos
+                )}
+                {isProduction && (
+                    <button 
+                        onClick={() => onUpdate(order.id, 'ready')}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors"
+                    >
+                        Completar
+                    </button>
+                )}
+                {isReady && (
+                    <button 
+                        onClick={() => onUpdate(order.id, 'delivered')}
+                        className="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-black text-xs font-bold rounded-lg transition-colors"
+                    >
+                        Entregar
                     </button>
                 )}
             </div>
