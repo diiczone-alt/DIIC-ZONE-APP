@@ -48,10 +48,48 @@ const getPlanPrice = (plan, industry) => {
     }
 };
 
+const extractCoordsFromUrl = (url) => {
+    if (!url) return null;
+    try {
+        // 1. Check for @lat,lng
+        const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (atMatch) {
+            return [parseFloat(atMatch[1]), parseFloat(atMatch[2])];
+        }
+        
+        // 2. Check for query/q parameters
+        const queryMatch = url.match(/[?&](?:query|q)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
+        if (queryMatch) {
+            return [parseFloat(queryMatch[1]), parseFloat(queryMatch[2])];
+        }
+        
+        // 3. Check for !3d lat !4d lng (Google Maps internal parameters)
+        const dMatch = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+        if (dMatch) {
+            return [parseFloat(dMatch[1]), parseFloat(dMatch[2])];
+        }
+
+        // 4. Waze ll=lat,lng query parameter
+        const wazeMatch = url.match(/[?&]ll=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
+        if (wazeMatch) {
+            return [parseFloat(wazeMatch[1]), parseFloat(wazeMatch[2])];
+        }
+    } catch (e) {
+        console.error("Error parsing Google Maps URL:", e);
+    }
+    return null;
+};
+
 const geocodeAddress = async (address, city) => {
     const addressStr = (address || '').trim();
     const cityStr = (city || '').trim();
     if (!addressStr) return null;
+
+    // First try to extract coordinates directly if the address is a map URL
+    const extracted = extractCoordsFromUrl(addressStr);
+    if (extracted) {
+        return extracted;
+    }
 
     if (addressStr.toUpperCase() === cityStr.toUpperCase()) {
         return null;
@@ -335,15 +373,15 @@ export const agencyService = {
                 if (updates[field] !== undefined) sanitizedUpdates[field] = updates[field];
             });
 
-            if (updates.address !== undefined || updates.city !== undefined) {
+            if (updates.coords !== undefined) {
+                sanitizedUpdates.coords = updates.coords;
+            } else if (updates.address !== undefined || updates.city !== undefined) {
                 const targetAddress = updates.address !== undefined ? updates.address : '';
                 const targetCity = updates.city !== undefined ? updates.city : '';
                 try {
                     const coords = await geocodeAddress(targetAddress, targetCity);
                     if (coords) {
                         sanitizedUpdates.coords = coords;
-                    } else {
-                        sanitizedUpdates.coords = null;
                     }
                 } catch(e) {}
             }
@@ -1058,15 +1096,15 @@ export const agencyService = {
                 }
             });
 
-            if (updates.address !== undefined || updates.city !== undefined) {
+            if (updates.coords !== undefined) {
+                sanitizedUpdates.coords = updates.coords;
+            } else if (updates.address !== undefined || updates.city !== undefined) {
                 const targetAddress = updates.address !== undefined ? updates.address : '';
                 const targetCity = updates.city !== undefined ? updates.city : '';
                 try {
                     const coords = await geocodeAddress(targetAddress, targetCity);
                     if (coords) {
                         sanitizedUpdates.coords = coords;
-                    } else {
-                        sanitizedUpdates.coords = null;
                     }
                 } catch(e) {}
             }

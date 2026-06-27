@@ -28,6 +28,7 @@ import GalleryPreview from '../../components/dashboard/GalleryPreview';
 import UnifiedMessagingCenter from '../../components/shared/Messaging/UnifiedMessagingCenter';
 import { driveService } from '@/services/driveService';
 import { toast } from 'sonner';
+import { agencyService } from '@/services/agencyService';
 
 // Fallback City Centers for Ecuador
 const CITY_COORDS = {
@@ -608,6 +609,13 @@ function DashboardContent() {
             
         if (error) throw error;
         
+        // Sync with profiles table to keep both sides completely mirrored
+        try {
+            await agencyService.syncClientProfile(clientData.id, updates);
+        } catch (syncErr) {
+            console.error('⚠️ [Sync] Failed to mirror updates to profile:', syncErr);
+        }
+        
         setClientData(prev => ({
             ...prev,
             ...updates
@@ -1143,35 +1151,37 @@ function DashboardContent() {
               </div>
             )}
 
-            <button
-              onClick={() => handleSaveModule('info', {
-                company_profile: {
-                  company_name: infoForm.company_name,
-                  country: infoForm.country,
-                  city: infoForm.city,
-                  address: infoForm.address,
-                  website: infoForm.website,
-                  email: infoForm.email,
-                  phone: infoForm.phone,
-                  anniversary_date: infoForm.anniversary_date,
-                  description: infoForm.description,
-                  coords: infoForm.coords,
-                  completed: true
-                },
-                business_diagnosis: {
-                  services_offered: infoForm.services_offered,
-                  main_product: infoForm.main_product,
-                  time_in_market: infoForm.time_in_market,
-                  clients_count: infoForm.clients_count,
-                  team_size: infoForm.team_size,
-                  revenue: infoForm.revenue
-                }
-              })}
-              disabled={drawerLoading}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50 mt-4"
-            >
-              {drawerLoading ? 'Guardando...' : 'Guardar Información'}
-            </button>
+            <div className="sticky bottom-0 bg-[#0A0A1F] pt-4 pb-2 mt-6 border-t border-white/5 z-10">
+              <button
+                onClick={() => handleSaveModule('info', {
+                  company_profile: {
+                    company_name: infoForm.company_name,
+                    country: infoForm.country,
+                    city: infoForm.city,
+                    address: infoForm.address,
+                    website: infoForm.website,
+                    email: infoForm.email,
+                    phone: infoForm.phone,
+                    anniversary_date: infoForm.anniversary_date,
+                    description: infoForm.description,
+                    coords: infoForm.coords,
+                    completed: true
+                  },
+                  business_diagnosis: {
+                    services_offered: infoForm.services_offered,
+                    main_product: infoForm.main_product,
+                    time_in_market: infoForm.time_in_market,
+                    clients_count: infoForm.clients_count,
+                    team_size: infoForm.team_size,
+                    revenue: infoForm.revenue
+                  }
+                })}
+                disabled={drawerLoading}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50"
+              >
+                {drawerLoading ? 'Guardando...' : 'Guardar Información'}
+              </button>
+            </div>
           </div>
         );
 
@@ -1319,18 +1329,20 @@ function DashboardContent() {
               <p className="text-[10px] text-gray-500">Formato PNG transparente recomendado.</p>
             </div>
 
-            <button
-              onClick={() => handleSaveModule('logo', {
-                brand: {
-                  ...(clientData?.onboarding_data?.brand || {}),
-                  logo: brandForm.logo
-                }
-              })}
-              disabled={drawerLoading || !brandForm.logo}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50 mt-4"
-            >
-              {drawerLoading ? 'Guardando...' : 'Confirmar Logotipo'}
-            </button>
+            <div className="sticky bottom-0 bg-[#0A0A1F] pt-4 pb-2 mt-6 border-t border-white/5 z-10">
+              <button
+                onClick={() => handleSaveModule('logo', {
+                  brand: {
+                    ...(clientData?.onboarding_data?.brand || {}),
+                    logo: brandForm.logo
+                  }
+                })}
+                disabled={drawerLoading || !brandForm.logo}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50"
+              >
+                {drawerLoading ? 'Guardando...' : 'Confirmar Logotipo'}
+              </button>
+            </div>
           </div>
         );
 
@@ -1400,22 +1412,24 @@ function DashboardContent() {
               />
             </div>
 
-            <button
-              onClick={() => handleSaveModule('visual', {
-                brand: {
-                  ...(clientData?.onboarding_data?.brand || {}),
-                  primaryColor: brandForm.primaryColor,
-                  secondaryColor: brandForm.secondaryColor,
-                  typography: brandForm.typography,
-                  brand_manual: brandForm.brand_manual,
-                  completed: true
-                }
-              })}
-              disabled={drawerLoading}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50 mt-4"
-            >
-              {drawerLoading ? 'Guardando...' : 'Confirmar Identidad Visual'}
-            </button>
+            <div className="sticky bottom-0 bg-[#0A0A1F] pt-4 pb-2 mt-6 border-t border-white/5 z-10">
+              <button
+                onClick={() => handleSaveModule('visual', {
+                  brand: {
+                    ...(clientData?.onboarding_data?.brand || {}),
+                    primaryColor: brandForm.primaryColor,
+                    secondaryColor: brandForm.secondaryColor,
+                    typography: brandForm.typography,
+                    brand_manual: brandForm.brand_manual,
+                    completed: true
+                  }
+                })}
+                disabled={drawerLoading}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50"
+              >
+                {drawerLoading ? 'Guardando...' : 'Confirmar Identidad Visual'}
+              </button>
+            </div>
           </div>
         );
 
@@ -1479,18 +1493,20 @@ function DashboardContent() {
               </div>
             </div>
 
-            <button
-              onClick={() => handleSaveModule('social', {
-                social: {
-                  ...socialForm,
-                  completed: true
-                }
-              })}
-              disabled={drawerLoading}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50 mt-4"
-            >
-              {drawerLoading ? 'Guardando...' : 'Confirmar Canales'}
-            </button>
+            <div className="sticky bottom-0 bg-[#0A0A1F] pt-4 pb-2 mt-6 border-t border-white/5 z-10">
+              <button
+                onClick={() => handleSaveModule('social', {
+                  social: {
+                    ...socialForm,
+                    completed: true
+                  }
+                })}
+                disabled={drawerLoading}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50"
+              >
+                {drawerLoading ? 'Guardando...' : 'Confirmar Canales'}
+              </button>
+            </div>
           </div>
         );
 
@@ -1812,41 +1828,41 @@ function DashboardContent() {
                       onClick={() => setActiveDrawer(null)}
                       className="fixed inset-0 bg-black z-50 backdrop-blur-sm"
                   />
-                  <motion.div
-                      initial={{ x: '100%' }}
-                      animate={{ x: 0 }}
-                      exit={{ x: '100%' }}
-                      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                      className="fixed right-0 top-0 h-full w-full max-w-md bg-[#0A0A1F] border-l border-white/10 p-8 z-50 overflow-y-auto custom-scrollbar flex flex-col justify-between"
-                  >
-                      <div>
-                          <div className="flex justify-between items-center pb-6 border-b border-white/5">
-                              <div>
-                                  <h3 className="text-xl font-black text-white italic uppercase tracking-tight">
-                                      {getDrawerTitle(activeDrawer)}
-                                  </h3>
-                                  <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mt-1">
-                                      {getDrawerSubtitle(activeDrawer)}
-                                  </p>
-                              </div>
-                              <button
-                                  onClick={() => setActiveDrawer(null)}
-                                  className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors font-mono text-sm"
-                              >
-                                  ✕
-                              </button>
-                          </div>
+                   <motion.div
+                       initial={{ x: '100%' }}
+                       animate={{ x: 0 }}
+                       exit={{ x: '100%' }}
+                       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                       className="fixed right-0 top-0 h-screen w-full max-w-md bg-[#0A0A1F] border-l border-white/10 p-8 z-50 flex flex-col justify-between"
+                   >
+                       <div className="flex flex-col flex-1 min-h-0">
+                           <div className="flex justify-between items-center pb-6 border-b border-white/5 flex-shrink-0">
+                               <div>
+                                   <h3 className="text-xl font-black text-white italic uppercase tracking-tight">
+                                       {getDrawerTitle(activeDrawer)}
+                                   </h3>
+                                   <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mt-1">
+                                       {getDrawerSubtitle(activeDrawer)}
+                                   </p>
+                               </div>
+                               <button
+                                   onClick={() => setActiveDrawer(null)}
+                                   className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors font-mono text-sm"
+                               >
+                                   ✕
+                               </button>
+                           </div>
 
-                          <div className="py-8">
-                              {renderDrawerContent(activeDrawer)}
-                          </div>
-                      </div>
-                      
-                      <div className="pt-6 border-t border-white/5 flex justify-between items-center text-[8px] font-mono text-gray-600 uppercase tracking-widest">
-                          <span>DIIC ZONE v2.0</span>
-                          <span>CENTRO_DE_ACTIVACION</span>
-                      </div>
-                  </motion.div>
+                           <div className="flex-1 overflow-y-auto py-8 pr-1 custom-scrollbar min-h-0 relative z-0">
+                               {renderDrawerContent(activeDrawer)}
+                           </div>
+                       </div>
+                       
+                       <div className="pt-6 border-t border-white/5 flex justify-between items-center text-[8px] font-mono text-gray-600 uppercase tracking-widest flex-shrink-0">
+                           <span>DIIC ZONE v2.0</span>
+                           <span>CENTRO_DE_ACTIVACION</span>
+                       </div>
+                   </motion.div>
               </>
           )}
       </AnimatePresence>
