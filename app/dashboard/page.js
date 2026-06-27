@@ -116,6 +116,61 @@ const getCoordsForCity = (city) => {
   return CITY_COORDS[normalized] || null;
 };
 
+// Helper to resolve niche dynamically from client record fields
+const getNicheFromClient = (client) => {
+  if (!client) return 'other';
+  
+  const spec = (client.specialty || '').trim().toLowerCase();
+  const validNiches = ['doctor', 'health', 'agro', 'horeca', 'legal', 'realestate', 'education', 'tech', 'other'];
+  if (validNiches.includes(spec)) {
+    return spec;
+  }
+  
+  const industry = (client.industry || '').trim().toLowerCase();
+  const name = (client.name || '').trim().toLowerCase();
+  
+  // Try mapping specialty first
+  if (['doctor', 'medico'].includes(spec)) return 'doctor';
+  if (['health', 'hospital'].includes(spec)) return 'health';
+  if (['agro', 'agropecuario'].includes(spec)) return 'agro';
+  if (['horeca', 'hospitality', 'restaurante'].includes(spec)) return 'horeca';
+  if (['legal', 'juridico'].includes(spec)) return 'legal';
+  if (['realestate', 'construccion', 'inmobiliaria'].includes(spec)) return 'realestate';
+  if (['education', 'educativo'].includes(spec)) return 'education';
+  if (['tech', 'tecnologia'].includes(spec)) return 'tech';
+
+  // Try mapping industry second
+  if (industry === 'medico' || industry === 'médico') {
+    if (name.includes('hospital') || name.includes('clinica') || name.includes('clínica')) {
+      return 'health';
+    }
+    return 'doctor';
+  }
+  if (industry === 'hospital') return 'health';
+  if (industry === 'agropecuario') return 'agro';
+  if (industry === 'hospitality') return 'horeca';
+  if (industry === 'juridico' || industry === 'jurídico') return 'legal';
+  if (industry === 'construccion' || industry === 'construcción' || industry === 'realestate' || industry === 'inmobiliaria') return 'realestate';
+  if (industry === 'educativo') return 'education';
+  if (industry === 'tecnologia' || industry === 'tecnología' || industry === 'tech') return 'tech';
+  
+  // Fallbacks using substring match
+  if (industry.includes('agro') || industry.includes('campo') || industry.includes('ganad')) return 'agro';
+  if (industry.includes('restaurante') || industry.includes('horeca') || industry.includes('gastro') || spec.includes('horeca')) return 'horeca';
+  if (industry.includes('legal') || industry.includes('jurid') || industry.includes('abogado')) return 'legal';
+  if (industry.includes('inmobiliar') || industry.includes('real estate') || industry.includes('bienes raic') || industry.includes('construc')) return 'realestate';
+  if (industry.includes('educa') || industry.includes('academia') || industry.includes('escuela') || industry.includes('universi')) return 'education';
+  if (industry.includes('tech') || industry.includes('tecnolog') || industry.includes('software') || industry.includes('saas')) return 'tech';
+  if (industry.includes('medico') || industry.includes('salud') || industry.includes('doctor') || spec.includes('doctor') || spec.includes('medico') || spec.includes('urolog')) {
+    if (name.includes('hospital') || name.includes('clinica') || name.includes('clínica')) {
+      return 'health';
+    }
+    return 'doctor';
+  }
+  
+  return 'other';
+};
+
 // Helper to wrap promises with a timeout to prevent hanging UI
 const withTimeout = (promise, ms = 8000) => {
   return Promise.race([
@@ -479,7 +534,7 @@ function DashboardContent() {
   const totalAudience = socialMetrics?.reduce((acc, curr) => acc + (curr.followers_count || 0), 0) || 0;
   
   // Niche Config for guidance
-  const currentNiche = clientData?.niche || 'other';
+  const currentNiche = getNicheFromClient(clientData);
   const nicheData = getNicheConfig(currentNiche === 'doctor' || currentNiche === 'health' || currentNiche === 'horeca' || currentNiche === 'legal' || currentNiche === 'agro' ? currentNiche : 'medical');
   const levelKeys = ['presencia', 'crecimiento', 'autoridad', 'sistemas', 'escala'];
   const currentLevelKey = levelKeys[(brandMetrics?.current_level || 2) - 1];
@@ -813,7 +868,7 @@ function DashboardContent() {
 
   // Crecimiento Digital specialized strategies (Módulo 6)
   const renderCrecimientoDigital = () => {
-    const niche = clientData?.niche || 'other';
+    const niche = getNicheFromClient(clientData);
     
     const nicheLabels = {
         'doctor': 'Médico',
