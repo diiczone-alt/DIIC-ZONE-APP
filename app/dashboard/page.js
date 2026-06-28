@@ -14,7 +14,7 @@ import {
   ChevronRight, TrendingUp, PieChart, Video, 
   Palette, FileText, ArrowRight, Settings, LogOut, User, Shield,
   Globe, UserPlus, Target, Fingerprint, Building2, Briefcase, Sparkles, MapPin, 
-  Upload, HelpCircle
+  Upload, HelpCircle, Facebook
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -1537,6 +1537,44 @@ function DashboardContent() {
       case 'social':
         return (
           <div className="space-y-6">
+            {/* Meta API Integration Card */}
+            <div className="p-5 rounded-2xl bg-indigo-500/[0.03] border border-indigo-500/10 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                  <Facebook className="w-4 h-4 fill-indigo-400/20" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-white uppercase tracking-wider">Conectar API Oficial de Meta</h4>
+                  <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Instagram Professional & Facebook Ads</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
+                Conéctate mediante el portal seguro de Meta para habilitar la importación en tiempo real de métricas, leads y control de campañas de publicidad.
+              </p>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    toast.loading('Iniciando conexión con Meta...', { id: 'meta-connect' });
+                    const { socialService } = await import('@/services/socialService');
+                    await socialService.connect('facebook');
+                  } catch (err) {
+                    toast.error('Error al conectar Meta: ' + err.message, { id: 'meta-connect' });
+                  }
+                }}
+                className="w-full py-3.5 bg-[#1877F2] hover:bg-[#1877F2]/90 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-[#1877F2]/20"
+              >
+                <Facebook className="w-4 h-4 fill-white text-transparent" />
+                <span>Vincular Cuenta de Meta</span>
+              </button>
+            </div>
+            
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-white/5"></div>
+              <span className="flex-shrink mx-4 text-[9px] font-black text-gray-600 uppercase tracking-widest">O Enlaces Manuales</span>
+              <div className="flex-grow border-t border-white/5"></div>
+            </div>
+
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Instagram</label>
