@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Facebook, Instagram, MessageCircle, CreditCard, CheckCircle2, AlertCircle, RefreshCw, Link2, ExternalLink } from 'lucide-react';
 import { metaConnector } from '@/services/metaConnector';
+import IntegrationModal from '@/components/connectivity/IntegrationModal';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export default function ConnectivityPanel() {
@@ -16,10 +18,91 @@ export default function ConnectivityPanel() {
     });
     const [loading, setLoading] = useState(true);
     const [connecting, setConnecting] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedPlatform, setSelectedPlatform] = useState('facebook');
 
-    // Fetch initial status
+    // Fetch initial status and check for oauth callback
     useEffect(() => {
-        loadStatus();
+        const handleCallback = async () => {
+            const waitingProvider = localStorage.getItem('diic_waiting_provider');
+            let token = null;
+
+            const hash = window.location.hash || window.location.search;
+            if (hash && hash.includes('provider_token')) {
+                const params = new URLSearchParams(hash.replace('#', '?'));
+                token = params.get('provider_token');
+            }
+
+            if (!token) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session && session.provider_token) {
+                    const sessionProvider = session.user?.app_metadata?.provider;
+                    if (sessionProvider === waitingProvider) {
+                        token = session.provider_token;
+                    }
+                }
+            }
+
+            if (waitingProvider && token) {
+                toast.loading(`Sincronizando conexión real con ${waitingProvider === 'facebook' ? 'Meta' : waitingProvider}...`, { id: 'connect-meta' });
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    let externalId = `real_${waitingProvider}_id`;
+                    let metadata = {};
+
+                    if (waitingProvider === 'facebook') {
+                        try {
+                            const fbResponse = await fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${token}`);
+                            const fbData = await fbResponse.json();
+                            if (fbData && fbData.id) {
+                                externalId = fbData.id;
+                                metadata = { name: fbData.name, email: fbData.email };
+                            }
+                        } catch (e) {
+                            console.warn('[ConnectivityPanel] Failed to fetch Facebook profile:', e);
+                        }
+                    }
+
+                    // Save to brand_connections
+                    await supabase
+                        .from('brand_connections')
+                        .upsert({
+                            user_id: user.id,
+                            client_id: null,
+                            provider: waitingProvider,
+                            provider_id: externalId,
+                            access_token: token,
+                            expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+                            status: 'ACTIVE',
+                            updated_at: new Date().toISOString(),
+                            metadata: metadata
+                        }, { onConflict: 'user_id,provider' });
+
+                    // Save to social_connections
+                    await supabase
+                        .from('social_connections')
+                        .upsert({
+                            user_id: user.id,
+                            client_id: null,
+                            platform: waitingProvider,
+                            external_id: externalId,
+                            access_token: token,
+                            expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+                            updated_at: new Date().toISOString(),
+                            metadata: metadata
+                        }, { onConflict: 'user_id,platform' });
+
+                    const displayName = metadata.name || (waitingProvider === 'facebook' ? 'Meta' : waitingProvider);
+                    toast.success(`Conexión real con ${displayName} establecida.`, { id: 'connect-meta' });
+                }
+                localStorage.removeItem('diic_waiting_provider');
+                localStorage.removeItem('diic_waiting_client_id');
+                window.history.replaceState(null, null, window.location.pathname);
+            }
+            await loadStatus();
+        };
+
+        handleCallback();
     }, []);
 
     const loadStatus = async () => {
@@ -29,28 +112,22 @@ export default function ConnectivityPanel() {
     };
 
     const handleConnect = async (platform) => {
-        setConnecting(platform);
-        toast.loading(`Conectando con ${platform}...`, { id: 'connect-meta' });
-
-        try {
-            // Simulator: In real app this redirects to OAuth
-            const result = await metaConnector.mockConnect(platform, { id: `mock_${platform}_123` });
-
-            if (!result.error) {
-                toast.success(`Conexión exitosa con ${platform}`, { id: 'connect-meta' });
-                await loadStatus(); // Refresh UI
-            } else {
-                toast.error(`Error al conectar: ${result.error}`, { id: 'connect-meta' });
-            }
-        } catch (error) {
-            toast.error("Error de conexión desconocido", { id: 'connect-meta' });
-        } finally {
-            setConnecting(null);
-        }
+        setSelectedPlatform(platform);
+        setIsModalOpen(true);
     };
 
     return (
         <div className="w-full max-w-4xl mx-auto">
+            <IntegrationModal 
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    loadStatus();
+                }}
+                platform={selectedPlatform === 'ads' ? 'facebook' : (selectedPlatform === 'meta' ? 'facebook' : selectedPlatform)}
+                clientName={status.details?.metadata?.name || 'tu marca'}
+                onSuccess={loadStatus}
+            />
             {/* Header */}
             <div className="mb-8">
                 <h2 className="text-2xl font-bold font-display text-white mb-2">Conectividad & Automatización</h2>

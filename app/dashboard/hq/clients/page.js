@@ -156,6 +156,37 @@ const getNextCutoffDate = (cutoffDay) => {
     }
 };
 
+const LOCAL_PRODUCTION_RATES = [
+    { id: 'cm_service', name: 'Community Manager', cost_internal: 50, price_sale: 149, unit: 'cliente/mes' },
+    { id: 'post_simple', name: 'Post de Diseño', cost_internal: 2.5, price_sale: 12, unit: 'unidad' },
+    { id: 'reel_prod', name: 'Reel (Grabación + Edit)', cost_internal: 25, price_sale: 70, unit: 'unidad' },
+    { id: 'reel_edit', name: 'Reel (Solo Edición)', cost_internal: 5, price_sale: 20, unit: 'unidad' },
+    { id: 'vid_promo', name: 'Video Promocional', cost_internal: 50, price_sale: 120, unit: 'unidad' },
+    { id: 'vid_podcast', name: 'Video Podcast', cost_internal: 70, price_sale: 150, unit: 'unidad' },
+    { id: 'photo_session', name: 'Sesión Fotográfica', cost_internal: 50, price_sale: 120, unit: 'sesión' },
+    { id: 'carousel', name: 'Diseño Imprenta', cost_internal: 5, price_sale: 20, unit: 'unidad' },
+    { id: 'carousel_premium', name: 'Carrusel Premium', cost_internal: 15, price_sale: 35, unit: 'unidad' },
+    { id: 'strategy_unit', name: 'Estrategia', cost_internal: 30, price_sale: 69, unit: 'unidad' },
+    { id: 'automation_setup', name: 'Setup Automatización', cost_internal: 20, price_sale: 70, unit: 'unidad' }
+];
+
+const getPlanDefaultDeliverables = (planName) => {
+    const name = (planName || '').toLowerCase();
+    if (name.includes('presencia') || name.includes('basic')) {
+        return { vid_promo: 3, post_simple: 6, cm_service: 1, strategy_unit: 1 };
+    }
+    if (name.includes('crecimiento') || name.includes('estrategia')) {
+        return { vid_promo: 5, post_simple: 8, cm_service: 1, strategy_unit: 1 };
+    }
+    if (name.includes('autoridad') || name.includes('premium')) {
+        return { vid_promo: 7, post_simple: 11, cm_service: 1, strategy_unit: 1 };
+    }
+    if (name.includes('control') || name.includes('elite')) {
+        return { vid_promo: 10, post_simple: 16, cm_service: 1, strategy_unit: 1 };
+    }
+    return { post_simple: 0, reel_prod: 0, cm_service: 0 };
+};
+
 export default function HQClientsPage() {
     const [activeMenu, setActiveMenu] = useState(null);
     const [activeFilter, setActiveFilter] = useState('all');
@@ -1212,6 +1243,21 @@ export default function HQClientsPage() {
                                                 <span className="text-gray-500 uppercase font-black">Plan:</span>
                                                 <span className="text-white font-bold">{newClient.plan || 'Presencia'}</span>
                                             </div>
+                                            {newClient.plan === 'Custom' && newClient.onboarding_data?.custom_deliverables && (
+                                                <div className="flex flex-col gap-1 pl-4 py-1 border-l border-white/5 my-1 text-[9px] text-gray-400">
+                                                    {Object.entries(newClient.onboarding_data.custom_deliverables)
+                                                        .filter(([_, qty]) => Number(qty) > 0)
+                                                        .map(([id, qty]) => {
+                                                            const rateName = LOCAL_PRODUCTION_RATES.find(r => r.id === id)?.name || id;
+                                                            return (
+                                                                <div key={id} className="flex justify-between gap-2">
+                                                                    <span className="truncate max-w-[100px]">{rateName}:</span>
+                                                                    <span className="font-bold text-indigo-400">{qty}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                </div>
+                                            )}
                                             <div className="flex justify-between items-center">
                                                 <span className="text-gray-500 uppercase font-black">MRR:</span>
                                                 <span className="text-emerald-400 font-black">${newClient.price || 0} USD</span>
@@ -1515,17 +1561,48 @@ export default function HQClientsPage() {
                                                                 ]} 
                                                                 icon={Zap}
                                                             />
-                                                            <PremiumDropdown 
-                                                                label="Plan Estratégico" 
-                                                                icon={Shield} 
-                                                                value={newClient.plan} 
-                                                                onChange={(val) => {
-                                                                    const price = getPlanPrice(val, newClient.industry);
-                                                                    setNewClient({ ...newClient, plan: val, price: price });
-                                                                }} 
-                                                                options={PLAN_OPTIONS} 
-                                                                icon={Target}
-                                                            />
+                                                            <div className="space-y-4">
+                                                                <PremiumDropdown 
+                                                                    label="Plan Estratégico" 
+                                                                    icon={Shield} 
+                                                                    value={newClient.plan} 
+                                                                    onChange={(val) => {
+                                                                        const price = getPlanPrice(val, newClient.industry);
+                                                                        const existingCustom = newClient.onboarding_data?.custom_deliverables;
+                                                                        const updatedOnboarding = { ...newClient.onboarding_data };
+                                                                        if (val === 'Custom' && !existingCustom) {
+                                                                            updatedOnboarding.custom_deliverables = getPlanDefaultDeliverables(newClient.plan);
+                                                                        }
+                                                                        setNewClient({ 
+                                                                            ...newClient, 
+                                                                            plan: val, 
+                                                                            price: val === 'Custom' ? (newClient.price || 300) : price,
+                                                                            onboarding_data: updatedOnboarding
+                                                                        });
+                                                                    }} 
+                                                                    options={PLAN_OPTIONS} 
+                                                                    icon={Target}
+                                                                />
+                                                                {newClient.plan !== 'Custom' && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const updatedOnboarding = { 
+                                                                                ...newClient.onboarding_data,
+                                                                                custom_deliverables: newClient.onboarding_data?.custom_deliverables || getPlanDefaultDeliverables(newClient.plan)
+                                                                            };
+                                                                            setNewClient({
+                                                                                ...newClient,
+                                                                                plan: 'Custom',
+                                                                                onboarding_data: updatedOnboarding
+                                                                            });
+                                                                        }}
+                                                                        className="w-full py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-white rounded-xl border border-indigo-500/20 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                                                                    >
+                                                                        <Zap className="w-4 h-4 text-amber-400" /> Modificar por Servicios Varios
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                             <div className="space-y-1">
                                                                 <GlassInput 
                                                                     label="Inversión Mensual (USD)" 
@@ -1552,6 +1629,182 @@ export default function HQClientsPage() {
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    {/* Custom Services Configurator */}
+                                                    {newClient.plan === 'Custom' && (
+                                                        <motion.div 
+                                                            initial={{ opacity: 0, y: 15 }} 
+                                                            animate={{ opacity: 1, y: 0 }} 
+                                                            className="bg-white/[0.02] border border-white/5 p-8 rounded-[2.5rem] mt-8 space-y-6 text-left"
+                                                        >
+                                                            <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                                                                <div>
+                                                                    <h4 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                                                        <Zap className="w-4 h-4 text-amber-400 animate-pulse" /> Servicios Personalizados Detallados
+                                                                    </h4>
+                                                                    <p className="text-[10px] text-gray-500 mt-1 italic">Define las cantidades y servicios a entregar de forma manual.</p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setNewClient({
+                                                                            ...newClient,
+                                                                            plan: 'Presencia',
+                                                                            price: getPlanPrice('Presencia', newClient.industry)
+                                                                        });
+                                                                    }}
+                                                                    className="text-[9px] font-black text-rose-500 hover:text-white uppercase tracking-widest bg-rose-500/10 hover:bg-rose-500 px-3 py-1.5 rounded-xl border border-rose-500/20 transition-all"
+                                                                >
+                                                                    Volver a Plan Fijo
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                                                {LOCAL_PRODUCTION_RATES.map((rate) => {
+                                                                    const count = newClient.onboarding_data?.custom_deliverables?.[rate.id] || 0;
+                                                                    const isSelected = count > 0;
+                                                                    
+                                                                    return (
+                                                                        <div 
+                                                                            key={rate.id}
+                                                                            className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                                                                                isSelected 
+                                                                                    ? 'bg-indigo-500/5 border-indigo-500/30' 
+                                                                                    : 'bg-white/[0.01] border-white/5'
+                                                                            }`}
+                                                                        >
+                                                                            <div className="flex items-center gap-3">
+                                                                                <input 
+                                                                                    type="checkbox"
+                                                                                    checked={isSelected}
+                                                                                    onChange={(e) => {
+                                                                                        const newQty = e.target.checked ? 1 : 0;
+                                                                                        const updatedCustom = {
+                                                                                            ...(newClient.onboarding_data?.custom_deliverables || {}),
+                                                                                            [rate.id]: newQty
+                                                                                        };
+                                                                                        setNewClient({
+                                                                                            ...newClient,
+                                                                                            onboarding_data: {
+                                                                                                ...newClient.onboarding_data,
+                                                                                                custom_deliverables: updatedCustom
+                                                                                            }
+                                                                                        });
+                                                                                    }}
+                                                                                    className="w-4 h-4 rounded border-white/10 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-black bg-black"
+                                                                                />
+                                                                                <div>
+                                                                                    <span className="text-xs font-black text-white uppercase italic tracking-tight">{rate.name}</span>
+                                                                                    <div className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
+                                                                                        Costo Prod: ${rate.cost_internal} / Venta Sug: ${rate.price_sale}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2.5">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        const newQty = Math.max(0, count - 1);
+                                                                                        const updatedCustom = {
+                                                                                            ...(newClient.onboarding_data?.custom_deliverables || {}),
+                                                                                            [rate.id]: newQty
+                                                                                        };
+                                                                                        setNewClient({
+                                                                                            ...newClient,
+                                                                                            onboarding_data: {
+                                                                                                ...newClient.onboarding_data,
+                                                                                                custom_deliverables: updatedCustom
+                                                                                            }
+                                                                                        });
+                                                                                    }}
+                                                                                    className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs font-black hover:bg-white/10 text-gray-400 hover:text-white transition-all active:scale-95"
+                                                                                >
+                                                                                    -
+                                                                                </button>
+                                                                                <span className="w-6 text-center text-sm font-black text-white italic">{count}</span>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        const newQty = count + 1;
+                                                                                        const updatedCustom = {
+                                                                                            ...(newClient.onboarding_data?.custom_deliverables || {}),
+                                                                                            [rate.id]: newQty
+                                                                                        };
+                                                                                        setNewClient({
+                                                                                            ...newClient,
+                                                                                            onboarding_data: {
+                                                                                                ...newClient.onboarding_data,
+                                                                                                custom_deliverables: updatedCustom
+                                                                                            }
+                                                                                        });
+                                                                                    }}
+                                                                                    className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs font-black hover:bg-indigo-500 hover:text-white transition-all active:scale-95"
+                                                                                >
+                                                                                    +
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+
+                                                            {/* Live Margin Calculation Card */}
+                                                            {(() => {
+                                                                const customDeliv = newClient.onboarding_data?.custom_deliverables || {};
+                                                                let totalProdCost = 0;
+                                                                let totalSuggestedSale = 0;
+                                                                
+                                                                LOCAL_PRODUCTION_RATES.forEach(rate => {
+                                                                    const qty = Number(customDeliv[rate.id]) || 0;
+                                                                    totalProdCost += qty * rate.cost_internal;
+                                                                    totalSuggestedSale += qty * rate.price_sale;
+                                                                });
+
+                                                                const finalPrice = Number(newClient.price) || 0;
+                                                                const profit = finalPrice - totalProdCost;
+                                                                const margin = finalPrice > 0 ? Math.round((profit / finalPrice) * 100) : 0;
+
+                                                                let marginColor = 'text-emerald-400';
+                                                                let marginBg = 'bg-emerald-500/10 border-emerald-500/20';
+                                                                let statusText = 'Excelente Rentabilidad';
+                                                                if (margin < 40) {
+                                                                    marginColor = 'text-rose-400';
+                                                                    marginBg = 'bg-rose-500/10 border-rose-500/20';
+                                                                    statusText = 'Alerta de Bajo Margen';
+                                                                } else if (margin < 60) {
+                                                                    marginColor = 'text-amber-400';
+                                                                    marginBg = 'bg-amber-500/10 border-amber-500/20';
+                                                                    statusText = 'Margen Moderado';
+                                                                }
+
+                                                                return (
+                                                                    <div className="p-6 rounded-[2rem] bg-black/40 border border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mt-4">
+                                                                        <div className="space-y-2">
+                                                                            <h5 className="text-[10px] font-black text-gray-500 uppercase tracking-widest italic">Análisis Económico en Tiempo Real</h5>
+                                                                            <div className="flex flex-wrap gap-x-8 gap-y-2 text-xs">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-gray-500 uppercase font-black">Costo Producción:</span>
+                                                                                    <span className="text-rose-400 font-bold">${totalProdCost} USD</span>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-gray-500 uppercase font-black">Precio Sugerido:</span>
+                                                                                    <span className="text-indigo-400 font-bold">${totalSuggestedSale} USD</span>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-gray-500 uppercase font-black">Cobrado al Cliente:</span>
+                                                                                    <span className="text-white font-bold">${finalPrice} USD</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className={`px-6 py-4 rounded-2xl border ${marginBg} flex flex-col items-center justify-center text-center w-full md:w-auto`}>
+                                                                            <span className={`text-3xl font-black italic tracking-tight ${marginColor}`}>{margin}%</span>
+                                                                            <span className={`text-[8px] font-black uppercase tracking-widest mt-1 ${marginColor}`}>{statusText}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </motion.div>
+                                                    )}
 
                                                     {/* SaaS & Billing Configuration */}
                                                     <div className="border-t border-white/5 pt-8 mt-8">

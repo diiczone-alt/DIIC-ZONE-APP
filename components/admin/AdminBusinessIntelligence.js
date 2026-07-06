@@ -116,23 +116,38 @@ export default function AdminBusinessIntelligence() {
                 const planId = client.plan?.toLowerCase() || 'presencia';
                 let planDef = services.find(s => s.id === planId || s.name?.toLowerCase().includes(planId));
                 
-                let deliverables = planDef ? planDef.deliverables : null;
-                if (!deliverables) {
-                    if (planId.includes('presencia')) deliverables = { posts: 6, videos: 3 };
-                    else if (planId.includes('crecimiento')) deliverables = { posts: 8, videos: 5 };
-                    else if (planId.includes('autoridad')) deliverables = { posts: 11, videos: 7 };
-                    else if (planId.includes('control')) deliverables = { posts: 16, videos: 10 };
-                    else deliverables = { posts: 8, videos: 5 };
+                const price = Number(client.price) || 0;
+                let totalCost = 0;
+                let deliverablesName = planDef?.name || client.plan || 'Plan Personalizado';
+                const customDeliv = client.onboarding_data?.custom_deliverables;
+
+                if ((client.plan === 'Custom' || client.plan?.toLowerCase() === 'custom') && customDeliv) {
+                    deliverablesName = 'Servicios Personalizados';
+                    Object.entries(customDeliv).forEach(([serviceId, qty]) => {
+                        const count = Number(qty) || 0;
+                        if (count > 0) {
+                            totalCost += count * (costMap[serviceId] || 0);
+                        }
+                    });
+                    totalCost += cmCostPerClient;
+                } else {
+                    let deliverables = planDef ? planDef.deliverables : null;
+                    if (!deliverables) {
+                        if (planId.includes('presencia')) deliverables = { posts: 6, videos: 3 };
+                        else if (planId.includes('crecimiento')) deliverables = { posts: 8, videos: 5 };
+                        else if (planId.includes('autoridad')) deliverables = { posts: 11, videos: 7 };
+                        else if (planId.includes('control')) deliverables = { posts: 16, videos: 10 };
+                        else deliverables = { posts: 8, videos: 5 };
+                    }
+
+                    // Cost Calculation
+                    const costPosts = (Number(deliverables.posts) || 0) * (costMap['post_simple'] || 2.50);
+                    const videoRate = price >= 500 ? (costMap['reel_prod'] || 25) : (costMap['reel_edit'] || 5);
+                    const costVideos = (Number(deliverables.videos || deliverables.reels) || 0) * videoRate;
+                    
+                    totalCost = costPosts + costVideos + cmCostPerClient;
                 }
 
-                const price = Number(client.price) || 0;
-                
-                // Cost Calculation
-                const costPosts = (Number(deliverables.posts) || 0) * (costMap['post_simple'] || 2.50);
-                const videoRate = price >= 500 ? (costMap['reel_prod'] || 25) : (costMap['reel_edit'] || 5);
-                const costVideos = (Number(deliverables.videos || deliverables.reels) || 0) * videoRate;
-                
-                const totalCost = costPosts + costVideos + cmCostPerClient;
                 const profit = price - totalCost;
                 const margin = price > 0 ? Math.round((profit / price) * 100) : 0;
 
@@ -147,7 +162,7 @@ export default function AdminBusinessIntelligence() {
                     margin,
                     cost: totalCost,
                     color,
-                    plan: planDef?.name || client.plan || 'Plan Personalizado'
+                    plan: deliverablesName
                 };
             })
             .sort((a, b) => b.margin - a.margin);

@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, ShieldCheck, Instagram, Facebook, Youtube, Video, Twitter, Linkedin,
     Zap, Lock, CheckCircle2, RefreshCw, 
-    ArrowRight, AlertCircle, ExternalLink 
+    ArrowRight, AlertCircle, ExternalLink, Cpu 
 } from 'lucide-react';
 import { socialService } from '@/services/socialService';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export default function IntegrationModal({ 
@@ -15,6 +16,7 @@ export default function IntegrationModal({
     onClose, 
     platform = 'meta', // 'meta' | 'whatsapp'
     clientName = 'tu marca',
+    clientId = null,
     onSuccess 
 }) {
     const [step, setStep] = useState('CHOICE'); // CHOICE, CONNECTING, SUCCESS
@@ -27,6 +29,14 @@ export default function IntegrationModal({
         setStep('CONNECTING');
         
         try {
+            // Save client id so we associate it when returning from redirect
+            if (clientId) {
+                localStorage.setItem('diic_waiting_client_id', clientId);
+            } else {
+                localStorage.removeItem('diic_waiting_client_id');
+            }
+            localStorage.setItem('diic_waiting_provider', platform === 'facebook' || platform === 'meta' ? 'facebook' : platform);
+
             toast.info(`Iniciando handshake seguro con API de ${platform}...`);
             
             // Simulación de pasos de seguridad tipo app real (1.5 segundos extra antes de oauth/sandbox)
@@ -38,6 +48,70 @@ export default function IntegrationModal({
             console.error("Error al conectar:", err);
             toast.error(`Error de negociación con servidor de ${platform}`);
             setStep('CHOICE');
+            setLoading(false);
+        }
+    };
+
+    const handleConnectSandbox = async () => {
+        setLoading(true);
+        setStep('CONNECTING');
+        try {
+            toast.info("Configurando conexión en entorno de pruebas (Sandbox)...");
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Sesión no válida");
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('client_id')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            const finalClientId = clientId || profile?.client_id || null;
+            const targetProvider = platform === 'facebook' || platform === 'meta' ? 'facebook' : platform;
+
+            // Upsert in brand_connections
+            const { error: err1 } = await supabase
+                .from('brand_connections')
+                .upsert({
+                    user_id: user.id,
+                    client_id: finalClientId,
+                    provider: targetProvider,
+                    provider_id: `sandbox_${platform}_id`,
+                    access_token: 'sandbox_token',
+                    expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+                    status: 'ACTIVE',
+                    updated_at: new Date().toISOString(),
+                    metadata: { name: 'Nova Estética Clínica', email: 'contacto@novaestetica.com' }
+                }, { onConflict: 'user_id,provider' });
+
+            if (err1) throw err1;
+
+            // Upsert in social_connections
+            const { error: err2 } = await supabase
+                .from('social_connections')
+                .upsert({
+                    user_id: user.id,
+                    client_id: finalClientId,
+                    platform: targetProvider,
+                    external_id: `sandbox_${platform}_id`,
+                    access_token: 'sandbox_token',
+                    expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+                    updated_at: new Date().toISOString(),
+                    metadata: { name: 'Nova Estética Clínica', email: 'contacto@novaestetica.com' }
+                }, { onConflict: 'user_id,platform' });
+
+            if (err2) throw err2;
+
+            toast.success(`Simulador de ${platform} conectado con éxito.`);
+            setStep('SUCCESS');
+            if (onSuccess) onSuccess();
+        } catch (err) {
+            console.error("Error connecting sandbox:", err);
+            toast.error(`Error al conectar simulador: ${err.message || err}`);
+            setStep('CHOICE');
+        } finally {
             setLoading(false);
         }
     };
@@ -98,7 +172,7 @@ export default function IntegrationModal({
                                         <span className="text-[10px] font-black uppercase tracking-widest">Conexión Segura Meta</span>
                                     </div>
                                     <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                                        Para conectar de verdad tu Instagram y Ads, iniciaremos un flujo oficial de Meta. DIIC ZONE no guardará tu contraseña, solo el permiso de lectura.
+                                        Para conectar tu portafolio, iniciaremos un flujo oficial de Meta. DIIC ZONE no guardará tu contraseña, solo el permiso de lectura.
                                     </p>
                                 </div>
 
@@ -118,6 +192,23 @@ export default function IntegrationModal({
                                         </div>
                                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                     </button>
+
+                                    {(platform === 'facebook' || platform === 'meta') && (
+                                        <button 
+                                            onClick={handleConnectSandbox}
+                                            disabled={loading}
+                                            className="w-full text-white p-6 rounded-2xl flex items-center justify-between group transition-all bg-white/5 border border-white/10 hover:bg-white/10"
+                                        >
+                                            <div className="flex items-center gap-4 text-left">
+                                                <Cpu className="w-6 h-6 text-emerald-400" />
+                                                <div>
+                                                    <p className="text-sm font-bold">Usar Simulador / Sandbox</p>
+                                                    <p className="text-[9px] font-medium opacity-70 italic">Activar con datos demo de Nova Estética</p>
+                                                </div>
+                                            </div>
+                                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                        </button>
+                                    )}
                                     
                                     <div className="flex items-center gap-3 px-4 text-gray-600">
                                         <Lock className="w-3 h-3" />
@@ -148,7 +239,7 @@ export default function IntegrationModal({
                                     <CheckCircle2 className="w-12 h-12 text-emerald-500 animate-bounce" />
                                 </div>
                                 <div className="text-center space-y-3">
-                                    <h4 className="text-2xl font-black text-white italic uppercase italic">¡Conexión Exitosa!</h4>
+                                    <h4 className="text-2xl font-black text-white italic uppercase">¡Conexión Exitosa!</h4>
                                     <p className="text-xs text-gray-400 font-bold max-w-[280px] leading-relaxed mx-auto">
                                         El entorno de <span className="text-white">{clientName}</span> ha sido enlazado de forma segura al ecosistema DIIC.
                                     </p>
@@ -170,7 +261,7 @@ export default function IntegrationModal({
                             <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Estado: Encriptado</span>
                          </div>
                          <div className="flex gap-4">
-                            <span className="text-[8px] font-black text-gray-700 uppercase tracking-widest">v1.2</span>
+                            <span className="text-[8px] font-black text-gray-700 uppercase tracking-widest">v1.3</span>
                          </div>
                     </div>
                 </motion.div>

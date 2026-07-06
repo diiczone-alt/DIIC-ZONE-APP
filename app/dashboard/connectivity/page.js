@@ -15,7 +15,8 @@ import { aiService } from '@/lib/aiService';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ConnectivityPage() {
     const { user } = useAuth();
@@ -57,6 +58,86 @@ export default function ConnectivityPage() {
         
         const loadInitialData = async () => {
             try {
+                // OAuth Callback Handling
+                const waitingProvider = localStorage.getItem('diic_waiting_provider');
+                const waitingClientId = localStorage.getItem('diic_waiting_client_id');
+                let token = null;
+
+                const hash = window.location.hash || window.location.search;
+                if (hash && hash.includes('provider_token')) {
+                    const params = new URLSearchParams(hash.replace('#', '?'));
+                    token = params.get('provider_token');
+                }
+
+                if (!token) {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session && session.provider_token) {
+                        const sessionProvider = session.user?.app_metadata?.provider;
+                        if (sessionProvider === waitingProvider) {
+                            token = session.provider_token;
+                        }
+                    }
+                }
+
+                if (waitingProvider && token) {
+                    toast.loading(`Sincronizando conexión real con ${waitingProvider === 'facebook' ? 'Meta' : waitingProvider}...`);
+                    let externalId = `real_${waitingProvider}_id`;
+                    let metadata = {};
+
+                    if (waitingProvider === 'facebook') {
+                        try {
+                            const fbResponse = await fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${token}`);
+                            const fbData = await fbResponse.json();
+                            if (fbData && fbData.id) {
+                                externalId = fbData.id;
+                                metadata = { name: fbData.name, email: fbData.email };
+                            }
+                        } catch (e) {
+                            console.warn('[Connectivity] Failed to fetch Facebook profile:', e);
+                        }
+                    }
+
+                    const targetClientId = waitingClientId || clientId || null;
+
+                    // 1. Upsert to brand_connections
+                    await supabase
+                        .from('brand_connections')
+                        .upsert({
+                            user_id: user.id,
+                            client_id: targetClientId,
+                            provider: waitingProvider,
+                            provider_id: externalId,
+                            access_token: token,
+                            expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+                            status: 'ACTIVE',
+                            updated_at: new Date().toISOString(),
+                            metadata: metadata
+                        }, { onConflict: 'user_id,provider' });
+
+                    // 2. Upsert to social_connections
+                    await supabase
+                        .from('social_connections')
+                        .upsert({
+                            user_id: user.id,
+                            client_id: targetClientId,
+                            platform: waitingProvider,
+                            external_id: externalId,
+                            access_token: token,
+                            expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+                            updated_at: new Date().toISOString(),
+                            metadata: metadata
+                        }, { onConflict: 'user_id,platform' });
+
+                    const displayName = metadata.name || (waitingProvider === 'facebook' ? 'Meta' : waitingProvider);
+                    toast.success(`Conexión real con ${displayName} establecida.`);
+                    
+                    localStorage.removeItem('diic_waiting_provider');
+                    localStorage.removeItem('diic_waiting_client_id');
+                    
+                    const newUrl = window.location.pathname + (targetClientId ? `?client=${targetClientId}` : '');
+                    window.history.replaceState(null, null, newUrl);
+                }
+
                 // 1. Load Clients for selector
                 const { data: clientData } = await supabase.from('clients').select('*');
                 setClients(clientData || []);
@@ -205,10 +286,20 @@ export default function ConnectivityPage() {
         <main className="min-h-screen bg-[#050510] text-white p-8 md:p-16 space-y-12">
             <IntegrationModal 
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    if (typeof window !== 'undefined') {
+                        window.location.reload();
+                    }
+                }}
                 platform={selectedPlatform}
                 clientName={activeClient?.name || 'tu marca'}
-                onSuccess={() => {}}
+                clientId={clientId}
+                onSuccess={() => {
+                    if (typeof window !== 'undefined') {
+                        window.location.reload();
+                    }
+                }}
             />
 
             {/* Header */}
