@@ -16,7 +16,7 @@ export const socialService = {
 
         // Platform specific scopes
         if (provider === 'google') {
-            options.scopes = 'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/userinfo.email';
+            options.scopes = 'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.file';
         } else if (provider === 'facebook') {
             // Se agrega ads_read para poder ver métricas de cuentas publicitarias
             options.scopes = 'public_profile,email,pages_show_list,instagram_basic,instagram_manage_insights,ads_read';
