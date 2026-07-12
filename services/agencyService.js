@@ -301,7 +301,7 @@ export const agencyService = {
                 'onboarding_data', 'notes', 'created_at',
                 'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty',
                 'birth_date', 'country', 'address', 'website', 'goals', 'brochure_url',
-                'start_date', 'cutoff_day', 'app_fee', 'has_crm', 'has_agents', 'coords'
+                'start_date', 'cutoff_day', 'app_fee', 'has_crm', 'has_agents', 'coords', 'financial_sheet'
             ];
             
             const sanitizedData = {};
@@ -379,7 +379,7 @@ export const agencyService = {
                 'onboarding_data', 'notes',
                 'editor', 'filmmaker', 'growth_level', 'business_type', 'industry', 'specialty',
                 'birth_date', 'country', 'address', 'website', 'goals', 'brochure_url',
-                'start_date', 'cutoff_day', 'app_fee', 'has_crm', 'has_agents', 'coords'
+                'start_date', 'cutoff_day', 'app_fee', 'has_crm', 'has_agents', 'coords', 'financial_sheet'
             ];
             const sanitizedUpdates = {};
             validFields.forEach(field => {
@@ -1189,37 +1189,48 @@ export const agencyService = {
                 let clientIncome = client.status === 'active' ? (Number(client.price) || 0) : 0;
                 totalMRR += clientIncome;
 
-                let customDeliv = client.onboarding_data?.custom_deliverables;
-                if ((client.plan === 'Custom' || client.plan?.toLowerCase() === 'custom') && customDeliv) {
-                    Object.entries(customDeliv).forEach(([serviceId, qty]) => {
-                        const count = Number(qty) || 0;
-                        if (count > 0) {
-                            clientCost += count * (costMap[serviceId] || 0);
-                        }
-                    });
+                // Real Profitability Model: Sum of custom internal costs if specified in financial_sheet
+                if (client.financial_sheet && client.financial_sheet.costs_internal) {
+                    const costs = client.financial_sheet.costs_internal;
+                    clientCost = (Number(costs.design) || 0) +
+                                 (Number(costs.editing) || 0) +
+                                 (Number(costs.production) || 0) +
+                                 (Number(costs.cm) || 0) +
+                                 (Number(costs.transport) || 0) +
+                                 (Number(costs.others) || 0);
                 } else {
-                    let deliv = planDef ? planDef.deliverables : null;
-
-                    if (!deliv) {
-                        // Hardcoded fallback logic matching lib/constants.js PLAN_OPTIONS
-                        if (planId?.includes('presencia')) deliv = { videos: 3, posts: 6, strategy: 1, cm: 1 };
-                        else if (planId?.includes('crecimiento')) deliv = { videos: 5, posts: 8, strategy: 1, cm: 1 };
-                        else if (planId?.includes('autoridad')) deliv = { videos: 7, posts: 11, strategy: 1, cm: 1 };
-                        else if (planId?.includes('control')) deliv = { videos: 10, posts: 16, strategy: 1, cm: 1 };
-                    }
-
-                    if (deliv) {
-                        // Calculate based on the unit-cost model provided by user
-                        clientCost += (Number(deliv.videos) || 0) * (costMap['vid_promo'] || 45);
-                        clientCost += (Number(deliv.reels) || 0) * (costMap['reel_prod'] || 25);
-                        clientCost += (Number(deliv.posts) || 0) * (costMap['post_simple'] || 4);
-                        
-                        // Fixed Service Costs per client (Real Structure)
-                        if (deliv.cm) clientCost += (costMap['cm_service'] || 25);
-                        if (deliv.strategy) clientCost += (costMap['strategy_unit'] || 25);
+                    let customDeliv = client.onboarding_data?.custom_deliverables;
+                    if ((client.plan === 'Custom' || client.plan?.toLowerCase() === 'custom') && customDeliv) {
+                        Object.entries(customDeliv).forEach(([serviceId, qty]) => {
+                            const count = Number(qty) || 0;
+                            if (count > 0) {
+                                clientCost += count * (costMap[serviceId] || 0);
+                            }
+                        });
                     } else {
-                        // Fallback to average if no plan is found at all
-                        clientCost = clientIncome > 0 ? clientIncome * 0.6 : 0; 
+                        let deliv = planDef ? planDef.deliverables : null;
+
+                        if (!deliv) {
+                            // Hardcoded fallback logic matching lib/constants.js PLAN_OPTIONS
+                            if (planId?.includes('presencia')) deliv = { videos: 3, posts: 6, strategy: 1, cm: 1 };
+                            else if (planId?.includes('crecimiento')) deliv = { videos: 5, posts: 8, strategy: 1, cm: 1 };
+                            else if (planId?.includes('autoridad')) deliv = { videos: 7, posts: 11, strategy: 1, cm: 1 };
+                            else if (planId?.includes('control')) deliv = { videos: 10, posts: 16, strategy: 1, cm: 1 };
+                        }
+
+                        if (deliv) {
+                            // Calculate based on the unit-cost model provided by user
+                            clientCost += (Number(deliv.videos) || 0) * (costMap['vid_promo'] || 45);
+                            clientCost += (Number(deliv.reels) || 0) * (costMap['reel_prod'] || 25);
+                            clientCost += (Number(deliv.posts) || 0) * (costMap['post_simple'] || 4);
+                            
+                            // Fixed Service Costs per client (Real Structure)
+                            if (deliv.cm) clientCost += (costMap['cm_service'] || 25);
+                            if (deliv.strategy) clientCost += (costMap['strategy_unit'] || 25);
+                        } else {
+                            // Fallback to average if no plan is found at all
+                            clientCost = clientIncome > 0 ? clientIncome * 0.6 : 0; 
+                        }
                     }
                 }
 

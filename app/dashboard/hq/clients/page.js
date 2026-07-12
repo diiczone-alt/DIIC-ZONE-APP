@@ -206,6 +206,7 @@ export default function HQClientsPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingClient, setEditingClient] = useState(null);
     const [activeEditTab, setActiveEditTab] = useState('operative');
+    const [monthlyGoal, setMonthlyGoal] = useState(5750);
     const [modalWidth, setModalWidth] = useState(1150);
     const [modalHeight, setModalHeight] = useState(700);
 
@@ -262,7 +263,28 @@ export default function HQClientsPage() {
         app_fee: 100,
         has_crm: true,
         has_agents: true,
-        address: ''
+        address: '',
+        financial_sheet: {
+            production_monthly: {
+                shoots: 0,
+                reels: 0,
+                tiktok: 0,
+                vid_corp: 0,
+                photos: 0,
+                designs: 0,
+                stories: 0,
+                cm: false,
+                ads: false
+            },
+            costs_internal: {
+                design: 0,
+                editing: 0,
+                production: 0,
+                cm: 0,
+                transport: 0,
+                others: 0
+            }
+        }
     });
 
     const fetchClients = async (isBackground = false) => {
@@ -328,6 +350,20 @@ export default function HQClientsPage() {
         
         // 2. Background Sync
         fetchClients(hasCache);
+
+        // 2.5 Load dynamic billing goal
+        const loadGoal = async () => {
+            try {
+                const goals = await agencyService.getFinancialGoals();
+                const billingGoal = goals.find(g => g.name === 'Meta de Facturación Mensual');
+                if (billingGoal && billingGoal.target_amount) {
+                    setMonthlyGoal(Number(billingGoal.target_amount));
+                }
+            } catch (err) {
+                console.error("Error loading monthly goal:", err);
+            }
+        };
+        loadGoal();
 
         // 3. Realtime Subscription with Channel Management
         setIsHQLive(true);
@@ -548,7 +584,28 @@ export default function HQClientsPage() {
             cutoff_day: client.cutoff_day !== undefined && client.cutoff_day !== null ? client.cutoff_day : 5,
             app_fee: client.app_fee !== undefined && client.app_fee !== null ? client.app_fee : 100,
             has_crm: client.has_crm !== undefined && client.has_crm !== null ? client.has_crm : true,
-            has_agents: client.has_agents !== undefined && client.has_agents !== null ? client.has_agents : true
+            has_agents: client.has_agents !== undefined && client.has_agents !== null ? client.has_agents : true,
+            financial_sheet: client.financial_sheet || {
+                production_monthly: {
+                    shoots: 0,
+                    reels: 0,
+                    tiktok: 0,
+                    vid_corp: 0,
+                    photos: 0,
+                    designs: 0,
+                    stories: 0,
+                    cm: false,
+                    ads: false
+                },
+                costs_internal: {
+                    design: 0,
+                    editing: 0,
+                    production: 0,
+                    cm: 0,
+                    transport: 0,
+                    others: 0
+                }
+            }
         });
         setActiveEditTab('operative');
         setIsEditModalOpen(true);
@@ -754,6 +811,43 @@ export default function HQClientsPage() {
                 </div>
             </motion.div>
 
+            {/* Facturación Global Progress Banner */}
+            <div className="bg-[#0E0E18]/80 backdrop-blur-md border border-white/5 rounded-[2.5rem] p-8 relative z-10 overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+                <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
+                    <div className="flex-1 w-full space-y-3">
+                        <div className="flex items-center gap-3">
+                            <span className="px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] font-black uppercase tracking-wider">Comando Central</span>
+                            <h2 className="text-lg font-black text-white uppercase tracking-wider italic">Meta de Facturación Mensual</h2>
+                        </div>
+                        <div className="flex items-baseline gap-4">
+                            <span className="text-5xl font-black text-white tracking-tighter">${mrr.toLocaleString()}</span>
+                            <span className="text-gray-500 font-bold">de ${monthlyGoal.toLocaleString()} meta</span>
+                            <span className="text-xs font-black px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/10">
+                                Faltan ${(monthlyGoal - mrr > 0 ? monthlyGoal - mrr : 0).toLocaleString()}
+                            </span>
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        <div className="space-y-1.5 pt-2">
+                            <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
+                                <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min(100, (mrr / monthlyGoal) * 100)}%` }}
+                                    transition={{ duration: 1.2 }}
+                                    className="h-full bg-indigo-500 shadow-lg shadow-indigo-500/20"
+                                />
+                            </div>
+                            <div className="flex justify-between text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                <span>0%</span>
+                                <span>{Math.round((mrr / monthlyGoal) * 100)}% alcanzado</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Stats Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
                 <StatCard title="Clientes Activos" value={activeCount} icon={Users} color="indigo" isActive={activeFilter === 'active'} onClick={() => setActiveFilter(activeFilter === 'active' ? 'all' : 'active')} />
@@ -789,6 +883,7 @@ export default function HQClientsPage() {
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Nicho / Estrategia</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Community</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Inversión / Facturación</th>
+                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Rentabilidad</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Estado</th>
                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-right">Acciones</th>
                         </tr>
@@ -904,6 +999,37 @@ export default function HQClientsPage() {
                                                     </div>
                                                     <div className="text-[9px] text-gray-600 font-bold">
                                                         +${client?.app_fee !== undefined ? client.app_fee : 100} App Fee
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                    </td>
+                                    <td className="px-6 py-6">
+                                        {(() => {
+                                            const sheets = client.financial_sheet || {};
+                                            const costs = sheets.costs_internal || {};
+                                            const totalCost = (Number(costs.design) || 0) +
+                                                              (Number(costs.editing) || 0) +
+                                                              (Number(costs.production) || 0) +
+                                                              (Number(costs.cm) || 0) +
+                                                              (Number(costs.transport) || 0) +
+                                                              (Number(costs.others) || 0);
+                                            const price = Number(client.price) || 0;
+                                            const profit = price - totalCost;
+                                            const margin = price > 0 ? Math.round((profit / price) * 100) : 0;
+                                            
+                                            let marginColor = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+                                            if (margin >= 50) marginColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                                            else if (margin >= 20) marginColor = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+
+                                            return (
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="font-black text-white text-base leading-none">${profit.toLocaleString()}<span className="text-[10px] font-bold text-gray-500">/mes</span></div>
+                                                    <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border text-center ${marginColor} w-fit`}>
+                                                        {margin}% margen
+                                                    </div>
+                                                    <div className="text-[9px] text-gray-500 font-medium">
+                                                        Costo: ${totalCost}
                                                     </div>
                                                 </div>
                                             );
@@ -1408,6 +1534,7 @@ export default function HQClientsPage() {
                                     <div className="flex p-1 bg-white/[0.02] border border-white/5 rounded-[18px]">
                                         {[
                                             { id: 'operative', label: 'Logística', icon: Layout },
+                                            { id: 'financial', label: 'Ficha Financiera', icon: DollarSign },
                                             { id: 'team', label: 'Escuadra', icon: Users },
                                             { id: 'strategy', label: 'Hojas de Ruta', icon: Target },
                                             { id: 'growth', label: 'Performance', icon: TrendingUp },
@@ -1883,6 +2010,359 @@ export default function HQClientsPage() {
                                                         </div>
                                                     </motion.div>
                                                 )}
+
+                                            {activeEditTab === 'financial' && (
+                                                <motion.div 
+                                                    key="financial"
+                                                    initial={{ opacity: 0, x: 10 }} 
+                                                    animate={{ opacity: 1, x: 0 }} 
+                                                    exit={{ opacity: 0, x: -10 }}
+                                                    className="space-y-8"
+                                                >
+                                                    {(() => {
+                                                        const finSheet = newClient.financial_sheet || {};
+                                                        const pm = finSheet.production_monthly || {};
+                                                        const costs = finSheet.costs_internal || {};
+                                                        
+                                                        const designCost = Number(costs.design) || 0;
+                                                        const editingCost = Number(costs.editing) || 0;
+                                                        const prodCost = Number(costs.production) || 0;
+                                                        const cmCost = Number(costs.cm) || 0;
+                                                        const transportCost = Number(costs.transport) || 0;
+                                                        const othersCost = Number(costs.others) || 0;
+                                                        
+                                                        const totalCost = designCost + editingCost + prodCost + cmCost + transportCost + othersCost;
+                                                        const revenue = Number(newClient.price) || 0;
+                                                        const profit = revenue - totalCost;
+                                                        const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
+                                                        
+                                                        let marginLabel = "Baja Rentabilidad / Revisar Costos";
+                                                        let marginBadgeColor = "text-rose-450 bg-rose-500/10 border-rose-500/20";
+                                                        if (margin >= 50) {
+                                                            marginLabel = "Alta Rentabilidad ✅";
+                                                            marginBadgeColor = "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+                                                        } else if (margin >= 20) {
+                                                            marginLabel = "Rentabilidad Aceptable 👍";
+                                                            marginBadgeColor = "text-amber-400 bg-amber-500/10 border-amber-500/20";
+                                                        } else {
+                                                            marginBadgeColor = "text-rose-450 bg-rose-500/10 border-rose-500/20";
+                                                        }
+
+                                                        const handleAutoCalculate = () => {
+                                                            const newDesignCost = (Number(pm.designs) || 0) * 2.50;
+                                                            const newEditingCost = ((Number(pm.reels) || 0) * 5.00) + ((Number(pm.tiktok) || 0) * 2.50) + ((Number(pm.vid_corp) || 0) * 20.00);
+                                                            const newProdCost = (Number(pm.shoots) || 0) * 50.00;
+                                                            const newCmCost = pm.cm ? 150.00 : 0.00;
+                                                            const newTransportCost = (Number(pm.shoots) || 0) > 0 ? 20.00 : 0.00;
+                                                            const newOthersCost = 10.00;
+
+                                                            setNewClient({
+                                                                ...newClient,
+                                                                financial_sheet: {
+                                                                    ...finSheet,
+                                                                    costs_internal: {
+                                                                        design: newDesignCost,
+                                                                        editing: newEditingCost,
+                                                                        production: newProdCost,
+                                                                        cm: newCmCost,
+                                                                        transport: newTransportCost,
+                                                                        others: newOthersCost
+                                                                    }
+                                                                }
+                                                            });
+                                                            toast.success("Costos internos estimados automáticamente");
+                                                        };
+
+                                                        return (
+                                                            <>
+                                                                {/* Summary Cards */}
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                                    <div className="px-6 py-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-center">
+                                                                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Facturación Mensual (Ingreso)</span>
+                                                                        <div className="flex items-baseline gap-1 mt-1">
+                                                                            <span className="text-3xl font-black text-white">${revenue.toLocaleString()}</span>
+                                                                            <span className="text-[10px] text-gray-500 font-bold">USD</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="px-6 py-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-center">
+                                                                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Costos de Operación (Egresos)</span>
+                                                                        <div className="flex items-baseline gap-1 mt-1">
+                                                                            <span className="text-3xl font-black text-rose-500">${totalCost.toLocaleString()}</span>
+                                                                            <span className="text-[10px] text-gray-500 font-bold">USD</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="px-6 py-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 flex flex-col justify-center">
+                                                                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Utilidad Real</span>
+                                                                        <div className="flex items-baseline gap-2 mt-1">
+                                                                            <span className="text-3xl font-black text-emerald-400">${profit.toLocaleString()}</span>
+                                                                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${marginBadgeColor}`}>
+                                                                                {margin}% Margen
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                                    {/* Facturación y Producción */}
+                                                                    <div className="space-y-6 bg-white/[0.01] border border-white/5 rounded-3xl p-6">
+                                                                        <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                                                            <Activity className="w-4 h-4 text-indigo-400" /> Producción Mensual Proyectada
+                                                                        </h4>
+
+                                                                        <div className="space-y-4">
+                                                                            <GlassInput 
+                                                                                label="Facturación MRR ($)" 
+                                                                                type="number"
+                                                                                value={newClient.price || 0} 
+                                                                                onChange={(e) => setNewClient({ ...newClient, price: Number(e.target.value) || 0 })} 
+                                                                                icon={DollarSign}
+                                                                                placeholder="Ingreso mensual..."
+                                                                            />
+                                                                            
+                                                                            <div className="grid grid-cols-2 gap-4">
+                                                                                <GlassInput 
+                                                                                    label="Grabaciones / Shoots" 
+                                                                                    type="number"
+                                                                                    value={pm.shoots !== undefined ? pm.shoots : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            production_monthly: { ...pm, shoots: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="Reels de Video" 
+                                                                                    type="number"
+                                                                                    value={pm.reels !== undefined ? pm.reels : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            production_monthly: { ...pm, reels: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="TikToks" 
+                                                                                    type="number"
+                                                                                    value={pm.tiktok !== undefined ? pm.tiktok : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            production_monthly: { ...pm, tiktok: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="Videos Corporativos" 
+                                                                                    type="number"
+                                                                                    value={pm.vid_corp !== undefined ? pm.vid_corp : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            production_monthly: { ...pm, vid_corp: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="Fotografías" 
+                                                                                    type="number"
+                                                                                    value={pm.photos !== undefined ? pm.photos : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            production_monthly: { ...pm, photos: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="Diseños de Post" 
+                                                                                    type="number"
+                                                                                    value={pm.designs !== undefined ? pm.designs : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            production_monthly: { ...pm, designs: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="Stories" 
+                                                                                    type="number"
+                                                                                    value={pm.stories !== undefined ? pm.stories : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            production_monthly: { ...pm, stories: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0"
+                                                                                />
+                                                                            </div>
+
+                                                                            <div className="flex gap-6 pt-2">
+                                                                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                                                                    <input 
+                                                                                        type="checkbox" 
+                                                                                        checked={pm.cm || false} 
+                                                                                        onChange={(e) => setNewClient({
+                                                                                            ...newClient,
+                                                                                            financial_sheet: {
+                                                                                                ...finSheet,
+                                                                                                production_monthly: { ...pm, cm: e.target.checked }
+                                                                                            }
+                                                                                        })} 
+                                                                                        className="w-4 h-4 accent-indigo-600 rounded bg-white/5 border border-white/10" 
+                                                                                    />
+                                                                                    <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">CM Activo</span>
+                                                                                </label>
+
+                                                                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                                                                    <input 
+                                                                                        type="checkbox" 
+                                                                                        checked={pm.ads || false} 
+                                                                                        onChange={(e) => setNewClient({
+                                                                                            ...newClient,
+                                                                                            financial_sheet: {
+                                                                                                ...finSheet,
+                                                                                                production_monthly: { ...pm, ads: e.target.checked }
+                                                                                            }
+                                                                                        })} 
+                                                                                        className="w-4 h-4 accent-indigo-600 rounded bg-white/5 border border-white/10" 
+                                                                                    />
+                                                                                    <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Publicidad (Ads)</span>
+                                                                                </label>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Costos Internos */}
+                                                                    <div className="space-y-6 bg-white/[0.01] border border-white/5 rounded-3xl p-6 flex flex-col">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                                                                <DollarSign className="w-4 h-4 text-emerald-400" /> Costo Interno Proyectado
+                                                                            </h4>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={handleAutoCalculate}
+                                                                                className="px-3 py-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-white rounded-lg border border-indigo-500/20 text-[10px] font-black uppercase tracking-wider transition-all"
+                                                                            >
+                                                                                Auto-calcular Costos
+                                                                            </button>
+                                                                        </div>
+
+                                                                        <div className="space-y-4 flex-1">
+                                                                            <div className="grid grid-cols-2 gap-4">
+                                                                                <GlassInput 
+                                                                                    label="Diseño ($)" 
+                                                                                    type="number"
+                                                                                    step="0.01"
+                                                                                    value={costs.design !== undefined ? costs.design : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            costs_internal: { ...costs, design: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0.00"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="Edición ($)" 
+                                                                                    type="number"
+                                                                                    step="0.01"
+                                                                                    value={costs.editing !== undefined ? costs.editing : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            costs_internal: { ...costs, editing: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0.00"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="Producción / Filmmaker ($)" 
+                                                                                    type="number"
+                                                                                    step="0.01"
+                                                                                    value={costs.production !== undefined ? costs.production : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            costs_internal: { ...costs, production: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0.00"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="CM ($)" 
+                                                                                    type="number"
+                                                                                    step="0.01"
+                                                                                    value={costs.cm !== undefined ? costs.cm : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            costs_internal: { ...costs, cm: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0.00"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="Transporte ($)" 
+                                                                                    type="number"
+                                                                                    step="0.01"
+                                                                                    value={costs.transport !== undefined ? costs.transport : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            costs_internal: { ...costs, transport: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0.00"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="Otros Costos ($)" 
+                                                                                    type="number"
+                                                                                    step="0.01"
+                                                                                    value={costs.others !== undefined ? costs.others : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            costs_internal: { ...costs, others: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0.00"
+                                                                                />
+                                                                            </div>
+                                                                            <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                                                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Estado Rentabilidad</span>
+                                                                                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${marginBadgeColor}`}>{marginLabel}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </motion.div>
+                                            )}
 
                                             {activeEditTab === 'team' && (
                                                 <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
