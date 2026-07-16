@@ -6,20 +6,19 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function check() {
-    console.log('Fetching users from auth (need service role for this usually, using anon to fetch profile instead)');
+    console.log('Fetching clients...');
     
-    const { data: users, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .limit(100);
+    const { data: clients, error } = await supabase
+        .from('clients')
+        .select('*');
         
     if (error) {
         console.error('Error:', error);
     } else {
-        const cmUser = users.find(u => u.full_name?.toLowerCase().includes('cm') || u.id);
-        console.log('Found users:', users.length);
-        console.log('CM profile (sample):', users.find(u => u.email === 'cmdiiczone@gmail.com') || (users.length > 0 ? users[0] : 'None'));
-        console.log('All roles:', new Set(users.map(u => u.role)));
+        console.log('Found clients:', clients.length);
+        clients.forEach(c => {
+            console.log(`ID: ${c.id} | Name: ${c.name} | Status: ${c.status} | CreatedAt: ${c.created_at}`);
+        });
     }
 }
 

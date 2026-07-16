@@ -40,8 +40,8 @@ export default function PaywallGuard({ user, children }) {
                     }
                 }
 
-                // If trial is over and they haven't paid, block them
-                if (trialDaysLeft <= 0 && !isActuallyPaid) {
+                // If trial is over and they haven't paid, block them (Bypassed)
+                if (false && trialDaysLeft <= 0 && !isActuallyPaid) {
                     setIsBlocked(true);
                 }
             } catch (err) {

@@ -58,19 +58,16 @@ export default function CRMGuard({ user, children }) {
                 
                 setHasCrm(hasCRMAddon);
 
-                // 3. Evaluate restriction rules
+                // 3. Evaluate restriction rules (Bypassed)
                 if (hasCRMAddon) {
                     setIsBlocked(false);
                     setShowTrialBanner(false);
                 } else if (daysLeft > 0) {
                     setIsBlocked(false);
-                    setShowTrialBanner(true);
+                    setShowTrialBanner(false); // Do not show trial banner
                 } else {
                     setShowTrialBanner(false);
-                    // 3s delay (gamified peeking experience before block)
-                    setTimeout(() => {
-                        setIsBlocked(true);
-                    }, 3000);
+                    setIsBlocked(false); // Bypassed
                 }
             } catch (err) {
                 console.error("Error checking CRM access status:", err);

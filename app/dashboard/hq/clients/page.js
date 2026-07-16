@@ -748,6 +748,9 @@ export default function HQClientsPage() {
         const price = (c.price !== undefined && c.price !== null) ? Number(c.price) : getPlanPrice(c.plan, c.industry);
         return acc + (isNaN(price) ? 0 : price);
     }, 0) : 0;
+
+    const MILESTONES = [5000, 10000, 20000, 40000, 80000, 160000, 320000, 640000, 1000000];
+    const activeMilestone = MILESTONES.find(m => mrr < m) || 1000000;
     const riskCount = Array.isArray(clients) ? clients.filter(c => c && (c.priority || '').toUpperCase() === 'ALTA').length : 0;
     const pendingCount = Array.isArray(clients) ? clients.filter(c => c && c.status === 'paused').length : 0;
     const activeCount = Array.isArray(clients) ? clients.filter(c => c && c.status === 'active').length : 0;
@@ -815,16 +818,18 @@ export default function HQClientsPage() {
             <div className="bg-[#0E0E18]/80 backdrop-blur-md border border-white/5 rounded-[2.5rem] p-8 relative z-10 overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
-                    <div className="flex-1 w-full space-y-3">
+                    <div className="flex-1 w-full space-y-4">
                         <div className="flex items-center gap-3">
-                            <span className="px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] font-black uppercase tracking-wider">Comando Central</span>
-                            <h2 className="text-lg font-black text-white uppercase tracking-wider italic">Meta de Facturación Mensual</h2>
+                            <span className="px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] font-black uppercase tracking-wider">Aventuras de Facturación</span>
+                            <h2 className="text-lg font-black text-white uppercase tracking-wider italic">
+                                {mrr >= 1000000 ? "Aventura de Leyenda 👑" : `Aventura Actual: ${activeMilestone >= 1000000 ? '1M' : (activeMilestone / 1000) + 'K'}`}
+                            </h2>
                         </div>
                         <div className="flex items-baseline gap-4">
                             <span className="text-5xl font-black text-white tracking-tighter">${mrr.toLocaleString()}</span>
-                            <span className="text-gray-500 font-bold">de ${monthlyGoal.toLocaleString()} meta</span>
+                            <span className="text-gray-500 font-bold">de ${activeMilestone.toLocaleString()} meta</span>
                             <span className="text-xs font-black px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/10">
-                                Faltan ${(monthlyGoal - mrr > 0 ? monthlyGoal - mrr : 0).toLocaleString()}
+                                Faltan ${(activeMilestone - mrr > 0 ? activeMilestone - mrr : 0).toLocaleString()}
                             </span>
                         </div>
                         
@@ -833,15 +838,49 @@ export default function HQClientsPage() {
                             <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
                                 <motion.div 
                                     initial={{ width: 0 }}
-                                    animate={{ width: `${Math.min(100, (mrr / monthlyGoal) * 100)}%` }}
+                                    animate={{ width: `${Math.min(100, (mrr / activeMilestone) * 100)}%` }}
                                     transition={{ duration: 1.2 }}
                                     className="h-full bg-indigo-500 shadow-lg shadow-indigo-500/20"
                                 />
                             </div>
                             <div className="flex justify-between text-[10px] font-black text-gray-500 uppercase tracking-widest">
                                 <span>0%</span>
-                                <span>{Math.round((mrr / monthlyGoal) * 100)}% alcanzado</span>
+                                <span>{Math.round((mrr / activeMilestone) * 100)}% de la aventura completado</span>
                                 <span>100%</span>
+                            </div>
+                        </div>
+
+                        {/* Milestones Roadmap Line */}
+                        <div className="pt-4 border-t border-white/5">
+                            <div className="flex items-center justify-between text-[9px] font-black text-gray-500 uppercase tracking-wider mb-3">
+                                <span>Mapa de Aventuras al Millón (MRR)</span>
+                                <span className="text-indigo-400">Objetivo Final: $1M</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2 scrollbar-none">
+                                {MILESTONES.map((m, idx) => {
+                                    const label = m >= 1000000 ? "1M" : `${m/1000}K`;
+                                    const isReached = mrr >= m;
+                                    const isActive = m === activeMilestone;
+                                    
+                                    return (
+                                        <div key={m} className="flex flex-col items-center gap-1.5 min-w-[55px] flex-1">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border text-[9px] font-black tracking-tighter transition-all ${
+                                                isReached 
+                                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                                                : isActive 
+                                                ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.5)] animate-pulse' 
+                                                : 'bg-white/5 border-white/10 text-gray-500'
+                                            }`}>
+                                                {isReached ? "✓" : label}
+                                            </div>
+                                            <span className={`text-[8px] font-black uppercase tracking-tight ${
+                                                isReached ? 'text-emerald-500' : isActive ? 'text-indigo-400' : 'text-gray-600'
+                                            }`}>
+                                                {isReached ? "Superado" : isActive ? "Activo" : "Bloqueado"}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
