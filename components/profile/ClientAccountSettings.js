@@ -10,7 +10,7 @@ import { driveService } from '@/services/driveService';
 import { useSearchParams } from 'next/navigation';
 import GrowthPricing from '../growth/GrowthPricing';
 import PremiumDropdown from '../shared/PremiumDropdown';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ECUADOR_CITIES, INDUSTRY_OPTIONS, PLAN_OPTIONS, MEDICAL_SPECIALTIES, AGRO_SPECIALTIES, EDUCATION_SPECIALTIES } from '@/lib/constants';
 
 const getPlanPrice = (plan, industry) => {
@@ -43,12 +43,17 @@ const getPlanPrice = (plan, industry) => {
 };
 
 export default function ClientAccountSettings({ clientId }) {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [activeSection, setActiveSection] = useState('profile'); // profile, brand, security, billing, notifications
     const [showPlans, setShowPlans] = useState(false);
     const [isNicheLocked, setIsNicheLocked] = useState(false);
+
+    const [profileId, setProfileId] = useState('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [confirmEmail, setConfirmEmail] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         if (searchParams.get('upgrade') === 'crm') {
@@ -145,6 +150,37 @@ export default function ClientAccountSettings({ clientId }) {
         }
     };
 
+    const handleDeleteAccount = async () => {
+        const targetEmail = profileData.email || user?.email;
+        if (!targetEmail) {
+            toast.error("No se pudo verificar el correo electrónico de la cuenta.");
+            return;
+        }
+
+        if (confirmEmail.trim().toLowerCase() !== targetEmail.trim().toLowerCase()) {
+            toast.error("El correo electrónico ingresado no coincide.");
+            return;
+        }
+
+        setIsDeleting(true);
+        const toastId = toast.loading("Eliminando cuenta...");
+        try {
+            const { error } = await supabase.rpc('delete_user_by_id', {
+                user_uuid: profileId || user.id
+            });
+            if (error) throw error;
+
+            toast.success("Cuenta de acceso eliminada exitosamente", { id: toastId });
+            await logout();
+        } catch (err) {
+            console.error("Error deleting account:", err);
+            toast.error("Error al eliminar la cuenta: " + (err.message || err), { id: toastId });
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteModalOpen(false);
+        }
+    };
+
     useEffect(() => {
         const fetchSyncData = async () => {
             if (!user?.id) return;
@@ -229,6 +265,7 @@ export default function ClientAccountSettings({ clientId }) {
                         return String(priceVal);
                     })()
                 });
+                setProfileId(profile?.id || '');
                 const existingNiche = clientRecord?.industry || profile?.industry;
                 setIsNicheLocked(!!(existingNiche && existingNiche !== 'Otro' && existingNiche !== 'General' && existingNiche !== ''));
             } catch (error) {
@@ -1105,6 +1142,22 @@ export default function ClientAccountSettings({ clientId }) {
                                 <span className="text-emerald-400 text-[10px] font-bold px-2 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20 uppercase tracking-wide">Actual</span>
                             </div>
                         </div>
+
+                        {/* Danger Zone */}
+                        <div className="pt-8 border-t border-red-500/20">
+                            <h3 className="text-red-500 font-bold mb-2">Zona de Peligro</h3>
+                            <p className="text-gray-400 text-xs mb-4">Una vez que elimines tu cuenta, no se podrá deshacer esta acción. Se eliminará tu acceso, perfil y marcas asociadas de forma permanente.</p>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setConfirmEmail('');
+                                    setIsDeleteModalOpen(true);
+                                }}
+                                className="px-5 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white font-black text-[10px] uppercase tracking-widest transition-all"
+                            >
+                                Eliminar mi cuenta
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -1263,6 +1316,60 @@ export default function ClientAccountSettings({ clientId }) {
                     </div>
                 </div>
             )}
+            {/* Delete Account Modal */}
+            <AnimatePresence>
+                {isDeleteModalOpen && (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            onClick={() => setIsDeleteModalOpen(false)} 
+                            className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+                            animate={{ scale: 1, opacity: 1, y: 0 }} 
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }} 
+                            className="relative w-full max-w-md bg-[#0D0D19] border border-red-500/20 rounded-[2.5rem] p-8 shadow-2xl z-10"
+                        >
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-4 text-center">Confirmar Eliminación</h3>
+                            <p className="text-gray-400 text-xs leading-relaxed mb-6 text-center">
+                                Esta acción eliminará permanentemente tu cuenta de acceso, tus marcas y todos los datos asociados. 
+                                <br /><br />
+                                Para continuar, escribe tu correo electrónico de confirmación: 
+                                <strong className="block mt-2 text-white font-mono select-all bg-white/5 py-1.5 px-3 rounded-lg border border-white/5 text-center">{profileData.email || user?.email}</strong>
+                            </p>
+                            <div className="space-y-4">
+                                <input
+                                    type="email"
+                                    value={confirmEmail}
+                                    onChange={(e) => setConfirmEmail(e.target.value)}
+                                    placeholder="Ingresa tu correo"
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white text-xs font-mono text-center focus:outline-none focus:border-red-500/50 focus:bg-black/60 transition-all placeholder:text-gray-600"
+                                />
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setIsDeleteModalOpen(false)}
+                                        className="py-3.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white font-black uppercase tracking-widest text-[9px] rounded-xl transition-all border border-white/5"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={handleDeleteAccount}
+                                        disabled={isDeleting || confirmEmail.trim().toLowerCase() !== (profileData.email || user?.email || '').trim().toLowerCase()}
+                                        className="py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:hover:bg-red-600 text-white font-black uppercase tracking-widest text-[9px] rounded-xl transition-all shadow-[0_0_20px_rgba(220,38,38,0.2)]"
+                                    >
+                                        {isDeleting ? 'Eliminando...' : 'Eliminar Cuenta'}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

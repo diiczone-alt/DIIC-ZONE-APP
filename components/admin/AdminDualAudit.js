@@ -186,6 +186,19 @@ export default function AdminDualAudit() {
         }
     };
 
+    const handleDeleteTransaction = async (id) => {
+        if (!window.confirm("¿Estás seguro de que deseas eliminar esta transacción del libro mayor?")) return;
+        const toastId = toast.loading("Eliminando transacción...");
+        try {
+            await agencyService.deleteFinancialTransaction(id);
+            toast.success("Transacción eliminada del libro mayor", { id: toastId });
+            loadData();
+        } catch (error) {
+            console.error("Error deleting transaction:", error);
+            toast.error("Error al eliminar la transacción", { id: toastId });
+        }
+    };
+
     // --- BI ENGINE: CALCULATIONS ---
     const financialMetrics = useMemo(() => {
         const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0);
@@ -360,10 +373,10 @@ export default function AdminDualAudit() {
                     className="space-y-12"
                 >
                     { activeModule === 'overview' && <OverviewTab metrics={financialMetrics} /> }
-                    { activeModule === 'income' && <AreaDetailTab type="income" transactions={transactions.filter(t => t.type === 'income')} budget={0} onCertify={handleCertify} /> }
-                    { activeModule === 'expenses' && <AreaDetailTab type="expenses" transactions={transactions.filter(t => t.type === 'expense')} budget={financialMetrics.expense} onCertify={handleCertify} /> }
-                    { activeModule === 'team' && <AreaDetailTab type="team" transactions={transactions.filter(t => t.category === 'Pago a Profesionales')} budget={financialMetrics.teamBudget} onCertify={handleCertify} /> }
-                    { activeModule === 'agency' && <AreaDetailTab type="agency" transactions={transactions.filter(t => t.category === 'Gastos Administrativos')} budget={financialMetrics.officeBudget} onCertify={handleCertify} /> }
+                    { activeModule === 'income' && <AreaDetailTab type="income" transactions={transactions.filter(t => t.type === 'income')} budget={0} onCertify={handleCertify} onDelete={handleDeleteTransaction} /> }
+                    { activeModule === 'expenses' && <AreaDetailTab type="expenses" transactions={transactions.filter(t => t.type === 'expense')} budget={financialMetrics.expense} onCertify={handleCertify} onDelete={handleDeleteTransaction} /> }
+                    { activeModule === 'team' && <AreaDetailTab type="team" transactions={transactions.filter(t => t.category === 'Pago a Profesionales')} budget={financialMetrics.teamBudget} onCertify={handleCertify} onDelete={handleDeleteTransaction} /> }
+                    { activeModule === 'agency' && <AreaDetailTab type="agency" transactions={transactions.filter(t => t.category === 'Gastos Administrativos')} budget={financialMetrics.officeBudget} onCertify={handleCertify} onDelete={handleDeleteTransaction} /> }
                     { activeModule === 'goals' && <GoalsTab goals={goals} metrics={financialMetrics} onAdd={() => { }} /> }
                 </motion.div>
             </AnimatePresence>
@@ -608,7 +621,7 @@ function OverviewTab({ metrics }) {
     );
 }
 
-function AreaDetailTab({ type, transactions, budget, onCertify }) {
+function AreaDetailTab({ type, transactions, budget, onCertify, onDelete }) {
     const config = FINANCIAL_CONFIG[type];
     const total = transactions.reduce((acc, t) => acc + Number(t.amount), 0);
     const usage = budget > 0 ? (total / budget) * 100 : 0;
@@ -711,15 +724,24 @@ function AreaDetailTab({ type, transactions, budget, onCertify }) {
                                                 </div>
                                             </div>
                                             
-                                            {tx.status === 'pending' && (
+                                            <div className="flex items-center gap-3">
+                                                {tx.status === 'pending' && (
+                                                    <button 
+                                                        onClick={() => onCertify(tx.id)}
+                                                        className="p-5 rounded-2xl bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 hover:scale-110 transition-all flex items-center justify-center gap-3 group/btn"
+                                                    >
+                                                        <CheckCircle2 className="w-5 h-5" />
+                                                        <span className="hidden lg:block text-[10px] font-black uppercase tracking-widest">Certificar</span>
+                                                    </button>
+                                                )}
                                                 <button 
-                                                    onClick={() => onCertify(tx.id)}
-                                                    className="p-5 rounded-2xl bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 hover:scale-110 transition-all flex items-center justify-center gap-3 group/btn"
+                                                    onClick={() => onDelete(tx.id)}
+                                                    className="p-5 rounded-2xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 hover:scale-110 transition-all flex items-center justify-center gap-2"
+                                                    title="Eliminar Transacción"
                                                 >
-                                                    <CheckCircle2 className="w-5 h-5" />
-                                                    <span className="hidden lg:block text-[10px] font-black uppercase tracking-widest">Certificar</span>
+                                                    <Trash2 className="w-5 h-5" />
                                                 </button>
-                                            )}
+                                            </div>
                                         </div>
                                     </motion.div>
                                 ))}

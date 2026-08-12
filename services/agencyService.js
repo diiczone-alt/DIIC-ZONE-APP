@@ -670,29 +670,30 @@ export const agencyService = {
     deleteClient: async (id) => {
         console.log("Deleting Client Permanently:", id);
         try {
-            // 1. Nullify reference in profiles and change role to USER to avoid auto-sync recreation
-            await supabase
+            // 1. Buscar el perfil (usuario) asociado a este cliente
+            const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
-                .update({ client_id: null, role: 'USER' })
-                .eq('client_id', id);
+                .select('id')
+                .eq('client_id', id)
+                .maybeSingle();
 
-            // 2. Clean up other related records
-            await supabase.from('content').delete().eq('client_id', id);
-            await supabase.from('strategies').delete().eq('client_id', id);
-            await supabase.from('crm_leads').delete().eq('client_id', id);
-            await supabase.from('social_connections').delete().eq('client_id', id);
-            await supabase.from('brand_connections').delete().eq('client_id', id);
+            // 2. Si existe un perfil/usuario asociado, eliminar su cuenta de auth.users vía RPC
+            if (!profileError && profileData?.id) {
+                console.log("Deleting associated auth user:", profileData.id);
+                const { error: rpcError } = await supabase.rpc('delete_user_by_id', {
+                    user_uuid: profileData.id
+                });
+                if (rpcError) throw rpcError;
+            } else {
+                // Fallback si no tiene perfil pero si existe registro de cliente
+                const { error } = await supabase
+                    .from('clients')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+            }
 
-            // 3. Delete from clients table
-            const { error } = await supabase
-                .from('clients')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-            console.log("Client deleted from Supabase", id);
-
-            // 4. Update local cache
+            // 3. Sincronizar cache local de la lista de clientes
             if (typeof window !== 'undefined') {
                 try {
                     const stored = localStorage.getItem('diic_clients');
@@ -1746,6 +1747,20 @@ export const agencyService = {
             return data[0];
         } catch (error) {
             console.error("Error adding financial transaction:", error);
+            throw error;
+        }
+    },
+
+    deleteFinancialTransaction: async (id) => {
+        try {
+            const { error } = await supabase
+                .from('financial_transactions')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error("Error deleting financial transaction:", error);
             throw error;
         }
     },
