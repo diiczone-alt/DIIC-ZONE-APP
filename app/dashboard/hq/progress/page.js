@@ -260,8 +260,13 @@ export default function HQProgressPage() {
                     supabase.from('profiles').select('role').limit(1)
                 ]);
 
+                const isActiveStatus = (status) => {
+                    const s = (status || '').toLowerCase();
+                    return s === 'active' || s === 'trial' || s === 'onboarding_completed';
+                };
+
                 setStats({
-                    clientsCount: clients?.filter(c => c.status === 'active')?.length || 0,
+                    clientsCount: clients?.filter(c => c && isActiveStatus(c.status))?.length || 0,
                     teamCount: team?.length || 0,
                     activeTasks: tasks?.filter(t => t.status !== 'completed')?.length || 0,
                     pendingPayments: clients?.filter(c => c.status === 'paused')?.length || 0,
@@ -292,7 +297,7 @@ export default function HQProgressPage() {
                 localStorage.setItem('diic_hq_milestones', JSON.stringify(dbVerifiedMilestones));
 
                 // Dynamically set active phase tab based on actual milestone compliance
-                const activeClientsVal = clients?.filter(c => c.status === 'active')?.length || 0;
+                const activeClientsVal = clients?.filter(c => c && isActiveStatus(c.status))?.length || 0;
                 const f1Ok = activeClientsVal >= 10 && dbVerifiedMilestones.fase1_rbac && dbVerifiedMilestones.fase1_sync;
                 const f2Ok = f1Ok && activeClientsVal >= 20 && dbVerifiedMilestones.fase2_imprenta && dbVerifiedMilestones.fase2_n8n;
 

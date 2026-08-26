@@ -247,7 +247,10 @@ export default function MasterCommandCenter() {
                     >
                         {/* 1. GLOBAL KPIs */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <KPICard icon={Users} title="Clientes Activos" value={clients.filter(c => c.status === 'active').length} sub={`${clients.length} totales`} color="indigo" />
+                            <KPICard icon={Users} title="Clientes Activos" value={clients.filter(c => {
+                                const s = (c.status || '').toLowerCase();
+                                return s === 'active' || s === 'trial' || s === 'onboarding_completed';
+                            }).length} sub={`${clients.length} totales`} color="indigo" />
                             <KPICard icon={Zap} title="Carga Global" value={`${operationalData?.globalMetrics?.globalLoad || 0}%`} sub="Promedio del Staff" color={operationalData?.globalMetrics?.globalLoad > 80 ? 'red' : 'emerald'} />
                             <KPICard icon={AlertTriangle} title="Amenazas" value={operationalData?.risks?.filter(r => r.severity === 'critical').length || 0} sub="Incidentes Críticos" color="red" />
                             <KPICard icon={DollarSign} title="Ingreso Mensual" value={`$${clients.reduce((acc, c) => acc + (Number(c.price) || 0), 0).toLocaleString()}`} sub="Facturación Proyectada" color="indigo" />

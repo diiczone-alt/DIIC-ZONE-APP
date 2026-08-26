@@ -286,7 +286,10 @@ export default function HQDashboardPage() {
     }, [user, authLoading]);
 
     // Dynamic Phase Calculations based on Client Portfolio size & verified milestones
-    const currentClients = portfolio.filter(c => (c.status || '').toLowerCase() === 'active').length;
+    const currentClients = portfolio.filter(c => {
+        const s = (c.status || '').toLowerCase();
+        return s === 'active' || s === 'trial' || s === 'onboarding_completed';
+    }).length;
     
     const f1Complete = currentClients >= 10 && milestones.fase1_rbac && milestones.fase1_sync;
     const f2Complete = f1Complete && currentClients >= 20 && milestones.fase2_imprenta && milestones.fase2_n8n;
@@ -310,12 +313,7 @@ export default function HQDashboardPage() {
         const detailsStr = missingDetails.length > 0 ? ` (${missingDetails.join(', ')})` : '';
         phaseDesc = `Fase 1 activa. Requisitos para subir a Fase 2 pendientes${detailsStr}.`;
         
-        const completedTasks = [
-            currentClients >= 10,
-            milestones.fase1_rbac,
-            milestones.fase1_sync
-        ].filter(Boolean).length;
-        goalPercentage = Math.min((completedTasks / 3) * 100, 100);
+        goalPercentage = Math.min((currentClients / 10) * 100, 100);
     } else if (f1Complete && !f2Complete) {
         activePhase = 2;
         clientGoal = 20;
@@ -329,12 +327,7 @@ export default function HQDashboardPage() {
         const detailsStr = missingDetails.length > 0 ? ` (${missingDetails.join(', ')})` : '';
         phaseDesc = `Fase 2 de Automatización & Escala activa. Requisitos para Fase 3 pendientes${detailsStr}.`;
         
-        const completedTasks = [
-            currentClients >= 20,
-            milestones.fase2_imprenta,
-            milestones.fase2_n8n
-        ].filter(Boolean).length;
-        goalPercentage = Math.min((completedTasks / 3) * 100, 100);
+        goalPercentage = Math.min(((currentClients - 10) / 10) * 100, 100);
     } else {
         activePhase = 3;
         clientGoal = 50;
@@ -547,7 +540,10 @@ export default function HQDashboardPage() {
                     <MetricCard
                         title="Aliados Activos"
                         value={currentClients.toString()}
-                        change={`${portfolio.filter(c => c.status === 'active').length} Operativos`}
+                        change={`${portfolio.filter(c => {
+                            const s = (c.status || '').toLowerCase();
+                            return s === 'active' || s === 'trial' || s === 'onboarding_completed';
+                        }).length} Operativos`}
                         icon={Users}
                         color="text-indigo-400"
                         href="/dashboard/hq/clients"

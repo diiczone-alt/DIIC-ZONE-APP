@@ -463,7 +463,8 @@ export default function HQClientsPage() {
     };
 
     const handleToggleStatus = async (id, currentStatus) => {
-        const newStatus = currentStatus === 'active' ? 'paused' : 'active';
+        const isActive = currentStatus === 'active' || currentStatus === 'trial' || currentStatus === 'ONBOARDING_COMPLETED';
+        const newStatus = isActive ? 'paused' : 'active';
         await handleUpdateClient(id, { status: newStatus });
     };
 
@@ -734,17 +735,22 @@ export default function HQClientsPage() {
         }
     };
 
+    const isActiveStatus = (status) => {
+        const s = (status || '').toLowerCase();
+        return s === 'active' || s === 'trial' || s === 'onboarding_completed';
+    };
+
     const filteredClients = Array.isArray(clients) ? clients.filter(c => {
         if (!c) return false;
         const matchesSearch = (c.name || '').toLowerCase().includes(searchTerm.toLowerCase());
         if (activeFilter === 'risk') return matchesSearch && (c.priority || '').toUpperCase() === 'ALTA';
         if (activeFilter === 'pending') return matchesSearch && c.status === 'paused';
-        if (activeFilter === 'active') return matchesSearch && c.status === 'active';
+        if (activeFilter === 'active') return matchesSearch && isActiveStatus(c.status);
         return matchesSearch;
     }) : [];
 
     const mrr = Array.isArray(clients) ? clients.reduce((acc, c) => {
-        if (!c || c.status !== 'active') return acc;
+        if (!c || !isActiveStatus(c.status)) return acc;
         const price = (c.price !== undefined && c.price !== null) ? Number(c.price) : getPlanPrice(c.plan, c.industry);
         return acc + (isNaN(price) ? 0 : price);
     }, 0) : 0;
@@ -753,7 +759,7 @@ export default function HQClientsPage() {
     const activeMilestone = MILESTONES.find(m => mrr < m) || 1000000;
     const riskCount = Array.isArray(clients) ? clients.filter(c => c && (c.priority || '').toUpperCase() === 'ALTA').length : 0;
     const pendingCount = Array.isArray(clients) ? clients.filter(c => c && c.status === 'paused').length : 0;
-    const activeCount = Array.isArray(clients) ? clients.filter(c => c && c.status === 'active').length : 0;
+    const activeCount = Array.isArray(clients) ? clients.filter(c => c && isActiveStatus(c.status)).length : 0;
 
     return (
         <div className="p-8 space-y-8 relative">
@@ -1077,10 +1083,10 @@ export default function HQClientsPage() {
                                     <td className="px-6 py-6">
                                         <button
                                             onClick={() => handleToggleStatus(client.id, client.status)}
-                                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 hover:brightness-125 ${client.status === 'active' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
+                                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 hover:brightness-125 ${isActiveStatus(client.status) ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
                                         >
-                                            <div className={`w-1.5 h-1.5 rounded-full ${client.status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-                                            {client.status === 'active' ? 'Activo' : 'Pausado'}
+                                            <div className={`w-1.5 h-1.5 rounded-full ${isActiveStatus(client.status) ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                                            {isActiveStatus(client.status) ? 'Activo' : 'Pausado'}
                                         </button>
                                     </td>
                                     <td className="px-6 py-6 text-right whitespace-nowrap relative">

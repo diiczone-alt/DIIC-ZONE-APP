@@ -28,7 +28,10 @@ export default function HQCapacityPage() {
         const loadCapacityData = async () => {
             try {
                 const clientList = await agencyService.getClients();
-                const activeClients = clientList.filter(c => c.status === 'active');
+                const activeClients = clientList.filter(c => {
+                    const s = (c.status || '').toLowerCase();
+                    return s === 'active' || s === 'trial' || s === 'onboarding_completed';
+                });
                 setClients(activeClients);
 
                 // Calculate dynamic workloads based on client financial sheets

@@ -107,11 +107,16 @@ export default function AdminBusinessIntelligence() {
 
         const cm = team.find(t => t.role?.toLowerCase().includes('community'));
         const cmSal = cm ? Number(cm.salary) : 150;
-        const activeClientsCount = clients.filter(c => c.status === 'active').length || 7;
+        const isActiveStatus = (status) => {
+            const s = (status || '').toLowerCase();
+            return s === 'active' || s === 'trial' || s === 'onboarding_completed';
+        };
+
+        const activeClientsCount = clients.filter(c => isActiveStatus(c.status)).length || 7;
         const cmCostPerClient = cmSal / activeClientsCount;
 
         return clients
-            .filter(c => c.status === 'active' && Number(c.price) > 0)
+            .filter(c => isActiveStatus(c.status) && Number(c.price) > 0)
             .map(client => {
                 const planId = client.plan?.toLowerCase() || 'presencia';
                 let planDef = services.find(s => s.id === planId || s.name?.toLowerCase().includes(planId));

@@ -1562,7 +1562,10 @@ function CMOverviewDashboard({ clients, loading }) {
     const stats = [
         { label: 'Contenidos Activos', value: clients.reduce((acc, c) => acc + (c.projects || 0), 0).toString(), icon: FileText, color: 'text-cyan-400' },
         { label: 'Campañas en Curso', value: '3', icon: Share2, color: 'text-purple-400' },
-        { label: 'Marcas Activas', value: clients.filter(c => c.status === 'active').length.toString(), icon: ShieldCheck, color: 'text-emerald-400' },
+        { label: 'Marcas Activas', value: clients.filter(c => {
+            const s = (c.status || '').toLowerCase();
+            return s === 'active' || s === 'trial' || s === 'onboarding_completed';
+        }).length.toString(), icon: ShieldCheck, color: 'text-emerald-400' },
         { label: 'Alertas de Hoy', value: '2', icon: AlertTriangle, color: 'text-red-400' },
     ];
 
@@ -2401,8 +2404,8 @@ function CMSettingsClients({ clients, onSelectClient, loading, userMissingProfil
                         </div>
 
                         <h3 className="text-xl font-bold text-white mb-1">{client.name}</h3>
-                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${client.status === 'active' ? 'text-emerald-400' : 'text-gray-500'}`}>
-                            ● {client.status === 'active' ? 'Activo' : 'En Pausa'}
+                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${(client.status === 'active' || client.status === 'trial' || client.status === 'ONBOARDING_COMPLETED') ? 'text-emerald-400' : 'text-gray-500'}`}>
+                            ● {(client.status === 'active' || client.status === 'trial' || client.status === 'ONBOARDING_COMPLETED') ? 'Activo' : 'En Pausa'}
                         </p>
                         <p className="text-[9px] text-cyan-400/60 font-black uppercase tracking-widest mb-6 italic">{client.plan || 'Sin Plan Asignado'}</p>
 

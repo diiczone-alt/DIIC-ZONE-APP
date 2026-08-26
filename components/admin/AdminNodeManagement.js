@@ -150,7 +150,10 @@ export default function AdminNodeManagement() {
                 status: branch.status || "active",
                 level: branch.level || "basico",
                 creatives: creativesCount,
-                activeProjects: cityClients.filter(c => c.status === 'active').length,
+                activeProjects: cityClients.filter(c => {
+                    const s = (c.status || '').toLowerCase();
+                    return s === 'active' || s === 'trial' || s === 'onboarding_completed';
+                 }).length,
                 monthlyRevenue: revenue,
                 monthlyOpEx: totalOpEx,
                 monthlyMargin: margin,
