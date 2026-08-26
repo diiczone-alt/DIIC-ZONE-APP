@@ -578,7 +578,11 @@ export default function MasterCommandCenter() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                     >
-                        <AdminRiskControl />
+                        <AdminRiskControl 
+                            risks={operationalData?.risks || []} 
+                            stats={operationalData?.globalMetrics || {}} 
+                            team={operationalData?.team || []}
+                        />
                     </motion.div>
                 ) : view === 'operations' ? (
                     <motion.div

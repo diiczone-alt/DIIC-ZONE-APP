@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
     ShieldAlert, Users, Briefcase,
     Zap, BarChart3, Clock,
@@ -11,27 +11,56 @@ import {
     MessageSquare, RefreshCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
-export default function AdminRiskControl({ risks = [], stats: globalMetrics = {} }) {
+export default function AdminRiskControl({ risks = [], stats: globalMetrics = {}, team = [] }) {
     const [filter, setFilter] = useState('all');
+    const [ignoredAlertIds, setIgnoredAlertIds] = useState([]);
 
-    const alerts = risks.map(r => ({
-        id: Math.random(),
-        category: r.category,
-        severity: r.severity,
-        title: r.severity === 'critical' ? `CRÍTICO: ${r.message}` : r.message,
-        msg: r.description || r.message, // Fallback to message
-        impact: r.category === 'creative' ? 'Riesgo de retraso en entregas por saturación' : (r.category === 'project' ? 'Incumplimiento de cronograma' : (r.category === 'client' ? 'Desconexión del cliente detectada' : 'Afectación operativa general')),
-        action: r.category === 'creative' ? 'Reasignar / Reforzar' : (r.category === 'project' ? 'Llamar a Cliente/Agencia' : 'Intervención Directa'),
-        color: r.severity === 'critical' ? 'red' : 'yellow',
-        icon: r.category === 'creative' ? Zap : (r.category === 'project' ? Briefcase : Users)
-    }));
+    const alerts = useMemo(() => {
+        return risks.map(r => ({
+            id: r.id || Math.random(),
+            category: r.category || 'operation',
+            severity: r.severity || 'warning',
+            title: r.severity === 'critical' ? `CRÍTICO: ${r.title || r.message}` : (r.title || r.message),
+            msg: r.msg || r.description || r.message || 'Alerta operativa detectada en el nodo central.',
+            impact: r.impact || (r.category === 'creative' ? 'Riesgo de retraso en entregas por saturación' : (r.category === 'project' ? 'Incumplimiento de cronograma' : (r.category === 'client' ? 'Desconexión del cliente detectada' : 'Afectación operativa general'))),
+            action: r.action || (r.category === 'creative' ? 'Reasignar / Reforzar' : (r.category === 'project' ? 'Llamar a Cliente/Agencia' : 'Intervención Directa')),
+            color: r.severity === 'critical' ? 'red' : 'yellow',
+            icon: r.category === 'creative' ? Zap : (r.category === 'project' ? Briefcase : Users)
+        }));
+    }, [risks]);
 
-    const filteredAlerts = filter === 'all' ? alerts : alerts.filter(a => a.category === filter);
+    const filteredAlerts = useMemo(() => {
+        const base = filter === 'all' ? alerts : alerts.filter(a => a.category === filter);
+        return base.filter(a => !ignoredAlertIds.includes(a.id));
+    }, [alerts, filter, ignoredAlertIds]);
+
+    const depMetrics = useMemo(() => {
+        const categories = {
+            'Edición de Vídeo': ['editor de video', 'filmmaker', 'video', 'editor'],
+            'Diseño Creativo': ['diseñador', 'designer', 'diseño'],
+            'CM & Estrategia': ['community manager', 'cm', 'community', 'estratega', 'estrategia']
+        };
+
+        const result = {};
+        Object.keys(categories).forEach(dep => {
+            const members = team.filter(m => {
+                const role = (m.role || '').toLowerCase().trim();
+                return categories[dep].some(keyword => role.includes(keyword));
+            });
+            const avgLoad = members.length > 0
+                ? Math.round(members.reduce((acc, m) => acc + (m.load || 0), 0) / members.length)
+                : 0;
+            result[dep] = avgLoad;
+        });
+
+        return result;
+    }, [team]);
 
     const riskStats = [
         { label: 'Amenazas Críticas', val: risks.filter(r => r.severity === 'critical').length, color: 'red' },
-        { label: 'Alertas Totales', val: risks.length, color: 'yellow' },
+        { label: 'Alertas Totales', val: filteredAlerts.length, color: 'yellow' },
         { label: 'Saturación Promedio', val: `${globalMetrics.globalLoad || 0}%`, color: 'blue' }
     ];
 
@@ -111,10 +140,23 @@ export default function AdminRiskControl({ risks = [], stats: globalMetrics = {}
                             </div>
 
                             <div className="flex gap-4 w-full lg:w-auto mt-6 lg:mt-0 relative z-10">
-                                <button className="flex-1 lg:flex-none px-10 py-5 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl hover:bg-white/10 transition-all">
+                                <button 
+                                    onClick={() => {
+                                        setIgnoredAlertIds(prev => [...prev, alert.id]);
+                                        toast.info("Alerta omitida temporalmente");
+                                    }}
+                                    className="flex-1 lg:flex-none px-10 py-5 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl hover:bg-white/10 transition-all"
+                                >
                                     Ignorar
                                 </button>
-                                <button className={`flex-1 lg:flex-none px-10 py-5 bg-${alert.color}-500 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-${alert.color}-500/20 flex items-center justify-center gap-3`}>
+                                <button 
+                                    onClick={() => {
+                                        toast.success("Acción de rescate activada", {
+                                            description: `Ejecutando: ${alert.action}`
+                                        });
+                                    }}
+                                    className={`flex-1 lg:flex-none px-10 py-5 bg-${alert.color}-500 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-${alert.color}-500/20 flex items-center justify-center gap-3`}
+                                >
                                     {alert.action} <ArrowUpRight className="w-4 h-4" />
                                 </button>
                             </div>
@@ -129,20 +171,23 @@ export default function AdminRiskControl({ risks = [], stats: globalMetrics = {}
                     <h5 className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Salud Operativa por Departamento</h5>
                     <div className="space-y-6">
                         {[
-                            { dep: 'Edición de Vídeo', level: 0, color: 'blue' },
-                            { dep: 'Diseño Creativo', level: 0, color: 'indigo' },
-                            { dep: 'CM & Estrategia', level: 0, color: 'purple' }
-                        ].map((d, i) => (
-                            <div key={i} className="space-y-2">
-                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                                    <span className="text-white">{d.dep}</span>
-                                    <span className={`text-${d.color}-500`}>{globalMetrics.globalLoad || 0}% CAPACIDAD</span>
+                            { dep: 'Edición de Vídeo', color: 'blue' },
+                            { dep: 'Diseño Creativo', color: 'indigo' },
+                            { dep: 'CM & Estrategia', color: 'purple' }
+                        ].map((d, i) => {
+                            const level = depMetrics[d.dep] || 0;
+                            return (
+                                <div key={i} className="space-y-2">
+                                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                        <span className="text-white">{d.dep}</span>
+                                        <span className={`text-${d.color}-500`}>{level}% CAPACIDAD</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                                        <div className={`h-full bg-${d.color}-500`} style={{ width: `${level}%` }} />
+                                    </div>
                                 </div>
-                                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                                    <div className={`h-full bg-${d.color}-500`} style={{ width: `${globalMetrics.globalLoad || 0}%` }} />
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -154,7 +199,14 @@ export default function AdminRiskControl({ risks = [], stats: globalMetrics = {}
                         <h4 className="text-xl font-black text-white uppercase tracking-tighter mb-2">Modo Inteligencia Activo</h4>
                         <p className="text-xs text-gray-500 font-bold italic">"Analizando 48 variables de riesgo en tiempo real."</p>
                     </div>
-                    <button className="px-10 py-5 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl shadow-xl shadow-indigo-500/20">
+                    <button 
+                        onClick={() => {
+                            toast.success("Reporte de Crisis Generado", {
+                                description: `Analizando ${filteredAlerts.length} alertas operativas en este ciclo.`
+                            });
+                        }}
+                        className="px-10 py-5 bg-indigo-500 hover:bg-indigo-400 text-white text-[10px] font-black uppercase tracking-widest rounded-3xl shadow-xl shadow-indigo-500/20 transition-all"
+                    >
                         Generar Reporte de Crisis
                     </button>
                 </div>
