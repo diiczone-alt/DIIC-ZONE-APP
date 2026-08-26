@@ -61,7 +61,7 @@ export default function HQSidebar() {
             {/* Collapse/Expand Toggle Button */}
             <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="absolute -right-3 top-10 w-6 h-6 rounded-full bg-[#08081a] border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:border-white/30 transition-all shadow-lg hover:scale-110 z-50 cursor-pointer"
+                className="absolute -right-3 top-10 w-6 h-6 rounded-full bg-[#08081a] border border-white/10 hidden md:flex items-center justify-center text-gray-400 hover:text-white hover:border-white/30 transition-all shadow-lg hover:scale-110 z-50 cursor-pointer"
             >
                 {isCollapsed ? (
                     <ChevronRight className="w-3.5 h-3.5" />

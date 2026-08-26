@@ -1567,6 +1567,16 @@ export default function HQClientsPage() {
                                                         </div>
                                                     </div>
                                                 );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                </div>
+            </div>
             <AnimatePresence>
                 {isModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -3210,10 +3220,10 @@ export default function HQClientsPage() {
 
 function StatCard({ title, value, icon: Icon, color, isActive, onClick }) {
     const colors = {
-        indigo: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
-        green: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-        red: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
-        blue: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+        indigo: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]',
+        green: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]',
+        red: 'text-rose-400 bg-rose-500/10 border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.2)]',
+        blue: 'text-sky-400 bg-sky-500/10 border-sky-500/30 shadow-[0_0_15px_rgba(14,165,233,0.2)]',
     };
 
     return (
@@ -3223,7 +3233,7 @@ function StatCard({ title, value, icon: Icon, color, isActive, onClick }) {
             onClick={onClick}
             className={`p-6 border rounded-3xl cursor-pointer bg-[#0E0E18]/60 backdrop-blur-sm transition-all ${isActive ? 'border-indigo-500/50 shadow-[0_0_30px_rgba(79,70,229,0.15)] bg-indigo-500/5' : 'border-white/5 hover:border-white/10'}`}
         >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 border ${colors[color]}`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 border transition-all hover:scale-110 ${colors[color]}`}>
                 <Icon className="w-5 h-5" />
             </div>
             <div className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">{title}</div>
