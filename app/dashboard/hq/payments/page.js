@@ -76,37 +76,125 @@ export default function HQFinancePage() {
     const totalExpenses = prodCosts + payrollCosts + swCosts + officeCosts;
     const netProfit = (metrics.income || 0) - totalExpenses;
 
-    const [liveTicker, setLiveTicker] = useState(0);
+    const [timeView, setTimeView] = useState('month'); // 'day' | 'week' | 'month'
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setLiveTicker(prev => {
-                const step = (Math.random() - 0.5) * 15;
-                if (Math.abs(prev + step) > 200) return prev - step;
-                return prev + step;
-            });
-        }, 1500);
-        return () => clearInterval(interval);
-    }, []);
-
-    // Chart mock data synced with database scale
+    // Chart data calculated directly from real database transactions
     const chartData = useMemo(() => {
-        const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const txs = financeData.transactions || [];
         const baseIncome = metrics.income || 9400;
         const baseExpenses = totalExpenses || 8500;
 
-        return months.map((month, idx) => {
-            const waveOffset = Math.sin(idx * 0.8) * (baseExpenses * 0.08);
-            const trend = idx * 120;
-            const ticker = idx === 7 ? liveTicker : 0; 
-
-            return {
-                name: month,
-                ingresos: Math.round(baseIncome - 1200 + trend + ticker),
-                gastos: Math.max(0, Math.round(baseExpenses - 800 + waveOffset + trend * 0.7 + ticker * 0.5))
-            };
+        // Filter transactions for the selected year
+        const filteredTxs = txs.filter(tx => {
+            if (!tx.date) return false;
+            return tx.date.startsWith(selectedYear);
         });
-    }, [metrics.income, totalExpenses, liveTicker]);
+
+        // 1. If no transactions exist for the selected year (e.g. future years 2027/2028), generate budget projection forecast
+        if (filteredTxs.length === 0) {
+            const monthsShort = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            const factor = selectedYear === '2027' ? 1.25 : 1.55; 
+            
+            if (timeView === 'day') {
+                return Array.from({ length: 15 }, (_, i) => ({
+                    name: `${(i + 1).toString().padStart(2, '0')} Apr`,
+                    ingresos: Math.round(baseIncome * factor / 15 * (1 + (Math.sin(i) * 0.1))),
+                    gastos: Math.round(baseExpenses * factor / 15 * (1 + (Math.cos(i) * 0.1)))
+                }));
+            }
+            if (timeView === 'week') {
+                return Array.from({ length: 5 }, (_, i) => ({
+                    name: `Sem ${i + 1}`,
+                    ingresos: Math.round(baseIncome * factor / 4 * (1 + (Math.sin(i) * 0.08))),
+                    gastos: Math.round(baseExpenses * factor / 4 * (1 + (Math.cos(i) * 0.08)))
+                }));
+            }
+            return monthsShort.map((month, idx) => {
+                const waveOffset = Math.sin(idx * 0.8) * (baseExpenses * 0.08);
+                const trend = idx * 120;
+                return {
+                    name: month,
+                    ingresos: Math.round((baseIncome - 1200 + trend) * factor),
+                    gastos: Math.max(0, Math.round((baseExpenses - 800 + waveOffset + trend * 0.7) * factor))
+                };
+            });
+        }
+
+        // 2. Group by Day
+        if (timeView === 'day') {
+            const monthsInYear = filteredTxs.map(tx => tx.date.substring(5, 7));
+            const latestMonth = monthsInYear.length > 0 ? [...monthsInYear].sort().pop() : '04'; 
+            const monthTxs = filteredTxs.filter(tx => tx.date.substring(5, 7) === latestMonth);
+            
+            const groups = {};
+            monthTxs.forEach(tx => {
+                const day = tx.date;
+                if (!groups[day]) groups[day] = { ingresos: 0, gastos: 0 };
+                if (tx.type === 'INCOME') groups[day].ingresos += Number(tx.amount) || 0;
+                else if (tx.type === 'EXPENSE') groups[day].gastos += Number(tx.amount) || 0;
+            });
+
+            return Object.keys(groups).sort().map(day => {
+                const dayLabel = day.substring(8, 10);
+                const monthNum = day.substring(5, 7);
+                const monthsShort = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec' };
+                return {
+                    name: `${dayLabel} ${monthsShort[monthNum] || 'M'}`,
+                    ingresos: Math.round(groups[day].ingresos),
+                    gastos: Math.round(groups[day].gastos)
+                };
+            });
+        } 
+        
+        // 3. Group by Week
+        if (timeView === 'week') {
+            const getWeekNumber = (d) => {
+                const date = new Date(d);
+                const oneJan = new Date(date.getFullYear(), 0, 1);
+                const numberOfDays = Math.floor((date - oneJan) / (24 * 60 * 60 * 1000));
+                return Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+            };
+
+            const groups = {};
+            filteredTxs.forEach(tx => {
+                const weekNum = getWeekNumber(tx.date);
+                const label = `W${weekNum}`;
+                if (!groups[label]) groups[label] = { week: weekNum, ingresos: 0, gastos: 0 };
+                if (tx.type === 'INCOME') groups[label].ingresos += Number(tx.amount) || 0;
+                else if (tx.type === 'EXPENSE') groups[label].gastos += Number(tx.amount) || 0;
+            });
+
+            return Object.values(groups)
+                .sort((a, b) => a.week - b.week)
+                .map(g => ({
+                    name: `Sem ${g.week}`,
+                    ingresos: Math.round(g.ingresos),
+                    gastos: Math.round(g.gastos)
+                }));
+        }
+
+        // 4. Group by Month (Default)
+        const monthsShort = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const monthlyGroups = Array.from({ length: 12 }, (_, i) => ({
+            name: monthsShort[i],
+            ingresos: 0,
+            gastos: 0
+        }));
+
+        filteredTxs.forEach(tx => {
+            const monthIdx = parseInt(tx.date.substring(5, 7), 10) - 1;
+            if (monthIdx >= 0 && monthIdx < 12) {
+                if (tx.type === 'INCOME') monthlyGroups[monthIdx].ingresos += Number(tx.amount) || 0;
+                else if (tx.type === 'EXPENSE') monthlyGroups[monthIdx].gastos += Number(tx.amount) || 0;
+            }
+        });
+
+        return monthlyGroups.map(g => ({
+            name: g.name,
+            ingresos: Math.round(g.ingresos),
+            gastos: Math.round(g.gastos)
+        }));
+    }, [financeData.transactions, selectedYear, timeView, metrics.income, totalExpenses]);
 
     // Donut chart distribution data
     const donutData = useMemo(() => {
@@ -446,31 +534,50 @@ export default function HQFinancePage() {
                         
                         {/* Box 1: Expenses Dynamics Curve (Burn Rate) */}
                         <div className="p-8 rounded-[2.5rem] bg-[#0E0F1D]/80 border border-[#1E2235]/60 backdrop-blur-xl shadow-2xl relative overflow-hidden group">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 relative z-10 gap-4">
+                            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 relative z-10 gap-6">
                                 <div>
-                                    <h3 className="text-xl font-black text-white uppercase italic tracking-tight">Expenses Dynamics</h3>
-                                    <div className="flex flex-wrap items-center gap-4 mt-2">
-                                        <span className="text-[9px] font-black text-gray-400 italic">
-                                            Ticker: ${(metrics.income + liveTicker).toFixed(2)} USD
+                                    <h3 className="text-xl font-black text-white uppercase italic tracking-tight">Dinámica de Gastos</h3>
+                                    <div className="flex flex-wrap items-center gap-3 mt-2 text-[9px] font-bold uppercase tracking-wider text-gray-500 text-left">
+                                        <span>Ingresos: <strong className="text-emerald-400 font-mono">${metrics.income?.toLocaleString()}</strong></span>
+                                        <span>•</span>
+                                        <span>Gastos: <strong className="text-rose-400 font-mono">${totalExpenses?.toLocaleString()}</strong></span>
+                                        <span>•</span>
+                                        <span className={`px-2 py-0.5 rounded text-[8px] font-black ${netProfit >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                                            Neto: ${netProfit?.toLocaleString()}
                                         </span>
-                                        <div className="flex items-center gap-2 px-3 py-0.5 bg-[#38bdf8]/10 border border-[#38bdf8]/20 rounded-full text-[8px] font-black uppercase tracking-widest text-[#38bdf8] animate-pulse">
-                                            <span className="w-1 h-1 rounded-full bg-[#38bdf8]" />
-                                            <span>Trading Mode</span>
-                                        </div>
                                     </div>
                                 </div>
 
-                                {/* period selection tabs matching mockup */}
-                                <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
-                                    {['2026', '2027', '2028'].map(year => (
-                                        <button 
-                                            key={year}
-                                            onClick={() => setSelectedYear(year)}
-                                            className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${selectedYear === year ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-white'}`}
-                                        >
-                                            {year}
-                                        </button>
-                                    ))}
+                                <div className="flex flex-wrap items-center gap-3">
+                                    {/* Temporal zoom selection tabs */}
+                                    <div className="flex items-center gap-1.5 bg-[#090A15]/60 p-1 rounded-xl border border-white/[0.08] backdrop-blur-md">
+                                        {[
+                                            { id: 'day', label: 'Día (1D)' },
+                                            { id: 'week', label: 'Sem. (7D)' },
+                                            { id: 'month', label: 'Mes (30D)' }
+                                        ].map(view => (
+                                            <button 
+                                                key={view.id}
+                                                onClick={() => setTimeView(view.id)}
+                                                className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${timeView === view.id ? 'bg-gradient-to-r from-[#38bdf8] to-indigo-500 text-black shadow-[0_0_8px_rgba(56,189,248,0.25)]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                            >
+                                                {view.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Year selection tabs */}
+                                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
+                                        {['2026', '2027', '2028'].map(year => (
+                                            <button 
+                                                key={year}
+                                                onClick={() => setSelectedYear(year)}
+                                                className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${selectedYear === year ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-white'}`}
+                                            >
+                                                {year}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 
