@@ -128,12 +128,23 @@ export default function AdminOperationalGovernance() {
     };
 
     const handleCreateExpense = async (expenseData) => {
+        setSaving(true);
         try {
             await agencyService.addAgencyExpense(expenseData);
             toast.success("Nueva herramienta registrada");
+            setIsAddingSaaS(false);
+            setNewSaaS({
+                name: '',
+                category: 'SAAS',
+                amount: 0,
+                department: '',
+                description: ''
+            });
             loadData();
         } catch (err) {
             toast.error("Error al registrar herramienta");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -483,6 +494,15 @@ export default function AdminOperationalGovernance() {
                         onChange={setNewOpEx}
                         onSave={() => handleCreateOpEx(newOpEx)}
                         onClose={() => setIsAddingOpEx(false)}
+                        saving={saving}
+                    />
+                )}
+                {isAddingSaaS && (
+                    <SaaSAddEditModal
+                        data={newSaaS}
+                        onChange={setNewSaaS}
+                        onSave={() => handleCreateExpense(newSaaS)}
+                        onClose={() => setIsAddingSaaS(false)}
                         saving={saving}
                     />
                 )}
