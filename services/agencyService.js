@@ -488,6 +488,7 @@ export const agencyService = {
             const resolvedAppFee = updates.app_fee !== undefined ? updates.app_fee : existingClient.app_fee;
             const resolvedHasCrm = updates.has_crm !== undefined ? updates.has_crm : existingClient.has_crm;
             const resolvedHasAgents = updates.has_agents !== undefined ? updates.has_agents : existingClient.has_agents;
+            const resolvedFinancialSheet = updates.financial_sheet !== undefined ? updates.financial_sheet : existingClient.financial_sheet;
 
             let resolvedPrice = updates.price !== undefined ? updates.price : existingClient.price;
             if ((updates.plan && updates.plan !== existingClient.plan) || (updates.industry && updates.industry !== existingClient.industry)) {
@@ -564,7 +565,8 @@ export const agencyService = {
                 has_crm: resolvedHasCrm,
                 has_agents: resolvedHasAgents,
                 price: resolvedPrice,
-                coords: resolvedCoords
+                coords: resolvedCoords,
+                financial_sheet: resolvedFinancialSheet
             };
 
             // Clean undefined fields
@@ -1186,51 +1188,55 @@ export const agencyService = {
                     // Try to get from imported constants if possible, or we just rely on dynamic matching below
                 }
 
-                let clientCost = 0;
-                let clientIncome = client.status === 'active' ? (Number(client.price) || 0) : 0;
+                const s = client.status?.toLowerCase();
+                const isActive = s === 'active' || s === 'trial' || s === 'onboarding_completed';
+                let clientIncome = isActive ? (Number(client.price) || 0) : 0;
                 totalMRR += clientIncome;
 
-                // Real Profitability Model: Sum of custom internal costs if specified in financial_sheet
-                if (client.financial_sheet && client.financial_sheet.costs_internal) {
-                    const costs = client.financial_sheet.costs_internal;
-                    clientCost = (Number(costs.design) || 0) +
-                                 (Number(costs.editing) || 0) +
-                                 (Number(costs.production) || 0) +
-                                 (Number(costs.cm) || 0) +
-                                 (Number(costs.transport) || 0) +
-                                 (Number(costs.others) || 0);
-                } else {
-                    let customDeliv = client.onboarding_data?.custom_deliverables;
-                    if ((client.plan === 'Custom' || client.plan?.toLowerCase() === 'custom') && customDeliv) {
-                        Object.entries(customDeliv).forEach(([serviceId, qty]) => {
-                            const count = Number(qty) || 0;
-                            if (count > 0) {
-                                clientCost += count * (costMap[serviceId] || 0);
-                            }
-                        });
+                let clientCost = 0;
+                if (isActive) {
+                    // Real Profitability Model: Sum of custom internal costs if specified in financial_sheet
+                    if (client.financial_sheet && client.financial_sheet.costs_internal) {
+                        const costs = client.financial_sheet.costs_internal;
+                        clientCost = (Number(costs.design) || 0) +
+                                     (Number(costs.editing) || 0) +
+                                     (Number(costs.production) || 0) +
+                                     (Number(costs.cm) || 0) +
+                                     (Number(costs.transport) || 0) +
+                                     (Number(costs.others) || 0);
                     } else {
-                        let deliv = planDef ? planDef.deliverables : null;
-
-                        if (!deliv) {
-                            // Hardcoded fallback logic matching lib/constants.js PLAN_OPTIONS
-                            if (planId?.includes('presencia')) deliv = { videos: 3, posts: 6, strategy: 1, cm: 1 };
-                            else if (planId?.includes('crecimiento')) deliv = { videos: 5, posts: 8, strategy: 1, cm: 1 };
-                            else if (planId?.includes('autoridad')) deliv = { videos: 7, posts: 11, strategy: 1, cm: 1 };
-                            else if (planId?.includes('control')) deliv = { videos: 10, posts: 16, strategy: 1, cm: 1 };
-                        }
-
-                        if (deliv) {
-                            // Calculate based on the unit-cost model provided by user
-                            clientCost += (Number(deliv.videos) || 0) * (costMap['vid_promo'] || 45);
-                            clientCost += (Number(deliv.reels) || 0) * (costMap['reel_prod'] || 25);
-                            clientCost += (Number(deliv.posts) || 0) * (costMap['post_simple'] || 4);
-                            
-                            // Fixed Service Costs per client (Real Structure)
-                            if (deliv.cm) clientCost += (costMap['cm_service'] || 25);
-                            if (deliv.strategy) clientCost += (costMap['strategy_unit'] || 25);
+                        let customDeliv = client.onboarding_data?.custom_deliverables;
+                        if ((client.plan === 'Custom' || client.plan?.toLowerCase() === 'custom') && customDeliv) {
+                            Object.entries(customDeliv).forEach(([serviceId, qty]) => {
+                                const count = Number(qty) || 0;
+                                if (count > 0) {
+                                    clientCost += count * (costMap[serviceId] || 0);
+                                }
+                            });
                         } else {
-                            // Fallback to average if no plan is found at all
-                            clientCost = clientIncome > 0 ? clientIncome * 0.6 : 0; 
+                            let deliv = planDef ? planDef.deliverables : null;
+
+                            if (!deliv) {
+                                // Hardcoded fallback logic matching lib/constants.js PLAN_OPTIONS
+                                if (planId?.includes('presencia')) deliv = { videos: 3, posts: 6, strategy: 1, cm: 1 };
+                                else if (planId?.includes('crecimiento')) deliv = { videos: 5, posts: 8, strategy: 1, cm: 1 };
+                                else if (planId?.includes('autoridad')) deliv = { videos: 7, posts: 11, strategy: 1, cm: 1 };
+                                else if (planId?.includes('control')) deliv = { videos: 10, posts: 16, strategy: 1, cm: 1 };
+                            }
+
+                            if (deliv) {
+                                // Calculate based on the unit-cost model provided by user
+                                clientCost += (Number(deliv.videos) || 0) * (costMap['vid_promo'] || 45);
+                                clientCost += (Number(deliv.reels) || 0) * (costMap['reel_prod'] || 25);
+                                clientCost += (Number(deliv.posts) || 0) * (costMap['post_simple'] || 4);
+                                
+                                // Fixed Service Costs per client (Real Structure)
+                                if (deliv.cm) clientCost += (costMap['cm_service'] || 25);
+                                if (deliv.strategy) clientCost += (costMap['strategy_unit'] || 25);
+                            } else {
+                                // Fallback to average if no plan is found at all
+                                clientCost = clientIncome > 0 ? clientIncome * 0.6 : 0; 
+                            }
                         }
                     }
                 }
@@ -1306,7 +1312,11 @@ export const agencyService = {
             const pendingTransactions = [];
 
             // 1. Project Client Incomes
-            clients.filter(c => Number(c.price) > 0 && c.status === 'active').forEach(c => {
+            clients.filter(c => {
+                const s = c.status?.toLowerCase();
+                const isActive = s === 'active' || s === 'trial' || s === 'onboarding_completed';
+                return Number(c.price) > 0 && isActive;
+            }).forEach(c => {
                 pendingTransactions.push({
                     type: 'income',
                     category: 'Clientes',
