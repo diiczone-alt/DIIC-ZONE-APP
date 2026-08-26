@@ -14,6 +14,7 @@ import { ECUADOR_CITIES, MEDICAL_SPECIALTIES, AGRO_SPECIALTIES, EDUCATION_SPECIA
 import PremiumDropdown from '@/components/shared/PremiumDropdown';
 import GlassInput from '@/components/shared/GlassInput';
 import AdminClientAIHub from '@/components/admin/AdminClientAIHub';
+import { getPlanPrice, mapIndustryToNicheKey, NICHE_DETAILS } from '@/lib/nicheDetails';
 
 const getIndustryStyle = (industry) => {
     const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -81,41 +82,7 @@ const getBrandColorClass = (industry) => {
     return 'text-indigo-400';
 };
 
-const getPlanPrice = (plan, industry) => {
-    const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    const ind = cleanNiche(industry);
-    const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor');
-    const isHospital = ind.includes('hospital') || ind.includes('clinica');
-    
-    let normalizedPlan = plan;
-    if (plan === 'Basic') normalizedPlan = 'Presencia';
-    if (plan === 'Estrategia') normalizedPlan = 'Crecimiento';
-    if (plan === 'Premium') normalizedPlan = 'Autoridad';
-    if (plan?.toUpperCase().includes('SOLO USO DE APP') || plan?.toUpperCase().includes('SOLO APP')) {
-        normalizedPlan = 'Solo App';
-    }
-    
-    if (normalizedPlan === 'Solo App') {
-        return 70;
-    }
-    
-    if (isMedical && !isHospital) {
-        if (normalizedPlan === 'Presencia') return 250;
-        if (normalizedPlan === 'Crecimiento') return 500;
-        if (normalizedPlan === 'Autoridad') return 700;
-        if (normalizedPlan === 'Control') return 999;
-        return 0;
-    } else if (isHospital) {
-        if (normalizedPlan === 'Presencia') return 300;
-        if (normalizedPlan === 'Crecimiento') return 500;
-        if (normalizedPlan === 'Autoridad') return 700;
-        if (normalizedPlan === 'Control') return 999;
-        return 0;
-    } else {
-        const planDef = PLAN_OPTIONS.find(p => p.value === normalizedPlan);
-        return planDef ? planDef.price : 0;
-    }
-};
+// Using dynamic getPlanPrice from @/lib/nicheDetails
 
 const safeFormatDate = (dateStr, options = { day: 'numeric', month: 'short', year: 'numeric' }) => {
     if (!dateStr) return '-';
@@ -196,6 +163,7 @@ export default function HQClientsPage() {
 
     const [clients, setClients] = useState([]);
     const [team, setTeam] = useState([]);
+    const [rates, setRates] = useState([]);
     const [loading, setLoading] = useState(false);
     const [syncStep, setSyncStep] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
@@ -209,6 +177,22 @@ export default function HQClientsPage() {
     const [monthlyGoal, setMonthlyGoal] = useState(5750);
     const [modalWidth, setModalWidth] = useState(1150);
     const [modalHeight, setModalHeight] = useState(700);
+
+    const { activeNicheKey, activePlanLevelKey, nicheDetails, marketingEnfoque, customizedPlanName } = useMemo(() => {
+        const activeNicheKey = mapIndustryToNicheKey(newClient.industry);
+        const planId = (newClient.plan || 'Presence').toLowerCase();
+        
+        let activePlanLevelKey = 'presence';
+        if (planId.includes('crecimiento') || planId.includes('growth')) activePlanLevelKey = 'growth';
+        if (planId.includes('autoridad') || planId.includes('authority')) activePlanLevelKey = 'authority';
+        if (planId.includes('control') || planId.includes('elite')) activePlanLevelKey = 'elite';
+
+        const nicheDetails = NICHE_DETAILS[activeNicheKey]?.plans[activePlanLevelKey] || {};
+        const marketingEnfoque = nicheDetails.enfoque || 'Estrategia General';
+        const customizedPlanName = nicheDetails.name || (newClient.plan ? `NIVEL ${newClient.plan.toUpperCase()}` : 'PLAN ESTÁNDAR');
+
+        return { activeNicheKey, activePlanLevelKey, nicheDetails, marketingEnfoque, customizedPlanName };
+    }, [newClient.industry, newClient.plan]);
 
     const handleResizeStart = (e, direction) => {
         e.preventDefault();
@@ -273,6 +257,8 @@ export default function HQClientsPage() {
                 photos: 0,
                 designs: 0,
                 stories: 0,
+                carousels: 0,
+                carousel_images: 0,
                 cm: false,
                 ads: false
             },
@@ -294,14 +280,16 @@ export default function HQClientsPage() {
         
         try {
             console.log(`🚀 [Clients] ${isBackground ? 'Background' : 'Initial'} DB Syncing...`);
-            const [clientData, teamData] = await Promise.all([
+            const [clientData, teamData, ratesData] = await Promise.all([
                 agencyService.getClients(),
-                agencyService.getTeam()
+                agencyService.getTeam(),
+                agencyService.getProductionRates()
             ]);
             
             setSyncStep('processing');
             if (Array.isArray(clientData)) setClients(clientData);
             if (Array.isArray(teamData)) setTeam(teamData);
+            if (Array.isArray(ratesData)) setRates(ratesData);
             
             setSyncStep('done');
         } catch (error) {
@@ -595,6 +583,8 @@ export default function HQClientsPage() {
                     photos: 0,
                     designs: 0,
                     stories: 0,
+                    carousels: 0,
+                    carousel_images: 0,
                     cm: false,
                     ads: false
                 },
@@ -1451,6 +1441,10 @@ export default function HQClientsPage() {
                                                 <span className="text-gray-500 uppercase font-black">Modelo:</span>
                                                 <span className="text-white font-bold">{newClient.business_type || 'Personal'}</span>
                                             </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-500 uppercase font-black">Enfoque:</span>
+                                                <span className="text-indigo-400 font-bold truncate max-w-[120px]" title={marketingEnfoque}>{marketingEnfoque}</span>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1755,6 +1749,19 @@ export default function HQClientsPage() {
                                                                     options={PLAN_OPTIONS} 
                                                                     icon={Target}
                                                                 />
+                                                                
+                                                                {/* Dynamic Marketing Focus and Custom Niche Name */}
+                                                                <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 flex items-center justify-between text-xs">
+                                                                    <div className="space-y-1">
+                                                                        <div className="text-[10px] text-gray-500 font-black uppercase tracking-wider">Servicio de Marketing Estratégico</div>
+                                                                        <div className="font-bold text-white uppercase">{customizedPlanName}</div>
+                                                                    </div>
+                                                                    <div className="space-y-1 text-right">
+                                                                        <div className="text-[10px] text-indigo-400 font-black uppercase tracking-wider">Enfoque de Campaña</div>
+                                                                        <div className="font-bold text-indigo-300">{marketingEnfoque}</div>
+                                                                    </div>
+                                                                </div>
+
                                                                 {newClient.plan !== 'Custom' && (
                                                                     <button
                                                                         type="button"
@@ -2094,10 +2101,10 @@ export default function HQClientsPage() {
                                                         }
 
                                                         const handleAutoCalculate = () => {
-                                                            const newDesignCost = (Number(pm.designs) || 0) * 2.50;
-                                                            const newEditingCost = ((Number(pm.reels) || 0) * 5.00) + ((Number(pm.tiktok) || 0) * 2.50) + ((Number(pm.vid_corp) || 0) * 20.00);
-                                                            const newProdCost = (Number(pm.shoots) || 0) * 50.00;
-                                                            const newCmCost = pm.cm ? 150.00 : 0.00;
+                                                            const newDesignCost = ((Number(pm.designs) || 0) * (Number(rates.find(r => r.id === 'post_simple')?.cost_internal) || 2.50)) + ((Number(pm.stories) || 0) * ((Number(rates.find(r => r.id === 'post_simple')?.cost_internal) || 2.50) / 2)) + ((Number(pm.carousels) || 0) * (Number(rates.find(r => r.id === 'carousel_premium')?.cost_internal) || 15.00));
+                                                            const newEditingCost = ((Number(pm.reels) || 0) * (Number(rates.find(r => r.id === 'reel_edit')?.cost_internal) || 5.00)) + ((Number(pm.tiktok) || 0) * (Number(rates.find(r => r.id === 'post_simple')?.cost_internal) || 2.50)) + ((Number(pm.vid_corp) || 0) * ((Number(rates.find(r => r.id === 'vid_promo')?.cost_internal) || 50.00) / 2.5));
+                                                            const newProdCost = ((Number(pm.shoots) || 0) * (Number(rates.find(r => r.id === 'photo_session')?.cost_internal) || 50.00)) + ((Number(pm.photos) || 0) * ((Number(rates.find(r => r.id === 'photo_session')?.cost_internal) || 50.00) / 10));
+                                                            const newCmCost = pm.cm ? ((Number(rates.find(r => r.id === 'cm_service')?.cost_internal) || 50.00) * 3) : 0.00;
                                                             const newTransportCost = (Number(pm.shoots) || 0) > 0 ? 20.00 : 0.00;
                                                             const newOthersCost = 10.00;
 
@@ -2252,6 +2259,32 @@ export default function HQClientsPage() {
                                                                                         financial_sheet: {
                                                                                             ...finSheet,
                                                                                             production_monthly: { ...pm, stories: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="Carruseles" 
+                                                                                    type="number"
+                                                                                    value={pm.carousels !== undefined ? pm.carousels : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            production_monthly: { ...pm, carousels: Number(e.target.value) || 0 }
+                                                                                        }
+                                                                                    })} 
+                                                                                    placeholder="0"
+                                                                                />
+                                                                                <GlassInput 
+                                                                                    label="Imágenes por Carrusel" 
+                                                                                    type="number"
+                                                                                    value={pm.carousel_images !== undefined ? pm.carousel_images : 0} 
+                                                                                    onChange={(e) => setNewClient({
+                                                                                        ...newClient,
+                                                                                        financial_sheet: {
+                                                                                            ...finSheet,
+                                                                                            production_monthly: { ...pm, carousel_images: Number(e.target.value) || 0 }
                                                                                         }
                                                                                     })} 
                                                                                     placeholder="0"

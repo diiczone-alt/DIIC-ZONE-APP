@@ -1,52 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-const cleanNicheString = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-
-const getPlanPrice = (plan, industry) => {
-    const ind = cleanNicheString(industry);
-    const isMedical = ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor');
-    const isHospital = ind.includes('hospital') || ind.includes('clinica');
-    const isHospitality = ind.includes('hospitality') || ind.includes('restaurante') || ind.includes('horeca');
-    
-    let normalizedPlan = plan || 'Presencia';
-    if (normalizedPlan === 'Basic') normalizedPlan = 'Presencia';
-    if (normalizedPlan === 'Estrategia') normalizedPlan = 'Crecimiento';
-    if (normalizedPlan === 'Premium') normalizedPlan = 'Autoridad';
-    if (normalizedPlan?.toUpperCase().includes('SOLO USO DE APP') || normalizedPlan?.toUpperCase().includes('SOLO APP')) {
-        normalizedPlan = 'Solo App';
-    }
-    
-    if (normalizedPlan === 'Solo App') {
-        return '70';
-    }
-    
-    if (isMedical && !isHospital) {
-        if (normalizedPlan === 'Presencia') return '250';
-        if (normalizedPlan === 'Crecimiento') return '500';
-        if (normalizedPlan === 'Autoridad') return '700';
-        if (normalizedPlan === 'Control') return '999';
-        return '250';
-    } else if (isHospital) {
-        if (normalizedPlan === 'Presencia') return '300';
-        if (normalizedPlan === 'Crecimiento') return '500';
-        if (normalizedPlan === 'Autoridad') return '700';
-        if (normalizedPlan === 'Control') return '999';
-        return '300';
-    } else if (isHospitality) {
-        if (normalizedPlan === 'Presencia') return '350';
-        if (normalizedPlan === 'Crecimiento') return '600';
-        if (normalizedPlan === 'Autoridad') return '850';
-        if (normalizedPlan === 'Control') return '1200';
-        return '350';
-    } else {
-        if (normalizedPlan === 'Presencia') return '300';
-        if (normalizedPlan === 'Crecimiento') return '500';
-        if (normalizedPlan === 'Autoridad') return '700';
-        if (normalizedPlan === 'Control') return '999';
-        return '300';
-    }
-};
+import { getPlanPrice, NICHE_DETAILS } from '@/lib/nicheDetails';
 
 const extractCoordsFromUrl = (url) => {
     if (!url) return null;
