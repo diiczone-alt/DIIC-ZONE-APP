@@ -21,7 +21,9 @@ export default function HQFinancePage() {
     const [financeData, setFinanceData] = useState({
         metrics: { income: 0, variable_costs: 0, gross_profit: 0, gross_margin: 0 },
         transactions: [],
-        clients: []
+        clients: [],
+        operatingExpenses: [],
+        branches: []
     });
     const [loading, setLoading] = useState(true);
     const [activeModal, setActiveModal] = useState(null); 
@@ -30,15 +32,19 @@ export default function HQFinancePage() {
     const loadFinance = async (silent = false) => {
         if (!silent) setLoading(true);
         try {
-            const [finData, scaleData, clientsData] = await Promise.all([
+            const [finData, scaleData, clientsData, opExData, branchesData] = await Promise.all([
                 agencyService.getFinancialSummary(),
                 agencyService.getScaleData(),
-                agencyService.getClients()
+                agencyService.getClients(),
+                agencyService.getOperatingExpenses(),
+                agencyService.getBranchOffices()
             ]);
             setFinanceData({
                 ...finData,
                 scale: scaleData,
-                clients: clientsData
+                clients: clientsData,
+                operatingExpenses: opExData || [],
+                branches: branchesData || []
             });
         } catch (err) {
             console.error("Error loading finance details:", err);
@@ -53,13 +59,20 @@ export default function HQFinancePage() {
 
     useRealtimeSync(['clients', 'financial_transactions', 'production_rates', 'agency_expenses', 'tasks', 'team'], () => loadFinance(true));
 
-    const { metrics, scale, clients } = financeData;
+    const { metrics, scale, clients, operatingExpenses = [], branches = [] } = financeData;
     
     // Cost calculations
     const prodCosts = scale?.estimated_production || scale?.production || 0;
     const payrollCosts = scale?.payroll || 0; 
     const swCosts = scale?.software || 0;
-    const officeCosts = 450; // Mock average office/sedes cost
+    
+    // Dynamic calculation of office costs from operating expenses database
+    const officeCosts = useMemo(() => {
+        return operatingExpenses
+            .filter(e => e.status === 'PAGADO' || e.status === 'APROBADO')
+            .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    }, [operatingExpenses]);
+
     const totalExpenses = prodCosts + payrollCosts + swCosts + officeCosts;
     const netProfit = (metrics.income || 0) - totalExpenses;
 
@@ -85,7 +98,7 @@ export default function HQFinancePage() {
         return months.map((month, idx) => {
             const waveOffset = Math.sin(idx * 0.8) * (baseExpenses * 0.08);
             const trend = idx * 120;
-            const ticker = idx === 7 ? liveTicker : 0; // Highlight current month dynamics
+            const ticker = idx === 7 ? liveTicker : 0; 
 
             return {
                 name: month,
@@ -101,10 +114,10 @@ export default function HQFinancePage() {
             { name: 'Producción Real', value: prodCosts || 2020, color: '#38bdf8' },
             { name: 'Nómina Staff', value: payrollCosts || 1200, color: '#a855f7' },
             { name: 'SaaS & Infra', value: swCosts || 45, color: '#6366f1' },
-            { name: 'Oficina & Sedes', value: officeCosts, color: '#f43f5e' },
+            { name: 'Oficina & Sedes', value: officeCosts || 450, color: '#f43f5e' },
             { name: 'Otros', value: 150, color: '#e2e8f0' }
         ];
-    }, [prodCosts, payrollCosts, swCosts]);
+    }, [prodCosts, payrollCosts, swCosts, officeCosts]);
 
     // Radar chart data for department evaluation
     const radarData = useMemo(() => {
@@ -128,6 +141,58 @@ export default function HQFinancePage() {
             { value: 17900 }
         ];
     }, []);
+
+    // Dynamic Sede expenses distribution calculated from branches and operating expenses database
+    const sedeDistribution = useMemo(() => {
+        if (!branches.length) return [];
+        
+        const distribution = branches.map(branch => {
+            const branchExpenses = operatingExpenses
+                .filter(e => e.branch_id === branch.id && (e.status === 'PAGADO' || e.status === 'APROBADO'))
+                .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+                
+            return {
+                id: branch.id,
+                name: branch.name,
+                value: branchExpenses,
+                city: branch.city || 'Remoto'
+            };
+        });
+        
+        // Add a "Remoto Global" or "Otros" if there are expenses with no branch_id
+        const remoteExpenses = operatingExpenses
+            .filter(e => !e.branch_id && (e.status === 'PAGADO' || e.status === 'APROBADO'))
+            .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+            
+        if (remoteExpenses > 0 || distribution.length === 0) {
+            distribution.push({
+                id: 'remote',
+                name: 'Remoto Global',
+                value: remoteExpenses || 120, 
+                city: 'Remoto'
+            });
+        }
+        
+        const total = distribution.reduce((acc, d) => acc + d.value, 0) || 1;
+        return distribution.map(d => ({
+            ...d,
+            percent: Math.round((d.value / total) * 100)
+        })).sort((a, b) => b.value - a.value);
+    }, [branches, operatingExpenses]);
+
+    const handlePieClick = (name) => {
+        if (name.includes('Producción')) {
+            setActiveModal('costs');
+        } else if (name.includes('Nómina') || name.includes('Staff')) {
+            setActiveModal('expenses');
+        } else if (name.includes('SaaS') || name.includes('Infra')) {
+            setActiveModal('expenses');
+        } else if (name.includes('Oficina') || name.includes('Sedes')) {
+            setActiveModal('sedes');
+        } else {
+            setActiveModal('expenses');
+        }
+    };
 
     if (loading) {
         return (
@@ -217,7 +282,7 @@ export default function HQFinancePage() {
                     </div>
 
                     {/* CARD 3: SOLID EXPENSES CARD (Vibrant Orange/Red Block Card) */}
-                    <div className="p-6 rounded-[2rem] bg-gradient-to-br from-orange-500 via-orange-600 to-rose-600 shadow-2xl shadow-orange-500/10 flex flex-col justify-between h-[150px] text-white hover:scale-[1.02] transition-transform duration-300">
+                    <div className="p-6 rounded-[2rem] bg-gradient-to-br from-orange-500 via-orange-600 to-rose-600 shadow-2xl shadow-orange-500/10 flex flex-col justify-between h-[150px] text-white hover:scale-[1.02] transition-transform duration-300 cursor-pointer" onClick={() => setActiveModal('expenses')}>
                         <div className="flex justify-between items-start">
                             <p className="text-[9px] font-black text-white/80 uppercase tracking-widest leading-none">Expenses</p>
                             <span className="text-[8px] font-black bg-white/20 text-white px-2 py-0.5 rounded-full flex items-center gap-0.5">
@@ -277,10 +342,10 @@ export default function HQFinancePage() {
                                 <span className="text-[8px] text-indigo-400 font-bold uppercase font-mono">56% Total</span>
                             </div>
                             <div className="space-y-4">
-                                <GoalProgressItem label="Producción Real" value={823} percent={91} color="from-[#38bdf8] to-[#0ea5e9]" />
-                                <GoalProgressItem label="Nómina Staff" value={548} percent={49} color="from-purple-500 to-indigo-600" />
-                                <GoalProgressItem label="SaaS & Licencias" value={758} percent={42} color="from-blue-500 to-indigo-600" />
-                                <GoalProgressItem label="Gastos Oficina" value={612} percent={41} color="from-rose-500 to-pink-600" />
+                                <GoalProgressItem label="Producción Real" value={823} percent={91} color="from-[#38bdf8] to-[#0ea5e9]" onClick={() => setActiveModal('costs')} />
+                                <GoalProgressItem label="Nómina Staff" value={548} percent={49} color="from-purple-500 to-indigo-600" onClick={() => setActiveModal('expenses')} />
+                                <GoalProgressItem label="SaaS & Licencias" value={758} percent={42} color="from-blue-500 to-indigo-600" onClick={() => setActiveModal('expenses')} />
+                                <GoalProgressItem label="Gastos Oficina" value={612} percent={41} color="from-rose-500 to-pink-600" onClick={() => setActiveModal('sedes')} />
                             </div>
                         </div>
 
@@ -288,13 +353,33 @@ export default function HQFinancePage() {
                         <div className="p-8 rounded-[2.5rem] bg-[#0E0F1D]/80 border border-[#1E2235]/60 backdrop-blur-xl shadow-2xl space-y-6">
                             <div className="flex justify-between items-center px-1">
                                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] italic">Distribución Sedes</p>
-                                <span className="text-[9px] text-[#38bdf8] font-bold italic">$7,519</span>
+                                <span className="text-[9px] text-[#38bdf8] font-bold italic">${officeCosts.toLocaleString()}</span>
                             </div>
                             <div className="space-y-4">
-                                <SedeCostRow label="Santo Domingo" value={2257} percent={30} icon={Building} />
-                                <SedeCostRow label="Quito Nodo" value={1849} percent={25} icon={MapPin} />
-                                <SedeCostRow label="Manta Sede" value={1778} percent={24} icon={Activity} />
-                                <SedeCostRow label="Remoto Global" value={1635} percent={21} icon={Home} />
+                                {sedeDistribution.map((sede, idx) => {
+                                    const icon = idx === 0 ? Building : (idx === 1 ? MapPin : (idx === 2 ? Activity : Home));
+                                    return (
+                                        <button 
+                                            key={sede.id}
+                                            onClick={() => setActiveModal('sedes')}
+                                            className="w-full flex items-center justify-between py-1.5 border-b border-white/[0.02] hover:bg-white/5 px-2 rounded-lg transition-all text-left"
+                                        >
+                                            <div className="flex items-center gap-2.5 truncate max-w-[160px]">
+                                                <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center">
+                                                    <Building className="w-3.5 h-3.5 text-gray-500" />
+                                                </div>
+                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider truncate">{sede.name}</span>
+                                            </div>
+                                            <div className="text-right flex items-center gap-1.5">
+                                                <span className="text-[10px] font-black text-white font-mono">${sede.value.toLocaleString()}</span>
+                                                <span className="text-[8px] text-gray-500 font-mono">({sede.percent}%)</span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                                {sedeDistribution.length === 0 && (
+                                    <p className="text-center text-[9px] text-gray-600 font-black uppercase py-4">Sin datos de sedes</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -321,7 +406,13 @@ export default function HQFinancePage() {
                                             dataKey="value"
                                         >
                                             {donutData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} style={{ filter: `drop-shadow(0 0 6px ${entry.color}44)` }} />
+                                                <Cell 
+                                                    key={`cell-${index}`} 
+                                                    fill={entry.color} 
+                                                    onClick={() => handlePieClick(entry.name)}
+                                                    className="cursor-pointer hover:opacity-80 transition-all outline-none"
+                                                    style={{ filter: `drop-shadow(0 0 6px ${entry.color}44)` }} 
+                                                />
                                             ))}
                                         </Pie>
                                     </PieChart>
@@ -338,10 +429,14 @@ export default function HQFinancePage() {
                         {/* Colored Legenda matching the donut colors */}
                         <div className="grid grid-cols-2 gap-3 mt-6 pt-4 border-t border-white/5">
                             {donutData.map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}` }} />
-                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest truncate">{item.name}</span>
-                                </div>
+                                <button 
+                                    key={idx} 
+                                    onClick={() => handlePieClick(item.name)}
+                                    className="flex items-center gap-2 hover:bg-white/5 p-1.5 rounded-lg transition-all text-left group"
+                                >
+                                    <span className="w-1.5 h-1.5 rounded-full transition-transform group-hover:scale-125" style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}` }} />
+                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest truncate group-hover:text-white transition-colors">{item.name}</span>
+                                </button>
                             ))}
                         </div>
                     </div>
@@ -516,6 +611,7 @@ export default function HQFinancePage() {
                                              <thead>
                                                  <tr className="bg-[#0D0E1D] border-b border-white/5">
                                                      <th className="px-8 py-5 text-[9px] font-black uppercase text-gray-500 tracking-widest">Lo que se está haciendo (Tarea)</th>
+                                                     <th className="px-8 py-5 text-[9px] font-black uppercase text-gray-500 tracking-widest text-center">Asignado a</th>
                                                      <th className="px-8 py-5 text-[9px] font-black uppercase text-gray-500 tracking-widest text-center">Cliente</th>
                                                      <th className="px-8 py-5 text-[9px] font-black uppercase text-gray-500 tracking-widest text-right">Lo que estamos pagando</th>
                                                  </tr>
@@ -531,6 +627,9 @@ export default function HQFinancePage() {
                                                                      <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{t.format}</p>
                                                                  </div>
                                                              </div>
+                                                         </td>
+                                                         <td className="px-8 py-6 text-center">
+                                                             <span className="text-[10px] font-black text-[#a855f7] uppercase tracking-wider">{t.assigned_to || 'Sin asignar'}</span>
                                                          </td>
                                                          <td className="px-8 py-6 text-center">
                                                              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">{t.client}</span>
@@ -802,6 +901,65 @@ export default function HQFinancePage() {
                                     </div>
                                 </div>
                             )}
+
+                            {/* 5. OFICINAS & SEDES AUDIT MODAL */}
+                            {activeModal === 'sedes' && (
+                                <div className="space-y-12">
+                                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/5 pb-10">
+                                         <div className="space-y-2">
+                                             <div className="flex items-center gap-3">
+                                                 <div className="w-2.5 h-8 bg-rose-500 rounded-full" />
+                                                 <h4 className="text-4xl font-black uppercase italic tracking-tighter text-white">Egresos por Sedes</h4>
+                                             </div>
+                                             <p className="text-gray-500 text-xs font-medium italic pl-5 tracking-wide">Desglose de egresos de oficina y gastos operativos agrupados por nodo físico.</p>
+                                         </div>
+                                         <div className="text-left md:text-right">
+                                             <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Inversión Oficinas Total</p>
+                                             <p className="text-5xl font-black text-white italic tracking-tighter">${officeCosts?.toLocaleString()}</p>
+                                         </div>
+                                     </div>
+
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                         {branches.map(branch => {
+                                             const branchItems = operatingExpenses.filter(e => e.branch_id === branch.id);
+                                             const branchSum = branchItems.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+                                             return (
+                                                 <section key={branch.id} className="space-y-6">
+                                                     <div className="flex justify-between items-center px-4">
+                                                         <h5 className="text-[11px] font-black text-indigo-400 uppercase tracking-widest italic">{branch.name}</h5>
+                                                         <span className="text-[10px] font-mono font-black p-1 px-3 bg-indigo-500/10 text-indigo-300 rounded border border-indigo-500/20">${branchSum.toLocaleString()}</span>
+                                                     </div>
+                                                     <div className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] overflow-hidden">
+                                                         <table className="w-full text-left">
+                                                             <tbody className="divide-y divide-white/5">
+                                                                 {branchItems.map((e, idx) => (
+                                                                     <tr key={idx} className="hover:bg-white/[0.03] transition-colors">
+                                                                         <td className="px-8 py-5">
+                                                                             <p className="text-xs font-bold text-white uppercase">{e.item}</p>
+                                                                             <p className="text-[8px] text-gray-500 uppercase font-mono mt-1">{e.category} • {e.type}</p>
+                                                                         </td>
+                                                                         <td className="px-8 py-5 text-center">
+                                                                             <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded ${e.status === 'PAGADO' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                                                                                 {e.status}
+                                                                             </span>
+                                                                         </td>
+                                                                         <td className="px-8 py-5 text-right font-bold text-white font-mono">${Number(e.amount || 0).toLocaleString()}</td>
+                                                                     </tr>
+                                                                 ))}
+                                                                 {branchItems.length === 0 && (
+                                                                     <tr>
+                                                                         <td className="py-8 text-center text-[10px] text-gray-600 font-black uppercase" colSpan="3">Sin egresos registrados</td>
+                                                                     </tr>
+                                                                 )}
+                                                             </tbody>
+                                                         </table>
+                                                     </div>
+                                                 </section>
+                                             );
+                                         })}
+                                     </div>
+                                </div>
+                            )}
                         </motion.div>
                     </div>
                 )}
@@ -812,17 +970,17 @@ export default function HQFinancePage() {
 
 // --- SUBCOMPONENTS ---
 
-function GoalProgressItem({ label, value, percent, color }) {
+function GoalProgressItem({ label, value, percent, color, onClick }) {
     return (
-        <div>
+        <button onClick={onClick} className="w-full text-left block group">
             <div className="flex justify-between items-end mb-2">
-                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest truncate max-w-[130px]">{label}</span>
-                <span className="text-[9px] font-mono text-gray-400 font-bold">${value} ({percent}%)</span>
+                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest truncate max-w-[130px] group-hover:text-white transition-colors">{label}</span>
+                <span className="text-[9px] font-mono text-gray-400 font-bold group-hover:text-white transition-colors">${value} ({percent}%)</span>
             </div>
             <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden p-[1px]">
                 <div className={`h-full rounded-full bg-gradient-to-r ${color}`} style={{ width: `${percent}%` }} />
             </div>
-        </div>
+        </button>
     );
 }
 
@@ -840,6 +998,37 @@ function SedeCostRow({ label, value, percent, icon: Icon }) {
                 <span className="text-[8px] text-gray-500 font-mono ml-2">({percent}%)</span>
             </div>
         </div>
+    );
+}
+
+function CalculationRow({ label, value, type, icon: Icon, description, delay = 0 }) {
+    const isIncome = type === 'income';
+    return (
+        <motion.div 
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay, duration: 0.5 }}
+            className="flex justify-between items-center group py-5 px-8 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 hover:border-white/10 transition-all duration-300"
+        >
+            <div className="flex items-center gap-4">
+                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all duration-500 group-hover:scale-105 ${
+                     isIncome 
+                     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                     : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                 }`}>
+                     <Icon className="w-5 h-5" />
+                 </div>
+                 <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase italic tracking-widest mb-1 leading-none">{label}</p>
+                      <p className="text-[8px] font-bold text-gray-600 uppercase tracking-[0.2em] leading-none">{description}</p>
+                 </div>
+            </div>
+            <div className="text-right">
+                 <span className={`text-2xl font-black italic tracking-tighter ${isIncome ? 'text-emerald-400' : 'text-white/90'}`}>
+                     {value}
+                 </span>
+            </div>
+        </motion.div>
     );
 }
 
