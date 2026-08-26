@@ -178,49 +178,6 @@ export default function HQClientsPage() {
     const [modalWidth, setModalWidth] = useState(1150);
     const [modalHeight, setModalHeight] = useState(700);
 
-    const { activeNicheKey, activePlanLevelKey, nicheDetails, marketingEnfoque, customizedPlanName } = useMemo(() => {
-        const activeNicheKey = mapIndustryToNicheKey(newClient.industry);
-        const planId = (newClient.plan || 'Presence').toLowerCase();
-        
-        let activePlanLevelKey = 'presence';
-        if (planId.includes('crecimiento') || planId.includes('growth')) activePlanLevelKey = 'growth';
-        if (planId.includes('autoridad') || planId.includes('authority')) activePlanLevelKey = 'authority';
-        if (planId.includes('control') || planId.includes('elite')) activePlanLevelKey = 'elite';
-
-        const nicheDetails = NICHE_DETAILS[activeNicheKey]?.plans[activePlanLevelKey] || {};
-        const marketingEnfoque = nicheDetails.enfoque || 'Estrategia General';
-        const customizedPlanName = nicheDetails.name || (newClient.plan ? `NIVEL ${newClient.plan.toUpperCase()}` : 'PLAN ESTÁNDAR');
-
-        return { activeNicheKey, activePlanLevelKey, nicheDetails, marketingEnfoque, customizedPlanName };
-    }, [newClient.industry, newClient.plan]);
-
-    const handleResizeStart = (e, direction) => {
-        e.preventDefault();
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const startWidth = modalWidth;
-        const startHeight = modalHeight;
-
-        const handleMouseMove = (moveEvent) => {
-            if (direction.includes('e')) {
-                const newWidth = Math.max(700, Math.min(1600, startWidth + (moveEvent.clientX - startX)));
-                setModalWidth(newWidth);
-            }
-            if (direction.includes('s')) {
-                const newHeight = Math.max(500, Math.min(1000, startHeight + (moveEvent.clientY - startY)));
-                setModalHeight(newHeight);
-            }
-        };
-
-        const handleMouseUp = () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
-    };
-
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [isHQLive, setIsHQLive] = useState(false);
@@ -272,6 +229,49 @@ export default function HQClientsPage() {
             }
         }
     });
+
+    const { activeNicheKey, activePlanLevelKey, nicheDetails, marketingEnfoque, customizedPlanName } = useMemo(() => {
+        const activeNicheKey = mapIndustryToNicheKey(newClient.industry);
+        const planId = (newClient.plan || 'Presence').toLowerCase();
+        
+        let activePlanLevelKey = 'presence';
+        if (planId.includes('crecimiento') || planId.includes('growth')) activePlanLevelKey = 'growth';
+        if (planId.includes('autoridad') || planId.includes('authority')) activePlanLevelKey = 'authority';
+        if (planId.includes('control') || planId.includes('elite')) activePlanLevelKey = 'elite';
+
+        const nicheDetails = NICHE_DETAILS[activeNicheKey]?.plans[activePlanLevelKey] || {};
+        const marketingEnfoque = nicheDetails.enfoque || 'Estrategia General';
+        const customizedPlanName = nicheDetails.name || (newClient.plan ? `NIVEL ${newClient.plan.toUpperCase()}` : 'PLAN ESTÁNDAR');
+
+        return { activeNicheKey, activePlanLevelKey, nicheDetails, marketingEnfoque, customizedPlanName };
+    }, [newClient.industry, newClient.plan]);
+
+    const handleResizeStart = (e, direction) => {
+        e.preventDefault();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startWidth = modalWidth;
+        const startHeight = modalHeight;
+
+        const handleMouseMove = (moveEvent) => {
+            if (direction.includes('e')) {
+                const newWidth = Math.max(700, Math.min(1600, startWidth + (moveEvent.clientX - startX)));
+                setModalWidth(newWidth);
+            }
+            if (direction.includes('s')) {
+                const newHeight = Math.max(500, Math.min(1000, startHeight + (moveEvent.clientY - startY)));
+                setModalHeight(newHeight);
+            }
+        };
+
+        const handleMouseUp = () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+    };
 
     const fetchClients = async (isBackground = false) => {
         if (!isBackground) setLoading(true);
