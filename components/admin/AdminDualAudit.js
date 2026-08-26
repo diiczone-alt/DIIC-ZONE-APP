@@ -91,6 +91,7 @@ export default function AdminDualAudit() {
     const [budgets, setBudgets] = useState([]);
     const [clientCount, setClientCount] = useState(0);
     const [team, setTeam] = useState([]);
+    const [branches, setBranches] = useState([]);
     const [currentMonth] = useState(new Date().toISOString().substring(0, 7));
     const isMounted = useRef(true);
     
@@ -123,7 +124,7 @@ export default function AdminDualAudit() {
         setLoading(true);
         try {
             // Manejamos cada promesa individualmente para mayor robustez
-            const [txs, goalsData, expensesData, count, teamData] = await Promise.all([
+            const [txs, goalsData, expensesData, count, teamData, branchData] = await Promise.all([
                 agencyService.getTransactions().catch(err => {
                     console.error("Error fetching txs:", err);
                     return [];
@@ -143,6 +144,10 @@ export default function AdminDualAudit() {
                 agencyService.getTeam().catch(err => {
                     console.error("Error fetching team:", err);
                     return [];
+                }),
+                agencyService.getBranchOffices().catch(err => {
+                    console.error("Error fetching branches:", err);
+                    return [];
                 })
             ]);
 
@@ -152,6 +157,7 @@ export default function AdminDualAudit() {
                 setBudgets(expensesData || []);
                 setClientCount(count || 0);
                 setTeam(teamData || []);
+                setBranches(branchData || []);
             }
         } catch (err) {
             console.error("Critical error in loadData:", err);
@@ -215,7 +221,7 @@ export default function AdminDualAudit() {
         const officeCost = transactions.filter(t => t.category === "Gastos Administrativos").reduce((acc, t) => acc + Number(t.amount), 0);
 
         const teamBudget = budgets.find(b => b.category === "Pago a Profesionales")?.amount || team.reduce((acc, m) => acc + (Number(m.salary) || 0), 0);
-        const officeBudget = budgets.find(b => b.category === "Gastos Administrativos")?.amount || 0;
+        const officeBudget = budgets.find(b => b.category === "Gastos Administrativos")?.amount || budgets.reduce((acc, b) => acc + (Number(b.amount) || 0), 0);
 
         const savingsRate = income > 0 ? ((balance / income) * 100).toFixed(1) : 0;
         const profitMargin = income > 0 ? ((balance / income) * 100).toFixed(1) : 0;
@@ -382,7 +388,7 @@ export default function AdminDualAudit() {
                     { activeModule === 'income' && <AreaDetailTab type="income" transactions={transactions.filter(t => t.type === 'income')} budget={0} onCertify={handleCertify} onDelete={handleDeleteTransaction} /> }
                     { activeModule === 'expenses' && <AreaDetailTab type="expenses" transactions={transactions.filter(t => t.type === 'expense')} budget={financialMetrics.expense} onCertify={handleCertify} onDelete={handleDeleteTransaction} /> }
                     { activeModule === 'team' && <AreaDetailTab type="team" transactions={transactions.filter(t => t.category === 'Pago a Profesionales')} budget={financialMetrics.teamBudget} onCertify={handleCertify} onDelete={handleDeleteTransaction} team={team} /> }
-                    { activeModule === 'agency' && <AreaDetailTab type="agency" transactions={transactions.filter(t => t.category === 'Gastos Administrativos')} budget={financialMetrics.officeBudget} onCertify={handleCertify} onDelete={handleDeleteTransaction} /> }
+                    { activeModule === 'agency' && <AreaDetailTab type="agency" transactions={transactions.filter(t => t.category === 'Gastos Administrativos')} budget={financialMetrics.officeBudget} onCertify={handleCertify} onDelete={handleDeleteTransaction} branches={branches} operatingExpenses={budgets} /> }
                     { activeModule === 'goals' && <GoalsTab goals={goals} metrics={financialMetrics} onAdd={() => { }} /> }
                 </motion.div>
             </AnimatePresence>
@@ -627,7 +633,7 @@ function OverviewTab({ metrics }) {
     );
 }
 
-function AreaDetailTab({ type, transactions, budget, onCertify, onDelete, team = [] }) {
+function AreaDetailTab({ type, transactions, budget, onCertify, onDelete, team = [], branches = [], operatingExpenses = [] }) {
     const config = FINANCIAL_CONFIG[type];
     const total = transactions.reduce((acc, t) => acc + Number(t.amount), 0);
     const usage = budget > 0 ? (total / budget) * 100 : 0;
@@ -663,6 +669,21 @@ function AreaDetailTab({ type, transactions, budget, onCertify, onDelete, team =
         
         return Object.values(groups).sort((a, b) => b.totalSalary - a.totalSalary);
     }, [team, type]);
+
+    // Group operating expenses by branch / node
+    const branchBreakdown = useMemo(() => {
+        if (type !== 'agency' || !branches.length) return [];
+        
+        return branches.map(branch => {
+            const expenses = operatingExpenses.filter(ex => ex.branch_id === branch.id);
+            const totalBranchExpense = expenses.reduce((acc, ex) => acc + (Number(ex.amount) || 0), 0);
+            return {
+                ...branch,
+                expenses,
+                totalBranchExpense
+            };
+        }).sort((a, b) => b.totalBranchExpense - a.totalBranchExpense);
+    }, [branches, operatingExpenses, type]);
 
     return (
         <div className="space-y-12">
@@ -718,6 +739,56 @@ function AreaDetailTab({ type, transactions, budget, onCertify, onDelete, team =
                                 <div className="border-t border-white/5 pt-4 flex justify-between items-center">
                                     <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Egreso Total</span>
                                     <span className="text-lg font-black text-emerald-400">${dept.totalSalary.toLocaleString()} USD</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {type === 'agency' && branchBreakdown.length > 0 && (
+                <div className="space-y-6">
+                    <div className="flex items-center gap-4 px-10">
+                        <Globe className="w-5 h-5 text-purple-400" />
+                        <h3 className="text-[10px] font-black text-white uppercase tracking-[0.5em]">Distribución de Egresos por Sede / Nodo Local</h3>
+                        <div className="h-px flex-1 bg-white/5" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-10">
+                        {branchBreakdown.map((branch) => (
+                            <div key={branch.id} className="p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-purple-500/20 transition-all flex flex-col justify-between">
+                                <div>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-[11px] font-black text-purple-450 uppercase tracking-wider">{branch.name}</span>
+                                        <span className="text-xs font-bold text-gray-500">{branch.city}</span>
+                                    </div>
+
+                                    {/* Sub-item Details of Expenses */}
+                                    <div className="space-y-2.5 mb-6">
+                                        {branch.expenses.length > 0 ? (
+                                            branch.expenses.map((ex) => (
+                                                <div key={ex.id} className="flex flex-col gap-0.5 text-xs">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-gray-400 font-medium">{ex.item}</span>
+                                                        <span className="font-bold text-white">${(Number(ex.amount) || 0).toLocaleString()} USD</span>
+                                                    </div>
+                                                    {ex.description && (
+                                                        <span className="text-[10px] text-gray-600 line-clamp-1">{ex.description}</span>
+                                                    )}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-[11px] text-gray-600 italic">Sin egresos registrados este mes</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-white/5 pt-4 flex justify-between items-center">
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] text-gray-600 font-bold uppercase">Director: {branch.director || 'N/A'}</span>
+                                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-0.5">Egreso Total</span>
+                                    </div>
+                                    <span className="text-lg font-black text-emerald-400">${branch.totalBranchExpense.toLocaleString()} USD</span>
                                 </div>
                             </div>
                         ))}
