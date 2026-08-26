@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ArrowLeft, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe, Activity, Mail, Stethoscope, Briefcase, HeartPulse, Sprout, GraduationCap, Video, Cake, Calendar, MapPin } from 'lucide-react';
+import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ArrowLeft, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe, Activity, Mail, Stethoscope, Briefcase, HeartPulse, Sprout, GraduationCap, Video, Cake, Calendar, MapPin, Coffee, LayoutGrid, LayoutList, ChevronRight, Columns } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { agencyService } from '@/services/agencyService';
 import VisionEcosystem from '@/components/VisionEcosystem';
@@ -19,68 +19,146 @@ import { getPlanPrice, mapIndustryToNicheKey, NICHE_DETAILS } from '@/lib/nicheD
 const getIndustryStyle = (industry) => {
     const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
     const ind = cleanNiche(industry);
+    
     if (ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor')) {
         return {
-            bg: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
+            bg: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.15)]',
             dot: 'bg-cyan-400',
-            label: 'Salud / Médico'
+            label: 'Salud / Médico',
+            icon: Stethoscope,
+            textColor: 'text-cyan-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(6,182,212,0.3)]'
         };
     }
     if (ind.includes('hospital') || ind.includes('clinica')) {
         return {
-            bg: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+            bg: 'bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]',
             dot: 'bg-blue-400',
-            label: 'Sistema Clínico / Hospital'
+            label: 'Sistema Clínico / Hospital',
+            icon: HeartPulse,
+            textColor: 'text-blue-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(59,130,246,0.3)]'
         };
     }
     if (ind.includes('educativo') || ind.includes('curso') || ind.includes('capacitac') || ind.includes('academia') || ind.includes('formacion') || ind.includes('educacion')) {
         return {
-            bg: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+            bg: 'bg-purple-500/10 text-purple-400 border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.15)]',
             dot: 'bg-purple-400',
-            label: 'Capacitaciones / Cursos'
+            label: 'Capacitaciones / Cursos',
+            icon: GraduationCap,
+            textColor: 'text-purple-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(168,85,247,0.3)]'
         };
     }
     if (ind.includes('hospitality') || ind.includes('restaurant') || ind.includes('comida') || ind.includes('gastronom')) {
         return {
-            bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+            bg: 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.15)]',
             dot: 'bg-amber-400',
-            label: 'Gastronomía'
+            label: 'Gastronomía',
+            icon: Coffee,
+            textColor: 'text-amber-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(245,158,11,0.3)]'
         };
     }
     if (ind.includes('realestate') || ind.includes('construc') || ind.includes('inmobil') || ind.includes('construccion')) {
         return {
-            bg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+            bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]',
             dot: 'bg-emerald-400',
-            label: 'Inmobiliaria'
+            label: 'Inmobiliaria',
+            icon: Building2,
+            textColor: 'text-emerald-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(16,185,129,0.3)]'
+        };
+    }
+    if (ind.includes('agro') || ind.includes('ganader') || ind.includes('field') || ind.includes('granja') || ind.includes('agropecuario')) {
+        return {
+            bg: 'bg-green-500/10 text-green-400 border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.15)]',
+            dot: 'bg-green-400',
+            label: 'Agropecuario',
+            icon: Sprout,
+            textColor: 'text-green-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(34,197,94,0.3)]'
+        };
+    }
+    if (ind.includes('juridico') || ind.includes('legal') || ind.includes('abogad')) {
+        return {
+            bg: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.15)]',
+            dot: 'bg-indigo-400',
+            label: 'Servicios Jurídicos',
+            icon: Shield,
+            textColor: 'text-indigo-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(99,102,241,0.3)]'
+        };
+    }
+    if (ind.includes('estetica') || ind.includes('spa') || ind.includes('bienestar') || ind.includes('belleza')) {
+        return {
+            bg: 'bg-pink-500/10 text-pink-400 border-pink-500/30 shadow-[0_0_15px_rgba(236,72,153,0.15)]',
+            dot: 'bg-pink-400',
+            label: 'Estética / Bienestar',
+            icon: Sparkles,
+            textColor: 'text-pink-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(236,72,153,0.3)]'
+        };
+    }
+    if (ind.includes('ecommerce') || ind.includes('retail') || ind.includes('tienda') || ind.includes('ventas')) {
+        return {
+            bg: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]',
+            dot: 'bg-yellow-400',
+            label: 'E-commerce / Retail',
+            icon: Zap,
+            textColor: 'text-yellow-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(234,179,8,0.3)]'
+        };
+    }
+    if (ind.includes('tecnologia') || ind.includes('saas') || ind.includes('soft') || ind.includes('app')) {
+        return {
+            bg: 'bg-blue-600/10 text-blue-400 border-blue-600/30 shadow-[0_0_15px_rgba(37,99,235,0.15)]',
+            dot: 'bg-blue-400',
+            label: 'Tecnología / SaaS',
+            icon: Globe,
+            textColor: 'text-blue-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(37,99,235,0.3)]'
+        };
+    }
+    if (ind.includes('marca personal') || ind.includes('personal') || ind.includes('coach')) {
+        return {
+            bg: 'bg-orange-500/10 text-orange-400 border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.15)]',
+            dot: 'bg-orange-400',
+            label: 'Marca Personal',
+            icon: Fingerprint,
+            textColor: 'text-orange-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(249,115,22,0.3)]'
         };
     }
     return {
-        bg: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
+        bg: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]',
         dot: 'bg-indigo-400',
-        label: 'General'
+        label: 'General',
+        icon: Briefcase,
+        textColor: 'text-indigo-400',
+        glowShadow: 'shadow-[0_0_20px_rgba(99,102,241,0.2)]'
     };
 };
 
 const getBrandColorClass = (industry) => {
-    const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    const ind = cleanNiche(industry);
-    if (ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor')) {
-        return 'text-cyan-400';
-    }
-    if (ind.includes('hospital') || ind.includes('clinica')) {
-        return 'text-blue-400';
-    }
-    if (ind.includes('educativo') || ind.includes('curso') || ind.includes('capacitac') || ind.includes('academia') || ind.includes('formacion') || ind.includes('educacion')) {
-        return 'text-purple-400';
-    }
-    if (ind.includes('hospitality') || ind.includes('restaurant') || ind.includes('comida') || ind.includes('gastronom')) {
-        return 'text-amber-400';
-    }
-    if (ind.includes('realestate') || ind.includes('construc') || ind.includes('inmobil') || ind.includes('construccion')) {
-        return 'text-emerald-400';
-    }
-    return 'text-indigo-400';
+    return getIndustryStyle(industry).textColor;
 };
+
+const NICHE_ITEMS = [
+    { value: 'all', label: 'Todos los Sectores', icon: Layout, iconColor: 'text-indigo-400', activeBg: 'bg-indigo-500/10' },
+    { value: 'medico', label: 'Salud / Médico', icon: Stethoscope, iconColor: 'text-cyan-400', activeBg: 'bg-cyan-500/10' },
+    { value: 'hospital', label: 'Hospitales', icon: HeartPulse, iconColor: 'text-blue-400', activeBg: 'bg-blue-500/10' },
+    { value: 'agropecuario', label: 'Agropecuario', icon: Sprout, iconColor: 'text-emerald-400', activeBg: 'bg-emerald-500/10' },
+    { value: 'educativo', label: 'Educación / Cursos', icon: GraduationCap, iconColor: 'text-purple-400', activeBg: 'bg-purple-500/10' },
+    { value: 'hospitality', label: 'Gastronomía', icon: Coffee, iconColor: 'text-amber-400', activeBg: 'bg-amber-500/10' },
+    { value: 'juridico', label: 'Servicios Jurídicos', icon: Shield, iconColor: 'text-indigo-400', activeBg: 'bg-indigo-500/10' },
+    { value: 'estetica', label: 'Estética / Bienestar', icon: Sparkles, iconColor: 'text-pink-400', activeBg: 'bg-pink-500/10' },
+    { value: 'retail', label: 'E-commerce', icon: Zap, iconColor: 'text-yellow-400', activeBg: 'bg-yellow-500/10' },
+    { value: 'construccion', label: 'Inmobiliaria', icon: Building2, iconColor: 'text-teal-400', activeBg: 'bg-teal-500/10' },
+    { value: 'tecnologia', label: 'Tecnología', icon: Globe, iconColor: 'text-blue-450', activeBg: 'bg-blue-500/10' },
+    { value: 'Marca Personal', label: 'Marca Personal', icon: Fingerprint, iconColor: 'text-orange-400', activeBg: 'bg-orange-500/10' },
+    { value: 'Otro', label: 'Otros Sectores', icon: Briefcase, iconColor: 'text-gray-400', activeBg: 'bg-gray-500/10' }
+];
 
 // Using dynamic getPlanPrice from @/lib/nicheDetails
 
@@ -157,6 +235,8 @@ const getPlanDefaultDeliverables = (planName) => {
 export default function HQClientsPage() {
     const [activeMenu, setActiveMenu] = useState(null);
     const [activeFilter, setActiveFilter] = useState('all');
+    const [viewMode, setViewMode] = useState('table');
+    const [selectedNiche, setSelectedNiche] = useState('all');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [clientToDelete, setClientToDelete] = useState(null);
     const router = useRouter();
@@ -733,6 +813,17 @@ export default function HQClientsPage() {
     const filteredClients = Array.isArray(clients) ? clients.filter(c => {
         if (!c) return false;
         const matchesSearch = (c.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+        
+        let matchesNiche = true;
+        if (selectedNiche !== 'all') {
+            const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+            const clientNiche = cleanNiche(c.industry);
+            const targetNiche = cleanNiche(selectedNiche);
+            matchesNiche = clientNiche === targetNiche || clientNiche.includes(targetNiche) || targetNiche.includes(clientNiche);
+        }
+        
+        if (!matchesNiche) return false;
+
         if (activeFilter === 'risk') return matchesSearch && (c.priority || '').toUpperCase() === 'ALTA';
         if (activeFilter === 'pending') return matchesSearch && c.status === 'paused';
         if (activeFilter === 'active') return matchesSearch && isActiveStatus(c.status);
@@ -750,6 +841,137 @@ export default function HQClientsPage() {
     const riskCount = Array.isArray(clients) ? clients.filter(c => c && (c.priority || '').toUpperCase() === 'ALTA').length : 0;
     const pendingCount = Array.isArray(clients) ? clients.filter(c => c && c.status === 'paused').length : 0;
     const activeCount = Array.isArray(clients) ? clients.filter(c => c && isActiveStatus(c.status)).length : 0;
+
+    const activeNiches = useMemo(() => {
+        if (!Array.isArray(clients)) return [];
+        const uniqueNiches = [...new Set(clients.map(c => c?.industry).filter(Boolean))];
+        return NICHE_ITEMS.filter(item => {
+            if (item.value === 'all') return false;
+            return uniqueNiches.some(n => {
+                const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                const clientNiche = cleanNiche(n);
+                const targetNiche = cleanNiche(item.value);
+                return clientNiche === targetNiche || clientNiche.includes(targetNiche) || targetNiche.includes(clientNiche);
+            });
+        });
+    }, [clients]);
+
+    const renderClientCard = (client, style) => {
+        const { isBirthday, isBirthdayWeek } = getBirthdayInfo(client.birth_date);
+        const Icon = style.icon || Briefcase;
+        
+        const sheets = client.financial_sheet || {};
+        const costs = sheets.costs_internal || {};
+        const totalCost = (Number(costs.design) || 0) +
+                          (Number(costs.editing) || 0) +
+                          (Number(costs.production) || 0) +
+                          (Number(costs.cm) || 0) +
+                          (Number(costs.transport) || 0) +
+                          (Number(costs.others) || 0);
+        const price = Number(client.price) || 0;
+        const profit = price - totalCost;
+        const margin = price > 0 ? Math.round((profit / price) * 100) : 0;
+        
+        let marginColor = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+        if (margin >= 50) marginColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+        else if (margin >= 20) marginColor = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+
+        const rawName = client?.name || 'Cliente sin nombre';
+        let cleanName = rawName;
+        let brandName = client.onboarding_data?.strategic?.brandName || '';
+        
+        if (rawName.includes('(')) {
+            const parts = rawName.split('(');
+            cleanName = parts[0].trim();
+            if (!brandName) {
+                brandName = parts[1].replace(')', '').trim();
+            }
+        }
+
+        return (
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                key={client.id} 
+                className="bg-[#11111D]/80 border border-white/5 rounded-3xl p-5 flex flex-col gap-4 hover:border-indigo-500/30 transition-colors group relative shadow-xl backdrop-blur-md"
+            >
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border transition-transform group-hover:scale-105 ${style.bg}`}>
+                            <Icon className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-black text-white leading-tight tracking-tight flex items-center gap-1.5 flex-wrap">
+                                {cleanName}
+                                {isBirthday && <span title="¡Cumpleaños Hoy!">🎂</span>}
+                            </h4>
+                            {brandName && (
+                                <span className={`${style.textColor} text-xs font-bold block mt-0.5`}>
+                                    {brandName}
+                                </span>
+                            )}
+                            <span className="text-[10px] text-gray-500 font-medium block mt-1.5">
+                                📍 {client.city || 'HQ'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <button
+                        onClick={() => handleToggleStatus(client.id, client.status)}
+                        className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all active:scale-95 hover:brightness-125 ${
+                            isActiveStatus(client.status) ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'
+                        }`}
+                    >
+                        {isActiveStatus(client.status) ? 'Activo' : 'Pausado'}
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 py-3 border-y border-white/5">
+                    <div>
+                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-0.5">Plan</span>
+                        <span className="text-xs font-bold text-gray-300">{client.plan || 'Presencia'}</span>
+                    </div>
+                    <div>
+                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-0.5">Inversión</span>
+                        <span className="text-xs font-black text-white">${price}/mes</span>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <div>
+                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-0.5">Rentabilidad</span>
+                        <span className="text-sm font-black text-white">${profit.toLocaleString()}</span>
+                    </div>
+                    <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${marginColor}`}>
+                        {margin}% margen
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 mt-2 pt-3 border-t border-white/5 justify-between">
+                    <button 
+                        onClick={() => handleNavigateStrategy(client.id)}
+                        className="flex-1 py-2 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-400 hover:text-white rounded-xl border border-indigo-500/20 text-[9px] font-black uppercase tracking-widest transition-all text-center"
+                    >
+                        Ver Estrategia
+                    </button>
+                    <div className="flex gap-1.5">
+                        <button 
+                            onClick={() => handleOpenEdit(client)}
+                            className="p-2 bg-white/5 hover:bg-indigo-500/15 rounded-xl text-gray-400 hover:text-indigo-400 border border-white/5 transition-all"
+                        >
+                            <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                            onClick={() => handleDeleteClient(client.id)}
+                            className="p-2 bg-white/5 hover:bg-red-500/15 rounded-xl text-gray-400 hover:text-red-500 border border-white/5 transition-all"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    };
 
     return (
         <div className="p-8 space-y-8 relative">
@@ -891,48 +1113,388 @@ export default function HQClientsPage() {
                 <StatCard title="Pendientes Pago" value={pendingCount} icon={CheckCircle2} color="blue" isActive={activeFilter === 'pending'} onClick={() => setActiveFilter(activeFilter === 'pending' ? 'all' : 'pending')} />
             </div>
 
-            {/* Filters & Search */}
-            <div className="flex gap-4 relative z-10">
-                <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                    <input
-                        type="text"
-                        placeholder="Buscar por nombre o marca..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-[#0E0E18]/80 backdrop-blur-md border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-white focus:outline-none focus:border-indigo-500/50 transition-all border-dashed"
-                    />
-                </div>
-                <button className="px-6 rounded-2xl border border-white/5 text-gray-400 hover:bg-white/5 transition-all flex items-center gap-2">
-                    <Filter className="w-5 h-5" /> Filtros
-                </button>
-            </div>
+            {/* Main Section: Niche Navigation (Left Sidebar) + Client Display (Right) */}
+            <div className="flex flex-col lg:flex-row gap-6 relative z-10 items-start">
+                
+                {/* Vertical Niche Selector */}
+                <div className="w-full lg:w-64 flex flex-col gap-2 bg-[#0E0E18]/80 backdrop-blur-md border border-white/5 p-4 rounded-3xl h-fit shadow-2xl relative">
+                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2 mb-2">Filtrar por Nicho</span>
+                    
+                    {NICHE_ITEMS.map((item) => {
+                        const count = Array.isArray(clients) ? clients.filter(c => {
+                            if (!c) return false;
+                            
+                            // Check filters
+                            if (activeFilter === 'risk' && (c.priority || '').toUpperCase() !== 'ALTA') return false;
+                            if (activeFilter === 'pending' && c.status !== 'paused') return false;
+                            if (activeFilter === 'active' && !isActiveStatus(c.status)) return false;
+                            
+                            if (item.value === 'all') return true;
 
-            {/* Table */}
-            <div className="bg-[#0E0E18]/80 backdrop-blur-md border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative z-10">
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="border-b border-white/5 bg-white/[0.02]">
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Cliente / Marca</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Plan Actual</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Nicho / Estrategia</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Community</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Inversión / Facturación</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Rentabilidad</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Estado</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-right">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                        {loading && clients.length === 0 ? (
-                            [1, 2, 3].map(i => <SkeletonRow key={i} />)
-                        ) : (
-                            filteredClients.map((client) => {
-                                const { isBirthday, isBirthdayWeek, age } = getBirthdayInfo(client.birth_date);
+                            const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                            const clientNiche = cleanNiche(c.industry);
+                            const targetNiche = cleanNiche(item.value);
+                            return clientNiche === targetNiche || clientNiche.includes(targetNiche) || targetNiche.includes(clientNiche);
+                        }).length : 0;
+
+                        // Only show niches that have clients, or the 'all' item
+                        if (item.value !== 'all' && count === 0) return null;
+
+                        return (
+                            <button
+                                key={item.value}
+                                onClick={() => setSelectedNiche(item.value)}
+                                className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl border text-left text-xs font-bold transition-all active:scale-95 ${
+                                    selectedNiche === item.value
+                                    ? `${item.activeBg} border-white/10 text-white shadow-[0_0_15px_rgba(99,102,241,0.1)]`
+                                    : 'bg-white/5 border-transparent text-gray-400 hover:bg-white/10 hover:text-white'
+                                }`}
+                            >
+                                <item.icon className={`w-4.5 h-4.5 ${selectedNiche === item.value ? item.iconColor : 'text-gray-500'}`} />
+                                <span className="truncate flex-1">{item.label}</span>
+                                <span className="px-2 py-0.5 text-[9px] rounded bg-white/5 border border-white/5 font-black text-gray-400">
+                                    {count}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Main Client Panel */}
+                <div className="flex-1 w-full space-y-6">
+                    
+                    {/* Filters, Search & View Switcher */}
+                    <div className="flex flex-wrap gap-4 items-center">
+                        <div className="flex-1 min-w-[280px] relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre o marca..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-[#0E0E18]/80 backdrop-blur-md border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-white focus:outline-none focus:border-indigo-500/50 transition-all border-dashed"
+                            />
+                        </div>
+
+                        {/* View Mode Switcher */}
+                        <div className="flex items-center bg-[#0E0E18]/80 border border-white/5 p-1 rounded-2xl">
+                            <button
+                                onClick={() => setViewMode('table')}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+                                    viewMode === 'table' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:text-white'
+                                }`}
+                                title="Vista Tabla"
+                            >
+                                <Layout className="w-4 h-4" />
+                                <span className="hidden sm:inline">Tabla</span>
+                            </button>
+                            <button
+                                onClick={() => setViewMode('niche_columns')}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+                                    viewMode === 'niche_columns' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:text-white'
+                                }`}
+                                title="Vista Columnas (Nichos)"
+                            >
+                                <LayoutGrid className="w-4 h-4" />
+                                <span className="hidden sm:inline">Columnas</span>
+                            </button>
+                            <button
+                                onClick={() => setViewMode('niche_rows')}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+                                    viewMode === 'niche_rows' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:text-white'
+                                }`}
+                                title="Vista Grupos (Nichos)"
+                            >
+                                <LayoutList className="w-4 h-4" />
+                                <span className="hidden sm:inline">Grupos</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* View rendering */}
+                    {viewMode === 'table' && (
+                        <div className="bg-[#0E0E18]/80 backdrop-blur-md border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="border-b border-white/5 bg-white/[0.02]">
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Cliente / Marca</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Plan Actual</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Nicho / Estrategia</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Community</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Inversión / Facturación</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Rentabilidad</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Estado</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {loading && clients.length === 0 ? (
+                                        [1, 2, 3].map(i => <SkeletonRow key={i} />)
+                                    ) : (
+                                        filteredClients.map((client) => {
+                                            const { isBirthday, isBirthdayWeek } = getBirthdayInfo(client.birth_date);
+                                            const indStyle = getIndustryStyle(client.industry);
+                                            const NicheIcon = indStyle.icon || Briefcase;
+
+                                            const rawName = client?.name || 'Cliente sin nombre';
+                                            let cleanName = rawName;
+                                            let brandName = client.onboarding_data?.strategic?.brandName || '';
+                                            
+                                            if (rawName.includes('(')) {
+                                                const parts = rawName.split('(');
+                                                cleanName = parts[0].trim();
+                                                if (!brandName) {
+                                                    brandName = parts[1].replace(')', '').trim();
+                                                }
+                                            }
+
+                                            return (
+                                                <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={client.id} className="hover:bg-white/[0.01] transition-colors group">
+                                                    <td className="px-6 py-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${indStyle.bg}`}>
+                                                                <NicheIcon className="w-5 h-5" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className="text-white font-black text-sm tracking-tight">{cleanName}</span>
+                                                                    {brandName && (
+                                                                        <span className={`${indStyle.textColor} font-bold text-xs ml-1.5`}>
+                                                                            ({brandName})
+                                                                        </span>
+                                                                    )}
+                                                                    {isBirthday && (
+                                                                        <motion.span 
+                                                                            animate={{ scale: [1, 1.2, 1] }} 
+                                                                            transition={{ repeat: Infinity, duration: 1.5 }}
+                                                                            className="text-indigo-400"
+                                                                            title="¡Hoy es su Cumpleaños!"
+                                                                        >
+                                                                            🎂
+                                                                        </motion.span>
+                                                                    )}
+                                                                    {isBirthdayWeek && !isBirthday && (
+                                                                        <span className="text-yellow-500 text-xs" title="Cumpleaños esta semana">🎉</span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="text-[10px] text-gray-500 font-medium flex items-center gap-2 mt-1.5 flex-wrap">
+                                                                    <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[9px] font-bold text-gray-400 flex items-center gap-1">
+                                                                        📍 {client?.city || 'HQ'}{client?.country && `, ${client.country}`}
+                                                                        {client?.country && client.country.toLowerCase().trim() !== 'ecuador' && client?.plan !== 'Solo App' && client?.plan !== 'SOLO USO DE APP (BÁSICO)' && (
+                                                                            <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[8px] font-black uppercase tracking-wider animate-pulse">
+                                                                                ⚠️ Sin Cobertura Filmmaker
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-6">
+                                                        <button onClick={() => handleCyclePlan(client.id, client.plan)} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-gray-300 hover:border-indigo-500/50 hover:text-white transition-all active:scale-95">
+                                                            {client?.plan || 'Presencia'}
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-6 py-6">
+                                                        <div className={`px-3 py-1 ${indStyle.bg} border rounded-full text-xs font-bold capitalize select-none inline-block`}>
+                                                            {INDUSTRY_OPTIONS.find(i => i.value === client?.industry)?.label || client?.industry || 'General'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-6 font-medium">
+                                                        <button onClick={() => handleToggleCM(client.id, client.cm)} className="flex items-center gap-2 hover:bg-white/5 p-2 rounded-xl transition-all active:scale-95 group/cm">
+                                                            <div className="w-6 h-6 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-[10px] text-purple-400 font-bold group-hover/cm:border-indigo-500">
+                                                                {client?.cm?.[0] || '?'}
+                                                            </div>
+                                                            <span className="text-gray-400 text-sm group-hover/cm:text-white">{client?.cm || 'Sin asignar'}</span>
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-6 py-6">
+                                                        {(() => {
+                                                            let displayPrice = client?.price || 0;
+                                                            const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                                            const normalizedInd = cleanNiche(client?.industry);
+                                                            const isMedOrHosp = normalizedInd.includes('medico') || normalizedInd.includes('hospital') || normalizedInd.includes('clinica');
+                                                            if (isMedOrHosp) {
+                                                                const calculated = getPlanPrice(client?.plan, client?.industry);
+                                                                if (client?.price === 300 && calculated === 250) {
+                                                                    displayPrice = 250;
+                                                                } else if (client?.price === 800 && calculated === 700) {
+                                                                    displayPrice = 700;
+                                                                }
+                                                            }
+                                                            return (
+                                                                <div className="flex flex-col gap-1">
+                                                                    <div className="font-black text-white text-base leading-none">${displayPrice}<span className="text-[10px] font-bold text-gray-500">/mes</span></div>
+                                                                    <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">
+                                                                        Corte: Día {client?.cutoff_day !== undefined ? client.cutoff_day : 5}
+                                                                    </div>
+                                                                    <div className="text-[9px] text-rose-400 font-bold uppercase tracking-wider">
+                                                                        Cierre Reporte: {getNextCutoffDate(client?.cutoff_day)}
+                                                                    </div>
+                                                                    <div className="text-[9px] text-gray-500 font-medium">
+                                                                        Inicio: {safeFormatDate(client?.start_date)}
+                                                                    </div>
+                                                                    <div className="text-[9px] text-gray-600 font-bold">
+                                                                        +${client?.app_fee !== undefined ? client.app_fee : 100} App Fee
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </td>
+                                                    <td className="px-6 py-6">
+                                                        {(() => {
+                                                            const sheets = client.financial_sheet || {};
+                                                            const costs = sheets.costs_internal || {};
+                                                            const totalCost = (Number(costs.design) || 0) +
+                                                                              (Number(costs.editing) || 0) +
+                                                                              (Number(costs.production) || 0) +
+                                                                              (Number(costs.cm) || 0) +
+                                                                              (Number(costs.transport) || 0) +
+                                                                              (Number(costs.others) || 0);
+                                                            const price = Number(client.price) || 0;
+                                                            const profit = price - totalCost;
+                                                            const margin = price > 0 ? Math.round((profit / price) * 100) : 0;
+                                                            
+                                                            let marginColor = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+                                                            if (margin >= 50) marginColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                                                            else if (margin >= 20) marginColor = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+                                                             
+                                                            return (
+                                                                <div className="flex flex-col gap-1">
+                                                                    <div className="font-black text-white text-base leading-none">${profit.toLocaleString()}<span className="text-[10px] font-bold text-gray-500">/mes</span></div>
+                                                                    <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border text-center ${marginColor} w-fit`}>
+                                                                        {margin}% margen
+                                                                    </div>
+                                                                    <div className="text-[9px] text-gray-500 font-medium">
+                                                                        Costo: ${totalCost}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </td>
+                                                    <td className="px-6 py-6">
+                                                        <button
+                                                            onClick={() => handleToggleStatus(client.id, client.status)}
+                                                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 hover:brightness-125 ${isActiveStatus(client.status) ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
+                                                        >
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${isActiveStatus(client.status) ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                                                            {isActiveStatus(client.status) ? 'Activo' : 'Pausado'}
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-6 py-6 text-right whitespace-nowrap relative">
+                                                        <div className="flex justify-end items-center gap-2 font-black uppercase tracking-widest text-[10px]">
+                                                            <button className="px-4 py-2 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all font-black uppercase tracking-widest text-[9px]" onClick={() => handleNavigateStrategy(client.id)}>
+                                                                Ver Estrategia
+                                                            </button>
+                                                            <button onClick={() => handleDeleteClient(client.id)} className="p-2 bg-white/5 hover:bg-red-500/10 rounded-xl text-gray-400 hover:text-red-500 transition-all border border-white/5">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                            <button onClick={() => handleOpenEdit(client)} className="p-2 bg-white/5 hover:bg-indigo-500/10 rounded-xl text-gray-400 hover:text-indigo-500 transition-all border border-white/5">
+                                                                <Edit className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </motion.tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {viewMode === 'niche_columns' && (
+                        <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-thin">
+                            {(selectedNiche === 'all' ? activeNiches : NICHE_ITEMS.filter(n => {
+                                const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                return cleanNiche(n.value) === cleanNiche(selectedNiche);
+                            })).map(niche => {
+                                const nicheClients = filteredClients.filter(c => {
+                                    const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                    const clientNiche = cleanNiche(c.industry);
+                                    const targetNiche = cleanNiche(niche.value);
+                                    return clientNiche === targetNiche || clientNiche.includes(targetNiche) || targetNiche.includes(clientNiche);
+                                });
+
+                                if (nicheClients.length === 0) return null;
+                                
+                                const style = getIndustryStyle(niche.value);
+                                const Icon = style.icon || Briefcase;
+
                                 return (
-                                    <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={client.id} className="hover:bg-white/[0.01] transition-colors group">
-                                        <td className="px-6 py-6">
-                                            {(() => {
+                                    <div key={niche.value} className="flex-1 min-w-[320px] max-w-[360px] bg-[#0E0E18]/60 border border-white/5 rounded-3xl p-5 flex flex-col gap-4 shadow-2xl">
+                                        <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`p-2.5 rounded-xl border ${style.bg}`}>
+                                                    <Icon className="w-5 h-5" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <h3 className="text-sm font-black text-white">{niche.label}</h3>
+                                                    <span className="text-[10px] font-bold text-gray-500">{nicheClients.length} socios</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-4 max-h-[650px] overflow-y-auto scrollbar-none pr-1">
+                                            {nicheClients.map(client => renderClientCard(client, style))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {viewMode === 'niche_rows' && (
+                        <div className="flex flex-col gap-6">
+                            {(selectedNiche === 'all' ? activeNiches : NICHE_ITEMS.filter(n => {
+                                const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                return cleanNiche(n.value) === cleanNiche(selectedNiche);
+                            })).map(niche => {
+                                const nicheClients = filteredClients.filter(c => {
+                                    const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                    const clientNiche = cleanNiche(c.industry);
+                                    const targetNiche = cleanNiche(niche.value);
+                                    return clientNiche === targetNiche || clientNiche.includes(targetNiche) || targetNiche.includes(clientNiche);
+                                });
+
+                                if (nicheClients.length === 0) return null;
+                                
+                                const style = getIndustryStyle(niche.value);
+                                const Icon = style.icon || Briefcase;
+
+                                return (
+                                    <div key={niche.value} className="bg-[#0E0E18]/80 backdrop-blur-md border border-white/5 rounded-3xl overflow-hidden shadow-2xl text-left">
+                                        <div className="flex items-center justify-between px-6 py-4 bg-white/[0.02] border-b border-white/5">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`p-2.5 rounded-xl border ${style.bg}`}>
+                                                    <Icon className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-base font-black text-white tracking-tight">{niche.label}</h3>
+                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{nicheClients.length} socios activos</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="divide-y divide-white/5">
+                                            {nicheClients.map(client => {
+                                                const { isBirthday, isBirthdayWeek } = getBirthdayInfo(client.birth_date);
+                                                const sheets = client.financial_sheet || {};
+                                                const costs = sheets.costs_internal || {};
+                                                const totalCost = (Number(costs.design) || 0) +
+                                                                  (Number(costs.editing) || 0) +
+                                                                  (Number(costs.production) || 0) +
+                                                                  (Number(costs.cm) || 0) +
+                                                                  (Number(costs.transport) || 0) +
+                                                                  (Number(costs.others) || 0);
+                                                const price = Number(client.price) || 0;
+                                                const profit = price - totalCost;
+                                                const margin = price > 0 ? Math.round((profit / price) * 100) : 0;
+                                                
+                                                let marginColor = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+                                                if (margin >= 50) marginColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                                                else if (margin >= 20) marginColor = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+
                                                 const rawName = client?.name || 'Cliente sin nombre';
                                                 let cleanName = rawName;
                                                 let brandName = client.onboarding_data?.strategic?.brandName || '';
@@ -944,163 +1506,67 @@ export default function HQClientsPage() {
                                                         brandName = parts[1].replace(')', '').trim();
                                                     }
                                                 }
-                                                const indStyle = getIndustryStyle(client.industry);
 
                                                 return (
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${indStyle.bg} border`}>
-                                                            {cleanName[0] || '?'}
-                                                        </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className="text-white font-black text-sm tracking-tight">{cleanName}</span>
-                                                                {brandName && (
-                                                                    <span className={`${getBrandColorClass(client.industry)} font-bold text-xs ml-1.5`}>
-                                                                        ({brandName})
-                                                                    </span>
-                                                                )}
-                                                                {isBirthday && (
-                                                                    <motion.span 
-                                                                        animate={{ scale: [1, 1.2, 1] }} 
-                                                                        transition={{ repeat: Infinity, duration: 1.5 }}
-                                                                        className="text-indigo-400"
-                                                                        title="¡Hoy es su Cumpleaños!"
-                                                                    >
-                                                                        🎂
-                                                                    </motion.span>
-                                                                )}
-                                                                {isBirthdayWeek && !isBirthday && (
-                                                                    <span className="text-yellow-500 text-xs" title="Cumpleaños esta semana">🎉</span>
-                                                                )}
+                                                    <div key={client.id} className="p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6 hover:bg-white/[0.01] transition-colors">
+                                                        <div className="flex items-center gap-4 min-w-[240px]">
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${style.bg}`}>
+                                                                <Icon className="w-5 h-5" />
                                                             </div>
-                                                            <div className="text-[10px] text-gray-500 font-medium flex items-center gap-2 mt-1.5 flex-wrap">
-                                                                <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[9px] font-bold text-gray-400 flex items-center gap-1">
-                                                                    📍 {client?.city || 'HQ'}{client?.country && `, ${client.country}`}
-                                                                    {client?.country && client.country.toLowerCase().trim() !== 'ecuador' && client?.plan !== 'Solo App' && client?.plan !== 'SOLO USO DE APP (BÁSICO)' && (
-                                                                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[8px] font-black uppercase tracking-wider animate-pulse">
-                                                                            ⚠️ Sin Cobertura Filmmaker
+                                                            <div>
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className="text-white font-black text-sm tracking-tight">{cleanName}</span>
+                                                                    {brandName && (
+                                                                        <span className={`${style.textColor} font-bold text-xs ml-1`}>
+                                                                            ({brandName})
                                                                         </span>
                                                                     )}
-                                                                </span>
+                                                                    {isBirthday && <span title="¡Cumpleaños Hoy!">🎂</span>}
+                                                                </div>
+                                                                <div className="text-[10px] text-gray-500 font-medium flex items-center gap-2 mt-1.5">
+                                                                    <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5">
+                                                                        📍 {client?.city || 'HQ'}
+                                                                    </span>
+                                                                    <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5">
+                                                                        📋 Plan: {client?.plan || 'Presencia'}
+                                                                    </span>
+                                                                </div>
                                                             </div>
+                                                        </div>
+
+                                                        <div className="flex flex-wrap items-center gap-6 lg:gap-8">
+                                                            <div>
+                                                                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Inversión</div>
+                                                                <div className="font-black text-white text-base leading-none">${price}<span className="text-[10px] text-gray-500">/mes</span></div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Rentabilidad</div>
+                                                                <div className="font-black text-white text-base leading-none">${profit.toLocaleString()}<span className="text-[10px] text-gray-500">/mes</span></div>
+                                                            </div>
+                                                            <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${marginColor}`}>
+                                                                {margin}% margen
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleToggleStatus(client.id, client.status)}
+                                                                className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${isActiveStatus(client.status) ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
+                                                            >
+                                                                {isActiveStatus(client.status) ? 'Activo' : 'Pausado'}
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 justify-end">
+                                                            <button className="px-4 py-2 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all font-black uppercase tracking-widest text-[9px]" onClick={() => handleNavigateStrategy(client.id)}>
+                                                                Ver Estrategia
+                                                            </button>
+                                                            <button onClick={() => handleOpenEdit(client)} className="p-2 bg-white/5 hover:bg-indigo-500/10 rounded-xl text-gray-400 hover:text-indigo-500 transition-all border border-white/5">
+                                                                <Edit className="w-4 h-4" />
+                                                            </button>
+                                                            <button onClick={() => handleDeleteClient(client.id)} className="p-2 bg-white/5 hover:bg-red-500/10 rounded-xl text-gray-400 hover:text-red-500 transition-all border border-white/5">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 );
-                                            })()}
-                                        </td>
-                                    <td className="px-6 py-6">
-                                        <button onClick={() => handleCyclePlan(client.id, client.plan)} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-medium text-gray-300 hover:border-indigo-500/50 hover:text-white transition-all active:scale-95">
-                                            {client?.plan || 'Presencia'}
-                                        </button>
-                                    </td>
-                                    <td className="px-6 py-6">
-                                        <div className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-full text-xs font-bold capitalize select-none inline-block">
-                                            {INDUSTRY_OPTIONS.find(i => i.value === client?.industry)?.label || client?.industry || 'General'}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-6 font-medium">
-                                        <button onClick={() => handleToggleCM(client.id, client.cm)} className="flex items-center gap-2 hover:bg-white/5 p-2 rounded-xl transition-all active:scale-95 group/cm">
-                                            <div className="w-6 h-6 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-[10px] text-purple-400 font-bold group-hover/cm:border-indigo-500">
-                                                {client?.cm?.[0] || '?'}
-                                            </div>
-                                            <span className="text-gray-400 text-sm group-hover/cm:text-white">{client?.cm || 'Sin asignar'}</span>
-                                        </button>
-                                    </td>
-                                    <td className="px-6 py-6">
-                                        {(() => {
-                                            let displayPrice = client?.price || 0;
-                                            const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                                            const normalizedInd = cleanNiche(client?.industry);
-                                            const isMedOrHosp = normalizedInd.includes('medico') || normalizedInd.includes('hospital') || normalizedInd.includes('clinica');
-                                            if (isMedOrHosp) {
-                                                const calculated = getPlanPrice(client?.plan, client?.industry);
-                                                if (client?.price === 300 && calculated === 250) {
-                                                    displayPrice = 250;
-                                                } else if (client?.price === 800 && calculated === 700) {
-                                                    displayPrice = 700;
-                                                }
-                                            }
-                                            return (
-                                                <div className="flex flex-col gap-1">
-                                                    <div className="font-black text-white text-base leading-none">${displayPrice}<span className="text-[10px] font-bold text-gray-500">/mes</span></div>
-                                                    <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">
-                                                        Corte: Día {client?.cutoff_day !== undefined ? client.cutoff_day : 5}
-                                                    </div>
-                                                    <div className="text-[9px] text-rose-400 font-bold uppercase tracking-wider">
-                                                        Cierre Reporte: {getNextCutoffDate(client?.cutoff_day)}
-                                                    </div>
-                                                    <div className="text-[9px] text-gray-500 font-medium">
-                                                        Inicio: {safeFormatDate(client?.start_date)}
-                                                    </div>
-                                                    <div className="text-[9px] text-gray-600 font-bold">
-                                                        +${client?.app_fee !== undefined ? client.app_fee : 100} App Fee
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
-                                    </td>
-                                    <td className="px-6 py-6">
-                                        {(() => {
-                                            const sheets = client.financial_sheet || {};
-                                            const costs = sheets.costs_internal || {};
-                                            const totalCost = (Number(costs.design) || 0) +
-                                                              (Number(costs.editing) || 0) +
-                                                              (Number(costs.production) || 0) +
-                                                              (Number(costs.cm) || 0) +
-                                                              (Number(costs.transport) || 0) +
-                                                              (Number(costs.others) || 0);
-                                            const price = Number(client.price) || 0;
-                                            const profit = price - totalCost;
-                                            const margin = price > 0 ? Math.round((profit / price) * 100) : 0;
-                                            
-                                            let marginColor = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
-                                            if (margin >= 50) marginColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-                                            else if (margin >= 20) marginColor = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
-
-                                            return (
-                                                <div className="flex flex-col gap-1">
-                                                    <div className="font-black text-white text-base leading-none">${profit.toLocaleString()}<span className="text-[10px] font-bold text-gray-500">/mes</span></div>
-                                                    <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border text-center ${marginColor} w-fit`}>
-                                                        {margin}% margen
-                                                    </div>
-                                                    <div className="text-[9px] text-gray-500 font-medium">
-                                                        Costo: ${totalCost}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
-                                    </td>
-                                    <td className="px-6 py-6">
-                                        <button
-                                            onClick={() => handleToggleStatus(client.id, client.status)}
-                                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 hover:brightness-125 ${isActiveStatus(client.status) ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
-                                        >
-                                            <div className={`w-1.5 h-1.5 rounded-full ${isActiveStatus(client.status) ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-                                            {isActiveStatus(client.status) ? 'Activo' : 'Pausado'}
-                                        </button>
-                                    </td>
-                                    <td className="px-6 py-6 text-right whitespace-nowrap relative">
-                                        <div className="flex justify-end items-center gap-2 font-black uppercase tracking-widest text-[10px]">
-                                            <button className="px-4 py-2 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all font-black uppercase tracking-widest text-[9px]" onClick={() => handleNavigateStrategy(client.id)}>
-                                                Ver Estrategia
-                                            </button>
-                                            <button onClick={() => handleDeleteClient(client.id)} className="p-2 bg-white/5 hover:bg-red-500/10 rounded-xl text-gray-400 hover:text-red-500 transition-all border border-white/5">
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                            <button onClick={() => handleOpenEdit(client)} className="p-2 bg-white/5 hover:bg-indigo-500/10 rounded-xl text-gray-400 hover:text-indigo-500 transition-all border border-white/5">
-                                                <Edit className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </motion.tr>
-                            );
-                        })
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Modals */}
             <AnimatePresence>
                 {isModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
