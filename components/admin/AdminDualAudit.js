@@ -315,115 +315,119 @@ export default function AdminDualAudit() {
                 <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-indigo-500/5 rounded-full blur-[120px]" />
             </div>
 
-            <header className="relative mb-12 flex flex-col xl:flex-row justify-between items-start xl:items-end gap-8 bg-white/[0.02] border border-white/5 p-8 rounded-[2.5rem] backdrop-blur-sm">
-                <div className="flex flex-col gap-8 w-full md:w-auto">
-                     <motion.div 
-                        initial={{ opacity: 0, x: -30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-6"
-                    >
-                        <div className="w-1.5 h-16 bg-gradient-to-b from-emerald-400 to-indigo-600 rounded-full shadow-[0_0_20px_rgba(99,102,241,0.3)]" />
-                        <div>
-                            <div className="flex items-center gap-2 mb-1.5">
-                                <Shield className="w-3.5 h-3.5 text-indigo-400/80" />
-                                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.3em]">Core Audit Active</span>
-                            </div>
-                            <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white leading-none">FINANZAS<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400 px-2">GLOBALES</span></h1>
-                            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.4em] mt-3 opacity-80">DIIC HQ — Control Central de Tesorería v8.0</p>
+            {/* NEW GORGEOUS HEADER ROW */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                <motion.div 
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-4"
+                >
+                    <div className="w-1 h-12 bg-gradient-to-b from-indigo-500 to-emerald-400 rounded-full" />
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <Shield className="w-3 h-3 text-indigo-400" />
+                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.2em]">Core Audit Active</span>
                         </div>
-                    </motion.div>
-
-                    <nav className="flex items-center gap-1.5 bg-black/60 backdrop-blur-3xl border border-white/5 rounded-2xl p-1.5 overflow-x-auto no-scrollbar shadow-xl max-w-full">
-                        {[
-                            { id: 'overview', label: 'Monitor', icon: LayoutDashboard },
-                            { id: 'income', label: 'Ingresos', icon: Users },
-                            { id: 'expenses', label: 'Egresos', icon: TrendingDown },
-                            { id: 'team', label: 'Equipo', icon: Zap },
-                            { id: 'agency', label: 'Agencia', icon: Home },
-                            { id: 'goals', label: 'Metas', icon: Target }
-                        ].map((mod) => (
-                            <button
-                                key={mod.id}
-                                onClick={() => setActiveModule(mod.id)}
-                                className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                                    activeModule === mod.id 
-                                    ? 'bg-white text-black shadow-lg scale-[1.02]' 
-                                    : 'text-gray-500 hover:text-white hover:bg-white/5'
-                                }`}
-                            >
-                                <mod.icon className="w-3.5 h-3.5" />
-                                <span>{mod.label}</span>
-                            </button>
-                        ))}
-                    </nav>
-                </div>
-
-                <div className="flex flex-col gap-4 w-full md:w-auto">
-                    {/* Main transaction triggers (Ingreso / Egreso) */}
-                    <div className="grid grid-cols-2 gap-3 w-full">
-                         <button 
-                            onClick={() => {
-                                setNewTx(prev => ({ ...prev, type: 'income', category: 'Ingresos Operativos', subcategory: '' }));
-                                setIsRegistering(true);
-                            }}
-                            className="flex items-center gap-2.5 px-6 py-4 bg-emerald-500 hover:bg-emerald-450 hover:scale-[1.02] text-black font-black text-[11px] uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-emerald-500/10 justify-center border-b-4 border-emerald-700 active:border-b-0 active:translate-y-[4px]"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Ingreso</span>
-                        </button>
-                        <button 
-                            onClick={() => {
-                                setNewTx(prev => ({ ...prev, type: 'expense', category: 'Pago a Profesionales', subcategory: '' }));
-                                setIsRegistering(true);
-                            }}
-                            className="flex items-center gap-2.5 px-6 py-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white hover:scale-[1.02] font-black text-[11px] uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-rose-500/10 justify-center active:translate-y-[4px]"
-                        >
-                            <ArrowDownRight className="w-4 h-4" />
-                            <span>Egreso</span>
-                        </button>
+                        <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white leading-none">
+                            FINANZAS<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400 px-1.5">GLOBALES</span>
+                        </h1>
+                        <p className="text-[9px] font-bold text-gray-600 uppercase tracking-[0.3em] mt-1">DIIC HQ — Control Central de Tesorería v8.0</p>
                     </div>
+                </motion.div>
 
-                    {/* Operational audit utilities */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        <button 
-                            onClick={handleProjectCycle}
-                            disabled={isProjecting}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/5 border border-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all text-[9px] font-black uppercase tracking-wider disabled:opacity-50 flex-1 md:flex-none justify-center"
-                            title="Proyecta automáticamente cobros y sueldos del ciclo actual"
-                        >
-                            <RefreshCw className={`w-3.5 h-3.5 ${isProjecting ? 'animate-spin' : ''}`} />
-                            <span>Proyectar Ciclo</span>
-                        </button>
-                        <button 
-                            onClick={handleExportCSV}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.02] border border-white/5 text-gray-400 rounded-xl hover:text-white hover:bg-white/5 transition-all text-[9px] font-black uppercase tracking-wider flex-1 md:flex-none justify-center"
-                            title="Exportar todo el libro contable actual a un archivo CSV/Excel"
-                        >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>Exportar</span>
-                        </button>
-                        <button 
-                            onClick={() => setIsManagingBudgets(true)}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.02] border border-white/5 text-gray-400 rounded-xl hover:text-white hover:bg-white/5 transition-all text-[9px] font-black uppercase tracking-wider flex-1 md:flex-none justify-center"
-                            title="Establecer límites de presupuesto administrativo y de equipo"
-                        >
-                            <Settings className="w-3.5 h-3.5" />
-                            <span>Presupuestos</span>
-                        </button>
-                        <button 
-                            onClick={() => {
-                                loadData();
-                                toast.success("Sincronizando Nodo Central", { description: "Actualizando integridad fiscal v8.0" });
-                            }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.02] border border-white/5 text-gray-400 rounded-xl hover:text-white hover:bg-white/5 transition-all text-[9px] font-black uppercase tracking-wider flex-1 md:flex-none justify-center"
-                            title="Forzar sincronización de datos con el servidor central"
-                        >
-                            <Activity className="w-3.5 h-3.5" />
-                            <span>Sincronizar</span>
-                        </button>
-                    </div>
+                {/* Primary Action Buttons */}
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <button 
+                        onClick={() => {
+                            setNewTx(prev => ({ ...prev, type: 'income', category: 'Ingresos Operativos', subcategory: '' }));
+                            setIsRegistering(true);
+                        }}
+                        className="flex items-center gap-2.5 px-6 py-3 bg-emerald-500 hover:bg-emerald-450 hover:scale-[1.02] text-black font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-emerald-500/10 border-b-4 border-emerald-700 active:border-b-0 active:translate-y-[4px] flex-1 md:flex-none justify-center"
+                    >
+                        <Plus className="w-4 h-4 stroke-[3px]" />
+                        <span>Nuevo Ingreso</span>
+                    </button>
+                    <button 
+                        onClick={() => {
+                            setNewTx(prev => ({ ...prev, type: 'expense', category: 'Pago a Profesionales', subcategory: '' }));
+                            setIsRegistering(true);
+                        }}
+                        className="flex items-center gap-2.5 px-6 py-3 bg-white/5 border border-white/10 hover:bg-rose-500/10 hover:border-rose-500/30 text-white hover:text-rose-450 hover:scale-[1.02] font-black text-xs uppercase tracking-wider rounded-2xl transition-all active:translate-y-[4px] flex-1 md:flex-none justify-center"
+                    >
+                        <ArrowDownRight className="w-4 h-4 text-rose-500" />
+                        <span>Registrar Egreso</span>
+                    </button>
                 </div>
-            </header>
+            </div>
+
+            {/* UNIFIED NAVIGATION & TOOLS BAR */}
+            <div className="bg-white/[0.01] border border-white/5 rounded-3xl p-3 mb-10 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 backdrop-blur-md">
+                <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                    {[
+                        { id: 'overview', label: 'Monitor', icon: LayoutDashboard },
+                        { id: 'income', label: 'Ingresos', icon: Users },
+                        { id: 'expenses', label: 'Egresos', icon: TrendingDown },
+                        { id: 'team', label: 'Equipo', icon: Zap },
+                        { id: 'agency', label: 'Agencia', icon: Home },
+                        { id: 'goals', label: 'Metas', icon: Target }
+                    ].map((mod) => (
+                        <button
+                            key={mod.id}
+                            onClick={() => setActiveModule(mod.id)}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                activeModule === mod.id 
+                                ? 'bg-white text-black shadow-lg' 
+                                : 'text-gray-500 hover:text-white hover:bg-white/5'
+                            }`}
+                        >
+                            <mod.icon className="w-3.5 h-3.5" />
+                            <span>{mod.label}</span>
+                        </button>
+                    ))}
+                </nav>
+
+                <div className="flex flex-wrap items-center gap-2 lg:self-center">
+                    <button 
+                        onClick={handleProjectCycle}
+                        disabled={isProjecting}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/20 transition-all text-[9px] font-black uppercase tracking-wider disabled:opacity-50"
+                        title="Proyecta automáticamente cobros y sueldos del ciclo actual"
+                    >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isProjecting ? 'animate-spin' : ''}`} />
+                        <span>Proyectar Ciclo</span>
+                    </button>
+                    
+                    <button 
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 text-gray-300 rounded-xl hover:text-white hover:bg-white/10 transition-all text-[9px] font-black uppercase tracking-wider"
+                        title="Exportar todo el libro contable actual a un archivo CSV/Excel"
+                    >
+                        <Download className="w-3.5 h-3.5 text-gray-400" />
+                        <span>Exportar</span>
+                    </button>
+
+                    <button 
+                        onClick={() => setIsManagingBudgets(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 text-gray-300 rounded-xl hover:text-white hover:bg-white/10 transition-all text-[9px] font-black uppercase tracking-wider"
+                        title="Establecer límites de presupuesto"
+                    >
+                        <Settings className="w-3.5 h-3.5 text-gray-400" />
+                        <span>Presupuestos</span>
+                    </button>
+
+                    <button 
+                        onClick={() => {
+                            loadData();
+                            toast.success("Sincronizando Nodo Central", { description: "Actualizando integridad fiscal v8.0" });
+                        }}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 text-gray-300 rounded-xl hover:text-white hover:bg-white/10 transition-all text-[9px] font-black uppercase tracking-wider"
+                        title="Sincronizar base de datos"
+                    >
+                        <Activity className="w-3.5 h-3.5 text-gray-400" />
+                        <span>Sincronizar</span>
+                    </button>
+                </div>
+            </div>
 
             <AnimatePresence mode="wait">
                 <motion.div
