@@ -188,6 +188,37 @@ export default function AdminDualAudit() {
         }
     };
 
+    const handleExportCSV = () => {
+        if (!transactions.length) {
+            toast.error("No hay transacciones para exportar");
+            return;
+        }
+        
+        const headers = ["Fecha", "Tipo", "Categoria", "Subcategoria", "Descripcion", "Monto (USD)", "Estado"];
+        
+        const rows = transactions.map(t => [
+            t.date ? t.date.split('T')[0] : '',
+            t.type === 'income' ? 'Ingreso' : 'Egreso',
+            t.category || '',
+            t.subcategory || '',
+            t.description || '',
+            t.amount || 0,
+            t.status === 'completed' ? 'Certificado' : 'Pendiente'
+        ]);
+        
+        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+            + [headers.join(","), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
+            
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `libro_contable_${currentMonth}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("Libro contable exportado a CSV");
+    };
+
     const handleCertify = async (id) => {
         try {
             await agencyService.certifyTransaction(id);
@@ -327,52 +358,70 @@ export default function AdminDualAudit() {
                     </nav>
                 </div>
 
-                <div className="flex flex-wrap gap-3 w-full md:w-auto">
-                    <button 
-                        onClick={handleProjectCycle}
-                        disabled={isProjecting}
-                        className="flex items-center gap-3 px-6 py-4 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl hover:bg-indigo-500/20 transition-all group flex-1 md:flex-none justify-center disabled:opacity-50"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${isProjecting ? 'animate-spin' : 'group-hover:rotate-180 transition-transform'}`} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{isProjecting ? 'Proyectando...' : 'Proyectar Ciclo'}</span>
-                    </button>
-                    <button 
-                        onClick={() => {
-                            loadData();
-                            toast.success("Sincronizando Nodo Central", { description: "Actualizando integridad fiscal v8.0" });
-                        }}
-                        className="flex items-center gap-3 px-6 py-4 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-white/10 transition-all group flex-1 md:flex-none justify-center"
-                    >
-                        <Activity className="w-4 h-4 text-gray-400" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Master Sync</span>
-                    </button>
-                    <button 
-                        onClick={() => setIsManagingBudgets(true)}
-                        className="flex items-center gap-3 px-6 py-4 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-white/10 transition-all group flex-1 md:flex-none justify-center"
-                    >
-                        <Settings className="w-4 h-4 text-gray-400 group-hover:rotate-90 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Presupuestos</span>
-                    </button>
-                     <button 
-                        onClick={() => {
-                            setNewTx(prev => ({ ...prev, type: 'income', category: 'Ingresos Operativos', subcategory: '' }));
-                            setIsRegistering(true);
-                        }}
-                        className="flex items-center gap-3 px-6 py-4 bg-emerald-500 text-black rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 flex-1 md:flex-none justify-center border-b-4 border-emerald-700"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">Ingreso</span>
-                    </button>
-                    <button 
-                        onClick={() => {
-                            setNewTx(prev => ({ ...prev, type: 'expense', category: 'Pago a Profesionales', subcategory: '' }));
-                            setIsRegistering(true);
-                        }}
-                        className="flex items-center gap-3 px-6 py-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all flex-1 md:flex-none justify-center"
-                    >
-                        <ArrowDownRight className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">Egreso</span>
-                    </button>
+                <div className="flex flex-col gap-4 w-full md:w-auto">
+                    {/* Main transaction triggers (Ingreso / Egreso) */}
+                    <div className="grid grid-cols-2 gap-3 w-full">
+                         <button 
+                            onClick={() => {
+                                setNewTx(prev => ({ ...prev, type: 'income', category: 'Ingresos Operativos', subcategory: '' }));
+                                setIsRegistering(true);
+                            }}
+                            className="flex items-center gap-2.5 px-6 py-4 bg-emerald-500 hover:bg-emerald-450 hover:scale-[1.02] text-black font-black text-[11px] uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-emerald-500/10 justify-center border-b-4 border-emerald-700 active:border-b-0 active:translate-y-[4px]"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>Ingreso</span>
+                        </button>
+                        <button 
+                            onClick={() => {
+                                setNewTx(prev => ({ ...prev, type: 'expense', category: 'Pago a Profesionales', subcategory: '' }));
+                                setIsRegistering(true);
+                            }}
+                            className="flex items-center gap-2.5 px-6 py-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white hover:scale-[1.02] font-black text-[11px] uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-rose-500/10 justify-center active:translate-y-[4px]"
+                        >
+                            <ArrowDownRight className="w-4 h-4" />
+                            <span>Egreso</span>
+                        </button>
+                    </div>
+
+                    {/* Operational audit utilities */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button 
+                            onClick={handleProjectCycle}
+                            disabled={isProjecting}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/5 border border-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all text-[9px] font-black uppercase tracking-wider disabled:opacity-50 flex-1 md:flex-none justify-center"
+                            title="Proyecta automáticamente cobros y sueldos del ciclo actual"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isProjecting ? 'animate-spin' : ''}`} />
+                            <span>Proyectar Ciclo</span>
+                        </button>
+                        <button 
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.02] border border-white/5 text-gray-400 rounded-xl hover:text-white hover:bg-white/5 transition-all text-[9px] font-black uppercase tracking-wider flex-1 md:flex-none justify-center"
+                            title="Exportar todo el libro contable actual a un archivo CSV/Excel"
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Exportar</span>
+                        </button>
+                        <button 
+                            onClick={() => setIsManagingBudgets(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.02] border border-white/5 text-gray-400 rounded-xl hover:text-white hover:bg-white/5 transition-all text-[9px] font-black uppercase tracking-wider flex-1 md:flex-none justify-center"
+                            title="Establecer límites de presupuesto administrativo y de equipo"
+                        >
+                            <Settings className="w-3.5 h-3.5" />
+                            <span>Presupuestos</span>
+                        </button>
+                        <button 
+                            onClick={() => {
+                                loadData();
+                                toast.success("Sincronizando Nodo Central", { description: "Actualizando integridad fiscal v8.0" });
+                            }}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.02] border border-white/5 text-gray-400 rounded-xl hover:text-white hover:bg-white/5 transition-all text-[9px] font-black uppercase tracking-wider flex-1 md:flex-none justify-center"
+                            title="Forzar sincronización de datos con el servidor central"
+                        >
+                            <Activity className="w-3.5 h-3.5" />
+                            <span>Sincronizar</span>
+                        </button>
+                    </div>
                 </div>
             </header>
 
