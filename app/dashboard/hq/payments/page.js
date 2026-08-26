@@ -577,25 +577,28 @@ export default function HQFinancePage() {
             {/* MODALS SECTION */}
             <AnimatePresence>
                 {activeModal && (
-                    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-8">
+                    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-4">
                         <motion.div 
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setActiveModal(null)}
-                            className="absolute inset-0 bg-black/70 backdrop-blur-3xl"
+                            className="absolute inset-0 bg-transparent"
                         />
                         <motion.div 
+                            drag
+                            dragMomentum={false}
+                            dragElastic={0.05}
                             initial={{ scale: 0.9, y: 50, opacity: 0 }}
                             animate={{ scale: 1, y: 0, opacity: 1 }}
                             exit={{ scale: 0.9, y: 50, opacity: 0 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                            className="w-full max-w-xl bg-[#080914]/90 border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden backdrop-blur-3xl z-10 max-h-[80vh] overflow-y-auto custom-scrollbar shadow-indigo-500/5"
+                            className="w-full max-w-md bg-[#080916]/75 border border-white/20 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden backdrop-blur-2xl z-10 max-h-[80vh] overflow-y-auto custom-scrollbar shadow-[#38bdf8]/10 hover:border-[#38bdf8]/40 transition-colors"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* iPhone Sheet Handle */}
-                            <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-6" />
-                            <button onClick={() => setActiveModal(null)} className="absolute top-6 right-6 w-9 h-9 rounded-full bg-white/5 hover:bg-rose-500/20 text-gray-400 hover:text-white transition-all flex items-center justify-center border border-white/5"><X className="w-4 h-4" /></button>
+                            {/* iPhone Sheet Handle / Drag Bar */}
+                            <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6 cursor-grab active:cursor-grabbing hover:bg-white/30 transition-colors" title="Arrastra para mover" />
+                            <button onClick={() => setActiveModal(null)} className="absolute top-6 right-6 w-9 h-9 rounded-full bg-white/5 hover:bg-rose-500/20 text-gray-400 hover:text-white transition-all flex items-center justify-center border border-white/5 z-50"><X className="w-4 h-4" /></button>
 
                             {/* 1. COSTS / LIBRO DE OPERACIONES */}
                             {activeModal === 'costs' && (
