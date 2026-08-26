@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
     DollarSign, TrendingUp, TrendingDown,
     PieChart as PieIcon, ArrowUpRight, ArrowDownRight, Wallet, Activity,
@@ -28,6 +28,36 @@ export default function HQFinancePage() {
     const [loading, setLoading] = useState(true);
     const [activeModal, setActiveModal] = useState(null); 
     const [selectedYear, setSelectedYear] = useState('2026');
+
+    // Drag-to-scroll chart states & events
+    const [isDraggingChart, setIsDraggingChart] = useState(false);
+    const [chartStartX, setChartStartX] = useState(0);
+    const [chartScrollLeft, setChartScrollLeft] = useState(0);
+    const chartContainerRef = useRef(null);
+
+    const handleChartMouseDown = (e) => {
+        setIsDraggingChart(true);
+        if (chartContainerRef.current) {
+            setChartStartX(e.pageX - chartContainerRef.current.offsetLeft);
+            setChartScrollLeft(chartContainerRef.current.scrollLeft);
+        }
+    };
+
+    const handleChartMouseLeave = () => {
+        setIsDraggingChart(false);
+    };
+
+    const handleChartMouseUp = () => {
+        setIsDraggingChart(false);
+    };
+
+    const handleChartMouseMove = (e) => {
+        if (!isDraggingChart || !chartContainerRef.current) return;
+        e.preventDefault();
+        const x = e.pageX - chartContainerRef.current.offsetLeft;
+        const walk = (x - chartStartX) * 1.5; 
+        chartContainerRef.current.scrollLeft = chartScrollLeft - walk;
+    };
 
     const loadFinance = async (silent = false) => {
         if (!silent) setLoading(true);
@@ -581,57 +611,67 @@ export default function HQFinancePage() {
                                 </div>
                             </div>
 
-                            <div className="h-[200px] w-full relative z-10">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={chartData}>
-                                        <defs>
-                                            <linearGradient id="glowIncome" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.2}/>
-                                                <stop offset="95%" stopColor="#38bdf8" stopOpacity={0}/>
-                                            </linearGradient>
-                                            <linearGradient id="glowExpense" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.15}/>
-                                                <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid 
-                                            strokeDasharray="3 3" 
-                                            stroke="rgba(255, 255, 255, 0.02)" 
-                                            vertical={true}
-                                            horizontal={true}
-                                        />
-                                        <XAxis 
-                                            dataKey="name" 
-                                            axisLine={false} 
-                                            tickLine={false} 
-                                            tick={{ fill: '#4b5563', fontSize: 8, fontWeight: '700' }} 
-                                        />
-                                        <YAxis hide />
-                                        <Tooltip 
-                                            contentStyle={{ backgroundColor: 'rgba(10, 10, 20, 0.9)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '1.2rem' }}
-                                            labelStyle={{ color: '#38bdf8', fontWeight: '900', fontSize: '9px', marginBottom: '4px' }}
-                                            itemStyle={{ textTransform: 'uppercase', fontWeight: '800', fontSize: '8px' }}
-                                        />
-                                        <Area 
-                                            type="monotone" 
-                                            dataKey="ingresos" 
-                                            stroke="#38bdf8" 
-                                            strokeWidth={3} 
-                                            fillOpacity={1} 
-                                            fill="url(#glowIncome)" 
-                                            activeDot={{ r: 5, strokeWidth: 2, fill: '#05050A' }}
-                                        />
-                                        <Area 
-                                            type="monotone" 
-                                            dataKey="gastos" 
-                                            stroke="#f43f5e" 
-                                            strokeWidth={3} 
-                                            fillOpacity={1}
-                                            fill="url(#glowExpense)" 
-                                            activeDot={{ r: 5, strokeWidth: 2, fill: '#05050A' }}
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
+                            <div 
+                                ref={chartContainerRef}
+                                onMouseDown={handleChartMouseDown}
+                                onMouseLeave={handleChartMouseLeave}
+                                onMouseUp={handleChartMouseUp}
+                                onMouseMove={handleChartMouseMove}
+                                className="h-[200px] w-full overflow-x-auto select-none cursor-grab active:cursor-grabbing custom-scrollbar relative z-10"
+                                style={{ scrollBehavior: 'auto' }}
+                            >
+                                <div style={{ width: timeView === 'day' ? '1500px' : (timeView === 'week' ? '900px' : '100%') }} className="h-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={chartData}>
+                                            <defs>
+                                                <linearGradient id="glowIncome" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.2}/>
+                                                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0}/>
+                                                </linearGradient>
+                                                <linearGradient id="glowExpense" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.15}/>
+                                                    <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid 
+                                                strokeDasharray="3 3" 
+                                                stroke="rgba(255, 255, 255, 0.02)" 
+                                                vertical={true}
+                                                horizontal={true}
+                                            />
+                                            <XAxis 
+                                                dataKey="name" 
+                                                axisLine={false} 
+                                                tickLine={false} 
+                                                tick={{ fill: '#4b5563', fontSize: 8, fontWeight: '700' }} 
+                                            />
+                                            <YAxis hide />
+                                            <Tooltip 
+                                                contentStyle={{ backgroundColor: 'rgba(10, 10, 20, 0.9)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '1.2rem' }}
+                                                labelStyle={{ color: '#38bdf8', fontWeight: '900', fontSize: '9px', marginBottom: '4px' }}
+                                                itemStyle={{ textTransform: 'uppercase', fontWeight: '800', fontSize: '8px' }}
+                                            />
+                                            <Area 
+                                                type="monotone" 
+                                                dataKey="ingresos" 
+                                                stroke="#38bdf8" 
+                                                strokeWidth={3} 
+                                                fillOpacity={1} 
+                                                fill="url(#glowIncome)" 
+                                                activeDot={{ r: 5, strokeWidth: 2, fill: '#05050A' }}
+                                            />
+                                            <Area 
+                                                type="monotone" 
+                                                dataKey="gastos" 
+                                                stroke="#f43f5e" 
+                                                strokeWidth={3} 
+                                                fillOpacity={1}
+                                                fill="url(#glowExpense)" 
+                                                activeDot={{ r: 5, strokeWidth: 2, fill: '#05050A' }}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
                         </div>
 
