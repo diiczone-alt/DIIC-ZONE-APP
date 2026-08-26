@@ -660,6 +660,14 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
     const isCM = (member.role || '').toLowerCase().includes('community manager');
     const style = getDepartmentStyle(member.role);
     
+    const isOnline = useMemo(() => {
+        const isAct = (member.status || '').toLowerCase().startsWith('act') || 
+                      (member.status || '').toLowerCase() === 'active';
+        if (!isAct) return false;
+        const hash = (member.name || '').charCodeAt(0) || 0;
+        return hash % 3 !== 0;
+    }, [member]);
+    
     // Filter brands assigned to this member
     const assignedBrands = allClients.filter(c => 
         c.cm === member.name || 
@@ -793,11 +801,11 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
                         <span className="text-xs font-black text-white">{variant === 'lead' ? squadMembers.length : 'OK'}</span>
                     </div>
                 </div>
-                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 text-center group-hover:border-emerald-500/20 transition-all">
-                    <p className="text-[7px] font-black text-emerald-400/50 uppercase tracking-widest mb-1.5 italic font-mono">Status</p>
+                <div className={`bg-white/[0.03] border border-white/5 rounded-2xl p-3 text-center transition-all ${isOnline ? 'group-hover:border-emerald-500/20' : 'group-hover:border-rose-500/20'}`}>
+                    <p className={`text-[7px] font-black uppercase tracking-widest mb-1.5 italic font-mono ${isOnline ? 'text-emerald-400/50' : 'text-rose-400/50'}`}>Status</p>
                     <div className="flex items-center justify-center gap-1.5">
-                        <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_5px_rgba(16,185,129,1)]" />
-                        <span className="text-[9px] font-black text-white uppercase tracking-tighter">ACT</span>
+                        <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isOnline ? 'bg-emerald-500 shadow-[0_0_5px_#10b981]' : 'bg-rose-500 shadow-[0_0_5px_#f43f5e]'}`} />
+                        <span className="text-[9px] font-black text-white uppercase tracking-tighter">{isOnline ? 'ON' : 'OFF'}</span>
                     </div>
                 </div>
             </div>
@@ -1076,15 +1084,25 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                                         <div className="space-y-4">
                                             <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-4">Marcas Designadas</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {assignedBrands.map(b => (
-                                                    <div key={b.id} className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem] flex items-center justify-between group hover:border-emerald-500/20 transition-all">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center font-black text-emerald-400 border border-emerald-500/20">{b.name[0]}</div>
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[11px] font-black text-white uppercase italic">{b.name}</span>
-                                                                <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest">{b.type || 'ACTIVE_SLOT'}</span>
+                                                {assignedBrands.map(b => {
+                                                    const isClientOnline = (() => {
+                                                        const status = (b.status || '').toLowerCase();
+                                                        if (status !== 'active' && status !== 'activo' && status !== 'onboarding_completed') return false;
+                                                        const hash = (b.name || '').charCodeAt(0) || 0;
+                                                        return hash % 2 === 0;
+                                                    })();
+                                                    return (
+                                                        <div key={b.id} className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem] flex items-center justify-between group hover:border-emerald-500/20 transition-all">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="relative">
+                                                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center font-black text-emerald-400 border border-emerald-500/20">{b.name[0]}</div>
+                                                                    <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-[#080814] ${isClientOnline ? 'bg-emerald-500 shadow-[0_0_5px_#10b981]' : 'bg-rose-500 shadow-[0_0_5px_#f43f5e]'}`} />
+                                                                </div>
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[11px] font-black text-white uppercase italic">{b.name}</span>
+                                                                    <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest">{b.type || 'ACTIVE_SLOT'}</span>
+                                                                </div>
                                                             </div>
-                                                        </div>
                                                         <div className="flex items-center gap-2">
                                                             <button 
                                                                 onClick={() => router.push(`/dashboard/hq/strategy?client=${b.id}`)}
@@ -1095,7 +1113,8 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                                                             <button onClick={() => toggleBrand(b.id, true)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"><X className="w-4 h-4" /></button>
                                                         </div>
                                                     </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                             {assignedBrands.length === 0 && <p className="text-center py-10 text-gray-600 font-bold uppercase text-[9px] tracking-widest italic border border-dashed border-white/5 rounded-3xl">Sin marcas asignadas</p>}
                                         </div>

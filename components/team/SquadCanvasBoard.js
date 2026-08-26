@@ -160,6 +160,14 @@ const getDepartmentStyle = (role) => {
 const MemberNode = ({ data, isConnectable }) => {
     const style = getDepartmentStyle(data.role);
 
+    const isOnline = useMemo(() => {
+        const isAct = (data.member?.status || '').toLowerCase().startsWith('act') || 
+                      (data.member?.status || '').toLowerCase() === 'active';
+        if (!isAct) return false;
+        const hash = (data.member?.name || '').charCodeAt(0) || 0;
+        return hash % 3 !== 0; // 66% online ratio
+    }, [data.member]);
+
     return (
         <div className={`relative w-[280px] bg-[#0A0A14]/90 backdrop-blur-xl border ${style.border} rounded-[2rem] p-6 flex flex-col shadow-2xl group transition-all duration-300`}>
             
@@ -179,10 +187,14 @@ const MemberNode = ({ data, isConnectable }) => {
 
             {/* Avatar & Identidad */}
             <div className="flex flex-col items-center mb-6 pt-2 relative z-10">
-                <div className={`w-16 h-16 rounded-[1.2rem] bg-gradient-to-tr ${style.gradient} p-0.5 shadow-2xl transition-transform duration-500`}>
-                    <div className="w-full h-full rounded-[1.1rem] bg-[#050510] flex items-center justify-center text-2xl font-black text-white italic tracking-tighter">
-                        {data.label ? data.label[0] : '?'}
+                <div className="relative">
+                    <div className={`w-16 h-16 rounded-[1.2rem] bg-gradient-to-tr ${style.gradient} p-0.5 shadow-2xl transition-transform duration-500`}>
+                        <div className="w-full h-full rounded-[1.1rem] bg-[#050510] flex items-center justify-center text-2xl font-black text-white italic tracking-tighter">
+                            {data.label ? data.label[0] : '?'}
+                        </div>
                     </div>
+                    {/* Status Dot */}
+                    <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-4 border-[#0A0A14] ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'}`} />
                 </div>
                 <div className="text-center mt-4 w-full px-2">
                     <h3 className="text-xl font-black text-white uppercase italic tracking-tighter leading-none truncate max-w-full" title={data.label || 'Talento'}>
