@@ -90,6 +90,7 @@ export default function AdminDualAudit() {
     const [goals, setGoals] = useState([]);
     const [budgets, setBudgets] = useState([]);
     const [clientCount, setClientCount] = useState(0);
+    const [team, setTeam] = useState([]);
     const [currentMonth] = useState(new Date().toISOString().substring(0, 7));
     const isMounted = useRef(true);
     
@@ -122,7 +123,7 @@ export default function AdminDualAudit() {
         setLoading(true);
         try {
             // Manejamos cada promesa individualmente para mayor robustez
-            const [txs, goalsData, expensesData, count] = await Promise.all([
+            const [txs, goalsData, expensesData, count, teamData] = await Promise.all([
                 agencyService.getTransactions().catch(err => {
                     console.error("Error fetching txs:", err);
                     return [];
@@ -138,6 +139,10 @@ export default function AdminDualAudit() {
                 agencyService.getClientCount().catch(err => {
                     console.error("Error fetching client count:", err);
                     return 0;
+                }),
+                agencyService.getTeam().catch(err => {
+                    console.error("Error fetching team:", err);
+                    return [];
                 })
             ]);
 
@@ -146,6 +151,7 @@ export default function AdminDualAudit() {
                 setGoals(goalsData || []);
                 setBudgets(expensesData || []);
                 setClientCount(count || 0);
+                setTeam(teamData || []);
             }
         } catch (err) {
             console.error("Critical error in loadData:", err);
@@ -208,7 +214,7 @@ export default function AdminDualAudit() {
         const teamCost = transactions.filter(t => t.category === "Pago a Profesionales").reduce((acc, t) => acc + Number(t.amount), 0);
         const officeCost = transactions.filter(t => t.category === "Gastos Administrativos").reduce((acc, t) => acc + Number(t.amount), 0);
 
-        const teamBudget = budgets.find(b => b.category === "Pago a Profesionales")?.amount || 0;
+        const teamBudget = budgets.find(b => b.category === "Pago a Profesionales")?.amount || team.reduce((acc, m) => acc + (Number(m.salary) || 0), 0);
         const officeBudget = budgets.find(b => b.category === "Gastos Administrativos")?.amount || 0;
 
         const savingsRate = income > 0 ? ((balance / income) * 100).toFixed(1) : 0;
@@ -226,7 +232,7 @@ export default function AdminDualAudit() {
             teamBudget, officeBudget, savingsRate, profitMargin, burnRate, runway, 
             distribution, clientCount 
         };
-    }, [transactions, budgets, clientCount]);
+    }, [transactions, budgets, clientCount, team]);
     // --- HELPER: GROUP TRANSACTIONS BY DATE ---
     const groupedTransactions = useMemo(() => {
         const groups = {};
@@ -375,7 +381,7 @@ export default function AdminDualAudit() {
                     { activeModule === 'overview' && <OverviewTab metrics={financialMetrics} /> }
                     { activeModule === 'income' && <AreaDetailTab type="income" transactions={transactions.filter(t => t.type === 'income')} budget={0} onCertify={handleCertify} onDelete={handleDeleteTransaction} /> }
                     { activeModule === 'expenses' && <AreaDetailTab type="expenses" transactions={transactions.filter(t => t.type === 'expense')} budget={financialMetrics.expense} onCertify={handleCertify} onDelete={handleDeleteTransaction} /> }
-                    { activeModule === 'team' && <AreaDetailTab type="team" transactions={transactions.filter(t => t.category === 'Pago a Profesionales')} budget={financialMetrics.teamBudget} onCertify={handleCertify} onDelete={handleDeleteTransaction} /> }
+                    { activeModule === 'team' && <AreaDetailTab type="team" transactions={transactions.filter(t => t.category === 'Pago a Profesionales')} budget={financialMetrics.teamBudget} onCertify={handleCertify} onDelete={handleDeleteTransaction} team={team} /> }
                     { activeModule === 'agency' && <AreaDetailTab type="agency" transactions={transactions.filter(t => t.category === 'Gastos Administrativos')} budget={financialMetrics.officeBudget} onCertify={handleCertify} onDelete={handleDeleteTransaction} /> }
                     { activeModule === 'goals' && <GoalsTab goals={goals} metrics={financialMetrics} onAdd={() => { }} /> }
                 </motion.div>
@@ -621,7 +627,7 @@ function OverviewTab({ metrics }) {
     );
 }
 
-function AreaDetailTab({ type, transactions, budget, onCertify, onDelete }) {
+function AreaDetailTab({ type, transactions, budget, onCertify, onDelete, team = [] }) {
     const config = FINANCIAL_CONFIG[type];
     const total = transactions.reduce((acc, t) => acc + Number(t.amount), 0);
     const usage = budget > 0 ? (total / budget) * 100 : 0;
@@ -630,12 +636,33 @@ function AreaDetailTab({ type, transactions, budget, onCertify, onDelete }) {
     const grouped = useMemo(() => {
         const groups = {};
         transactions.forEach(tx => {
-            const date = tx.date.split('T')[0];
+            const date = tx.date ? tx.date.split('T')[0] : new Date().toISOString().substring(0, 10);
             if (!groups[date]) groups[date] = [];
             groups[date].push(tx);
         });
         return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
     }, [transactions]);
+
+    // Group team members by department / role
+    const departments = useMemo(() => {
+        if (type !== 'team' || !team.length) return [];
+        
+        const groups = {};
+        team.forEach(member => {
+            const role = member.role || 'Otros';
+            if (!groups[role]) {
+                groups[role] = {
+                    name: role,
+                    members: [],
+                    totalSalary: 0
+                };
+            }
+            groups[role].members.push(member);
+            groups[role].totalSalary += Number(member.salary) || 0;
+        });
+        
+        return Object.values(groups).sort((a, b) => b.totalSalary - a.totalSalary);
+    }, [team, type]);
 
     return (
         <div className="space-y-12">
@@ -660,6 +687,43 @@ function AreaDetailTab({ type, transactions, budget, onCertify, onDelete }) {
                  <SummaryCard label="Balance Maestro" val={`${budget - total >= 0 ? '+' : ''}${(budget - total).toLocaleString()}`} icon={ClipboardList} color={budget - total >= 0 ? 'text-emerald-400' : 'text-rose-400'} />
                  <SummaryCard label="Ratio de Ejecución" val={`${Math.round(usage)}%`} icon={BarChart3} color={usage > 100 ? 'text-rose-500' : 'text-white'} />
             </div>
+
+            {type === 'team' && departments.length > 0 && (
+                <div className="space-y-6">
+                    <div className="flex items-center gap-4 px-10">
+                        <Users className="w-5 h-5 text-indigo-400" />
+                        <h3 className="text-[10px] font-black text-white uppercase tracking-[0.5em]">Distribución de Egresos por Departamento</h3>
+                        <div className="h-px flex-1 bg-white/5" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-10">
+                        {departments.map((dept) => (
+                            <div key={dept.name} className="p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-indigo-500/20 transition-all flex flex-col justify-between">
+                                <div>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-[11px] font-black text-indigo-400 uppercase tracking-wider">{dept.name}</span>
+                                        <span className="text-xs font-bold text-gray-500">{dept.members.length} {dept.members.length === 1 ? 'miembro' : 'miembros'}</span>
+                                    </div>
+                                    
+                                    <div className="space-y-2.5 mb-6">
+                                        {dept.members.map((member) => (
+                                            <div key={member.id} className="flex justify-between items-center text-xs">
+                                                <span className="text-gray-400">{member.name}</span>
+                                                <span className="font-bold text-white">${(Number(member.salary) || 0).toLocaleString()} USD</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-white/5 pt-4 flex justify-between items-center">
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Egreso Total</span>
+                                    <span className="text-lg font-black text-emerald-400">${dept.totalSalary.toLocaleString()} USD</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* TIMELINE LEDGER */}
             <div className="space-y-8">

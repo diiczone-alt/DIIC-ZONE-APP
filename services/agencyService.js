@@ -1298,7 +1298,7 @@ export const agencyService = {
             });
 
             // 2. Project Team Expenses (Salaries)
-            team.filter(m => Number(m.salary) > 0 && m.status === 'Active').forEach(m => {
+            team.filter(m => Number(m.salary) > 0 && (m.status || '').toLowerCase().startsWith('act')).forEach(m => {
                 pendingTransactions.push({
                     type: 'expense',
                     category: 'Pago a Profesionales',
