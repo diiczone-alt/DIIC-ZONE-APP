@@ -95,13 +95,20 @@ export default function AdminRiskControl({ risks = [], stats: globalMetrics = {}
 
             {/* FILTERS */}
             <div className="flex flex-wrap gap-4 px-4">
-                {['all', 'client', 'project', 'creative', 'operation', 'results'].map(f => (
+                {[
+                    { id: 'all', label: 'Ver Todo' },
+                    { id: 'client', label: 'CLIENT' },
+                    { id: 'project', label: 'PROJECT' },
+                    { id: 'creative', label: 'CREATIVE' },
+                    { id: 'operation', label: 'OPERATION' },
+                    { id: 'results', label: 'RESULTS' }
+                ].map(f => (
                     <button
-                        key={f}
-                        onClick={() => setFilter(f)}
-                        className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${filter === f ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-400 border-white/5 hover:border-white/10'}`}
+                        key={f.id}
+                        onClick={() => setFilter(f.id)}
+                        className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${filter === f.id ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-400 border-white/5 hover:border-white/10'}`}
                     >
-                        {f === 'all' ? 'Ver Todo' : f}
+                        {f.label}
                     </button>
                 ))}
             </div>

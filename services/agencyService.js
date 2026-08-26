@@ -1883,17 +1883,64 @@ export const agencyService = {
                 }
             });
 
-            // 4. Production Stats
+            // 4. Operational and Client Risk Enhancements
+            const totalAssignedHours = Number(processedTeam.reduce((acc, m) => acc + m.assigned, 0).toFixed(1));
+            const totalCapacity = processedTeam.length * 40;
+            const globalLoad = Math.round(processedTeam.reduce((acc, m) => acc + m.load, 0) / (processedTeam.length || 1));
+
+            // Client Risks (Clients without active tasks/projects)
+            clients.forEach(c => {
+                const hasProject = tasks.some(t => t.client_id === c.id);
+                if (!hasProject && c.status === 'active') {
+                    risks.push({
+                        id: `risk-client-no-proj-${c.id}`,
+                        category: 'client',
+                        severity: 'warning',
+                        title: `Cliente sin Proyectos: ${c.name}`,
+                        msg: `El cliente está activo pero no registra ningún proyecto o entregable en este ciclo.`,
+                        impact: 'Desconexión del cliente y posible baja (churn)',
+                        action: 'Crear proyecto o contactar cliente',
+                        color: 'yellow'
+                    });
+                }
+            });
+
+            // Operational Risks (Average workload load saturation)
+            if (globalLoad > 85) {
+                risks.push({
+                    id: 'risk-op-saturacion-global',
+                    category: 'operation',
+                    severity: 'critical',
+                    title: 'Saturación Operativa Global',
+                    msg: `La carga de trabajo promedio del staff es del ${globalLoad}%, superando el umbral recomendado del 85%.`,
+                    impact: 'Retraso generalizado en entregables de la agencia',
+                    action: 'Redistribuir carga de trabajo',
+                    color: 'red'
+                });
+            }
+
+            // Results Risks (Deliverables in revision status)
+            const revisionTasks = tasks.filter(t => t.status === 'revision');
+            if (revisionTasks.length > 0) {
+                risks.push({
+                    id: 'risk-results-revisiones-altas',
+                    category: 'results',
+                    severity: 'warning',
+                    title: 'Entregables en Revisión',
+                    msg: `Hay ${revisionTasks.length} entregable(s) actualmente en revisión o corrección por parte del cliente.`,
+                    impact: 'Demora en la aprobación y cierre del ciclo mensual',
+                    action: 'Auditar calidad de producción',
+                    color: 'yellow'
+                });
+            }
+
+            // 5. Production Stats
             const productionStats = {
                 editing: activeTasks.filter(t => t.assigned_role === 'EDITOR' || t.title?.toLowerCase().includes('edit')).length,
                 design: activeTasks.filter(t => t.assigned_role === 'DESIGN' || t.title?.toLowerCase().includes('diseñ')).length,
                 shooting: activeTasks.filter(t => t.assigned_role === 'FILMMAKER' || t.title?.toLowerCase().includes('rodaje')).length,
                 bottlenecks: risks.filter(r => r.severity === 'critical').length
             };
-
-            const totalAssignedHours = Number(processedTeam.reduce((acc, m) => acc + m.assigned, 0).toFixed(1));
-            const totalCapacity = processedTeam.length * 40;
-            const globalLoad = Math.round(processedTeam.reduce((acc, m) => acc + m.load, 0) / (processedTeam.length || 1));
 
             return {
                 team: processedTeam,
