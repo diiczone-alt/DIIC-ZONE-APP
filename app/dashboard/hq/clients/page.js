@@ -1673,11 +1673,7 @@ export default function HQClientsPage() {
                                                                     </div>
                                                                 </div>
                                                             )}
-                                                            {(() => {
-                                                                const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                                                                const normalizedInd = cleanNiche(newClient.industry);
-                                                                return normalizedInd.includes('medico') || normalizedInd.includes('hospital');
-                                                            })() && (
+                                                            {(newClient.industry === 'medico' || newClient.industry === 'hospital') && (
                                                                 <PremiumDropdown 
                                                                     label="Especialidad Médica" 
                                                                     value={newClient.specialty} 
@@ -1686,7 +1682,7 @@ export default function HQClientsPage() {
                                                                     icon={Stethoscope}
                                                                 />
                                                             )}
-                                                            {(newClient.industry?.toLowerCase().includes('agro') || newClient.industry?.toLowerCase().includes('ganader')) && (
+                                                            {newClient.industry === 'agropecuario' && (
                                                                 <PremiumDropdown 
                                                                     label="Rama Agropecuaria" 
                                                                     value={newClient.specialty} 
