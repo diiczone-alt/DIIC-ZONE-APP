@@ -608,39 +608,26 @@ export default function HQFinancePage() {
                                          <p className="text-gray-500 text-[9px] font-bold uppercase tracking-wider pl-4">Desglose de tareas y costos internos.</p>
                                      </div>
 
-                                     <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden max-h-[350px] overflow-y-auto custom-scrollbar">
-                                         <table className="w-full text-left">
-                                             <thead>
-                                                 <tr className="bg-[#0D0E1D] border-b border-white/5">
-                                                     <th className="px-4 py-3.5 text-[8px] font-black uppercase text-gray-500 tracking-wider">Tarea</th>
-                                                     <th className="px-4 py-3.5 text-[8px] font-black uppercase text-gray-500 tracking-wider text-center">Asignado</th>
-                                                     <th className="px-4 py-3.5 text-[8px] font-black uppercase text-gray-500 tracking-wider text-center">Cliente</th>
-                                                     <th className="px-4 py-3.5 text-[8px] font-black uppercase text-gray-500 tracking-wider text-right">Costo</th>
-                                                 </tr>
-                                             </thead>
-                                             <tbody className="divide-y divide-white/5 text-[11px]">
-                                                 {(scale?.production_ledger || []).map((t, i) => (
-                                                     <tr key={i} className="hover:bg-white/[0.02] transition-colors group">
-                                                         <td className="px-4 py-3">
-                                                             <div className="flex items-center gap-2">
-                                                                 <div className="w-1 h-1 rounded-full bg-[#38bdf8] animate-pulse" />
-                                                                 <div>
-                                                                     <p className="font-black text-white uppercase truncate max-w-[120px]" title={t.title}>{t.title}</p>
-                                                                     <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">{t.format}</p>
-                                                                 </div>
-                                                             </div>
-                                                         </td>
-                                                         <td className="px-4 py-3 text-center">
-                                                             <span className="text-[9px] font-black text-[#a855f7] uppercase tracking-wider">{t.assigned_to || 'Sin asignar'}</span>
-                                                         </td>
-                                                         <td className="px-4 py-3 text-center">
-                                                             <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest bg-white/5 px-2 py-1 rounded border border-white/5">{t.client}</span>
-                                                         </td>
-                                                         <td className="px-4 py-3 text-right font-black text-emerald-400 italic text-sm">${t.cost}</td>
-                                                     </tr>
-                                                 ))}
-                                             </tbody>
-                                         </table>
+                                     <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                                         {(scale?.production_ledger || []).map((t, i) => (
+                                             <div key={i} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all flex items-center justify-between gap-4 text-left">
+                                                 <div className="flex items-center gap-3">
+                                                     <div className="w-2 h-2 rounded-full bg-[#38bdf8] shadow-[0_0_8px_#38bdf8] animate-pulse" />
+                                                     <div>
+                                                         <p className="text-xs font-black text-white uppercase tracking-tight">{t.title}</p>
+                                                         <div className="flex items-center gap-2 mt-1">
+                                                             <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{t.format}</span>
+                                                             <span className="text-[8px] text-gray-700">•</span>
+                                                             <span className="text-[8px] font-black text-[#a855f7] uppercase tracking-wider">{t.assigned_to || 'Sin asignar'}</span>
+                                                         </div>
+                                                     </div>
+                                                 </div>
+                                                 <div className="text-right flex flex-col items-end">
+                                                     <p className="text-sm font-black text-emerald-400 font-mono">${t.cost}</p>
+                                                     <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded border border-white/5 mt-1 inline-block">{t.client}</span>
+                                                 </div>
+                                             </div>
+                                         ))}
                                      </div>
                                      <div className="flex justify-between items-center bg-indigo-500/5 p-5 rounded-2xl border border-indigo-500/10">
                                           <span className="text-[10px] font-black uppercase tracking-wider text-indigo-400 italic font-mono">Total Producción</span>
@@ -669,25 +656,19 @@ export default function HQFinancePage() {
                                                 <h5 className="text-[9px] font-black text-indigo-400 uppercase tracking-widest italic">Nómina Talento HQ</h5>
                                                 <span className="text-[8px] font-black p-1 px-2.5 bg-indigo-500/10 text-indigo-300 rounded border border-indigo-500/20">{scale?.itemized_payroll?.length || 0} Integrantes</span>
                                             </div>
-                                            <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden max-h-[220px] overflow-y-auto custom-scrollbar">
-                                                <table className="w-full text-left">
-                                                    <tbody className="divide-y divide-white/5 text-[11px]">
-                                                        {(scale?.itemized_payroll || []).map((m, i) => (
-                                                            <tr key={i} className="group hover:bg-white/[0.03] transition-colors">
-                                                                <td className="px-4 py-3">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="w-6 h-6 rounded-full bg-indigo-500/10 flex items-center justify-center text-[9px] font-black text-indigo-400 border border-indigo-500/20">{m.name[0]}</div>
-                                                                        <div>
-                                                                            <p className="font-black text-white uppercase truncate max-w-[120px]">{m.name}</p>
-                                                                            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-none mt-0.5">{m.role}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-4 py-3 text-right font-black text-white/90 italic tracking-tighter text-sm">${m.salary?.toLocaleString()}</td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
+                                            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {(scale?.itemized_payroll || []).map((m, i) => (
+                                                    <div key={i} className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all flex items-center justify-between gap-3 text-left">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-6 h-6 rounded-full bg-indigo-500/10 flex items-center justify-center text-[9px] font-black text-indigo-400 border border-indigo-500/20">{m.name[0]}</div>
+                                                            <div>
+                                                                <p className="font-black text-white text-xs uppercase truncate max-w-[120px]">{m.name}</p>
+                                                                <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest leading-none mt-0.5">{m.role}</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className="font-black text-white italic text-sm font-mono">${m.salary?.toLocaleString()}</span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </section>
 
@@ -748,37 +729,26 @@ export default function HQFinancePage() {
                                          </div>
                                          <p className="text-gray-500 text-[8px] font-bold uppercase tracking-wider pl-4">Auditoría de Ingresos Recurrentes.</p>
                                      </div>
-                                     <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                                         <table className="w-full text-left">
-                                             <thead className="sticky top-0 bg-[#080914] border-b border-white/10 text-[9px] font-black uppercase text-gray-500">
-                                                 <tr>
-                                                     <th className="py-2.5 tracking-wider">Cliente</th>
-                                                     <th className="py-2.5 tracking-wider">Status</th>
-                                                     <th className="py-2.5 text-right tracking-wider">Revenue</th>
-                                                 </tr>
-                                             </thead>
-                                             <tbody className="divide-y divide-white/5 text-[11px]">
-                                                 {clients.map((c, i) => (
-                                                     <tr key={i} className="group hover:bg-white/[0.02]">
-                                                         <td className="py-3 font-black uppercase text-white">{c.name}</td>
-                                                         <td className="py-3">
-                                                             <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                                                                 (c.status === 'active' || c.status === 'ONBOARDING_COMPLETED') 
-                                                                     ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                                                                     : c.status === 'trial'
-                                                                         ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                                                         : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                                                             }`}>
-                                                                 {(c.status === 'active' || c.status === 'ONBOARDING_COMPLETED') ? 'Contratado' : c.status === 'trial' ? 'Prueba' : 'Inactivo'}
-                                                             </span>
-                                                         </td>
-                                                         <td className="py-3 text-right font-black italic text-emerald-400">
-                                                             ${(c.status === 'active' || c.status === 'trial' || c.status === 'ONBOARDING_COMPLETED') ? Number(c.price || 0).toLocaleString() : '0'}
-                                                         </td>
-                                                     </tr>
-                                                 ))}
-                                             </tbody>
-                                         </table>
+                                     <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                                         {clients.map((c, i) => (
+                                             <div key={i} className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#38bdf8]/20 transition-all flex items-center justify-between gap-4 text-left">
+                                                 <div>
+                                                     <p className="text-xs font-black text-white uppercase tracking-tight">{c.name}</p>
+                                                     <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider mt-1 inline-block ${
+                                                         (c.status === 'active' || c.status === 'ONBOARDING_COMPLETED') 
+                                                             ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                                                             : c.status === 'trial'
+                                                                 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                                                 : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                                     }`}>
+                                                         {(c.status === 'active' || c.status === 'ONBOARDING_COMPLETED') ? 'Contratado' : c.status === 'trial' ? 'Prueba' : 'Inactivo'}
+                                                     </span>
+                                                 </div>
+                                                 <span className="text-sm font-black italic text-emerald-400 font-mono">
+                                                     ${(c.status === 'active' || c.status === 'trial' || c.status === 'ONBOARDING_COMPLETED') ? Number(c.price || 0).toLocaleString() : '0'}
+                                                 </span>
+                                             </div>
+                                         ))}
                                      </div>
                                 </div>
                             )}
@@ -902,30 +872,24 @@ export default function HQFinancePage() {
                                                          <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-wider italic">{branch.name}</h5>
                                                          <span className="text-[9px] font-mono font-black p-0.5 px-2 bg-indigo-500/10 text-indigo-300 rounded border border-indigo-500/20">${branchSum.toLocaleString()}</span>
                                                      </div>
-                                                     <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">
-                                                         <table className="w-full text-left text-[11px]">
-                                                             <tbody className="divide-y divide-white/5">
-                                                                 {branchItems.map((e, idx) => (
-                                                                     <tr key={idx} className="hover:bg-white/[0.03] transition-colors">
-                                                                         <td className="px-4 py-2.5">
-                                                                             <p className="font-bold text-white uppercase">{e.item}</p>
-                                                                             <p className="text-[8px] text-gray-500 uppercase font-mono mt-0.5">{e.category} • {e.type}</p>
-                                                                         </td>
-                                                                         <td className="px-4 py-2.5 text-center">
-                                                                             <span className={`px-1.5 py-0.5 text-[8px] font-black uppercase rounded ${e.status === 'PAGADO' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                                                                                 {e.status}
-                                                                             </span>
-                                                                         </td>
-                                                                         <td className="px-4 py-2.5 text-right font-bold text-white font-mono">${Number(e.amount || 0).toLocaleString()}</td>
-                                                                     </tr>
-                                                                 ))}
-                                                                 {branchItems.length === 0 && (
-                                                                     <tr>
-                                                                         <td className="py-4 text-center text-[9px] text-gray-600 font-black uppercase" colSpan="3">Sin egresos registrados</td>
-                                                                     </tr>
-                                                                 )}
-                                                             </tbody>
-                                                         </table>
+                                                     <div className="space-y-2">
+                                                         {branchItems.map((e, idx) => (
+                                                             <div key={idx} className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all flex items-center justify-between gap-3 text-left text-[11px]">
+                                                                 <div>
+                                                                     <p className="font-bold text-white uppercase">{e.item}</p>
+                                                                     <p className="text-[8px] text-gray-500 uppercase font-mono mt-0.5">{e.category} • {e.type}</p>
+                                                                 </div>
+                                                                 <div className="text-right flex flex-col items-end">
+                                                                     <span className="font-bold text-white font-mono">${Number(e.amount || 0).toLocaleString()}</span>
+                                                                     <span className={`px-1.5 py-0.5 text-[7px] font-black uppercase rounded mt-1 inline-block ${e.status === 'PAGADO' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                                                                         {e.status}
+                                                                     </span>
+                                                                 </div>
+                                                             </div>
+                                                         ))}
+                                                         {branchItems.length === 0 && (
+                                                             <p className="text-center text-[9px] text-gray-600 font-black uppercase py-4">Sin egresos registrados</p>
+                                                         )}
                                                      </div>
                                                  </section>
                                              );
