@@ -60,6 +60,19 @@ export default function HQFinancePage() {
     const totalExpenses = prodCosts + payrollCosts + swCosts;
     const netProfit = (metrics.income || 0) - totalExpenses;
 
+    const [liveTicker, setLiveTicker] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setLiveTicker(prev => {
+                const step = (Math.random() - 0.5) * 15;
+                if (Math.abs(prev + step) > 200) return prev - step;
+                return prev + step;
+            });
+        }, 1500);
+        return () => clearInterval(interval);
+    }, []);
+
     const chartData = useMemo(() => {
         const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
         const currentDay = new Date().getDate();
@@ -69,13 +82,19 @@ export default function HQFinancePage() {
 
         return Array.from({ length: daysInMonth }, (_, i) => {
             const day = i + 1;
+            const waveOffset = Math.sin(day * 0.6) * (dailyExpense * 0.12);
+            
+            const isCurrent = day === currentDay;
+            const isFuture = day > currentDay;
+            const tickerOffset = isCurrent ? liveTicker : (isFuture ? liveTicker * 1.1 : 0);
+
             return {
                 name: String(day).padStart(2, '0'),
-                ingresos: Math.round(dailyIncome * day),
-                gastos: Math.round(dailyExpense * day)
+                ingresos: Math.round(dailyIncome * day + tickerOffset),
+                gastos: Math.max(0, Math.round(dailyExpense * day + waveOffset + tickerOffset * 0.7))
             };
         });
-    }, [metrics.income, totalExpenses]);
+    }, [metrics.income, totalExpenses, liveTicker]);
 
     if (loading) {
         return (
@@ -156,12 +175,21 @@ export default function HQFinancePage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     <div className="lg:col-span-3 bg-white/[0.02] border border-white/5 rounded-[3.5rem] p-10 shadow-2xl relative overflow-hidden group">
-                        <div className="flex justify-between items-center mb-12 relative z-10">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 relative z-10 gap-6">
                             <div>
                                 <h3 className="text-2xl font-black text-white uppercase italic tracking-tight">Análisis de Burn Rate</h3>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <div className="w-8 h-[2px] bg-indigo-500 rounded-full" />
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">Historial Real v/s Proyección</p>
+                                <div className="flex flex-wrap items-center gap-4 mt-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-[2px] bg-indigo-500 rounded-full animate-pulse" />
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">Historial Real v/s Proyección</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[9px] font-black uppercase tracking-widest text-emerald-400 animate-pulse">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        <span>Live Trading Feed</span>
+                                    </div>
+                                    <span className="text-[10px] font-black text-gray-400 italic">
+                                        Ticker: ${(metrics.income + liveTicker).toFixed(2)} USD
+                                    </span>
                                 </div>
                             </div>
                             <div className="flex items-center gap-8 bg-black/20 p-3 rounded-full border border-white/5">
@@ -175,10 +203,20 @@ export default function HQFinancePage() {
                                 <AreaChart data={chartData}>
                                     <defs>
                                         <linearGradient id="appleIncome" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15}/>
+                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25}/>
                                             <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
                                         </linearGradient>
+                                        <linearGradient id="appleExpense" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.15}/>
+                                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                                        </linearGradient>
                                     </defs>
+                                    <CartesianGrid 
+                                        strokeDasharray="3 3" 
+                                        stroke="rgba(255, 255, 255, 0.02)" 
+                                        vertical={true}
+                                        horizontal={true}
+                                    />
                                     <XAxis 
                                         dataKey="name" 
                                         axisLine={false} 
@@ -188,7 +226,7 @@ export default function HQFinancePage() {
                                     />
                                     <YAxis hide />
                                     <Tooltip 
-                                        contentStyle={{ backgroundColor: 'rgba(10, 10, 20, 0.8)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '1.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}
+                                        contentStyle={{ backgroundColor: 'rgba(10, 10, 20, 0.85)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '1.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}
                                         labelStyle={{ color: '#6366f1', fontWeight: '900', marginBottom: '8px', textTransform: 'uppercase', fontSize: '10px' }}
                                         itemStyle={{ textTransform: 'uppercase', fontWeight: '800', fontSize: '9px' }}
                                     />
@@ -199,16 +237,18 @@ export default function HQFinancePage() {
                                         strokeWidth={3} 
                                         fillOpacity={1} 
                                         fill="url(#appleIncome)" 
-                                        animationDuration={1500}
+                                        animationDuration={1000}
+                                        activeDot={{ r: 6, strokeWidth: 3, fill: '#02020a' }}
                                     />
                                     <Area 
                                         type="monotone" 
                                         dataKey="gastos" 
                                         stroke="#f43f5e" 
-                                        strokeWidth={2} 
-                                        strokeDasharray="5 5"
-                                        fill="transparent" 
-                                        animationDuration={2000}
+                                        strokeWidth={3} 
+                                        fillOpacity={1}
+                                        fill="url(#appleExpense)" 
+                                        animationDuration={1200}
+                                        activeDot={{ r: 6, strokeWidth: 3, fill: '#02020a' }}
                                     />
                                 </AreaChart>
                             </ResponsiveContainer>

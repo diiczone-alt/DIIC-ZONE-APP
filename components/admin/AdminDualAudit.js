@@ -124,7 +124,7 @@ export default function AdminDualAudit() {
         setLoading(true);
         try {
             // Manejamos cada promesa individualmente para mayor robustez
-            const [txs, goalsData, expensesData, count, teamData, branchData] = await Promise.all([
+            const [txs, goalsData, expensesData, count, scaleData, branchData] = await Promise.all([
                 agencyService.getTransactions().catch(err => {
                     console.error("Error fetching txs:", err);
                     return [];
@@ -141,9 +141,9 @@ export default function AdminDualAudit() {
                     console.error("Error fetching client count:", err);
                     return 0;
                 }),
-                agencyService.getTeam().catch(err => {
-                    console.error("Error fetching team:", err);
-                    return [];
+                agencyService.getScaleData().catch(err => {
+                    console.error("Error fetching scale data:", err);
+                    return null;
                 }),
                 agencyService.getBranchOffices().catch(err => {
                     console.error("Error fetching branches:", err);
@@ -156,7 +156,7 @@ export default function AdminDualAudit() {
                 setGoals(goalsData || []);
                 setBudgets(expensesData || []);
                 setClientCount(count || 0);
-                setTeam(teamData || []);
+                setTeam(scaleData?.itemized_payroll || []);
                 setBranches(branchData || []);
             }
         } catch (err) {

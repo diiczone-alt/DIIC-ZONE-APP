@@ -1377,12 +1377,35 @@ export const agencyService = {
                   title: task.title,
                   client: task.client,
                   cost: Number(rate?.cost_internal || 25), // Average fallback
-                  format: task.format || 'Contenido'
+                  format: task.format || 'Contenido',
+                  assigned_to: task.assigned_to
                 };
             }) || [];
 
             const productionTotal = ledger.reduce((acc, item) => acc + item.cost, 0);
-            const totalPayroll = team.reduce((acc, m) => acc + (Number(m.salary) || 0), 0);
+
+            // 2. Calculate dynamic salaries based on assigned tasks for piece-rate creatives
+            const mappedTeam = team.map(member => {
+                const memberTasks = ledger.filter(t => 
+                    t.assigned_to === member.name || 
+                    t.assigned_to === member.id
+                );
+                const productionPay = memberTasks.reduce((sum, t) => sum + t.cost, 0);
+                
+                // Real salary is the fixed DB salary. If 0, it dynamically sums the piece-rate tasks completed.
+                const realSalary = Number(member.salary) > 0 ? Number(member.salary) : productionPay;
+
+                return {
+                    id: member.id,
+                    name: member.name,
+                    role: member.role,
+                    salary: realSalary,
+                    productionPay,
+                    fixedSalary: Number(member.salary) || 0
+                };
+            });
+
+            const totalPayroll = mappedTeam.reduce((acc, m) => acc + m.salary, 0);
             
             // REAL SaaS Costs from DB
             const softwareCosts = expenses?.reduce((acc, ex) => acc + (Number(ex.amount) || 0), 0) || 0;
@@ -1399,12 +1422,7 @@ export const agencyService = {
                 net_profit: netProfit,
                 income: financial?.metrics?.income || 0,
                 estimated_production: financial?.metrics?.variable_costs || 0,
-                itemized_payroll: team.map(m => ({ 
-                    id: m.id, 
-                    name: m.name, 
-                    role: m.role, 
-                    salary: Number(m.salary) || 0 
-                })),
+                itemized_payroll: mappedTeam,
                 itemized_software: expenses || [],
                 production_ledger: ledger 
             };
