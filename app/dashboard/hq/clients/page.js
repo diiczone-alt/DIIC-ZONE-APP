@@ -2400,6 +2400,24 @@ export default function HQClientsPage() {
                                                                                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Estado Rentabilidad</span>
                                                                                 <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${marginBadgeColor}`}>{marginLabel}</span>
                                                                             </div>
+
+                                                                            {/* Botones de acción rápida dentro de la Ficha Financiera */}
+                                                                            <div className="pt-6 mt-6 border-t border-white/5 flex gap-4">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setIsEditModalOpen(false)}
+                                                                                    className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl uppercase tracking-wider text-[10px] transition-all"
+                                                                                >
+                                                                                    Salir sin Guardar
+                                                                                </button>
+                                                                                <button
+                                                                                    type="submit"
+                                                                                    disabled={isSubmitting}
+                                                                                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 text-white font-bold rounded-xl uppercase tracking-wider text-[10px] transition-all shadow-lg shadow-indigo-600/20"
+                                                                                >
+                                                                                    {isSubmitting ? 'Guardando...' : 'Guardar y Salir'}
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -2585,7 +2603,7 @@ export default function HQClientsPage() {
                                             disabled={isSubmitting} 
                                             className="group relative flex-1 md:flex-none px-6 py-1.5 bg-white text-black font-black rounded-xl uppercase tracking-[0.2em] text-[9px] shadow-[0_15px_30px_rgba(255,255,255,0.05)] hover:shadow-[0_20px_40px_rgba(255,255,255,0.1)] active:scale-95 transition-all overflow-hidden flex items-center gap-2"
                                         >
-                                            {isSubmitting ? 'Syncing...' : 'Deploy Roadmap'}
+                                            {isSubmitting ? 'Guardando...' : 'Guardar y Salir'}
                                             {!isSubmitting && <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />}
                                         </button>
                                     </div>

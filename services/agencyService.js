@@ -306,7 +306,13 @@ export const agencyService = {
             
             const sanitizedData = {};
             validFields.forEach(field => {
-                if (clientData[field] !== undefined) sanitizedData[field] = clientData[field];
+                if (clientData[field] !== undefined) {
+                    let val = clientData[field];
+                    if ((field === 'birth_date' || field === 'start_date') && val === '') {
+                        val = null;
+                    }
+                    sanitizedData[field] = val;
+                }
             });
 
             const newClient = {
@@ -383,7 +389,13 @@ export const agencyService = {
             ];
             const sanitizedUpdates = {};
             validFields.forEach(field => {
-                if (updates[field] !== undefined) sanitizedUpdates[field] = updates[field];
+                if (updates[field] !== undefined) {
+                    let val = updates[field];
+                    if ((field === 'birth_date' || field === 'start_date') && val === '') {
+                        val = null;
+                    }
+                    sanitizedUpdates[field] = val;
+                }
             });
 
             if (updates.coords !== undefined) {
