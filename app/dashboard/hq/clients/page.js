@@ -1113,13 +1113,11 @@ export default function HQClientsPage() {
                 <StatCard title="Pendientes Pago" value={pendingCount} icon={CheckCircle2} color="blue" isActive={activeFilter === 'pending'} onClick={() => setActiveFilter(activeFilter === 'pending' ? 'all' : 'pending')} />
             </div>
 
-            {/* Main Section: Niche Navigation (Left Sidebar) + Client Display (Right) */}
-            <div className="flex flex-col lg:flex-row gap-6 relative z-10 items-start">
+            {/* Main Section: Client Panel with Horizontal Niche Selector */}
+            <div className="relative z-10 w-full space-y-6">
                 
-                {/* Vertical Niche Selector */}
-                <div className="w-full lg:w-64 flex flex-col gap-2 bg-[#0E0E18]/80 backdrop-blur-md border border-white/5 p-4 rounded-3xl h-fit shadow-2xl relative">
-                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2 mb-2">Filtrar por Nicho</span>
-                    
+                {/* Horizontal Niche Navigation */}
+                <div className="flex items-center gap-2.5 overflow-x-auto pb-3 scrollbar-none border-b border-white/5">
                     {NICHE_ITEMS.map((item) => {
                         const count = Array.isArray(clients) ? clients.filter(c => {
                             if (!c) return false;
@@ -1140,28 +1138,30 @@ export default function HQClientsPage() {
                         // Only show niches that have clients, or the 'all' item
                         if (item.value !== 'all' && count === 0) return null;
 
+                        const isSelected = selectedNiche === item.value;
+                        const style = getIndustryStyle(item.value);
+
                         return (
                             <button
                                 key={item.value}
                                 onClick={() => setSelectedNiche(item.value)}
-                                className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl border text-left text-xs font-bold transition-all active:scale-95 ${
-                                    selectedNiche === item.value
-                                    ? `${item.activeBg} border-white/10 text-white shadow-[0_0_15px_rgba(99,102,241,0.1)]`
+                                className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl border text-xs font-black tracking-wider transition-all whitespace-nowrap active:scale-95 cursor-pointer ${
+                                    isSelected
+                                    ? `${item.activeBg} border-white/10 text-white shadow-[0_0_15px_rgba(99,102,241,0.15)]`
                                     : 'bg-white/5 border-transparent text-gray-400 hover:bg-white/10 hover:text-white'
                                 }`}
                             >
-                                <item.icon className={`w-4.5 h-4.5 ${selectedNiche === item.value ? item.iconColor : 'text-gray-500'}`} />
-                                <span className="truncate flex-1">{item.label}</span>
-                                <span className="px-2 py-0.5 text-[9px] rounded bg-white/5 border border-white/5 font-black text-gray-400">
+                                <item.icon className={`w-4 h-4 ${isSelected ? item.iconColor : 'text-gray-500'}`} />
+                                <span>{item.label}</span>
+                                <span className={`px-2 py-0.5 text-[9px] rounded-lg font-black ${
+                                    isSelected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/5 text-gray-500'
+                                }`}>
                                     {count}
                                 </span>
                             </button>
                         );
                     })}
                 </div>
-
-                {/* Main Client Panel */}
-                <div className="flex-1 w-full space-y-6">
                     
                     {/* Filters, Search & View Switcher */}
                     <div className="flex flex-wrap gap-4 items-center">
@@ -1193,10 +1193,10 @@ export default function HQClientsPage() {
                                 className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
                                     viewMode === 'niche_columns' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:text-white'
                                 }`}
-                                title="Vista Columnas (Nichos)"
+                                title="Vista Tarjetas (Grid)"
                             >
                                 <LayoutGrid className="w-4 h-4" />
-                                <span className="hidden sm:inline">Columnas</span>
+                                <span className="hidden sm:inline">Tarjetas</span>
                             </button>
                             <button
                                 onClick={() => setViewMode('niche_rows')}
@@ -1404,44 +1404,18 @@ export default function HQClientsPage() {
                     )}
 
                     {viewMode === 'niche_columns' && (
-                        <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-thin">
-                            {(selectedNiche === 'all' ? activeNiches : NICHE_ITEMS.filter(n => {
-                                const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                                return cleanNiche(n.value) === cleanNiche(selectedNiche);
-                            })).map(niche => {
-                                const nicheClients = filteredClients.filter(c => {
-                                    const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                                    const clientNiche = cleanNiche(c.industry);
-                                    const targetNiche = cleanNiche(niche.value);
-                                    return clientNiche === targetNiche || clientNiche.includes(targetNiche) || targetNiche.includes(clientNiche);
-                                });
-
-                                if (nicheClients.length === 0) return null;
-                                
-                                const style = getIndustryStyle(niche.value);
-                                const Icon = style.icon || Briefcase;
-
-                                return (
-                                    <div key={niche.value} className="flex-1 min-w-[320px] max-w-[360px] bg-[#0E0E18]/60 border border-white/5 rounded-3xl p-5 flex flex-col gap-4 shadow-2xl">
-                                        <div className="flex items-center justify-between pb-3 border-b border-white/5">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-2.5 rounded-xl border ${style.bg}`}>
-                                                    <Icon className="w-5 h-5" />
-                                                </div>
-                                                <div className="text-left">
-                                                    <h3 className="text-sm font-black text-white">{niche.label}</h3>
-                                                    <span className="text-[10px] font-bold text-gray-500">{nicheClients.length} socios</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col gap-4 max-h-[650px] overflow-y-auto scrollbar-none pr-1">
-                                            {nicheClients.map(client => renderClientCard(client, style))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        filteredClients.length === 0 ? (
+                            <div className="text-center py-16 bg-[#0E0E18]/40 border border-white/5 rounded-3xl text-gray-500 font-medium w-full">
+                                No se encontraron socios que coincidan con la búsqueda o filtros.
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {filteredClients.map(client => {
+                                    const style = getIndustryStyle(client.industry);
+                                    return renderClientCard(client, style);
+                                })}
+                            </div>
+                        )
                     )}
 
                     {viewMode === 'niche_rows' && (
@@ -1576,7 +1550,6 @@ export default function HQClientsPage() {
                     )}
 
                 </div>
-            </div>
             <AnimatePresence>
                 {isModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
