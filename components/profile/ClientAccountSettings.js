@@ -171,7 +171,17 @@ export default function ClientAccountSettings({ clientId }) {
             if (error) throw error;
 
             toast.success("Cuenta de acceso eliminada exitosamente", { id: toastId });
-            await logout();
+            
+            // Clear local session storage manually to prevent signOut() hangs on deleted session
+            if (typeof window !== 'undefined') {
+                localStorage.clear();
+                try {
+                    await supabase.auth.signOut({ scope: 'local' });
+                } catch (signOutErr) {
+                    console.warn("[DeleteAccount] Local signout warning:", signOutErr);
+                }
+                window.location.href = '/login';
+            }
         } catch (err) {
             console.error("Error deleting account:", err);
             toast.error("Error al eliminar la cuenta: " + (err.message || err), { id: toastId });

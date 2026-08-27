@@ -197,14 +197,24 @@ export default function LoginPage() {
                             Ingresar con Google
                         </button>
 
-                        <div className="pt-4 border-t border-white/5 mt-4 text-center flex flex-col gap-4">
-                            <button
-                                type="button"
-                                onClick={() => router.push('/onboarding?type=client')}
-                                className="text-gray-500 hover:text-indigo-400 text-xs font-black uppercase tracking-widest transition-all"
-                            >
-                                ¿Sin cuenta? Crear Nueva Identidad
-                            </button>
+                        <div className="pt-4 border-t border-white/5 mt-4 text-center flex flex-col gap-2">
+                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">¿Sin cuenta? Regístrate en DIIC ZONE</p>
+                            <div className="grid grid-cols-2 gap-3 mt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => router.push('/onboarding?type=client')}
+                                    className="py-3 px-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-black text-[9px] font-black uppercase tracking-widest transition-all"
+                                >
+                                    Como Cliente
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => router.push('/onboarding?type=creative')}
+                                    className="py-3 px-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all"
+                                >
+                                    Como Creador / Editor
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
