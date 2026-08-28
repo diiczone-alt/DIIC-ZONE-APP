@@ -13,7 +13,7 @@ import {
     Stethoscope, Utensils, Home, GraduationCap, HeartPulse,
     HardHat, Coins, Landmark, UtensilsCrossed, Cpu, Gavel, Factory, 
     HeartHandshake, Store, Truck, Plane, MoreHorizontal, Mic, Sprout, ShoppingBag, Croissant,
-    TrendingUp, Calculator, Clock, CheckCircle2, Eye, Compass, Sparkles, Award
+    TrendingUp, Calculator, Clock, CheckCircle2, Eye, Compass, Sparkles, Award, ArrowRight
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
