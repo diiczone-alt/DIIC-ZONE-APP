@@ -12,7 +12,8 @@ import {
     Film, ImageIcon, Megaphone, Target, DollarSign, Settings, PieChart,
     Stethoscope, Utensils, Home, GraduationCap, HeartPulse,
     HardHat, Coins, Landmark, UtensilsCrossed, Cpu, Gavel, Factory, 
-    HeartHandshake, Store, Truck, Plane, MoreHorizontal, Mic, Sprout, ShoppingBag, Croissant
+    HeartHandshake, Store, Truck, Plane, MoreHorizontal, Mic, Sprout, ShoppingBag, Croissant,
+    TrendingUp, Calculator, Clock, CheckCircle2, Eye, Compass, Sparkles, Award
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
@@ -373,7 +374,7 @@ export default function HQServicesPage() {
                         onClick={() => setActiveCategory('pack')}
                         className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === 'pack' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-white'}`}
                     >
-                         Paquetes Especiales
+                        Paquetes Especiales
                     </button>
                 </div>
             </div>
@@ -384,50 +385,80 @@ export default function HQServicesPage() {
                     Sincronizando Catálogo...
                 </div>
             ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 relative z-10">
-                    {services
-                        .filter(s => s.category === activeCategory)
-                        .map((service, index) => {
+                <>
+                    {activeCategory === 'plan' ? (
+                        (() => {
                             const resolvedNiche = selectedNiche === 'doctor' ? 'medical' :
                                                   selectedNiche === 'health' ? 'hospital' :
                                                   selectedNiche === 'education' ? 'educativo' :
                                                   selectedNiche === 'horeca' ? 'hospitality' : selectedNiche;
-                            const nichePlan = NICHE_DETAILS[resolvedNiche]?.plans[service.id];
-                            const customizedService = nichePlan ? {
-                                ...service,
-                                name: nichePlan.name,
-                                narrative: nichePlan.narrative,
-                                price: nichePlan.price || service.price,
-                                originalPrice: nichePlan.originalPrice || null,
-                                features: nichePlan.features || service.features,
-                                enfoque: nichePlan.enfoque || service.enfoque,
-                                filmmaker: nichePlan.filmmaker || service.filmmaker
-                            } : service;
+                            const nicheData = NICHE_DETAILS[resolvedNiche] || NICHE_DETAILS.general;
+                            const nichePlans = nicheData?.plans || {};
+                            const planKeys = Object.keys(nichePlans);
+                            const is5Col = planKeys.length >= 5;
 
-                            return activeCategory === 'plan' ? (
-                                <PricingCard
-                                    key={service.id}
-                                    service={customizedService}
-                                    index={index}
-                                    onSelect={() => handleSelectPlan(customizedService)}
-                                />
-                            ) : (
-                                <PackCard 
-                                    key={service.id}
-                                    service={service}
-                                    index={index}
-                                    onSelect={() => handleSelectPlan(service)}
-                                />
+                            return (
+                                <div className={`grid grid-cols-1 ${is5Col ? 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' : 'sm:grid-cols-2 xl:grid-cols-4'} gap-6 relative z-10`}>
+                                    {planKeys.map((planKey, index) => {
+                                        const nichePlan = nichePlans[planKey];
+                                        const baseService = services.find(s => s.id === planKey && s.category === 'plan') || {};
+                                        const customizedService = {
+                                            id: planKey,
+                                            category: 'plan',
+                                            level: planKey === 'authority' || planKey === 'marca' ? 'NIVEL CLAVE' :
+                                                   planKey === 'scale' ? 'NIVEL MAESTRO' :
+                                                   planKey === 'elite' ? 'NIVEL AVANZADO' :
+                                                   `NIVEL ${planKey.toUpperCase()}`,
+                                            name: nichePlan.name || baseService.name || `NIVEL ${planKey.toUpperCase()}`,
+                                            narrative: nichePlan.narrative || baseService.narrative || '',
+                                            price: nichePlan.price || baseService.price || '300',
+                                            originalPrice: nichePlan.originalPrice || null,
+                                            features: nichePlan.features || baseService.features || [],
+                                            enfoque: nichePlan.enfoque || baseService.enfoque || '',
+                                            filmmaker: nichePlan.filmmaker || baseService.filmmaker || '',
+                                            deliverables: nichePlan.deliverables || baseService.deliverables || { videos: (index + 1) * 4, posts: (index + 1) * 6 },
+                                            complexity: nichePlan.complexity || null
+                                        };
+
+                                        return (
+                                            <PricingCard
+                                                key={planKey}
+                                                service={customizedService}
+                                                index={index}
+                                                onSelect={() => handleSelectPlan(customizedService)}
+                                            />
+                                        );
+                                    })}
+                                </div>
                             );
-                        })
-                    }
-                </div>
+                        })()
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 relative z-10">
+                            {services
+                                .filter(s => s.category === 'pack')
+                                .map((service, index) => (
+                                    <PackCard 
+                                        key={service.id}
+                                        service={service}
+                                        index={index}
+                                        onSelect={() => handleSelectPlan(service)}
+                                    />
+                                ))
+                            }
+                        </div>
+                    )}
+                </>
             )}
             
-            {/* New Sections */}
-            <ServiceDetails />
+            {/* Real Estate Master Strategic Blueprint */}
+            {selectedNiche === 'realestate' && <RealEstateDossier />}
+
+            {/* Medical Specific Roadmap */}
             {selectedNiche === 'medical' && <MedicalRoadmap />}
-            <PaidAdvertising />
+
+            {/* General Service Details & Paid Ads Info for other niches */}
+            {selectedNiche !== 'realestate' && <ServiceDetails />}
+            {selectedNiche !== 'realestate' && <PaidAdvertising />}
 
             {/* Individual Services Catalog - Point 3 of User Request */}
             <div className="space-y-8 relative z-10">
@@ -1444,7 +1475,7 @@ function MedicalRoadmap() {
                                 </div>
                             </div>
 
-                            <div className="mt-8 pt-6 border-t border-white/5 flex flex-col gap-1">
+                    <div className="mt-8 pt-6 border-t border-white/5 flex flex-col gap-1">
                                 <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Métrica de Éxito Clave</span>
                                 <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">{step.metric}</span>
                             </div>
@@ -1456,3 +1487,711 @@ function MedicalRoadmap() {
     );
 }
 
+function RealEstateDossier() {
+    // --- SIMULADOR DE ROI INTERACTIVO (MERCADO ECUADOR) ---
+    const [adBudget, setAdBudget] = useState(160);
+    const [avgCpl, setAvgCpl] = useState(8);
+    const [propertyPrice, setPropertyPrice] = useState(80000);
+    const [commissionRate, setCommissionRate] = useState(3);
+    const [selectedTierPrice, setSelectedTierPrice] = useState(500);
+
+    const calculatedLeads = Math.max(1, Math.round(adBudget / avgCpl));
+    const calculatedVisits = Math.max(1, Math.round(calculatedLeads * 0.3));
+    // Estimación de cierre: 1 cada 20 leads calificados
+    const estimatedClosings = Math.max(1, Math.floor(calculatedLeads / 20));
+    const commissionGrossIncome = estimatedClosings * (propertyPrice * (commissionRate / 100));
+    const totalMarketingCost = adBudget + selectedTierPrice;
+    const netProfit = commissionGrossIncome - totalMarketingCost;
+    const roiPercentage = totalMarketingCost > 0 ? Math.round((netProfit / totalMarketingCost) * 100) : 0;
+
+    const dimensions = [
+        {
+            num: '01',
+            title: 'Identidad de Marca del Asesor',
+            desc: 'Quién es usted, su estilo distintivo y la narrativa que lo separa de la competencia.',
+            icon: Sparkles,
+            color: 'from-blue-500/20 to-indigo-500/20 text-indigo-400 border-indigo-500/30'
+        },
+        {
+            num: '02',
+            title: 'Autoridad de Mercado y Zona',
+            desc: 'Posicionamiento como el profesional que mejor domina los precios y oportunidades del sector.',
+            icon: Award,
+            color: 'from-purple-500/20 to-pink-500/20 text-purple-400 border-purple-500/30'
+        },
+        {
+            num: '03',
+            title: 'Transparencia y Confianza',
+            desc: 'Factor decisivo en transacciones de alto valor económico como la compra de una vivienda.',
+            icon: Shield,
+            color: 'from-emerald-500/20 to-teal-500/20 text-emerald-400 border-emerald-500/30'
+        },
+        {
+            num: '04',
+            title: 'Diversificación de Servicios',
+            desc: 'Venta de estrenar, reventa, arriendo y asesoría integral de inversión patrimonial.',
+            icon: Compass,
+            color: 'from-orange-500/20 to-yellow-500/20 text-orange-400 border-orange-500/30'
+        },
+        {
+            num: '05',
+            title: 'Credibilidad y Validación Social',
+            desc: 'Testimonios en video, reseñas de clientes satisfechos y presencia en medios digitales.',
+            icon: Star,
+            color: 'from-cyan-500/20 to-blue-500/20 text-cyan-400 border-cyan-500/30'
+        }
+    ];
+
+    const channels = [
+        {
+            name: 'Instagram',
+            role: 'La Vitrina Principal',
+            desc: 'Tours cinematográficos, fotos estéticas y presencia de marca personal.',
+            badge: 'Branding & Listings',
+            color: 'border-pink-500/30 bg-pink-500/5 text-pink-400'
+        },
+        {
+            name: 'Facebook',
+            role: 'Comunidad & Urgencia',
+            desc: 'Grupos zonales y publicaciones de "Recién Vendido" para detonar urgencia.',
+            badge: 'Comunidad Local',
+            color: 'border-blue-500/30 bg-blue-500/5 text-blue-400'
+        },
+        {
+            name: 'TikTok',
+            role: 'Alcance Masivo',
+            desc: 'Recorridos rápidos tipo House Tour dinámico y contenido viral del sector.',
+            badge: 'Viralidad Orgánica',
+            color: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400'
+        },
+        {
+            name: 'YouTube',
+            role: 'Tours Completos 4K',
+            desc: 'Recorridos detallados para compradores e inversionistas de alta intención.',
+            badge: 'Alta Intención',
+            color: 'border-red-500/30 bg-red-500/5 text-red-400'
+        },
+        {
+            name: 'WhatsApp',
+            role: 'Canal de Conversión',
+            desc: 'Donde se califica el presupuesto y se agenda la visita guiada a la propiedad.',
+            badge: 'Cierres & Agendamiento',
+            color: 'border-green-500/30 bg-green-500/5 text-green-400'
+        },
+        {
+            name: 'Google SEO',
+            role: 'Búsqueda Activa Local',
+            desc: 'Posicionamiento para "casa en venta + zona" y departamentos nuevos.',
+            badge: 'SEO & Google Ads',
+            color: 'border-amber-500/30 bg-amber-500/5 text-amber-400'
+        }
+    ];
+
+    const roadmapLevels = [
+        {
+            level: 'Nivel 1',
+            name: 'Presencia Digital',
+            price: '$350',
+            complexity: 'Baja',
+            objective: 'Dar a conocer catálogo y generar confianza básica en la zona.',
+            color: 'border-blue-500/40 text-blue-400'
+        },
+        {
+            level: 'Nivel 2',
+            name: 'Estrategia',
+            price: '$500',
+            complexity: 'Media',
+            objective: 'Captación activa de leads con landing pages por propiedad.',
+            color: 'border-purple-500/40 text-purple-400'
+        },
+        {
+            level: 'Nivel 3',
+            name: 'Marca',
+            price: '$700',
+            complexity: 'Alta',
+            objective: 'Posicionar como el/la asesor/a #1 de la zona con tours de dron.',
+            color: 'border-indigo-500/40 text-indigo-400'
+        },
+        {
+            level: 'Nivel 4',
+            name: 'Automatización',
+            price: '$999',
+            complexity: 'Avanzada',
+            objective: 'Bot de WhatsApp 24/7 y CRM de propiedades para filtrar leads.',
+            color: 'border-emerald-500/40 text-emerald-400'
+        },
+        {
+            level: 'Nivel 5',
+            name: 'Escala',
+            price: '$1,500',
+            complexity: 'Maestro',
+            objective: 'Dominar múltiples sectores y maximizar volumen de comisiones.',
+            color: 'border-amber-500/40 text-amber-400'
+        }
+    ];
+
+    const priceLadder = [
+        { from: 'Presencia', to: 'Estrategia', desc: 'Se activan landing pages y captación de leads por propiedad.' },
+        { from: 'Estrategia', to: 'Marca', desc: 'Se suman video tours cinematográficos y testimonios en video.' },
+        { from: 'Marca', to: 'Automatización', desc: 'Se integra el bot de WhatsApp y el CRM de propiedades.' },
+        { from: 'Automatización', to: 'Escala', desc: 'Se domina múltiples zonas y se maximizan comisiones.' }
+    ];
+
+    const adTiers = [
+        { spend: 'Hasta $100/mes de pauta', fee: '20% de comisión (mínimo $20)' },
+        { spend: '$101 – $200/mes', fee: '15% de comisión' },
+        { spend: '$201 – $500/mes', fee: '12% de comisión' },
+        { spend: '$500/mes en adelante', fee: '10% de comisión' }
+    ];
+
+    return (
+        <div className="space-y-16 relative z-10 pt-12 pb-16">
+            {/* 1. HEADER & MANIFIESTO ESTRATÉGICO */}
+            <div className="bg-gradient-to-br from-indigo-900/30 via-[#0E0E18] to-purple-900/20 border border-indigo-500/30 p-8 sm:p-12 rounded-[3.5rem] shadow-[0_30px_100px_rgba(99,102,241,0.15)] relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
+                
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b border-white/10 pb-8">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2.5 bg-indigo-500/20 rounded-xl text-indigo-400 border border-indigo-500/30">
+                                <Home className="w-5 h-5" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-400">
+                                SISTEMA DE CRECIMIENTO INMOBILIARIO DIIC ZONE 2026
+                            </span>
+                        </div>
+                        <h2 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tight">
+                            Marketing Digital Inmobiliario
+                        </h2>
+                        <p className="text-sm text-gray-400 font-medium mt-1">
+                            Propuesta Estratégica de Crecimiento & Monetización para Asesores y Brokers
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-5 py-3 rounded-2xl">
+                        <TrendingUp className="w-5 h-5 text-emerald-400" />
+                        <div className="text-right">
+                            <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block">Meta de Conversión</span>
+                            <span className="text-xs font-black text-emerald-400">30% Mensaje a Visita Agendada</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* POR QUÉ ESTO IMPORTA & MISIÓN/VISIÓN */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-7 space-y-6">
+                        <div className="space-y-3">
+                            <h3 className="text-xs font-black text-indigo-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                <Eye className="w-4 h-4" /> 1. Por Qué Esto Importa
+                            </h3>
+                            <p className="text-sm font-bold text-white leading-relaxed">
+                                El <strong className="text-emerald-400 font-black">97% de los compradores de vivienda</strong> utiliza internet en su búsqueda antes de contactar a un agente inmobiliario.
+                            </p>
+                            <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                                Buscan primero en Google y redes sociales — <span className="text-gray-300 italic">"casa en venta en Santo Domingo"</span>, <span className="text-gray-300 italic">"departamento nuevo norte"</span> — y solo después llaman. Si usted no aparece en ese momento de búsqueda, ese comprador simplemente no sabe que existe como opción.
+                            </p>
+                            <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs font-medium text-indigo-200 leading-relaxed">
+                                <strong className="font-black text-white">El Gran Diferenciador:</strong> Hoy el valor ya no es el listado de propiedades (todos publican en Plusvalía o Mercado Libre). El verdadero diferenciador es cómo el comprador <span className="text-emerald-400 font-bold underline">te encuentra a ti</span> antes de llegar a esos portales genéricos.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-5 bg-black/40 border border-white/5 p-6 rounded-3xl space-y-4">
+                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em]">
+                            2. Misión, Visión y Objetivo
+                        </h3>
+                        <div className="space-y-3">
+                            <div className="border-l-2 border-indigo-500 pl-4 py-1">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400 block">Misión</span>
+                                <p className="text-xs text-gray-300 font-medium leading-snug">
+                                    Conectar al asesor con compradores calificados antes de que lleguen a portales genéricos, construyendo una marca personal de confianza.
+                                </p>
+                            </div>
+                            <div className="border-l-2 border-purple-500 pl-4 py-1">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-purple-400 block">Visión</span>
+                                <p className="text-xs text-gray-300 font-medium leading-snug">
+                                    Ser reconocido/a como el/la asesor/a de referencia indiscutible en su zona de trabajo.
+                                </p>
+                            </div>
+                            <div className="border-l-2 border-emerald-500 pl-4 py-1">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 block">Objetivo Principal</span>
+                                <p className="text-xs text-gray-300 font-medium leading-snug">
+                                    Generar presencia digital sólida que traduzca seguidores en visitas agendadas y cierres reales de compraventa.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. LAS 5 DIMENSIONES DE LA MARCA INMOBILIARIA */}
+            <div className="space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-white/5" />
+                    <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] whitespace-nowrap">
+                        3. Las 5 Dimensiones de la Marca Inmobiliaria
+                    </h2>
+                    <div className="h-px flex-1 bg-white/5" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {dimensions.map((dim, i) => {
+                        const Icon = dim.icon;
+                        return (
+                            <motion.div
+                                key={i}
+                                whileHover={{ y: -6 }}
+                                className="bg-[#0E0E18] border border-white/5 hover:border-white/15 p-6 rounded-[2rem] flex flex-col justify-between transition-all duration-300 relative overflow-hidden group"
+                            >
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-2xl font-black text-gray-700 group-hover:text-indigo-400 font-mono transition-colors">
+                                            {dim.num}
+                                        </span>
+                                        <div className={`p-3 rounded-2xl bg-gradient-to-br ${dim.color} border`}>
+                                            <Icon className="w-5 h-5" />
+                                        </div>
+                                    </div>
+                                    <h4 className="text-sm font-black text-white uppercase tracking-wider leading-snug">
+                                        {dim.title}
+                                    </h4>
+                                    <p className="text-xs text-gray-500 font-medium leading-relaxed">
+                                        {dim.desc}
+                                    </p>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 4. ESTUDIO DE MERCADO & 5. QUÉ INCLUYE EL SERVICIO */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* 4. Estudio de Mercado */}
+                <div className="bg-[#0E0E18] border border-white/5 p-8 rounded-[2.5rem] space-y-6">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-white/5 rounded-2xl text-yellow-400">
+                            <Target className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Investigación Previa</span>
+                            <h3 className="text-lg font-black text-white uppercase tracking-wide">4. Estudio de Mercado</h3>
+                        </div>
+                    </div>
+                    <p className="text-xs text-gray-400 font-medium">
+                        Lo que nuestro equipo investiga exhaustivamente antes de producir la primera pieza de contenido:
+                    </p>
+                    <div className="space-y-3">
+                        {[
+                            { label: 'Competencia Directa', desc: 'Otros agentes e inmobiliarias activos en su zona de enfoque.' },
+                            { label: 'Demanda Real', desc: 'Qué busca la gente ("casa en venta + zona", "departamento nuevo").' },
+                            { label: 'Precio de Mercado / m²', desc: 'Valores por metro cuadrado y plusvalía por sector.' },
+                            { label: 'Perfil del Comprador Ideal', desc: 'Presupuesto, urgencia de compra y tipo de crédito (BIESS/Bancos).' },
+                            { label: 'Estado de Redes Actuales', desc: 'Auditoría integral si ya cuenta con perfiles creados.' }
+                        ].map((item, idx) => (
+                            <div key={idx} className="flex items-start gap-3 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <h5 className="text-xs font-black text-white">{item.label}</h5>
+                                    <p className="text-[11px] text-gray-500 font-medium">{item.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 5. Qué Incluye el Servicio */}
+                <div className="bg-[#0E0E18] border border-white/5 p-8 rounded-[2.5rem] space-y-6">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-white/5 rounded-2xl text-indigo-400">
+                            <Film className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Entregables de Calidad</span>
+                            <h3 className="text-lg font-black text-white uppercase tracking-wide">5. Qué Incluye el Servicio</h3>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                            <div className="flex items-center gap-2 text-indigo-400">
+                                <Film className="w-4 h-4" />
+                                <span className="text-xs font-black uppercase tracking-wider text-white">Audiovisual Pro</span>
+                            </div>
+                            <ul className="text-[11px] text-gray-500 font-medium space-y-1">
+                                <li>• Tours cinematográficos 4K</li>
+                                <li>• Videos testimoniales</li>
+                                <li>• Recorridos aéreos con dron</li>
+                            </ul>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                            <div className="flex items-center gap-2 text-purple-400">
+                                <ImageIcon className="w-4 h-4" />
+                                <span className="text-xs font-black uppercase tracking-wider text-white">Fotografía Pro</span>
+                            </div>
+                            <ul className="text-[11px] text-gray-500 font-medium space-y-1">
+                                <li>• Interior y exterior por listing</li>
+                                <li>• Puntos de interés y zona</li>
+                                <li>• Fotos antes / después</li>
+                            </ul>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                            <div className="flex items-center gap-2 text-emerald-400">
+                                <Megaphone className="w-4 h-4" />
+                                <span className="text-xs font-black uppercase tracking-wider text-white">Gestión de Redes</span>
+                            </div>
+                            <ul className="text-[11px] text-gray-500 font-medium space-y-1">
+                                <li>• Creación y optimización bio</li>
+                                <li>• Vitrina digital permanente</li>
+                                <li>• Copywriting persuasivo mensual</li>
+                            </ul>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                            <div className="flex items-center gap-2 text-yellow-400">
+                                <Zap className="w-4 h-4" />
+                                <span className="text-xs font-black uppercase tracking-wider text-white">Automatización & Ads</span>
+                            </div>
+                            <ul className="text-[11px] text-gray-500 font-medium space-y-1">
+                                <li>• Bot de WhatsApp 24/7</li>
+                                <li>• Gestión de campañas Meta</li>
+                                <li>• Calificación automática</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 6. CANALES DE COMUNICACIÓN */}
+            <div className="space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-white/5" />
+                    <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] whitespace-nowrap">
+                        6. Ecosistema de Canales de Comunicación
+                    </h2>
+                    <div className="h-px flex-1 bg-white/5" />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {channels.map((chan, i) => (
+                        <div
+                            key={i}
+                            className={`p-6 rounded-[2rem] bg-[#0E0E18] border ${chan.color} flex flex-col justify-between space-y-4`}
+                        >
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <h4 className="text-lg font-black text-white">{chan.name}</h4>
+                                    <span className="text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                                        {chan.badge}
+                                    </span>
+                                </div>
+                                <p className="text-xs font-bold text-indigo-300 italic mb-2">{chan.role}</p>
+                                <p className="text-xs text-gray-400 font-medium leading-relaxed">{chan.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 7 & 8. EL MAPA DE RUTA DE 5 NIVELES & ESCALERA DE VALOR */}
+            <div className="space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-white/5" />
+                    <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] whitespace-nowrap">
+                        7. El Mapa de Ruta — Sistema DIIC ZONE de 5 Niveles
+                    </h2>
+                    <div className="h-px flex-1 bg-white/5" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {roadmapLevels.map((lvl, i) => (
+                        <div
+                            key={i}
+                            className={`p-6 rounded-[2.5rem] bg-[#0E0E18] border ${lvl.color} flex flex-col justify-between relative overflow-hidden`}
+                        >
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">{lvl.level}</span>
+                                    <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/10 text-white">
+                                        {lvl.complexity}
+                                    </span>
+                                </div>
+                                <h4 className="text-base font-black text-white uppercase">{lvl.name}</h4>
+                                <p className="text-2xl font-black text-white tracking-tight">{lvl.price}<span className="text-xs text-gray-500 font-medium">/mes</span></p>
+                                <div className="h-px bg-white/5 w-full" />
+                                <p className="text-xs text-gray-400 font-medium leading-relaxed">{lvl.objective}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
+                    <p className="text-xs text-gray-400 font-medium italic">
+                        ✦ <strong className="text-white font-bold">Revisión de ruta:</strong> A los 3 meses iniciales del Nivel 1, se evalúan los resultados en conjunto para definir el avance a Nivel 2 (Estrategia). El avance nunca es automático, se acuerda por escrito entre ambas partes.
+                    </p>
+                </div>
+
+                {/* 8. Por qué sube el precio */}
+                <div className="bg-[#0E0E18] border border-white/5 p-8 rounded-[3rem] space-y-6">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                        <div>
+                            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Escalera de Valor</span>
+                            <h3 className="text-xl font-black text-white uppercase tracking-wide">8. Por Qué Sube el Precio en Cada Nivel</h3>
+                        </div>
+                        <div className="px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold">
+                            Principio de Utilidad Mutua
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {priceLadder.map((step, i) => (
+                            <div key={i} className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                                <div className="flex items-center gap-2 text-xs font-black text-indigo-400">
+                                    <span>{step.from}</span>
+                                    <ArrowRight className="w-3.5 h-3.5 text-gray-500" />
+                                    <span className="text-white">{step.to}</span>
+                                </div>
+                                <p className="text-xs text-gray-400 font-medium leading-snug">{step.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-transparent border border-indigo-500/20 text-center">
+                        <h4 className="text-base font-black text-white uppercase italic tracking-wide">
+                            “Usted nunca paga más por lo mismo — paga más porque el sistema hace más por su negocio.”
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            {/* 9. SISTEMA DE CONVERSIÓN (DE MENSAJE A VISITA AGENDADA) */}
+            <div className="bg-gradient-to-br from-[#0E0E18] via-[#0E0E18] to-emerald-950/20 border border-emerald-500/30 p-8 sm:p-12 rounded-[3.5rem] space-y-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">
+                            <Clock className="w-4 h-4" /> Protocolo de Respuesta Inmediata
+                        </div>
+                        <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+                            9. Sistema de Conversión — De Mensaje a Visita Agendada
+                        </h3>
+                    </div>
+                    <div className="px-5 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-black uppercase tracking-wider">
+                        Meta: 30% Conversión
+                    </div>
+                </div>
+
+                <p className="text-xs text-gray-400 font-medium">
+                    Así se trabaja cada contacto recibido para garantizar que los leads de redes sociales se transformen en citas presenciales:
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[
+                        { num: '01', title: 'Respuesta < 2 Horas — Siempre', desc: 'El 80% de los compradores contacta a otro agente si no recibe respuesta rápida.' },
+                        { num: '02', title: 'Calificación Inmediata del Lead', desc: 'Filtro de presupuesto, zona de interés, urgencia y tipo de financiamiento.' },
+                        { num: '03', title: 'Llamado a la Acción Directo (CTA)', desc: 'Canalización directa a agendar visita en cada conversación generada.' },
+                        { num: '04', title: 'Seguimiento a las 24h y 72h', desc: 'Protocolo de reactivación si el prospecto no responde al primer contacto.' },
+                        { num: '05', title: 'Registro en Pipeline CRM', desc: 'Clasificación en estados: Visitado, En seguimiento o No calificado.' },
+                        { num: '06', title: 'Reporte Mensual de Cierres', desc: 'Monitoreo de leads recibidos, visitas guiadas y comisiones logradas.' }
+                    ].map((step, idx) => (
+                        <div key={idx} className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex gap-4 items-start">
+                            <span className="text-xl font-black text-emerald-400 font-mono">{step.num}</span>
+                            <div>
+                                <h5 className="text-xs font-black text-white uppercase mb-1">{step.title}</h5>
+                                <p className="text-[11px] text-gray-400 font-medium leading-relaxed">{step.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 10. SIMULADOR INTERACTIVO DE PROYECCIÓN DE ROI */}
+            <div className="bg-[#0E0E18] border border-indigo-500/30 p-8 sm:p-12 rounded-[3.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.8)] space-y-10">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">
+                            <Calculator className="w-4 h-4" /> Simulador en Tiempo Real (Ecuador)
+                        </div>
+                        <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+                            10. Proyección de Retorno de Inversión (ROI)
+                        </h3>
+                        <p className="text-xs text-gray-400 font-medium mt-1">
+                            Fórmula Oficial: <code className="text-indigo-300 font-mono bg-white/5 px-2 py-0.5 rounded">ROI = ((Ingresos por Comisión - Costo de Marketing) ÷ Costo de Marketing) × 100</code>
+                        </p>
+                    </div>
+                </div>
+
+                {/* Interactive Controls */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    <div className="lg:col-span-6 space-y-6">
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs font-black text-gray-300">
+                                <span>Inversión Mensual en Pauta (Ads):</span>
+                                <span className="text-indigo-400">${adBudget} USD</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="80"
+                                max="1000"
+                                step="20"
+                                value={adBudget}
+                                onChange={(e) => setAdBudget(Number(e.target.value))}
+                                className="w-full accent-indigo-500 cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-gray-600 font-bold">
+                                <span>$80 USD</span>
+                                <span>$160 (Recomendado)</span>
+                                <span>$1,000 USD</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs font-black text-gray-300">
+                                <span>Precio Promedio del Inmueble:</span>
+                                <span className="text-emerald-400">${propertyPrice.toLocaleString()} USD</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2">
+                                {[60000, 80000, 120000, 200000].map((val) => (
+                                    <button
+                                        key={val}
+                                        onClick={() => setPropertyPrice(val)}
+                                        className={`py-2 rounded-xl text-xs font-bold transition-all ${propertyPrice === val ? 'bg-indigo-600 text-white' : 'bg-white/5 text-gray-400 hover:text-white'}`}
+                                    >
+                                        ${val / 1000}k
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Costo por Lead (CPL)</label>
+                                <select
+                                    value={avgCpl}
+                                    onChange={(e) => setAvgCpl(Number(e.target.value))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs font-bold focus:border-indigo-500 focus:outline-none"
+                                >
+                                    <option value="4" className="bg-[#0E0E18]">$4 USD (Vivienda Social/Media)</option>
+                                    <option value="8" className="bg-[#0E0E18]">$8 USD (Promedio Ecuador)</option>
+                                    <option value="12" className="bg-[#0E0E18]">$12 USD (Alta Gama / Lujo)</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Comisión Asesor (%)</label>
+                                <select
+                                    value={commissionRate}
+                                    onChange={(e) => setCommissionRate(Number(e.target.value))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs font-bold focus:border-indigo-500 focus:outline-none"
+                                >
+                                    <option value="3" className="bg-[#0E0E18]">3% (Estándar Inmobiliario)</option>
+                                    <option value="4" className="bg-[#0E0E18]">4% (Exclusivas)</option>
+                                    <option value="5" className="bg-[#0E0E18]">5% (Proyectos Nuevos)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Nivel DIIC ZONE Seleccionado</label>
+                            <div className="grid grid-cols-5 gap-1.5">
+                                {[
+                                    { name: 'N1', price: 350 },
+                                    { name: 'N2', price: 500 },
+                                    { name: 'N3', price: 700 },
+                                    { name: 'N4', price: 999 },
+                                    { name: 'N5', price: 1500 }
+                                ].map((tier) => (
+                                    <button
+                                        key={tier.price}
+                                        onClick={() => setSelectedTierPrice(tier.price)}
+                                        className={`py-2 rounded-xl text-center transition-all ${selectedTierPrice === tier.price ? 'bg-emerald-500 text-black font-black' : 'bg-white/5 text-gray-400 hover:text-white text-xs font-bold'}`}
+                                    >
+                                        <div className="text-[9px] uppercase">{tier.name}</div>
+                                        <div>${tier.price}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Results Dashboard */}
+                    <div className="lg:col-span-6 bg-gradient-to-br from-indigo-950/40 via-black to-purple-950/30 border border-indigo-500/30 p-8 rounded-3xl space-y-6 shadow-2xl">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Leads Generados</span>
+                                <span className="text-2xl font-black text-white">{calculatedLeads} leads</span>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block">Visitas Agendadas (30%)</span>
+                                <span className="text-2xl font-black text-emerald-400">{calculatedVisits} visitas</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 border-t border-b border-white/10 py-4 text-xs font-medium text-gray-300">
+                            <div className="flex justify-between">
+                                <span>Cierres Estimados (1 de cada 20 leads):</span>
+                                <span className="text-white font-bold">{estimatedClosings} venta</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Ingreso Bruto por Comisión:</span>
+                                <span className="text-emerald-400 font-bold">${commissionGrossIncome.toLocaleString()} USD</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Costo Total Marketing (Pauta + Plan DIIC):</span>
+                                <span className="text-gray-400 font-bold">${totalMarketingCost.toLocaleString()} USD</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">Utilidad Neta Generada</span>
+                                <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                                    +${netProfit.toLocaleString()} <span className="text-xs text-gray-500 font-normal">USD</span>
+                                </span>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Retorno Proyectado (ROI)</span>
+                                <span className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">
+                                    +{roiPercentage}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 11. GESTIÓN DE PAUTA PUBLICITARIA — A PARTIR DEL NIVEL 2 */}
+            <div className="bg-[#0E0E18] border border-white/5 p-8 sm:p-12 rounded-[3.5rem] space-y-8">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                    <div>
+                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Comisiones Transparentes</span>
+                        <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                            11. Gestión de Pauta Publicitaria — A partir del Nivel 2
+                        </h3>
+                    </div>
+                </div>
+
+                <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                    DIIC ZONE cobra un porcentaje sobre el presupuesto de pauta invertido — <strong className="text-white">nunca un monto fijo</strong>. El porcentaje baja conforme el presupuesto sube:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {adTiers.map((tier, idx) => (
+                        <div key={idx} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                            <span className="text-xs font-black text-white block">{tier.spend}</span>
+                            <span className="text-sm font-bold text-indigo-400 block">{tier.fee}</span>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex items-start gap-4 text-xs text-gray-400 font-medium italic">
+                    <Shield className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                    <span>
+                        <strong className="text-white font-bold">Aclaración de Transparencia:</strong> El presupuesto de pauta en sí se paga directamente a Meta o Google desde la tarjeta de crédito del cliente — DIIC ZONE cobra exclusivamente por la estrategia, segmentación, diseño de creatividades y optimización técnica de la campaña.
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
+}

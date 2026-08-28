@@ -315,9 +315,10 @@ export default function HQClientsPage() {
         const planId = (newClient.plan || 'Presence').toLowerCase();
         
         let activePlanLevelKey = 'presence';
-        if (planId.includes('crecimiento') || planId.includes('growth')) activePlanLevelKey = 'growth';
-        if (planId.includes('autoridad') || planId.includes('authority')) activePlanLevelKey = 'authority';
-        if (planId.includes('control') || planId.includes('elite')) activePlanLevelKey = 'elite';
+        if (planId.includes('crecimiento') || planId.includes('growth') || planId.includes('estrategia')) activePlanLevelKey = 'growth';
+        if (planId.includes('autoridad') || planId.includes('authority') || planId.includes('marca')) activePlanLevelKey = 'authority';
+        if (planId.includes('control') || planId.includes('elite') || planId.includes('automatizacion') || planId.includes('automatización')) activePlanLevelKey = 'elite';
+        if (planId.includes('escala') || planId.includes('scale')) activePlanLevelKey = 'scale';
 
         const nicheDetails = NICHE_DETAILS[activeNicheKey]?.plans[activePlanLevelKey] || {};
         const marketingEnfoque = nicheDetails.enfoque || 'Estrategia General';
