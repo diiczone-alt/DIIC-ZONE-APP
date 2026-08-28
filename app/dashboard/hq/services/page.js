@@ -976,7 +976,7 @@ export default function HQServicesPage() {
 
 function PricingCard({ service, index, onSelect }) {
     const isPopular = service.level === 'NIVEL CLAVE';
-    const icons = [Shield, Zap, Crown, Star];
+    const icons = [Shield, Zap, Crown, Star, Award];
     const Icon = icons[index] || Zap;
 
     return (
