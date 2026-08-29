@@ -149,7 +149,7 @@ function DashboardContent({ children }) {
                 </div>
 
                 {/* Main Content Area - Padding depends on suppression or route */}
-                <div className={`relative z-10 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${shouldHideSidebar || pathname === '/dashboard/strategy' ? '' : 'p-4 md:p-8'}`}>
+                <div className={`relative flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar ${shouldHideSidebar || pathname === '/dashboard/strategy' ? '' : 'p-4 md:p-8'}`}>
                     {children}
                 </div>
             </main>

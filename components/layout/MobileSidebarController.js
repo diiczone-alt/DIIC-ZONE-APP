@@ -26,6 +26,11 @@ export default function MobileSidebarController() {
         };
     }, [isMobileOpen]);
 
+    // HQ sidebar renders its own direct sibling backdrop to guarantee it is always in front and fully clickable
+    if (pathname?.startsWith('/dashboard/hq')) {
+        return null;
+    }
+
     return (
         <AnimatePresence>
             {isMobileOpen && (
