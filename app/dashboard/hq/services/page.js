@@ -18,6 +18,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import { NICHE_DETAILS } from '@/lib/nicheDetails';
+import { toast } from 'sonner';
 
 export default function HQServicesPage() {
     const [services, setServices] = useState([]);
@@ -472,19 +473,28 @@ export default function HQServicesPage() {
                     {/* PRODUCTION CATEGORY */}
                     <CategoryCard 
                         title="🎬 Producción" 
-                        items={rates.filter(r => r.id.includes('vid') || r.id.includes('reel') || r.id.includes('podcast'))} 
+                        items={rates.filter(r => {
+                            const id = String(r?.id || r?.code || '').toLowerCase();
+                            return id.includes('vid') || id.includes('reel') || id.includes('podcast') || id.includes('prod');
+                        })} 
                         color="indigo"
                     />
                     {/* DESIGN CATEGORY */}
                     <CategoryCard 
                         title="🎨 Diseño" 
-                        items={rates.filter(r => r.id.includes('post') || r.id.includes('carousel') || r.id.includes('portada'))} 
+                        items={rates.filter(r => {
+                            const id = String(r?.id || r?.code || '').toLowerCase();
+                            return id.includes('post') || id.includes('carousel') || id.includes('portada') || id.includes('dsn');
+                        })} 
                         color="emerald"
                     />
                     {/* STRATEGY & SCALE */}
                     <CategoryCard 
                         title="🧠 Estrategia & Fotografía" 
-                        items={rates.filter(r => r.id.includes('strategy') || r.id.includes('photo') || r.id.includes('auto'))} 
+                        items={rates.filter(r => {
+                            const id = String(r?.id || r?.code || '').toLowerCase();
+                            return id.includes('strategy') || id.includes('photo') || id.includes('auto') || id.includes('str');
+                        })} 
                         color="orange"
                     />
                 </div>
@@ -1072,7 +1082,7 @@ function PackCard({ service, index, onSelect }) {
             {/* Type Badge */}
             <div className="mb-8 items-center flex gap-3">
                 <div className="p-3 bg-white/5 rounded-2xl text-indigo-400">
-                    {service.id.includes('design') ? <Palette className="w-6 h-6" /> : <Video className="w-6 h-6" />}
+                    {String(service?.id || '').includes('design') ? <Palette className="w-6 h-6" /> : <Video className="w-6 h-6" />}
                 </div>
                 <div>
                     <h3 className="text-lg font-black text-white italic tracking-tight">{service.name}</h3>
@@ -1135,17 +1145,20 @@ function CategoryCard({ title, items, color }) {
                 {title}
             </h3>
             <div className="space-y-4">
-                {items.length > 0 ? items.map(item => (
-                    <div key={item.id} className="flex justify-between items-center group">
-                        <span className="text-gray-400 group-hover:text-white transition-colors text-xs font-bold uppercase tracking-wider">{item.name}</span>
-                        <div className="flex items-center gap-2">
-                             <span className="text-[10px] text-gray-600 font-black line-through opacity-0 group-hover:opacity-100 transition-opacity">
-                                ${(item.price_sale * 1.2).toFixed(0)}
-                             </span>
-                             <span className="text-white font-black text-sm tracking-tighter">${item.price_sale}</span>
+                {items && items.length > 0 ? items.map(item => {
+                    const price = Number(item?.price_sale ?? item?.price ?? 0);
+                    return (
+                        <div key={item.id || item.name} className="flex justify-between items-center group">
+                            <span className="text-gray-400 group-hover:text-white transition-colors text-xs font-bold uppercase tracking-wider">{item.name}</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-gray-600 font-black line-through opacity-0 group-hover:opacity-100 transition-opacity">
+                                    ${(price * 1.2).toFixed(0)}
+                                </span>
+                                <span className="text-white font-black text-sm tracking-tighter">${price}</span>
+                            </div>
                         </div>
-                    </div>
-                )) : (
+                    );
+                }) : (
                     <p className="text-[10px] text-gray-700 italic">Cargando catálogo...</p>
                 )}
             </div>
