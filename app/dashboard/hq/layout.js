@@ -9,7 +9,7 @@ import { Menu } from 'lucide-react';
 
 export default function HQLayout({ children }) {
     const { user, loading, getHomeRoute } = useAuth();
-    const { isMobileOpen, setIsMobileOpen } = useSidebar();
+    const { isMobileOpen, setIsMobileOpen, isCollapsed } = useSidebar();
     const router = useRouter();
 
     useEffect(() => {
@@ -61,7 +61,7 @@ export default function HQLayout({ children }) {
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto pl-0 lg:pl-64 pb-24 custom-scrollbar relative">
+                <main className={`flex-1 overflow-y-auto pl-0 ${isCollapsed ? 'lg:pl-20' : 'lg:pl-64'} pb-24 custom-scrollbar relative transition-all duration-300 ease-in-out`}>
                     {children}
                 </main>
             </div>
