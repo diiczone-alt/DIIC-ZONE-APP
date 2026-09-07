@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-    MessageSquare, Hash, Users, Send, Paperclip, Smile, Shield,
-    User, Search, Loader2, Sparkles, AlertCircle, Image as ImageIcon, FileText, X,
-    FolderOpen, Globe, Link as LinkIcon, Download, Music, File, Building2,
+    MessageSquare, Users, Send, Paperclip, Smile, Shield,
+    Search, Loader2, Sparkles, Image as ImageIcon, FileText, X,
+    Globe, Link as LinkIcon, Download, Building2,
     Briefcase, Stethoscope, Sprout, Coffee, GraduationCap, Building,
     ChevronRight, ChevronDown, Check, ExternalLink, Phone, Mail,
-    Info, Eye, ArrowUpRight, CheckCircle2, Star, Layers, Activity
+    Info, Eye, ArrowUpRight, CheckCircle2, Star, Layers, Activity,
+    Calendar, Clock, Filter, Plus, FileSpreadsheet, AlertCircle,
+    UserCheck, CheckSquare, XCircle, Share2, MoreHorizontal
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
@@ -30,7 +32,7 @@ const getRoleDetails = (role) => {
             bg: 'bg-pink-500/10',
             border: 'border-pink-500/20',
             badge: 'bg-pink-500/10 text-pink-400 border border-pink-500/20',
-            avatar: 'bg-pink-950/50 text-pink-400 border border-pink-500/30'
+            avatar: 'bg-pink-950/60 text-pink-300 border border-pink-500/30'
         };
     }
     if (r.includes('editor') || r.includes('edici')) {
@@ -41,7 +43,7 @@ const getRoleDetails = (role) => {
             bg: 'bg-purple-500/10',
             border: 'border-purple-500/20',
             badge: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
-            avatar: 'bg-purple-950/50 text-purple-400 border border-purple-500/30'
+            avatar: 'bg-purple-950/60 text-purple-300 border border-purple-500/30'
         };
     }
     if (r.includes('film') || r.includes('foto') || r.includes('cámara') || r.includes('camera')) {
@@ -52,7 +54,7 @@ const getRoleDetails = (role) => {
             bg: 'bg-orange-500/10',
             border: 'border-orange-500/20',
             badge: 'bg-orange-500/10 text-orange-400 border border-orange-500/20',
-            avatar: 'bg-orange-950/50 text-orange-400 border border-orange-500/30'
+            avatar: 'bg-orange-950/60 text-orange-300 border border-orange-500/30'
         };
     }
     if (r.includes('community') || r.includes('cm') || r.includes('estrateg')) {
@@ -63,7 +65,7 @@ const getRoleDetails = (role) => {
             bg: 'bg-indigo-500/10',
             border: 'border-indigo-500/20',
             badge: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20',
-            avatar: 'bg-indigo-950/50 text-indigo-400 border border-indigo-500/30'
+            avatar: 'bg-indigo-950/60 text-indigo-300 border border-indigo-500/30'
         };
     }
     if (r.includes('audio') || r.includes('web') || r.includes('programad') || r.includes('model')) {
@@ -74,7 +76,7 @@ const getRoleDetails = (role) => {
             bg: 'bg-emerald-500/10',
             border: 'border-emerald-500/20',
             badge: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-            avatar: 'bg-emerald-950/50 text-emerald-400 border border-emerald-500/30'
+            avatar: 'bg-emerald-950/60 text-emerald-300 border border-emerald-500/30'
         };
     }
 
@@ -85,13 +87,13 @@ const getRoleDetails = (role) => {
         bg: 'bg-cyan-500/10',
         border: 'border-cyan-500/20',
         badge: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20',
-        avatar: 'bg-cyan-950/50 text-cyan-400 border border-cyan-500/30'
+        avatar: 'bg-cyan-950/60 text-cyan-300 border border-cyan-500/30'
     };
 };
 
 // Helper for Client Industry / Niches
 const getClientNiche = (client) => {
-    const raw = `${client.industry || ''} ${client.specialty || ''} ${client.name || ''}`.toLowerCase();
+    const raw = `${client?.industry || ''} ${client?.specialty || ''} ${client?.name || ''}`.toLowerCase();
     
     if (raw.includes('medico') || raw.includes('salud') || raw.includes('doctor') || raw.includes('hospital') || raw.includes('clinica') || raw.includes('uro') || raw.includes('cirug')) {
         return {
@@ -99,8 +101,6 @@ const getClientNiche = (client) => {
             name: 'Salud & Sector Médico',
             icon: Stethoscope,
             color: 'text-cyan-400',
-            bg: 'bg-cyan-500/10',
-            border: 'border-cyan-500/20',
             badge: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
         };
     }
@@ -110,8 +110,6 @@ const getClientNiche = (client) => {
             name: 'Agropecuario & Campo',
             icon: Sprout,
             color: 'text-emerald-400',
-            bg: 'bg-emerald-500/10',
-            border: 'border-emerald-500/20',
             badge: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
         };
     }
@@ -121,8 +119,6 @@ const getClientNiche = (client) => {
             name: 'Gastronomía & Restaurantes',
             icon: Coffee,
             color: 'text-amber-400',
-            bg: 'bg-amber-500/10',
-            border: 'border-amber-500/20',
             badge: 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
         };
     }
@@ -132,8 +128,6 @@ const getClientNiche = (client) => {
             name: 'Educación & Cursos',
             icon: GraduationCap,
             color: 'text-purple-400',
-            bg: 'bg-purple-500/10',
-            border: 'border-purple-500/20',
             badge: 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
         };
     }
@@ -143,19 +137,15 @@ const getClientNiche = (client) => {
             name: 'Inmobiliaria & Bienes Raíces',
             icon: Building,
             color: 'text-blue-400',
-            bg: 'bg-blue-500/10',
-            border: 'border-blue-500/20',
             badge: 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
         };
     }
 
     return {
         key: 'corporativo',
-        name: 'Corporativo & Marcas Personales',
+        name: 'Corporativo & Marcas',
         icon: Building2,
         color: 'text-indigo-400',
-        bg: 'bg-indigo-500/10',
-        border: 'border-indigo-500/20',
         badge: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
     };
 };
@@ -170,13 +160,14 @@ export default function HQMessagesPage() {
     const [squads, setSquads] = useState([]);
     const [profileMap, setProfileMap] = useState({});
     
-    // Main sidebar tab switcher: 'team' (Equipo Creativo) vs 'clients' (Clientes / Marcas)
-    const [mainSidebarTab, setMainSidebarTab] = useState('team');
+    // Navigation & filters
+    const [mainSidebarTab, setMainSidebarTab] = useState('worklist'); // 'worklist' | 'team' | 'clients'
     const [searchQuery, setSearchQuery] = useState('');
+    const [headerSubTab, setHeaderSubTab] = useState('summary'); // 'summary' | 'analytics' | 'details' | 'files' | 'history'
     
     // Selection state:
     // target = { id, name, type: 'channel' | 'dm' | 'client', role, clientData, memberData, squadData }
-    const [selectedTarget, setSelectedTarget] = useState({ id: '', name: 'Selecciona una conversación', type: 'channel' });
+    const [selectedTarget, setSelectedTarget] = useState({ id: '', name: 'Cargando...', type: 'channel' });
     const [currentChatId, setCurrentChatId] = useState(null);
     
     // Messaging state
@@ -185,10 +176,7 @@ export default function HQMessagesPage() {
     const [isSending, setIsSending] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showRightPanel, setShowRightPanel] = useState(true);
-    const [activeRightPanelTab, setActiveRightPanelTab] = useState('info'); // 'info' | 'media' | 'docs' | 'links'
-    
-    // Unread count tracking
-    const [unreadCounts, setUnreadCounts] = useState({});
+    const [dealStage, setDealStage] = useState('negotiation'); // 'negotiation' | 'close' | 'active'
     
     const fileInputRef = useRef(null);
     const messagesEndRef = useRef(null);
@@ -202,7 +190,7 @@ export default function HQMessagesPage() {
         scrollToBottom();
     }, [messagesList]);
 
-    // 1. Load team members, clients, profiles map, and group them into squads/departments
+    // 1. Load team members, clients, profiles map
     useEffect(() => {
         const loadHQMessagesData = async () => {
             try {
@@ -251,12 +239,20 @@ export default function HQMessagesPage() {
                 
                 setSquads(squadGroups);
                 
-                // Auto-select the first squad or team member
-                if (squadGroups.length > 0) {
+                // Auto-select the first client or squad
+                if (safeClients.length > 0) {
+                    const firstClient = safeClients[0];
+                    setSelectedTarget({
+                        id: firstClient.id,
+                        name: firstClient.name,
+                        type: 'client',
+                        clientData: firstClient
+                    });
+                } else if (squadGroups.length > 0) {
                     const firstSquad = squadGroups[0];
                     setSelectedTarget({
                         id: firstSquad.lead.id,
-                        name: `Escuadra General - ${firstSquad.lead.name}`,
+                        name: `Escuadra ${firstSquad.lead.name}`,
                         type: 'channel',
                         squadData: firstSquad
                     });
@@ -274,7 +270,7 @@ export default function HQMessagesPage() {
                 setLoading(false);
             } catch (err) {
                 console.error("Error loading HQ messaging data:", err);
-                toast.error("Error al cargar la información del equipo y clientes.");
+                toast.error("Error al sincronizar datos de mensajería.");
                 setLoading(false);
             }
         };
@@ -291,17 +287,14 @@ export default function HQMessagesPage() {
                 let chatId = null;
 
                 if (selectedTarget.type === 'channel') {
-                    // Squad channel
                     const cmId = selectedTarget.id;
                     const chat = await messagingService.getOrCreateSquadChat(cmId, 'general');
                     chatId = chat.id;
                 } else if (selectedTarget.type === 'client') {
-                    // Direct Brand/Client chat
                     const clientId = selectedTarget.id;
                     const chat = await messagingService.getOrCreateClientChat(clientId);
                     chatId = chat.id;
                 } else {
-                    // Direct Talent / Creative DM
                     const chat = await messagingService.getOrCreateDirectChat(user.id, selectedTarget.id);
                     chatId = chat.id;
                 }
@@ -330,8 +323,8 @@ export default function HQMessagesPage() {
                 const mapped = msgs.map(m => {
                     const isSelf = m.sender_id === user.id;
                     const senderName = isSelf 
-                        ? 'Tú (HQ)' 
-                        : (profileMap[m.sender_id] || 'Colega');
+                        ? 'Tú (HQ Admin)' 
+                        : (profileMap[m.sender_id] || selectedTarget.name || 'Destinatario');
 
                     return {
                         id: m.id,
@@ -353,7 +346,7 @@ export default function HQMessagesPage() {
         };
 
         fetchMsgs();
-    }, [currentChatId, user, profileMap]);
+    }, [currentChatId, user, profileMap, selectedTarget.name]);
 
     // 4. Global real-time subscription for messages
     useEffect(() => {
@@ -368,13 +361,12 @@ export default function HQMessagesPage() {
             }, (payload) => {
                 const newDbMsg = payload.new;
                 
-                // Active chat match
                 if (currentChatId && newDbMsg.chat_id === currentChatId) {
                     setMessagesList(prev => {
                         if (prev.some(m => m.id === newDbMsg.id)) return prev;
 
                         const isSelf = newDbMsg.sender_id === user.id;
-                        const senderName = isSelf ? 'Tú (HQ)' : (profileMap[newDbMsg.sender_id] || 'Colega');
+                        const senderName = isSelf ? 'Tú (HQ Admin)' : (profileMap[newDbMsg.sender_id] || selectedTarget.name || 'Destinatario');
 
                         return [...prev, {
                             id: newDbMsg.id,
@@ -396,72 +388,44 @@ export default function HQMessagesPage() {
         return () => {
             supabase.removeChannel(globalChannel);
         };
-    }, [currentChatId, user, profileMap]);
+    }, [currentChatId, user, profileMap, selectedTarget.name]);
 
-    // Group Creative Team by Department
-    const creativeDepartments = useMemo(() => {
-        const groups = {
-            'design': { name: 'Diseño Gráfico & Branding', icon: '🎨', color: 'text-pink-400', members: [] },
-            'editing': { name: 'Edición & Post-Producción', icon: '🎬', color: 'text-purple-400', members: [] },
-            'production': { name: 'Filmmakers & Fotografía', icon: '🎥', color: 'text-orange-400', members: [] },
-            'cm_strategy': { name: 'Community Managers & Estrategas', icon: '📱', color: 'text-indigo-400', members: [] },
-            'specialists': { name: 'Audio, Web & Especialistas', icon: '🎧', color: 'text-emerald-400', members: [] },
-            'other': { name: 'Otros Nodos de Talento', icon: '⚡', color: 'text-cyan-400', members: [] }
-        };
+    // Unified list of Worklist Items for the left sub-sidebar (combining clients & key talent)
+    const worklistItems = useMemo(() => {
+        const clientItems = clientList.map((c, i) => ({
+            id: c.id,
+            name: c.name,
+            subtitle: `${c.industry || 'Cliente'} • ${c.city || 'Sede'}`,
+            type: 'client',
+            priority: i % 3 === 0 ? 'High' : (i % 3 === 1 ? 'Mid' : 'Low'),
+            statusText: i % 2 === 0 ? 'Awaiting our proposal' : 'Content in production',
+            data: c
+        }));
 
-        teamList.forEach(member => {
-            const details = getRoleDetails(member.role);
-            if (groups[details.depKey]) {
-                groups[details.depKey].members.push(member);
-            } else {
-                groups['other'].members.push(member);
-            }
-        });
+        const teamItems = teamList.slice(0, 8).map((m, i) => ({
+            id: m.id,
+            name: m.name,
+            subtitle: `${m.role || 'Talento'} • ${m.city || 'Sede'}`,
+            type: 'dm',
+            priority: i % 2 === 0 ? 'High' : 'Mid',
+            statusText: 'Active sprint task',
+            data: m
+        }));
 
-        return Object.values(groups).filter(g => g.members.length > 0);
-    }, [teamList]);
+        return [...clientItems, ...teamItems];
+    }, [clientList, teamList]);
 
-    // Group Clients by Industry Niches
-    const clientNiches = useMemo(() => {
-        const groups = {};
-
-        clientList.forEach(client => {
-            const niche = getClientNiche(client);
-            if (!groups[niche.key]) {
-                groups[niche.key] = {
-                    ...niche,
-                    clients: []
-                };
-            }
-            groups[niche.key].clients.push(client);
-        });
-
-        return Object.values(groups);
-    }, [clientList]);
-
-    // Filtered lists by search
-    const filteredTeamMembers = useMemo(() => {
-        if (!searchQuery.trim()) return teamList;
+    // Filtered Worklist
+    const filteredWorklist = useMemo(() => {
+        if (!searchQuery.trim()) return worklistItems;
         const q = searchQuery.toLowerCase();
-        return teamList.filter(m => 
-            m.name?.toLowerCase().includes(q) || 
-            m.role?.toLowerCase().includes(q) ||
-            m.city?.toLowerCase().includes(q)
+        return worklistItems.filter(item => 
+            item.name?.toLowerCase().includes(q) || 
+            item.subtitle?.toLowerCase().includes(q)
         );
-    }, [teamList, searchQuery]);
+    }, [worklistItems, searchQuery]);
 
-    const filteredClients = useMemo(() => {
-        if (!searchQuery.trim()) return clientList;
-        const q = searchQuery.toLowerCase();
-        return clientList.filter(c => 
-            c.name?.toLowerCase().includes(q) || 
-            c.industry?.toLowerCase().includes(q) ||
-            c.plan?.toLowerCase().includes(q) ||
-            c.city?.toLowerCase().includes(q)
-        );
-    }, [clientList, searchQuery]);
-
-    // Extract shared media, docs, and links from active conversation
+    // Shared data extraction (Media, Docs, Links)
     const sharedData = useMemo(() => {
         const media = [];
         const docs = [];
@@ -491,6 +455,31 @@ export default function HQMessagesPage() {
         return { media, docs, links };
     }, [messagesList]);
 
+    // Mock timeline events for the active contact/deal
+    const timelineActivities = useMemo(() => {
+        const name = selectedTarget.name || 'Cliente';
+        return [
+            {
+                id: 'act-1',
+                type: 'call',
+                title: `Information Provided to ${name}`,
+                desc: 'Checked client requirements, brand guidelines and production scope. Created follow-up pipeline.',
+                date: '12 May',
+                assignee: selectedTarget.clientData?.cm || 'Marty C.',
+                stage: 'Discovery'
+            },
+            {
+                id: 'act-2',
+                type: 'message',
+                title: 'Gathering additional information & scripts',
+                desc: 'Client confirmed active interest and is awaiting our Proposal and Shooting Schedule.',
+                date: '15 May',
+                assignee: selectedTarget.clientData?.filmmaker || 'Anthony V.',
+                stage: 'Negotiation'
+            }
+        ];
+    }, [selectedTarget]);
+
     // Handle Send Message
     const handleSendMessage = async (e) => {
         if (e) e.preventDefault();
@@ -505,7 +494,7 @@ export default function HQMessagesPage() {
         } catch (err) {
             console.error("Error sending message:", err);
             toast.error("Error al enviar mensaje.");
-            setInputText(text); // Restore text on error
+            setInputText(text);
         } finally {
             setIsSending(false);
         }
@@ -536,7 +525,7 @@ export default function HQMessagesPage() {
             await messagingService.sendMessage(
                 currentChatId,
                 user.id,
-                isImage ? `📷 Imagen enviada: ${file.name}` : `📎 Archivo adjunto: ${file.name}`,
+                isImage ? `📷 Imagen compartida: ${file.name}` : `📎 Archivo adjunto: ${file.name}`,
                 {
                     isFile: true,
                     isImage: isImage,
@@ -547,7 +536,7 @@ export default function HQMessagesPage() {
             );
 
             toast.dismiss(toastId);
-            toast.success("Archivo compartido con éxito.");
+            toast.success("Archivo subido con éxito.");
         } catch (err) {
             console.error("Error uploading file:", err);
             toast.dismiss(toastId);
@@ -559,18 +548,18 @@ export default function HQMessagesPage() {
 
     if (loading && teamList.length === 0 && clientList.length === 0) {
         return (
-            <div className="min-h-screen bg-[#050511] flex flex-col items-center justify-center text-white gap-6">
-                <div className="w-14 h-14 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+            <div className="h-full bg-[#0A0B10] flex flex-col items-center justify-center text-white gap-6">
+                <div className="w-14 h-14 border-4 border-[#D4FF00]/20 border-t-[#D4FF00] rounded-full animate-spin" />
                 <div className="space-y-1 text-center">
-                    <p className="font-black uppercase tracking-[0.3em] text-xs text-indigo-400 animate-pulse">Cargando Centro de Mensajería HQ</p>
-                    <p className="text-[10px] text-gray-500 font-mono">Conectando canales de creativos y nichos de clientes</p>
+                    <p className="font-black uppercase tracking-[0.3em] text-xs text-[#D4FF00] animate-pulse">Sincronizando Workspace HQ</p>
+                    <p className="text-[10px] text-gray-500 font-mono">Conectando canales de creativos y cartera de marcas</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#050511] text-white flex flex-col p-4 md:p-8">
+        <div className="h-full bg-[#07080C] text-white flex flex-col p-3 md:p-4 overflow-hidden select-none font-sans">
             
             {/* Hidden File Input */}
             <input 
@@ -580,800 +569,673 @@ export default function HQMessagesPage() {
                 onChange={handleFileUpload} 
             />
 
-            {/* Top Page Header */}
-            <header className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-white/5 shrink-0">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
-                            <MessageSquare className="w-6 h-6" />
-                        </div>
-                        <h1 className="text-2xl md:text-3xl font-black text-white italic uppercase tracking-tight">
-                            CENTRO DE <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-500">MENSAJERÍA HQ</span>
+            {/* Top Workspace Bar */}
+            <header className="mb-3 flex items-center justify-between gap-4 px-1 shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-[#D4FF00] flex items-center justify-center text-black shadow-[0_0_20px_rgba(212,255,0,0.3)]">
+                        <Sparkles className="w-4 h-4 fill-black" />
+                    </div>
+                    <div>
+                        <h1 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                            <span>DIIC ZONE</span>
+                            <span className="text-xs uppercase px-2 py-0.5 rounded-md bg-[#D4FF00]/10 text-[#D4FF00] border border-[#D4FF00]/20 font-mono">
+                                CRM & MESSAGING
+                            </span>
                         </h1>
                     </div>
-                    <p className="text-gray-400 text-xs mt-1 font-medium">
-                        Supervisión, directivas operativas y comunicación directa con el equipo creativo y cartera de clientes.
-                    </p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black tracking-widest uppercase shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black tracking-wider">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span>HQ REALTIME LIVE</span>
                     </div>
 
                     <button
                         onClick={() => setShowRightPanel(!showRightPanel)}
-                        className={`p-2.5 rounded-2xl border transition-all flex items-center gap-2 text-xs font-bold ${
+                        className={`p-2 rounded-xl border transition-all flex items-center gap-2 text-xs font-bold ${
                             showRightPanel 
-                                ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' 
+                                ? 'bg-[#D4FF00]/20 border-[#D4FF00]/30 text-[#D4FF00]' 
                                 : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
                         }`}
                         title="Alternar Panel de Inteligencia"
                     >
                         <Info className="w-4 h-4" />
-                        <span className="hidden md:inline text-[10px] font-black uppercase tracking-wider">Ficha Contexto</span>
+                        <span className="hidden sm:inline text-[10px] font-black uppercase tracking-wider">Context Hub</span>
                     </button>
                 </div>
             </header>
 
             {/* Main 3-Column Work Area */}
-            <div className="flex-1 flex rounded-[32px] overflow-hidden border border-white/10 bg-[#070718] shadow-2xl min-h-[600px]">
+            <div className="flex-1 flex gap-3 overflow-hidden min-h-0">
                 
-                {/* --- COLUMN 1: LEFT NAVIGATION SIDEBAR (TEAM & CLIENTS) --- */}
-                <div className="w-80 md:w-96 bg-black/40 border-r border-white/5 flex flex-col shrink-0 overflow-hidden">
+                {/* ============================================================== */}
+                {/* COLUMN 1: LEFT SUB-SIDEBAR (WORKLIST & STAT PILLS) */}
+                {/* ============================================================== */}
+                <div className="w-80 md:w-88 bg-[#111217] rounded-[28px] border border-white/5 flex flex-col shrink-0 overflow-hidden shadow-2xl">
                     
-                    {/* Primary Tab Switcher: Equipo Creativo vs Clientes */}
-                    <div className="p-3 bg-white/[0.02] border-b border-white/5">
-                        <div className="grid grid-cols-2 gap-1.5 p-1 bg-black/60 rounded-2xl border border-white/5">
-                            <button
-                                onClick={() => setMainSidebarTab('team')}
-                                className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-wider transition-all ${
-                                    mainSidebarTab === 'team'
-                                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/20'
-                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                }`}
-                            >
-                                <Users className="w-3.5 h-3.5" />
-                                <span>Equipo ({teamList.length})</span>
-                            </button>
+                    {/* Top 4 KPI Stat Pill Cards */}
+                    <div className="p-3.5 border-b border-white/5 bg-black/20">
+                        <div className="grid grid-cols-2 gap-2">
+                            {/* Worklist Card */}
+                            <div className="p-3 rounded-2xl bg-[#1A1B22] border border-white/5 flex flex-col justify-between hover:border-white/10 transition-colors">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-2.5 h-2.5 rounded-full border-2 border-yellow-400/80 bg-yellow-400/20" />
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Worklist</span>
+                                </div>
+                                <span className="text-xl font-black text-white mt-1">{worklistItems.length}</span>
+                            </div>
 
-                            <button
-                                onClick={() => setMainSidebarTab('clients')}
-                                className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-wider transition-all ${
-                                    mainSidebarTab === 'clients'
-                                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/20'
-                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                }`}
-                            >
-                                <Building2 className="w-3.5 h-3.5" />
-                                <span>Clientes ({clientList.length})</span>
-                            </button>
+                            {/* New Leads / Clients Card */}
+                            <div className="p-3 rounded-2xl bg-[#1A1B22] border border-white/5 flex flex-col justify-between hover:border-white/10 transition-colors">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-2.5 h-2.5 rounded-full border-2 border-red-400/80 bg-red-400/20" />
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Clientes</span>
+                                </div>
+                                <span className="text-xl font-black text-white mt-1">{clientList.length}</span>
+                            </div>
+
+                            {/* Updates Card */}
+                            <div className="p-3 rounded-2xl bg-[#1A1B22] border border-white/5 flex flex-col justify-between hover:border-white/10 transition-colors">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-2.5 h-2.5 rounded-full border-2 border-sky-400/80 bg-sky-400/20" />
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Updates</span>
+                                </div>
+                                <span className="text-xl font-black text-white mt-1">22</span>
+                            </div>
+
+                            {/* Assigned / Squad Card */}
+                            <div className="p-3 rounded-2xl bg-[#1A1B22] border border-white/5 flex flex-col justify-between hover:border-white/10 transition-colors">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-2.5 h-2.5 rounded-full border-2 border-purple-400/80 bg-purple-400/20" />
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nodos</span>
+                                </div>
+                                <span className="text-xl font-black text-white mt-1">{teamList.length}</span>
+                            </div>
                         </div>
 
                         {/* Search Input */}
                         <div className="mt-3 relative">
-                            <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                            <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={mainSidebarTab === 'team' ? 'Buscar talento o departamento...' : 'Buscar cliente o nicho...'}
-                                className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-white/5 border border-white/5 focus:border-indigo-500/40 text-xs text-white placeholder:text-gray-600 outline-none transition-all font-medium"
+                                placeholder="Buscar contacto, cliente o tarea..."
+                                className="w-full pl-8 pr-7 py-2 rounded-xl bg-[#181920] border border-white/5 focus:border-[#D4FF00]/40 text-xs text-white placeholder:text-gray-600 outline-none transition-all"
                             />
                             {searchQuery && (
-                                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                                <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
                                     <X className="w-3 h-3" />
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    {/* Scrollable Channels & Directory List */}
-                    <div className="flex-1 overflow-y-auto p-3 space-y-5 custom-scrollbar">
-                        
-                        {/* === VIEW A: EQUIPO CREATIVO (ESCUADRAS & DEPARTAMENTOS) === */}
-                        {mainSidebarTab === 'team' && (
-                            <>
-                                {/* 1. Escuadras Operativas */}
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between px-2 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">
-                                        <div className="flex items-center gap-2">
-                                            <Shield className="w-3.5 h-3.5" />
-                                            <span>Escuadras Operativas</span>
+                    {/* Section Label: Worklist */}
+                    <div className="px-4 pt-3 pb-1 flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-gray-400">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-sm border border-gray-500" />
+                            <span>Worklist Stream</span>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                    </div>
+
+                    {/* Contact Worklist Cards */}
+                    <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
+                        {filteredWorklist.map(item => {
+                            const isSelected = selectedTarget.id === item.id;
+
+                            if (isSelected) {
+                                return (
+                                    <motion.div
+                                        key={item.id}
+                                        layout
+                                        initial={{ scale: 0.98 }}
+                                        animate={{ scale: 1 }}
+                                        className="p-3.5 rounded-2xl bg-[#D4FF00] text-black shadow-lg shadow-[#D4FF00]/10 flex flex-col gap-2.5 cursor-pointer"
+                                        onClick={() => {
+                                            setSelectedTarget({
+                                                id: item.id,
+                                                name: item.name,
+                                                type: item.type,
+                                                clientData: item.type === 'client' ? item.data : null,
+                                                memberData: item.type === 'dm' ? item.data : null
+                                            });
+                                        }}
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <div className="w-10 h-10 rounded-xl bg-black text-[#D4FF00] font-black flex items-center justify-center shrink-0 text-sm shadow-md">
+                                                    {item.name.charAt(0)}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h4 className="text-xs font-black text-black truncate leading-tight">{item.name}</h4>
+                                                    <p className="text-[10px] font-semibold text-black/70 truncate mt-0.5">{item.subtitle}</p>
+                                                </div>
+                                            </div>
+                                            <ArrowUpRight className="w-4 h-4 text-black shrink-0" />
                                         </div>
-                                        <span className="text-[9px] text-gray-500 font-mono">{squads.length} Grupos</span>
-                                    </div>
 
-                                    <div className="space-y-1.5">
-                                        {squads.map(squad => {
-                                            const isSelected = selectedTarget.type === 'channel' && selectedTarget.id === squad.lead.id;
-                                            return (
-                                                <div key={squad.lead.id} className="rounded-2xl border border-white/5 bg-white/[0.01] p-2 space-y-1.5">
-                                                    {/* Squad General Channel */}
-                                                    <button
-                                                        onClick={() => setSelectedTarget({
-                                                            id: squad.lead.id,
-                                                            name: `Escuadra General - ${squad.lead.name}`,
-                                                            type: 'channel',
-                                                            squadData: squad
-                                                        })}
-                                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left ${
-                                                            isSelected
-                                                                ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/30 shadow-md'
-                                                                : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                                                        }`}
-                                                    >
-                                                        <div className="flex items-center gap-2.5 truncate">
-                                                            <Users className="w-4 h-4 text-indigo-400 shrink-0" />
-                                                            <span className="truncate font-black">Escuadra {squad.lead.name}</span>
-                                                        </div>
-                                                        <span className="text-[9px] font-mono text-gray-500 uppercase px-1.5 py-0.5 rounded bg-black/40 border border-white/5 shrink-0">
-                                                            {squad.members.length} Nodos
-                                                        </span>
-                                                    </button>
-
-                                                    {/* Nested Squad Members */}
-                                                    {squad.members.length > 0 && (
-                                                        <div className="pl-3.5 space-y-1 border-l border-white/5 ml-3">
-                                                            {squad.members.map(member => {
-                                                                const isMemSelected = selectedTarget.type === 'dm' && selectedTarget.id === member.id;
-                                                                const roleStyle = getRoleDetails(member.role);
-                                                                return (
-                                                                    <button
-                                                                        key={member.id}
-                                                                        onClick={() => setSelectedTarget({
-                                                                            id: member.id,
-                                                                            name: member.name,
-                                                                            type: 'dm',
-                                                                            role: member.role,
-                                                                            memberData: member
-                                                                        })}
-                                                                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all text-left ${
-                                                                            isMemSelected
-                                                                                ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/20'
-                                                                                : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
-                                                                        }`}
-                                                                    >
-                                                                        <div className="flex items-center gap-2 truncate">
-                                                                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${roleStyle.text.replace('text-', 'bg-')}`} />
-                                                                            <span className="truncate font-bold">{member.name}</span>
-                                                                        </div>
-                                                                        <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded shrink-0 ${roleStyle.badge}`}>
-                                                                            {member.role?.split(' ')[0]}
-                                                                        </span>
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* 2. Departamentos Creativos Especializados */}
-                                <div className="space-y-3 pt-2">
-                                    <div className="px-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
-                                        <Layers className="w-3.5 h-3.5 text-purple-400" />
-                                        <span>Por Departamento Creativo</span>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        {creativeDepartments.map((dept, idx) => (
-                                            <div key={idx} className="space-y-1">
-                                                <div className="flex items-center justify-between px-2.5 py-1 bg-white/[0.02] border-l-2 border-indigo-500/40 rounded-r-lg">
-                                                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
-                                                        <span>{dept.icon}</span>
-                                                        <span>{dept.name}</span>
-                                                    </span>
-                                                    <span className="text-[9px] font-mono text-gray-500">
-                                                        {dept.members.length}
-                                                    </span>
-                                                </div>
-
-                                                <div className="space-y-0.5">
-                                                    {dept.members.map(member => {
-                                                        const isSelected = selectedTarget.type === 'dm' && selectedTarget.id === member.id;
-                                                        const roleDetails = getRoleDetails(member.role);
-                                                        return (
-                                                            <button
-                                                                key={member.id}
-                                                                onClick={() => setSelectedTarget({
-                                                                    id: member.id,
-                                                                    name: member.name,
-                                                                    type: 'dm',
-                                                                    role: member.role,
-                                                                    memberData: member
-                                                                })}
-                                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left ${
-                                                                    isSelected
-                                                                        ? 'bg-indigo-600/25 text-white border border-indigo-500/30'
-                                                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-center gap-2.5 truncate">
-                                                                    <div className={`w-7 h-7 rounded-xl flex items-center justify-center text-[10px] font-black uppercase shrink-0 ${roleDetails.avatar}`}>
-                                                                        {member.name.charAt(0)}
-                                                                    </div>
-                                                                    <div className="truncate">
-                                                                        <p className="truncate text-white font-bold leading-tight">{member.name}</p>
-                                                                        <p className="text-[9px] text-gray-500 font-medium truncate">{member.city || 'Santo Domingo'}</p>
-                                                                    </div>
-                                                                </div>
-
-                                                                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded shrink-0 ${roleDetails.badge}`}>
-                                                                    {member.role}
-                                                                </span>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
+                                        <div className="flex items-center justify-between pt-1 border-t border-black/10">
+                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-black/80">
+                                                <FileText className="w-3 h-3 text-black/70" />
+                                                <span className="truncate">{item.statusText}</span>
                                             </div>
-                                        ))}
+                                            <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-black uppercase tracking-tight shadow-sm">
+                                                {item.priority}
+                                            </span>
+                                        </div>
+                                    </motion.div>
+                                );
+                            }
+
+                            return (
+                                <div
+                                    key={item.id}
+                                    onClick={() => {
+                                        setSelectedTarget({
+                                            id: item.id,
+                                            name: item.name,
+                                            type: item.type,
+                                            clientData: item.type === 'client' ? item.data : null,
+                                            memberData: item.type === 'dm' ? item.data : null
+                                        });
+                                    }}
+                                    className="p-3.5 rounded-2xl bg-[#16171E] border border-white/5 hover:border-white/10 hover:bg-[#1A1B24] transition-all flex flex-col gap-2 cursor-pointer group"
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white font-black flex items-center justify-center shrink-0 text-xs group-hover:scale-105 transition-transform">
+                                                {item.name.charAt(0)}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h4 className="text-xs font-bold text-gray-200 group-hover:text-white truncate leading-tight">{item.name}</h4>
+                                                <p className="text-[10px] text-gray-500 truncate mt-0.5">{item.subtitle}</p>
+                                            </div>
+                                        </div>
+                                        <ArrowUpRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-gray-300 shrink-0" />
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                                        <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
+                                            {item.type === 'client' ? <Phone className="w-3 h-3 text-gray-500" /> : <FileText className="w-3 h-3 text-gray-500" />}
+                                            <span className="truncate">{item.statusText}</span>
+                                        </div>
+                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tight ${
+                                            item.priority === 'High' 
+                                                ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                                                : (item.priority === 'Mid' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30')
+                                        }`}>
+                                            {item.priority}
+                                        </span>
                                     </div>
                                 </div>
-                            </>
-                        )}
+                            );
+                        })}
+                    </div>
+                </div>
 
-                        {/* === VIEW B: CLIENTES & MARCAS (DIVIDIDO POR NICHOS) === */}
-                        {mainSidebarTab === 'clients' && (
-                            <div className="space-y-4">
-                                <div className="px-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 flex items-center justify-between">
+                {/* ============================================================== */}
+                {/* COLUMN 2: CENTER HUB (HEADER PROFILE CARD + TIMELINE & CHAT) */}
+                {/* ============================================================== */}
+                <div className="flex-1 flex flex-col gap-3 min-w-0 overflow-hidden">
+                    
+                    {/* --- TOP FLOATING PROFILE & DEAL HUB CARD --- */}
+                    <div className="bg-[#EBECEF] text-slate-900 rounded-[28px] p-4 md:p-5 shadow-xl shrink-0">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                            
+                            {/* Profile Details & Avatar */}
+                            <div className="flex items-center gap-4 min-w-0">
+                                <div className="w-16 h-16 md:w-18 md:h-18 rounded-2xl bg-gradient-to-tr from-slate-800 to-slate-900 text-[#D4FF00] font-black text-2xl flex items-center justify-center shrink-0 shadow-md">
+                                    {selectedTarget.name.charAt(0)}
+                                </div>
+
+                                <div className="min-w-0 space-y-1">
                                     <div className="flex items-center gap-2">
-                                        <Building2 className="w-3.5 h-3.5" />
-                                        <span>Cartera por Nicho</span>
+                                        <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight truncate">
+                                            {selectedTarget.name}
+                                        </h2>
                                     </div>
-                                    <span className="text-[9px] text-gray-500 font-mono">{clientList.length} Marcas</span>
+
+                                    <p className="text-xs font-semibold text-slate-600 truncate">
+                                        {selectedTarget.type === 'client' 
+                                            ? `${selectedTarget.clientData?.industry || 'Empresa'} • Plan: ${selectedTarget.clientData?.plan || 'Presencia'}`
+                                            : `${selectedTarget.role || 'Especialista'} • DIIC ZONE Node`}
+                                    </p>
+
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 font-medium">
+                                        <span>📍 {selectedTarget.clientData?.city || selectedTarget.memberData?.city || 'Santo Domingo'}</span>
+                                        <span>📞 {selectedTarget.clientData?.whatsapp_number || selectedTarget.memberData?.whatsapp || '+1 (809) 555-0100'}</span>
+                                        <span className="hidden sm:inline">✉️ {selectedTarget.clientData?.email || `${selectedTarget.name.toLowerCase().replace(/\s+/g, '')}@diiczone.com`}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Manager & Status Badges */}
+                            <div className="flex flex-wrap lg:flex-col items-start lg:items-end justify-between gap-2 shrink-0">
+                                <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                                    <div className="w-5 h-5 rounded-full bg-slate-800 text-white text-[9px] font-black flex items-center justify-center">
+                                        {(selectedTarget.clientData?.cm || 'M').charAt(0)}
+                                    </div>
+                                    <div className="text-[10px] font-bold text-slate-800">
+                                        <span className="text-slate-400 font-normal">Manager </span>
+                                        {selectedTarget.clientData?.cm || 'Leslie M.'}
+                                    </div>
+                                    <MoreHorizontal className="w-3.5 h-3.5 text-slate-400 ml-1" />
                                 </div>
 
-                                <div className="space-y-4">
-                                    {clientNiches.map((niche) => {
-                                        const NicheIcon = niche.icon;
+                                <div className="flex items-center gap-1.5">
+                                    <span className="px-3 py-1 rounded-full bg-red-500 text-white text-[10px] font-black uppercase shadow-sm">
+                                        High
+                                    </span>
+                                    <span className="px-3 py-1 rounded-full bg-[#D4FF00] text-slate-900 text-[10px] font-black uppercase shadow-sm">
+                                        Warm
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bottom Sub-Header Navigation & Action Circles */}
+                        <div className="mt-4 pt-3 border-t border-slate-300/60 flex flex-wrap items-center justify-between gap-3">
+                            
+                            {/* Action Icon Circles */}
+                            <div className="flex items-center gap-2">
+                                <a
+                                    href={`https://wa.me/${(selectedTarget.clientData?.whatsapp_number || selectedTarget.memberData?.whatsapp || '18090000000').replace(/[^0-9]/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-8 h-8 rounded-full bg-[#D4FF00] text-slate-950 flex items-center justify-center hover:scale-110 transition-transform shadow-sm"
+                                    title="WhatsApp / Llamada"
+                                >
+                                    <Phone className="w-3.5 h-3.5" />
+                                </a>
+                                <button className="w-8 h-8 rounded-full bg-[#D4FF00] text-slate-950 flex items-center justify-center hover:scale-110 transition-transform shadow-sm" title="Mensaje">
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                </button>
+                                <button className="w-8 h-8 rounded-full bg-[#D4FF00] text-slate-950 flex items-center justify-center hover:scale-110 transition-transform shadow-sm" title="Email">
+                                    <Mail className="w-3.5 h-3.5" />
+                                </button>
+                                <button className="w-8 h-8 rounded-full bg-[#D4FF00] text-slate-950 flex items-center justify-center hover:scale-110 transition-transform shadow-sm" title="Calendario">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                </button>
+                                <button className="w-8 h-8 rounded-full bg-[#D4FF00] text-slate-950 flex items-center justify-center hover:scale-110 transition-transform shadow-sm" title="Agregar Nota">
+                                    <Plus className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+
+                            {/* Deal Identifier & Tab Links */}
+                            <div className="flex items-center gap-3 overflow-x-auto custom-scrollbar">
+                                <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-bold shadow-sm shrink-0">
+                                    <Briefcase className="w-3.5 h-3.5 text-slate-600" />
+                                    <span>Plan #DZ-{selectedTarget.id?.slice(0, 6) || '2026'}</span>
+                                </div>
+
+                                <div className="flex items-center gap-4 text-xs font-bold text-slate-600">
+                                    {['summary', 'analytics', 'details', 'files', 'history'].map((tabKey) => {
+                                        const labels = {
+                                            summary: 'Summary',
+                                            analytics: 'Analytics',
+                                            details: 'Details',
+                                            files: 'Files',
+                                            history: 'History'
+                                        };
+                                        const isActive = headerSubTab === tabKey;
                                         return (
-                                            <div key={niche.key} className="space-y-1.5">
-                                                <div className="flex items-center justify-between px-2.5 py-1.5 bg-white/[0.02] border-l-2 border-emerald-500/40 rounded-r-lg">
-                                                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
-                                                        <NicheIcon className={`w-3.5 h-3.5 ${niche.color}`} />
-                                                        <span>{niche.name}</span>
-                                                    </span>
-                                                    <span className="text-[9px] font-mono text-gray-500">
-                                                        {niche.clients.length}
-                                                    </span>
-                                                </div>
-
-                                                <div className="space-y-1">
-                                                    {niche.clients.map(client => {
-                                                        const isSelected = selectedTarget.type === 'client' && selectedTarget.id === client.id;
-                                                        return (
-                                                            <button
-                                                                key={client.id}
-                                                                onClick={() => setSelectedTarget({
-                                                                    id: client.id,
-                                                                    name: client.name,
-                                                                    type: 'client',
-                                                                    clientData: client
-                                                                })}
-                                                                className={`w-full flex items-center justify-between p-2.5 rounded-2xl text-xs font-bold transition-all text-left ${
-                                                                    isSelected
-                                                                        ? 'bg-gradient-to-r from-indigo-600/30 to-purple-600/30 text-white border border-indigo-500/40 shadow-lg'
-                                                                        : 'bg-white/[0.01] border border-white/5 text-gray-400 hover:bg-white/5 hover:text-white'
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-center gap-2.5 truncate">
-                                                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center font-black text-xs text-white shrink-0">
-                                                                        {client.name.charAt(0)}
-                                                                    </div>
-                                                                    <div className="truncate">
-                                                                        <p className="truncate text-white font-bold leading-tight">{client.name}</p>
-                                                                        <p className="text-[9px] text-gray-500 font-mono mt-0.5">
-                                                                            {client.city || 'Santo Domingo'} • CM: {client.cm || 'Leslie'}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="text-right shrink-0">
-                                                                    <span className="text-[9px] font-black text-emerald-400 block font-mono">
-                                                                        ${client.price || '0'}/m
-                                                                    </span>
-                                                                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">
-                                                                        {client.plan || 'Presencia'}
-                                                                    </span>
-                                                                </div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
+                                            <button
+                                                key={tabKey}
+                                                onClick={() => setHeaderSubTab(tabKey)}
+                                                className={`transition-colors capitalize ${
+                                                    isActive ? 'text-slate-950 font-black border-b-2 border-slate-900 pb-0.5' : 'hover:text-slate-900'
+                                                }`}
+                                            >
+                                                {labels[tabKey]}
+                                            </button>
                                         );
                                     })}
                                 </div>
                             </div>
-                        )}
-
-                    </div>
-                </div>
-
-                {/* --- COLUMN 2: CENTER CHAT WINDOW --- */}
-                <div className="flex-1 flex flex-col bg-[#050514]/60 relative overflow-hidden">
-                    
-                    {/* Chat Header */}
-                    <div className="p-4 md:p-5 border-b border-white/5 flex items-center justify-between bg-black/20 shrink-0">
-                        <div className="flex items-center gap-3.5">
-                            {selectedTarget.type === 'channel' ? (
-                                <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                                    <Users className="w-5 h-5" />
-                                </div>
-                            ) : selectedTarget.type === 'client' ? (
-                                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-sm">
-                                    {selectedTarget.name.charAt(0)}
-                                </div>
-                            ) : (
-                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm ${getRoleDetails(selectedTarget.role).avatar}`}>
-                                    {selectedTarget.name.charAt(0)}
-                                </div>
-                            )}
-
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h3 className="text-white font-black text-sm md:text-base tracking-tight">
-                                        {selectedTarget.name}
-                                    </h3>
-                                    {selectedTarget.type === 'client' && (
-                                        <span className="text-[9px] font-mono px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-md">
-                                            Cliente Verificado
-                                        </span>
-                                    )}
-                                </div>
-                                <p className="text-[10px] text-gray-400 font-mono mt-0.5 flex items-center gap-2">
-                                    {selectedTarget.type === 'channel' ? (
-                                        <span>Canal General de Escuadra • Directivas Operativas</span>
-                                    ) : selectedTarget.type === 'client' ? (
-                                        <span>{selectedTarget.clientData?.plan || 'Plan Activo'} • {selectedTarget.clientData?.city || 'Ecuador'}</span>
-                                    ) : (
-                                        <span>{selectedTarget.role || 'Especialista'} • {selectedTarget.memberData?.city || 'Sede Operativa'}</span>
-                                    )}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            {/* Quick WhatsApp Contact if available */}
-                            {(selectedTarget.memberData?.whatsapp || selectedTarget.clientData?.whatsapp_number) && (
-                                <a
-                                    href={`https://wa.me/${(selectedTarget.memberData?.whatsapp || selectedTarget.clientData?.whatsapp_number || '').replace(/[^0-9]/g, '')}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all flex items-center gap-1.5 text-xs font-bold"
-                                    title="Abrir WhatsApp"
-                                >
-                                    <Phone className="w-3.5 h-3.5" />
-                                    <span className="hidden lg:inline text-[10px] font-black uppercase">WhatsApp</span>
-                                </a>
-                            )}
                         </div>
                     </div>
 
-                    {/* Messages Body */}
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar">
-                        {messagesList.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50 space-y-3">
-                                <div className="p-4 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-                                    <MessageSquare className="w-8 h-8 animate-pulse" />
-                                </div>
-                                <div>
-                                    <p className="text-xs uppercase tracking-widest font-black text-indigo-300">Canal de Comunicación HQ</p>
-                                    <p className="text-xs text-gray-500 mt-1 max-w-sm">
-                                        Escribe el primer mensaje o directiva para coordinar en tiempo real con este destinatario.
-                                    </p>
-                                </div>
+                    {/* --- CENTER WORKSPACE (TIMELINE & LIVE CHAT) --- */}
+                    <div className="flex-1 flex flex-col bg-[#F3F4F7] text-slate-900 rounded-[28px] overflow-hidden shadow-xl min-h-0 border border-slate-200/60">
+                        
+                        {/* Upper Section: Activity / Milestones Timeline */}
+                        <div className="p-3.5 border-b border-slate-200/80 bg-white/70">
+                            {/* Filter Bar */}
+                            <div className="flex items-center justify-end gap-2 mb-2">
+                                <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                                    <Filter className="w-3.5 h-3.5" />
+                                </button>
+                                <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                </button>
+                                <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                                    <Search className="w-3.5 h-3.5" />
+                                </button>
                             </div>
-                        ) : (
-                            messagesList.map(msg => (
-                                <div key={msg.id} className={`flex gap-3 ${msg.self ? 'flex-row-reverse' : ''}`}>
-                                    <div className={`w-8 h-8 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-black shadow-lg ${
-                                        msg.self 
-                                            ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white' 
-                                            : 'bg-white/10 text-gray-200 border border-white/10'
-                                    }`}>
-                                        {msg.user.charAt(0)}
-                                    </div>
 
-                                    <div className={`max-w-[75%] space-y-1 ${msg.self ? 'items-end' : 'items-start'} flex flex-col`}>
-                                        <div className="flex items-center gap-2 px-1">
-                                            <span className="text-[11px] font-bold text-gray-300">{msg.user}</span>
-                                            <span className="text-[9px] text-gray-500 font-mono">{msg.time}</span>
+                            {/* Milestone Cards Stream */}
+                            <div className="space-y-2">
+                                {timelineActivities.map(act => (
+                                    <div 
+                                        key={act.id}
+                                        className="p-3 rounded-2xl bg-white border border-slate-200/70 shadow-sm flex items-start justify-between gap-3 hover:border-slate-300 transition-all"
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-8 h-8 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center shrink-0 mt-0.5">
+                                                {act.type === 'call' ? <Phone className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
+                                            </div>
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{act.date}</span>
+                                                    <h4 className="text-xs font-black text-slate-900">{act.title}</h4>
+                                                </div>
+                                                <p className="text-[11px] text-slate-600 leading-snug">{act.desc}</p>
+                                            </div>
                                         </div>
 
-                                        <div className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
-                                            msg.self
-                                                ? 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-600/10'
-                                                : 'bg-white/[0.04] border border-white/10 text-gray-200 rounded-tl-none'
-                                        }`}>
-                                            {/* Image Preview */}
-                                            {msg.isImage && msg.fileUrl && (
-                                                <div className="mb-2 rounded-xl overflow-hidden border border-white/10 bg-black/40">
-                                                    <img 
-                                                        src={msg.fileUrl} 
-                                                        alt={msg.fileName || 'Imagen'} 
-                                                        className="max-h-60 w-auto object-cover hover:scale-105 transition-transform cursor-pointer"
-                                                        onClick={() => window.open(msg.fileUrl, '_blank')}
-                                                    />
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700">
+                                                <div className="w-4 h-4 rounded-full bg-slate-800 text-white text-[8px] font-black flex items-center justify-center">
+                                                    {act.assignee.charAt(0)}
+                                                </div>
+                                                <span className="hidden sm:inline">{act.assignee}</span>
+                                            </div>
+                                            <span className="px-2 py-0.5 rounded-md bg-sky-100 text-sky-700 text-[9px] font-black uppercase">
+                                                {act.stage}
+                                            </span>
+                                            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Lower Section: Live Conversation Stream */}
+                        <div className="flex-1 flex flex-col min-h-0 bg-[#FAFAFC]">
+                            
+                            {/* Quick Channel Tab Bar */}
+                            <div className="px-4 py-2 border-b border-slate-200/60 bg-white flex items-center justify-between shrink-0">
+                                <div className="flex items-center gap-4 text-slate-400">
+                                    <Phone className="w-3.5 h-3.5 hover:text-slate-700 cursor-pointer" />
+                                    <Mail className="w-3.5 h-3.5 hover:text-slate-700 cursor-pointer" />
+                                    <MessageSquare className="w-3.5 h-3.5 text-slate-900 font-bold cursor-pointer" />
+                                    <CheckSquare className="w-3.5 h-3.5 hover:text-slate-700 cursor-pointer" />
+                                    <Calendar className="w-3.5 h-3.5 hover:text-slate-700 cursor-pointer" />
+                                    <FileText className="w-3.5 h-3.5 hover:text-slate-700 cursor-pointer" />
+                                </div>
+                                <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
+                            </div>
+
+                            {/* Message Bubble List */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                                {messagesList.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2 opacity-60">
+                                        <div className="w-12 h-12 rounded-2xl bg-slate-200 flex items-center justify-center text-slate-600">
+                                            <MessageSquare className="w-6 h-6" />
+                                        </div>
+                                        <p className="text-xs font-black text-slate-800 uppercase tracking-wider">Canal Activo de Coordinación</p>
+                                        <p className="text-[11px] text-slate-500 max-w-xs">
+                                            Envía directivas, guiones o notas de entrega para sincronizar en tiempo real.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    messagesList.map(msg => (
+                                        <div key={msg.id} className={`flex gap-2.5 ${msg.self ? 'justify-end' : 'justify-start'}`}>
+                                            {!msg.self && (
+                                                <div className="w-7 h-7 rounded-xl bg-slate-800 text-[#D4FF00] font-black text-xs flex items-center justify-center shrink-0 mt-1">
+                                                    {selectedTarget.name.charAt(0)}
                                                 </div>
                                             )}
 
-                                            {/* File Attachment Card */}
-                                            {msg.isFile && !msg.isImage && (
-                                                <div className="mb-2 p-2.5 rounded-xl bg-black/30 border border-white/10 flex items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-2 truncate">
-                                                        <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
-                                                        <span className="truncate text-xs font-bold text-gray-200">{msg.fileName}</span>
-                                                    </div>
-                                                    {msg.fileUrl && (
-                                                        <a 
-                                                            href={msg.fileUrl} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="p-1 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                                                            title="Descargar"
-                                                        >
-                                                            <Download className="w-3.5 h-3.5" />
-                                                        </a>
+                                            <div className={`max-w-[70%] space-y-1 flex flex-col ${msg.self ? 'items-end' : 'items-start'}`}>
+                                                <div className="flex items-center gap-2 px-1 text-[10px] text-slate-400">
+                                                    <span className="font-bold text-slate-600">{msg.user}</span>
+                                                    <span>{msg.time}</span>
+                                                </div>
+
+                                                <div className={`p-3 rounded-2xl text-xs leading-relaxed shadow-sm ${
+                                                    msg.self
+                                                        ? 'bg-black text-white rounded-br-sm'
+                                                        : 'bg-white text-slate-900 border border-slate-200/80 rounded-bl-sm'
+                                                }`}>
+                                                    {/* Image Attachment */}
+                                                    {msg.isImage && msg.fileUrl && (
+                                                        <div className="mb-2 rounded-xl overflow-hidden border border-white/10 bg-black/10">
+                                                            <img 
+                                                                src={msg.fileUrl} 
+                                                                alt={msg.fileName || 'Imagen'} 
+                                                                className="max-h-52 w-auto object-cover hover:scale-105 transition-transform cursor-pointer"
+                                                                onClick={() => window.open(msg.fileUrl, '_blank')}
+                                                            />
+                                                        </div>
                                                     )}
+
+                                                    {/* File Attachment */}
+                                                    {msg.isFile && !msg.isImage && (
+                                                        <div className="mb-2 p-2 rounded-xl bg-white/10 border border-white/10 flex items-center justify-between gap-3">
+                                                            <div className="flex items-center gap-2 truncate">
+                                                                <FileText className="w-4 h-4 text-[#D4FF00] shrink-0" />
+                                                                <span className="truncate text-xs font-bold">{msg.fileName}</span>
+                                                            </div>
+                                                            {msg.fileUrl && (
+                                                                <a 
+                                                                    href={msg.fileUrl} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    className="p-1 rounded bg-white/20 hover:bg-white/30 text-white"
+                                                                >
+                                                                    <Download className="w-3.5 h-3.5" />
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    <p className="whitespace-pre-wrap">{msg.text}</p>
                                                 </div>
-                                            )}
-
-                                            <p className="whitespace-pre-wrap">{msg.text}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
+                                    ))
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
 
-                    {/* Chat Input Bar */}
-                    <div className="p-4 border-t border-white/5 bg-black/30 relative">
-                        {/* Quick Emoji Picker Popover */}
-                        <AnimatePresence>
-                            {showEmojiPicker && (
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="absolute bottom-20 left-6 bg-[#0E0E20] border border-white/10 rounded-2xl p-3 shadow-2xl z-50 flex flex-wrap gap-2 max-w-xs"
-                                >
-                                    {EMOJIS.map(emoji => (
-                                        <button
-                                            key={emoji}
-                                            type="button"
-                                            onClick={() => {
-                                                setInputText(prev => prev + emoji);
-                                                setShowEmojiPicker(false);
-                                            }}
-                                            className="text-lg hover:scale-125 transition-transform p-1"
+                            {/* Floating Input Bar */}
+                            <div className="p-3 bg-white border-t border-slate-200/70 relative">
+                                {/* Emoji Picker */}
+                                <AnimatePresence>
+                                    {showEmojiPicker && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className="absolute bottom-16 left-4 bg-slate-900 border border-white/10 rounded-2xl p-2.5 shadow-2xl z-50 flex flex-wrap gap-1.5 max-w-xs"
                                         >
-                                            {emoji}
+                                            {EMOJIS.map(emoji => (
+                                                <button
+                                                    key={emoji}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setInputText(prev => prev + emoji);
+                                                        setShowEmojiPicker(false);
+                                                    }}
+                                                    className="text-base hover:scale-125 transition-transform p-1 text-white"
+                                                >
+                                                    {emoji}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                <form onSubmit={handleSendMessage} className="flex items-center gap-2 bg-[#F3F4F7] rounded-full p-1.5 pl-4 border border-slate-200">
+                                    <input
+                                        type="text"
+                                        value={inputText}
+                                        onChange={(e) => setInputText(e.target.value)}
+                                        placeholder="Enter message..."
+                                        className="flex-1 bg-transparent text-xs text-slate-900 placeholder:text-slate-400 outline-none font-medium"
+                                    />
+
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                            className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
+                                        >
+                                            <Smile className="w-4 h-4" />
                                         </button>
-                                    ))}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
+                                        >
+                                            <Paperclip className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={!inputText.trim() || isSending}
+                                            className="w-8 h-8 rounded-full bg-[#D4FF00] text-slate-950 font-black flex items-center justify-center hover:scale-105 disabled:opacity-40 transition-transform shadow-sm cursor-pointer"
+                                        >
+                                            {isSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
 
-                        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-indigo-400 transition-colors"
-                                title="Adjuntar archivo o imagen"
-                            >
-                                <Paperclip className="w-4 h-4" />
-                            </button>
+                        </div>
 
-                            <button
-                                type="button"
-                                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                                className={`p-3 rounded-2xl border transition-colors ${
-                                    showEmojiPicker ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400' : 'bg-white/5 hover:bg-white/10 border-white/10 text-gray-400 hover:text-white'
-                                }`}
-                                title="Insertar emoji"
-                            >
-                                <Smile className="w-4 h-4" />
-                            </button>
-
-                            <input
-                                type="text"
-                                value={inputText}
-                                onChange={(e) => setInputText(e.target.value)}
-                                placeholder={`Enviar mensaje a ${selectedTarget.name}...`}
-                                className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50 transition-all font-medium"
-                            />
-
-                            <button
-                                type="submit"
-                                disabled={!inputText.trim() || isSending}
-                                className="p-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold hover:shadow-lg hover:shadow-indigo-600/30 disabled:opacity-40 transition-all cursor-pointer"
-                            >
-                                {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                            </button>
-                        </form>
                     </div>
+
                 </div>
 
-                {/* --- COLUMN 3: RIGHT CONTEXT & INTELLIGENCE PANEL (AREA MARCADA EN ROJO) --- */}
+                {/* ============================================================== */}
+                {/* COLUMN 3: RIGHT PANEL (DEAL / TASK CARDS & INTELLIGENCE) */}
+                {/* ============================================================== */}
                 <AnimatePresence>
                     {showRightPanel && (
                         <motion.div
                             initial={{ width: 0, opacity: 0 }}
-                            animate={{ width: 340, opacity: 1 }}
+                            animate={{ width: 310, opacity: 1 }}
                             exit={{ width: 0, opacity: 0 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="border-l border-white/10 bg-[#060614] flex flex-col shrink-0 overflow-hidden"
+                            className="flex flex-col gap-3 shrink-0 overflow-y-auto custom-scrollbar"
                         >
-                            {/* Panel Header */}
-                            <div className="p-4 border-b border-white/5 flex items-center justify-between shrink-0 bg-white/[0.01]">
-                                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-white">
-                                    <Sparkles className="w-4 h-4 text-indigo-400" />
-                                    <span>Inteligencia & Contexto</span>
+                            
+                            {/* --- CARD 1: LAVENDER LILAC DEAL CARD --- */}
+                            <div className="p-4 rounded-[28px] bg-[#C4B5FD] text-slate-950 shadow-xl flex flex-col justify-between relative overflow-hidden">
+                                <div className="flex items-start justify-between">
+                                    <h3 className="text-base font-black tracking-tight leading-tight">
+                                        {selectedTarget.type === 'client' ? `Plan ${selectedTarget.clientData?.plan || 'Presencia Pro'}` : 'Asignación de Escuadra'}
+                                    </h3>
+                                    <ArrowUpRight className="w-4 h-4 text-slate-800 shrink-0" />
                                 </div>
-                                <button
-                                    onClick={() => setShowRightPanel(false)}
-                                    className="p-1 hover:bg-white/5 rounded-lg text-gray-500 hover:text-white"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
 
-                            {/* Subtabs for Right Panel */}
-                            <div className="flex border-b border-white/5 text-[11px] font-bold shrink-0 bg-black/20">
-                                {[
-                                    { id: 'info', label: 'Ficha' },
-                                    { id: 'media', label: `Media (${sharedData.media.length})` },
-                                    { id: 'docs', label: `Archivos (${sharedData.docs.length})` },
-                                    { id: 'links', label: `Links (${sharedData.links.length})` }
-                                ].map(tab => (
+                                {/* Deal Stage Switcher Pills */}
+                                <div className="mt-3 p-1 rounded-full bg-white/50 backdrop-blur-sm flex items-center justify-between text-[10px] font-bold">
                                     <button
-                                        key={tab.id}
-                                        onClick={() => setActiveRightPanelTab(tab.id)}
-                                        className={`flex-1 py-2.5 text-center border-b-2 transition-all ${
-                                            activeRightPanelTab === tab.id
-                                                ? 'border-indigo-500 text-indigo-400 bg-indigo-500/5'
-                                                : 'border-transparent text-gray-500 hover:text-gray-300'
+                                        onClick={() => setDealStage('negotiation')}
+                                        className={`flex-1 py-1 px-2 rounded-full transition-all flex items-center justify-center gap-1 ${
+                                            dealStage === 'negotiation' ? 'bg-white text-slate-950 shadow-sm font-black' : 'text-slate-700'
                                         }`}
                                     >
-                                        {tab.label}
+                                        <div className="w-1.5 h-1.5 rounded-full border border-slate-900" />
+                                        <span>Negociación</span>
                                     </button>
-                                ))}
+                                    <button
+                                        onClick={() => setDealStage('close')}
+                                        className={`flex-1 py-1 px-2 rounded-full transition-all flex items-center justify-center gap-1 ${
+                                            dealStage === 'close' ? 'bg-white text-slate-950 shadow-sm font-black' : 'text-slate-700'
+                                        }`}
+                                    >
+                                        <div className="w-1.5 h-1.5 rounded-full border border-slate-900" />
+                                        <span>Cierre</span>
+                                    </button>
+                                </div>
+
+                                {/* Value / Potential Profit */}
+                                <div className="mt-4">
+                                    <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
+                                        {selectedTarget.type === 'client' ? 'Fee Mensual Recurrente' : 'Remuneración Mensual'}
+                                    </span>
+                                    <span className="text-2xl font-black tracking-tight text-slate-950">
+                                        ${selectedTarget.clientData?.price || selectedTarget.memberData?.salary || '1,200'}/m
+                                    </span>
+                                </div>
+
+                                {/* Checklist items */}
+                                <div className="mt-3 space-y-1.5 text-xs font-medium text-slate-800">
+                                    <div className="flex items-center gap-2">
+                                        <Check className="w-3.5 h-3.5 text-emerald-800 stroke-[3]" />
+                                        <span>Briefing & Identidad de Marca</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Check className="w-3.5 h-3.5 text-emerald-800 stroke-[3]" />
+                                        <span>Calendario de 8 Reels aprobado</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <X className="w-3.5 h-3.5 text-slate-500 stroke-[3]" />
+                                        <span>Presupuesto pauta Meta pendiente</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Panel Body */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar">
-                                
-                                {/* TAB 1: FICHA DE CONTEXTO */}
-                                {activeRightPanelTab === 'info' && (
-                                    <>
-                                        {/* CASE A: TALENTO / CREATIVO */}
-                                        {selectedTarget.type === 'dm' && selectedTarget.memberData && (
-                                            <div className="space-y-4">
-                                                {/* Profile Card */}
-                                                <div className="p-5 rounded-3xl bg-gradient-to-b from-white/[0.04] to-transparent border border-white/5 text-center space-y-3">
-                                                    <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center font-black text-2xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 shadow-xl">
-                                                        {selectedTarget.memberData.name.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-base font-black text-white">{selectedTarget.memberData.name}</h4>
-                                                        <p className="text-xs text-indigo-400 font-bold mt-0.5">{selectedTarget.memberData.role}</p>
-                                                        <span className="inline-block mt-2 text-[9px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                                                            ● Nodo Operativo Activo
-                                                        </span>
-                                                    </div>
-                                                </div>
+                            {/* --- CARD 2: NEON LIME ACTIVE TASK CARD --- */}
+                            <div className="p-4 rounded-[28px] bg-[#E2F952] text-slate-950 shadow-xl flex flex-col justify-between">
+                                <div>
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 block">Tarea Prioritaria</span>
+                                    <h4 className="text-sm font-black text-slate-950 mt-0.5">Enviar Propuesta & Guiones</h4>
+                                </div>
 
-                                                {/* Operational Details */}
-                                                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
-                                                    <h5 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Datos Operativos</h5>
-                                                    <div className="space-y-2 text-xs">
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-500">Departamento:</span>
-                                                            <span className="font-bold text-gray-200">{getRoleDetails(selectedTarget.memberData.role).department}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-500">Sede / Ciudad:</span>
-                                                            <span className="font-bold text-gray-200">{selectedTarget.memberData.city || 'Santo Domingo'}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-500">Esquema Pago:</span>
-                                                            <span className="font-mono text-emerald-400 font-bold">
-                                                                {Number(selectedTarget.memberData.salary) > 0 ? `$${selectedTarget.memberData.salary}/mes` : 'Por Entregable'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                {/* Proposal Attachment Pill */}
+                                <div className="mt-3 p-2.5 rounded-2xl bg-white/70 backdrop-blur-sm border border-black/5 flex items-center justify-between shadow-sm">
+                                    <div className="flex items-center gap-2 truncate">
+                                        <FileText className="w-4 h-4 text-slate-800 shrink-0" />
+                                        <span className="text-xs font-bold text-slate-900 truncate">Propuesta_Audiovisual_v2.pdf</span>
+                                    </div>
+                                    <Download className="w-3.5 h-3.5 text-slate-700 hover:text-black cursor-pointer shrink-0" />
+                                </div>
 
-                                                {/* Quick Action Links */}
-                                                <div className="space-y-2">
-                                                    <a
-                                                        href={`/dashboard/hq/team`}
-                                                        className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-center text-white flex items-center justify-center gap-2 transition-all"
-                                                    >
-                                                        <span>Gestionar en Escuadra</span>
-                                                        <ArrowUpRight className="w-3.5 h-3.5 text-indigo-400" />
-                                                    </a>
-                                                    <a
-                                                        href={`/dashboard/hq/control`}
-                                                        className="w-full py-2.5 px-4 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-xs font-bold text-center text-indigo-300 flex items-center justify-center gap-2 transition-all"
-                                                    >
-                                                        <span>Asignar Nueva Tarea</span>
-                                                        <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* CASE B: CLIENTE / MARCA */}
-                                        {selectedTarget.type === 'client' && selectedTarget.clientData && (
-                                            <div className="space-y-4">
-                                                {/* Brand Card */}
-                                                <div className="p-5 rounded-3xl bg-gradient-to-b from-white/[0.04] to-transparent border border-white/5 text-center space-y-3">
-                                                    <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center font-black text-2xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 shadow-xl">
-                                                        {selectedTarget.clientData.name.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-base font-black text-white">{selectedTarget.clientData.name}</h4>
-                                                        <p className="text-xs text-emerald-400 font-bold mt-0.5">{getClientNiche(selectedTarget.clientData).name}</p>
-                                                        <span className="inline-block mt-2 text-[9px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
-                                                            Plan: {selectedTarget.clientData.plan || 'Presencia'} (${selectedTarget.clientData.price || '0'}/m)
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Operational & Squad Assignment */}
-                                                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
-                                                    <h5 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Equipo Asignado</h5>
-                                                    <div className="space-y-2 text-xs">
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-500">CM Asignada:</span>
-                                                            <span className="font-bold text-indigo-400">{selectedTarget.clientData.cm || 'Leslie'}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-500">Filmmaker:</span>
-                                                            <span className="font-bold text-orange-400">{selectedTarget.clientData.filmmaker || 'Anthony'}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-500">Editor:</span>
-                                                            <span className="font-bold text-purple-400">{selectedTarget.clientData.editor || 'Fausto'}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-gray-500">Ciudad:</span>
-                                                            <span className="font-bold text-gray-200">{selectedTarget.clientData.city || 'Santo Domingo'}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Quick Action Links */}
-                                                <div className="space-y-2">
-                                                    <a
-                                                        href={`/dashboard/hq/clients`}
-                                                        className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-center text-white flex items-center justify-center gap-2 transition-all"
-                                                    >
-                                                        <span>Ver Perfil Estratégico</span>
-                                                        <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* CASE C: CANAL GENERAL DE ESCUADRA */}
-                                        {selectedTarget.type === 'channel' && selectedTarget.squadData && (
-                                            <div className="space-y-4">
-                                                <div className="p-5 rounded-3xl bg-gradient-to-b from-indigo-950/20 to-transparent border border-indigo-500/20 text-center space-y-2">
-                                                    <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center bg-indigo-500/20 text-indigo-400">
-                                                        <Users className="w-7 h-7" />
-                                                    </div>
-                                                    <h4 className="text-sm font-black text-white">Escuadra {selectedTarget.squadData.lead.name}</h4>
-                                                    <p className="text-[10px] text-gray-400">Canal de emisión directa para todos los nodos de la escuadra.</p>
-                                                </div>
-
-                                                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2 text-xs">
-                                                    <h5 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Resumen de Escuadra</h5>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-gray-500">Líder CM:</span>
-                                                        <span className="font-bold text-indigo-400">{selectedTarget.squadData.lead.name}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-gray-500">Creativos asignados:</span>
-                                                        <span className="font-bold text-white">{selectedTarget.squadData.members.length} miembros</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-gray-500">Clientes bajo gestión:</span>
-                                                        <span className="font-bold text-emerald-400">{selectedTarget.squadData.clients.length} marcas</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-
-                                {/* TAB 2: MEDIA COMPARTIDA */}
-                                {activeRightPanelTab === 'media' && (
-                                    sharedData.media.length === 0 ? (
-                                        <div className="py-12 text-center text-gray-500 space-y-2">
-                                            <ImageIcon className="w-8 h-8 mx-auto opacity-30" />
-                                            <p className="text-xs font-bold uppercase tracking-wider">Sin imágenes compartidas</p>
+                                {/* Customer Choices / Strategic Notes */}
+                                <div className="mt-3 space-y-1.5">
+                                    <span className="text-[10px] font-bold text-slate-700">Puntos Clave de Decisión:</span>
+                                    <div className="grid grid-cols-2 gap-1 p-1 bg-black/10 rounded-xl text-center text-[10px] font-black">
+                                        <span className="py-1 bg-white rounded-lg shadow-xs">DIIC ZONE</span>
+                                        <span className="py-1 text-slate-700">Competencia</span>
+                                    </div>
+                                    <div className="space-y-1 text-[11px] font-medium text-slate-800 pt-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <Check className="w-3 h-3 text-emerald-800 stroke-[3]" />
+                                            <span>Calidad cinematográfica & rapidez</span>
                                         </div>
-                                    ) : (
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {sharedData.media.map(item => (
-                                                <div 
-                                                    key={item.id}
-                                                    onClick={() => window.open(item.fileUrl, '_blank')}
-                                                    className="aspect-square rounded-xl overflow-hidden border border-white/10 bg-black/40 cursor-pointer hover:border-indigo-500/50 transition-all group relative"
-                                                >
-                                                    <img src={item.fileUrl} alt={item.fileName} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                        <Eye className="w-4 h-4 text-white" />
-                                                    </div>
-                                                </div>
-                                            ))}
+                                        <div className="flex items-center gap-1.5 text-slate-600">
+                                            <X className="w-3 h-3 text-slate-500 stroke-[3]" />
+                                            <span>Tiempo de respuesta flexible</span>
                                         </div>
-                                    )
-                                )}
+                                    </div>
+                                </div>
 
-                                {/* TAB 3: ARCHIVOS Y DOCUMENTOS */}
-                                {activeRightPanelTab === 'docs' && (
-                                    sharedData.docs.length === 0 ? (
-                                        <div className="py-12 text-center text-gray-500 space-y-2">
-                                            <File className="w-8 h-8 mx-auto opacity-30" />
-                                            <p className="text-xs font-bold uppercase tracking-wider">Sin archivos adjuntos</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {sharedData.docs.map(item => (
-                                                <a 
-                                                    key={item.id} 
-                                                    href={item.fileUrl} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all text-xs group"
-                                                >
-                                                    <div className="flex items-center gap-2 truncate">
-                                                        <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
-                                                        <span className="truncate text-gray-200 font-medium">{item.fileName}</span>
-                                                    </div>
-                                                    <Download className="w-3.5 h-3.5 text-gray-500 group-hover:text-white" />
-                                                </a>
-                                            ))}
-                                        </div>
-                                    )
-                                )}
-
-                                {/* TAB 4: ENLACES COMPARTIDOS */}
-                                {activeRightPanelTab === 'links' && (
-                                    sharedData.links.length === 0 ? (
-                                        <div className="py-12 text-center text-gray-500 space-y-2">
-                                            <LinkIcon className="w-8 h-8 mx-auto opacity-30" />
-                                            <p className="text-xs font-bold uppercase tracking-wider">Sin enlaces compartidos</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {sharedData.links.map(item => (
-                                                <a 
-                                                    key={item.id} 
-                                                    href={item.url} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="block p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-indigo-500/30 transition-all group"
-                                                >
-                                                    <p className="text-xs font-bold text-indigo-400 truncate group-hover:underline">{item.url}</p>
-                                                    <p className="text-[9px] text-gray-500 mt-1 font-mono">{item.user} • {item.time}</p>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    )
-                                )}
-
+                                {/* Bottom Pill Action Buttons */}
+                                <div className="mt-4 flex items-center gap-2">
+                                    <button 
+                                        onClick={() => toast.success("Recordatorio de propuesta enviado.")}
+                                        className="flex-1 py-2 rounded-xl bg-black text-white hover:bg-slate-900 flex items-center justify-center transition-all shadow-md cursor-pointer"
+                                        title="Enviar recordatorio"
+                                    >
+                                        <Send className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button 
+                                        onClick={() => toast.success("Tarea marcada como completada.")}
+                                        className="flex-1 py-2 rounded-xl bg-white text-slate-950 hover:bg-slate-100 flex items-center justify-center transition-all shadow-md cursor-pointer"
+                                        title="Completar tarea"
+                                    >
+                                        <Check className="w-4 h-4 stroke-[3]" />
+                                    </button>
+                                </div>
                             </div>
+
                         </motion.div>
                     )}
                 </AnimatePresence>
