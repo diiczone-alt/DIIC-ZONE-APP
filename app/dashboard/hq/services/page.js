@@ -682,11 +682,11 @@ export default function HQServicesPage() {
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.4em] mb-2">Entidad DIIC Strategist</p>
-                                                    <h3 className="text-2xl font-black text-white italic">{selectedPlan.name}</h3>
+                                                    <h3 className="text-2xl font-black text-white italic">{selectedPlan?.name || 'Nivel de Producción'}</h3>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.4em] mb-2">Compromiso Mensual</p>
-                                                    <p className="text-4xl font-black text-white">${selectedPlan.price}</p>
+                                                    <p className="text-4xl font-black text-white">${selectedPlan?.price || '0'}</p>
                                                 </div>
                                             </div>
 
@@ -695,11 +695,11 @@ export default function HQServicesPage() {
                                             <div className="grid grid-cols-2 gap-8 text-white">
                                                 <div>
                                                     <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-2">Titular Confirmado</p>
-                                                    <p className="text-lg font-black">{clientProfile.name}</p>
+                                                    <p className="text-lg font-black">{clientProfile?.name || 'Cliente'}</p>
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-2">Corporativo</p>
-                                                    <p className="text-lg font-black">{clientProfile.company}</p>
+                                                    <p className="text-lg font-black">{clientProfile?.company || 'Marca'}</p>
                                                 </div>
                                             </div>
 
@@ -708,10 +708,10 @@ export default function HQServicesPage() {
                                                     <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Adicionales Seleccionados</p>
                                                     <div className="flex flex-wrap gap-3">
                                                         {selectedExtras.map(id => {
-                                                            const extra = automations.find(a => a.id === id);
+                                                            const extra = automations.find(a => a?.id === id);
                                                             return (
                                                                 <div key={id} className="px-5 py-2 bg-black/40 border border-white/20 rounded-xl text-[10px] font-black text-white uppercase tracking-widest">
-                                                                    + {extra.name} (A Cotizar)
+                                                                    + {extra?.name || id} (A Cotizar)
                                                                 </div>
                                                             )
                                                         })}
