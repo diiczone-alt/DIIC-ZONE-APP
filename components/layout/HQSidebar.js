@@ -16,26 +16,8 @@ import { useSidebar } from '@/components/layout/SidebarContext';
 export default function HQSidebar() {
     const pathname = usePathname();
     const { user, logout } = useAuth();
-    const { isMobileOpen, setIsMobileOpen } = useSidebar();
+    const { isMobileOpen, setIsMobileOpen, isCollapsed, toggleCollapsed } = useSidebar();
     const [showProfileMenu, setShowProfileMenu] = useState(false);
-
-    const [isCollapsed, setIsCollapsed] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('sidebar-collapsed') === 'true';
-        }
-        return false;
-    });
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('sidebar-collapsed', isCollapsed);
-            if (isCollapsed) {
-                document.documentElement.setAttribute('data-sidebar-collapsed', 'true');
-            } else {
-                document.documentElement.removeAttribute('data-sidebar-collapsed');
-            }
-        }
-    }, [isCollapsed]);
 
     const handleLogout = async () => {
         try {
@@ -75,13 +57,16 @@ export default function HQSidebar() {
             </AnimatePresence>
 
             <aside 
-                className={`fixed left-0 top-0 h-screen w-72 max-w-[85vw] bg-[#08081a] border-r border-white/10 flex flex-col z-[100] shadow-2xl transition-transform duration-300 ease-out lg:w-64 lg:translate-x-0 ${
+                className={`fixed left-0 top-0 h-screen w-72 max-w-[85vw] bg-[#08081a] border-r border-white/10 flex flex-col z-[100] shadow-2xl transition-all duration-300 ease-in-out lg:translate-x-0 ${
+                    isCollapsed ? 'lg:w-20' : 'lg:w-64'
+                } ${
                     isMobileOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
                 {/* Collapse/Expand Toggle Button (Desktop Only) */}
                 <button
-                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    type="button"
+                    onClick={toggleCollapsed}
                     className="absolute -right-3 top-10 w-6 h-6 rounded-full bg-[#08081a] border border-white/20 hidden md:flex items-center justify-center text-slate-300 hover:text-white hover:border-white/50 transition-all shadow-lg hover:scale-110 z-50 cursor-pointer"
                     title={isCollapsed ? 'Expandir barra' : 'Colapsar barra'}
                 >
@@ -239,7 +224,7 @@ export default function HQSidebar() {
                                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        className="absolute bottom-16 left-0 w-60 bg-[#0E0E18] border border-white/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] p-2 z-50 overflow-hidden"
+                                        className={`absolute bottom-16 ${isCollapsed ? 'left-2' : 'left-0'} w-60 bg-[#0E0E18] border border-white/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] p-2 z-50 overflow-hidden`}
                                     >
                                         <div className="p-4 border-b border-white/10 mb-2">
                                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Usuario Administrativo</p>
