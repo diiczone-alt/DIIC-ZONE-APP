@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Clock, Users, Activity, AlertTriangle,
     BarChart3, Zap, Rocket, UserPlus,
