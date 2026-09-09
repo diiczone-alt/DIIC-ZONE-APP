@@ -13,7 +13,8 @@ import {
     Stethoscope, Utensils, Home, GraduationCap, HeartPulse,
     HardHat, Coins, Landmark, UtensilsCrossed, Cpu, Gavel, Factory, 
     HeartHandshake, Store, Truck, Plane, MoreHorizontal, Mic, Sprout, ShoppingBag, Croissant,
-    TrendingUp, Calculator, Clock, CheckCircle2, Eye, Compass, Sparkles, Award, ArrowRight
+    TrendingUp, Calculator, Clock, CheckCircle2, Eye, Compass, Sparkles, Award, ArrowRight,
+    Activity, PhoneCall, Calendar, Users, Radio, Printer, Bot, Headphones, BookOpen, AlertCircle, Share2
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
@@ -457,9 +458,12 @@ export default function HQServicesPage() {
             {/* Medical Specific Strategic Blueprint & ROI Dossier */}
             {selectedNiche === 'medical' && <MedicalDossier />}
 
+            {/* Hospital Specific Strategic Blueprint & ROI Dossier */}
+            {(selectedNiche === 'hospital' || selectedNiche === 'health') && <HospitalDossier />}
+
             {/* General Service Details & Paid Ads Info for other niches */}
-            {selectedNiche !== 'realestate' && selectedNiche !== 'medical' && <ServiceDetails />}
-            {selectedNiche !== 'realestate' && selectedNiche !== 'medical' && <PaidAdvertising />}
+            {selectedNiche !== 'realestate' && selectedNiche !== 'medical' && selectedNiche !== 'hospital' && selectedNiche !== 'health' && <ServiceDetails />}
+            {selectedNiche !== 'realestate' && selectedNiche !== 'medical' && selectedNiche !== 'hospital' && selectedNiche !== 'health' && <PaidAdvertising />}
 
             {/* Individual Services Catalog - Point 3 of User Request */}
             <div className="space-y-8 relative z-10">
@@ -2132,6 +2136,873 @@ function MedicalDossier() {
                     <span>
                         <strong className="text-white font-bold">Aclaración de Transparencia:</strong> El presupuesto de pauta en sí se paga directamente a Meta o Google desde la tarjeta del médico — DIIC ZONE cobra exclusivamente por la estrategia, segmentación médica ética, diseño de creatividades y optimización de la campaña.
                     </span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function HospitalDossier() {
+    // --- SIMULADOR DE ROI INTERACTIVO (SISTEMA HOSPITALES & CLÍNICAS) ---
+    const [monthlyInquiries, setMonthlyInquiries] = useState(120);
+    const [conversionRate, setConversionRate] = useState(30); // 30% default conversion
+    const [consultationFee, setConsultationFee] = useState(40);
+    const [diagnosticRate, setDiagnosticRate] = useState(45); // 45% of patients need imaging/lab
+    const [diagnosticFee, setDiagnosticFee] = useState(65);
+    const [surgeryRate, setSurgeryRate] = useState(8); // 8% derived to surgery or high-complexity treatment
+    const [surgeryFee, setSurgeryFee] = useState(1800);
+    const [selectedHospitalTier, setSelectedHospitalTier] = useState(1500);
+
+    const totalPatients = Math.max(1, Math.round(monthlyInquiries * (conversionRate / 100)));
+    const consultationIncome = totalPatients * consultationFee;
+    const diagnosticPatients = Math.round(totalPatients * (diagnosticRate / 100));
+    const diagnosticIncome = diagnosticPatients * diagnosticFee;
+    const surgeryPatients = Math.max(1, Math.round(totalPatients * (surgeryRate / 100)));
+    const surgeryIncome = surgeryPatients * surgeryFee;
+    const totalGrossHospitalIncome = consultationIncome + diagnosticIncome + surgeryIncome;
+    const netProfit = totalGrossHospitalIncome - selectedHospitalTier;
+    const roiPercentage = selectedHospitalTier > 0 ? Math.round((netProfit / selectedHospitalTier) * 100) : 0;
+
+    const hospitalPains = [
+        {
+            num: '01',
+            title: 'Sin Centralización',
+            desc: 'Pacientes perdidos por múltiples canales (WhatsApp personal de doctores, Instagram, llamadas) sin control, registro ni seguimiento unificado.',
+            icon: AlertCircle,
+            color: 'from-rose-500/20 to-red-500/20 border-rose-500/30 text-rose-400'
+        },
+        {
+            num: '02',
+            title: 'Sin Estructura',
+            desc: 'Departamentos, quirófanos y médicos especialistas trabajando de forma aislada sin sinergia de marca ni posicionamiento corporativo.',
+            icon: Layers,
+            color: 'from-amber-500/20 to-yellow-500/20 border-amber-500/30 text-amber-400'
+        },
+        {
+            num: '03',
+            title: 'Sin Seguimiento',
+            desc: 'Leads calificados que preguntan por cirugías o consultas en redes, pero nadie responde con inmediatez (< 2h) ni concreta el agendamiento.',
+            icon: Clock,
+            color: 'from-orange-500/20 to-amber-500/20 border-orange-500/30 text-orange-400'
+        },
+        {
+            num: '04',
+            title: 'Sin Posicionamiento',
+            desc: 'La clínica u hospital permanece invisible en el entorno digital de su zona frente a nuevos centros médicos con fuerte presencia online.',
+            icon: Eye,
+            color: 'from-blue-500/20 to-indigo-500/20 border-blue-500/30 text-blue-400'
+        },
+        {
+            num: '05',
+            title: 'Sin Estrategia',
+            desc: 'Publicaciones aisladas e improvisadas en redes sociales sin objetivos comerciales, sin embudos de captación ni métricas de conversión.',
+            icon: Target,
+            color: 'from-purple-500/20 to-violet-500/20 border-purple-500/30 text-purple-400'
+        },
+        {
+            num: '06',
+            title: 'Sin Fidelización',
+            desc: 'El paciente que ingresa por emergencia desconoce los servicios de imagenología, odontología o cirugía, perdiendo ventas cruzadas.',
+            icon: HeartPulse,
+            color: 'from-emerald-500/20 to-teal-500/20 border-emerald-500/30 text-emerald-400'
+        }
+    ];
+
+    const zoneServices = [
+        { num: '01', name: 'Community Manager', role: 'Redes, leads, seguimiento y agendamiento 24/7', icon: MessageCircle, color: 'text-indigo-400 bg-indigo-500/10' },
+        { num: '02', name: 'Diseñador Gráfico', role: 'Branding, ads, stories y piezas clínicas de alta estética', icon: Palette, color: 'text-emerald-400 bg-emerald-500/10' },
+        { num: '03', name: 'Editor de Video', role: 'Reels, TikTok, testimoniales y videos institucionales', icon: Film, color: 'text-purple-400 bg-purple-500/10' },
+        { num: '04', name: 'Filmmaker', role: 'Grabación profesional en quirófanos, salas y dirección médica', icon: Video, color: 'text-blue-400 bg-blue-500/10' },
+        { num: '05', name: 'Fotógrafos', role: 'Fotografía médica, equipos, tecnología, staff y áreas', icon: ImageIcon, color: 'text-cyan-400 bg-cyan-500/10' },
+        { num: '06', name: 'Cobertura de Eventos', role: 'Lanzamientos, jornadas médicas, ferias y coberturas en vivo', icon: Sparkles, color: 'text-amber-400 bg-amber-500/10' },
+        { num: '07', name: 'Imprentas Aliadas', role: 'Banners, señalética, flyers y branding físico hospitalario', icon: Printer, color: 'text-orange-400 bg-orange-500/10' },
+        { num: '08', name: 'Desarrollo Web', role: 'Sitio web oficial, landing pages de especialidad y citas online', icon: Globe, color: 'text-teal-400 bg-teal-500/10' },
+        { num: '09', name: 'Inteligencia Artificial', role: 'Chatbots WhatsApp 24/7, triaje inteligente y agentes IA', icon: Bot, color: 'text-pink-400 bg-pink-500/10' },
+        { num: '10', name: 'Audio en Estudio', role: 'Grabaciones de voz, cuñas de radio, podcasts de salud y spots', icon: Headphones, color: 'text-violet-400 bg-violet-500/10' },
+        { num: '11', name: 'Academy', role: 'Capacitaciones continuas a recepcionistas y protocolo de atención', icon: BookOpen, color: 'text-rose-400 bg-rose-500/10' }
+    ];
+
+    const fourPillars = [
+        {
+            num: '01',
+            title: 'Posicionamiento',
+            desc: 'Construcción de marca moderna, confiable y con autoridad que humaniza el hospital.',
+            points: ['Marca moderna y confiable', 'Identidad visual sólida y uniforme', 'Humanización del hospital', 'Autoridad digital médica y quirúrgica'],
+            badge: 'Marca & Prestigio',
+            color: 'border-indigo-500/30 bg-indigo-500/5'
+        },
+        {
+            num: '02',
+            title: 'Captación',
+            desc: 'Atracción continua de pacientes hacia las especialidades más rentables.',
+            points: ['Reels y TikToks médicos educativos', 'Pauta digital hiper-segmentada', 'Médicos aliados estratégicos', 'Contenido emocional y testimonios reales'],
+            badge: 'Pacientes & Consultas',
+            color: 'border-purple-500/30 bg-purple-500/5'
+        },
+        {
+            num: '03',
+            title: 'Centralización',
+            desc: 'Canal único de atención y agendamiento con protocolo de respuesta rápida.',
+            points: ['WhatsApp único de entrada', 'CRM de pacientes y trazabilidad', 'Agendamiento digital coordinado', 'Community Manager activo (< 2h)'],
+            badge: 'Cero Fugas de Leads',
+            color: 'border-emerald-500/30 bg-emerald-500/5'
+        },
+        {
+            num: '04',
+            title: 'Fidelización',
+            desc: 'Retención y cross-selling continuo entre todas las áreas del hospital.',
+            points: ['Seguimiento post-cita y post-cirugía', 'Cross-selling entre departamentos', 'Ecosistema hospitalario integrado', 'Base de datos propia del hospital'],
+            badge: 'Valor de Vida del Paciente',
+            color: 'border-amber-500/30 bg-amber-500/5'
+        }
+    ];
+
+    const hospitalEcosystem = [
+        { name: 'NovaScan / Imagenología', tag: 'Diagnóstico por Imagen', desc: 'Tomografía computarizada, Rayos X digitales, Ecografía 4D y Resonancia.', color: 'border-blue-500/30 text-blue-400' },
+        { name: 'NovaDent / Odontología', tag: 'Salud Dental Integral', desc: 'Implantología, estética dental, ortodoncia invisible y rehabilitación oral.', color: 'border-emerald-500/30 text-emerald-400' },
+        { name: 'NovaEstetik / Estética', tag: 'Medicina Estética & Cirugía', desc: 'Dermatología clínica, procedimientos mínimamente invasivos y cirugía plástica.', color: 'border-pink-500/30 text-pink-400' },
+        { name: 'NovaUrology / Urología', tag: 'Urología de Alta Gama', desc: 'Cirugía láser de próstata, litotricia, salud masculina y chequeos preventivos.', color: 'border-amber-500/30 text-amber-400' },
+        { name: 'Laboratorio Clínico 24/7', tag: 'Análisis Automatizados', desc: 'Toma de muestras a domicilio, perfiles prequirúrgicos y entrega digital de resultados.', color: 'border-purple-500/30 text-purple-400' },
+        { name: 'Staff de Especialistas', tag: '20+ Médicos Aliados', desc: 'Cardiología, Traumatología, Ginecología, Pediatría, Medicina Interna y más.', color: 'border-cyan-500/30 text-cyan-400' },
+        { name: 'Emergencias 24/7', tag: 'Atención Crítica Continua', desc: 'Ambulancia, shock room, quirófanos de urgencia y hospitalización completa.', color: 'border-rose-500/30 text-rose-400' },
+        { name: 'Medicina Preventiva', tag: 'Chequeos Ejecutivos & Vacunas', desc: 'Planes empresariales, chequeos anuales preventivos y control de salud familiar.', color: 'border-teal-500/30 text-teal-400' }
+    ];
+
+    const capturePipeline = [
+        {
+            step: '1',
+            title: 'Descubrimiento',
+            subtitle: 'Reels · TikTok · Pauta · Referidos',
+            desc: 'El paciente encuentra un reel educativo de un especialista o un anuncio segmentado por su síntoma/dolencia.'
+        },
+        {
+            step: '2',
+            title: 'Canal Central',
+            subtitle: 'WhatsApp Único · RRSS · Web',
+            desc: 'El interesado hace clic y entra directamente al canal oficial centralizado del hospital sin dispersión.'
+        },
+        {
+            step: '3',
+            title: 'Gestión CM / Triaje',
+            subtitle: 'Respuesta < 2h · Clasificación',
+            desc: 'El equipo de DIIC ZONE atiende con calidez, identifica la necesidad y deriva con el especialista indicado.'
+        },
+        {
+            step: '4',
+            title: 'Agendamiento',
+            subtitle: 'Médico · Horario · Confirmación',
+            desc: 'Se reserva el turno en el software del hospital y se activa recordatorio automático para evitar ausencias.'
+        },
+        {
+            step: '5',
+            title: 'Atención + Cross-selling',
+            subtitle: 'Ecosistema Completo · Fidelización',
+            desc: 'Tras la consulta, el paciente es derivado a laboratorio, imágenes o farmacia, y recibe seguimiento post-cita.'
+        }
+    ];
+
+    const weeklyGrid = [
+        { day: 'Lunes', category: 'Educativo Médico', format: 'Reel + Carrusel', desc: 'Explicación clara de síntomas, prevención y cuándo acudir al especialista para educar al paciente.', icon: BookOpen, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+        { day: 'Martes', category: 'Médico Aliado', format: 'Video + Story', desc: 'Presentación del staff médico: trayectoria, credenciales, especialidad y trato humano en consultorio.', icon: User, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+        { day: 'Miércoles', category: 'Servicio / Especialidad', format: 'TikTok + Reel', desc: 'Foco en unidades clave: Quirófanos, Imagenología, Dental, Laboratorio o Estética.', icon: HeartPulse, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+        { day: 'Jueves', category: 'Caso de Éxito', format: 'Testimonial en Video', desc: 'Historia real y emotiva de recuperación de un paciente (con consentimiento informado).', icon: Award, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+        { day: 'Viernes', category: 'Institucional & Quirófanos', format: 'Tecnología & Espacios', desc: 'Muestra de tecnología médica avanzada, bioseguridad, quirófanos y atención de emergencias 24/7.', icon: Shield, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' }
+    ];
+
+    const hospitalTools = [
+        {
+            name: 'Chatbot para WhatsApp & Web',
+            desc: 'Respuesta automática 24/7, menú dinámico de especialidades, triaje básico y derivación al CM.',
+            setup: '$300 – $600',
+            maint: '$80 – $150/mes',
+            icon: Bot
+        },
+        {
+            name: 'CRM Médico / Hospitalario',
+            desc: 'Gestión unificada de pacientes, trazabilidad de derivaciones, historial y recordatorios automáticos de citas.',
+            setup: '$200 – $400',
+            maint: '$100 – $200/mes',
+            icon: Layers
+        },
+        {
+            name: 'Agente IA Personalizado',
+            desc: 'Inteligencia Artificial entrenada con toda la información clínica, cartera de médicos y protocolos del hospital.',
+            setup: '$600 – $1,200',
+            maint: '$150 – $300/mes',
+            icon: Sparkles
+        },
+        {
+            name: 'Automatización de Marketing',
+            desc: 'Secuencias de seguimiento por email/SMS, recordatorios de citas prequirúrgicas y reactivación de pacientes inactivos.',
+            setup: '$250 – $500',
+            maint: '$80 – $150/mes',
+            icon: Megaphone
+        }
+    ];
+
+    const roadmapPhases = [
+        {
+            phase: 'F0',
+            name: 'Diagnóstico & Auditoría',
+            duration: '2 Semanas',
+            cost: '$500 – $700',
+            items: ['Auditoría digital completa', 'Estrategia personalizada por especialidades', 'Diagnóstico de identidad de marca'],
+            note: 'Sin compromiso de continuidad · Puerta de entrada segura',
+            color: 'border-emerald-500/40 text-emerald-400'
+        },
+        {
+            phase: 'F1',
+            name: 'Posicionamiento Base',
+            duration: 'Mes 1 – 3',
+            cost: '$1,500/mes (Nivel Profesional)',
+            items: ['Contenido orgánico activo (16 reels/mes)', 'WhatsApp centralizado y operativo', 'Comunidad y confianza institucional'],
+            note: 'Cimientos sólidos de reputación',
+            color: 'border-blue-500/40 text-blue-400'
+        },
+        {
+            phase: 'F2',
+            name: 'Captación Activa',
+            duration: 'Mes 3 – 6',
+            cost: '$2,500/mes (Nivel Avanzado)',
+            items: ['Pauta publicitaria activada en Google & Meta', 'Red de 20+ médicos aliados integrados', 'Leads de cirugías gestionados en CRM'],
+            note: 'Aceleración y captación de alta gama',
+            color: 'border-purple-500/40 text-purple-400'
+        },
+        {
+            phase: 'F3',
+            name: 'Ecosistema Completo',
+            duration: 'Mes 6+',
+            cost: '$3,500/mes (Nivel Élite)',
+            items: ['Automatización con IA activa 24/7', 'Cross-selling pleno entre todas las áreas', 'Agencia interna de marketing integrada'],
+            note: 'Liderazgo hospitalario indiscutible',
+            color: 'border-amber-500/40 text-amber-400'
+        }
+    ];
+
+    return (
+        <div className="space-y-16 relative z-10 pt-12 pb-16">
+            {/* 1. HEADER & MANIFIESTO ESTRATÉGICO HOSPITALARIO */}
+            <div className="bg-gradient-to-br from-indigo-900/40 via-[#0E0E18] to-purple-900/30 border border-indigo-500/30 p-8 sm:p-12 rounded-[3.5rem] shadow-[0_30px_100px_rgba(99,102,241,0.2)] relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/15 rounded-full blur-[120px] pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+                
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8 border-b border-white/10 pb-8">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2.5 bg-indigo-500/20 rounded-xl text-indigo-400 border border-indigo-500/30">
+                                <HeartPulse className="w-5 h-5" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-400">
+                                ECOSISTEMA HOSPITALARIO DIIC ZONE 2026
+                            </span>
+                        </div>
+                        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white uppercase tracking-tight">
+                            Marketing y Posicionamiento para Hospitales & Clínicas
+                        </h2>
+                        <p className="text-sm text-gray-300 font-medium mt-2 max-w-3xl leading-relaxed">
+                            Tu equipo creativo completo, a un solo nivel · <span className="text-indigo-300 font-bold">Un solo contrato. Un solo equipo. Todo incluido.</span>
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-5 py-3 rounded-2xl">
+                            <Shield className="w-5 h-5 text-emerald-400" />
+                            <div className="text-left">
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block">Metodología Validada</span>
+                                <span className="text-xs font-black text-emerald-400">Nova Clínica Santa Anita (31 años)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Manifiesto y Citas Clave */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    <div className="lg:col-span-7 space-y-4">
+                        <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
+                            “El hospital que <span className="text-indigo-400">lidera digitalmente</span> capta más pacientes y consolida su prestigio.”
+                        </h3>
+                        <p className="text-xs text-gray-300 font-medium leading-relaxed">
+                            Los centros de salud con décadas de trayectoria médica no pueden permitirse ser invisibles en la era digital. DIIC ZONE transforma el hospital en un ecosistema sincronizado donde cada área clínica, médico especialista y quirófano trabaja de forma articulada para atraer, atender y fidelizar pacientes.
+                        </p>
+                    </div>
+
+                    <div className="lg:col-span-5 bg-black/50 border border-white/10 p-6 rounded-3xl space-y-3">
+                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block">La Promesa DIIC ZONE</span>
+                        <div className="grid grid-cols-3 gap-2 text-center pt-2">
+                            <div className="p-3 bg-white/[0.03] rounded-2xl border border-white/5">
+                                <span className="text-2xl font-black text-white font-mono block">11</span>
+                                <span className="text-[9px] text-gray-400 font-bold uppercase">Servicios</span>
+                            </div>
+                            <div className="p-3 bg-white/[0.03] rounded-2xl border border-white/5">
+                                <span className="text-2xl font-black text-indigo-400 font-mono block">1</span>
+                                <span className="text-[9px] text-gray-400 font-bold uppercase">Interlocutor</span>
+                            </div>
+                            <div className="p-3 bg-white/[0.03] rounded-2xl border border-white/5">
+                                <span className="text-2xl font-black text-emerald-400 font-mono block">∞</span>
+                                <span className="text-[9px] text-gray-400 font-bold uppercase">Crecimiento</span>
+                            </div>
+                        </div>
+                        <p className="text-[11px] text-gray-400 font-medium text-center pt-1 italic">
+                            Sin necesidad de contratar agencias dispersas ni nóminas pesadas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. DIAGNÓSTICO INSTITUCIONAL: EL PROBLEMA REAL DEL HOSPITAL */}
+            <div className="space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-white/5" />
+                    <h2 className="text-[10px] font-black text-rose-400 uppercase tracking-[0.5em] whitespace-nowrap">
+                        1. Diagnóstico Institucional — El Problema Real del Hospital
+                    </h2>
+                    <div className="h-px flex-1 bg-white/5" />
+                </div>
+
+                <div className="bg-[#0E0E18] border border-rose-500/20 p-8 sm:p-10 rounded-[3rem] space-y-6">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                        <div>
+                            <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Diagnóstico de Precisión</span>
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                                “No es la falta de videos. Es la <span className="text-rose-400">falta de sistema</span>.”
+                            </h3>
+                        </div>
+                        <div className="px-4 py-2 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold">
+                            6 Dolencias Críticas del Sector
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {hospitalPains.map((pain, idx) => {
+                            const Icon = pain.icon;
+                            return (
+                                <div
+                                    key={idx}
+                                    className="p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/10 flex flex-col justify-between space-y-3 transition-all"
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-2xl font-black text-gray-700 font-mono">{pain.num}</span>
+                                        <div className={`p-2.5 rounded-xl bg-gradient-to-br ${pain.color} border`}>
+                                            <Icon className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                    <h4 className="text-sm font-black text-white uppercase tracking-wider">{pain.title}</h4>
+                                    <p className="text-xs text-gray-400 font-medium leading-relaxed">{pain.desc}</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. TU ZONA CREATIVA COMPLETA: 11 SERVICIOS EN 1 SOLO EQUIPO */}
+            <div className="space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-white/5" />
+                    <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] whitespace-nowrap">
+                        2. Tu Zona Creativa Completa — 11 Servicios en 1 Solo Equipo
+                    </h2>
+                    <div className="h-px flex-1 bg-white/5" />
+                </div>
+
+                <div className="bg-[#0E0E18] border border-white/5 p-8 sm:p-10 rounded-[3rem] space-y-6">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                        <div>
+                            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Capacidad Operativa Total</span>
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                                Todo lo que necesita el hospital, disponible dentro de DIIC ZONE
+                            </h3>
+                        </div>
+                        <div className="px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold">
+                            Un solo contrato · Todo incluido
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {zoneServices.map((srv, idx) => {
+                            const Icon = srv.icon;
+                            return (
+                                <div key={idx} className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 space-y-3 transition-all">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-black text-gray-600 font-mono">{srv.num}</span>
+                                        <div className={`p-2 rounded-xl ${srv.color}`}>
+                                            <Icon className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h5 className="text-xs font-black text-white uppercase mb-1">{srv.name}</h5>
+                                        <p className="text-[11px] text-gray-400 font-medium leading-snug">{srv.role}</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            {/* 4. LOS 4 PILARES DEL ECOSISTEMA HOSPITALARIO */}
+            <div className="space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-white/5" />
+                    <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] whitespace-nowrap">
+                        3. Los 4 Pilares del Ecosistema Hospitalario
+                    </h2>
+                    <div className="h-px flex-1 bg-white/5" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {fourPillars.map((pil, idx) => (
+                        <div
+                            key={idx}
+                            className={`p-6 rounded-[2.5rem] bg-[#0E0E18] border ${pil.color} flex flex-col justify-between space-y-5`}
+                        >
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-3xl font-black text-gray-700 font-mono">{pil.num}</span>
+                                    <span className="text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-white/5 border border-white/10 text-indigo-300">
+                                        {pil.badge}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h4 className="text-lg font-black text-white uppercase">{pil.title}</h4>
+                                    <p className="text-xs text-gray-400 font-medium mt-1 leading-relaxed">{pil.desc}</p>
+                                </div>
+                                <div className="h-px bg-white/5 w-full" />
+                                <ul className="space-y-2">
+                                    {pil.points.map((pt, pIdx) => (
+                                        <li key={pIdx} className="flex items-start gap-2 text-xs text-gray-300 font-medium">
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                                            <span>{pt}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 5. TODO EL HOSPITAL: UN SOLO ECOSISTEMA MULTIDISCIPLINARIO */}
+            <div className="bg-gradient-to-br from-[#0E0E18] via-[#0E0E18] to-indigo-950/20 border border-indigo-500/20 p-8 sm:p-12 rounded-[3.5rem] space-y-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Sinergia & Cross-Selling</span>
+                        <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+                            4. Todo el Hospital. Un Solo Ecosistema.
+                        </h3>
+                    </div>
+                    <div className="px-5 py-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
+                        Venta Cruzada entre Especialidades
+                    </div>
+                </div>
+
+                <p className="text-xs text-gray-300 font-medium leading-relaxed">
+                    Un paciente que entra por una consulta general o emergencia descubre <strong className="text-white">Imagenología, Odontología, Medicina Estética, Urología y Laboratorio</strong> dentro del mismo hospital, maximizando el valor de cada visita:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {hospitalEcosystem.map((eco, idx) => (
+                        <div key={idx} className={`p-5 rounded-2xl bg-white/[0.02] border ${eco.color} space-y-2`}>
+                            <span className="text-[9px] font-black uppercase tracking-wider block opacity-75">{eco.tag}</span>
+                            <h5 className="text-sm font-black text-white">{eco.name}</h5>
+                            <p className="text-[11px] text-gray-400 font-medium leading-relaxed">{eco.desc}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 6. FLUJO CENTRALIZADO DE CAPTACIÓN (5 PASOS) */}
+            <div className="space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-white/5" />
+                    <h2 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.5em] whitespace-nowrap">
+                        5. Flujo Centralizado de Captación de Pacientes
+                    </h2>
+                    <div className="h-px flex-1 bg-white/5" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {capturePipeline.map((pipe, idx) => (
+                        <div key={idx} className="p-6 rounded-[2rem] bg-[#0E0E18] border border-white/5 flex flex-col justify-between space-y-4 relative overflow-hidden">
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-2xl font-black text-emerald-400 font-mono">0{pipe.step}</span>
+                                    <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                                        Paso {pipe.step}
+                                    </span>
+                                </div>
+                                <h4 className="text-sm font-black text-white uppercase">{pipe.title}</h4>
+                                <span className="text-[10px] font-bold text-indigo-300 block">{pipe.subtitle}</span>
+                                <div className="h-px bg-white/5 w-full" />
+                                <p className="text-xs text-gray-400 font-medium leading-relaxed">{pipe.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 7. ESTRATEGIA DE CONTENIDO MENSUAL & PARRILLA SEMANAL */}
+            <div className="bg-[#0E0E18] border border-white/5 p-8 sm:p-12 rounded-[3.5rem] space-y-8">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                    <div>
+                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Calendario Editorial de Alto Nivel</span>
+                        <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                            6. Estrategia de Contenido Mensual
+                        </h3>
+                    </div>
+                </div>
+
+                {/* Metrics Highlights */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
+                        <span className="text-2xl sm:text-3xl font-black text-white font-mono block">16</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Reels / TikToks al mes</span>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
+                        <span className="text-2xl sm:text-3xl font-black text-indigo-400 font-mono block">30</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Stories al mes</span>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
+                        <span className="text-2xl sm:text-3xl font-black text-purple-400 font-mono block">4</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Días de Grabación</span>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
+                        <span className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono block">2</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Campañas de Pauta</span>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 text-center col-span-2 sm:col-span-1">
+                        <span className="text-2xl sm:text-3xl font-black text-amber-400 font-mono block">1</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Reunión Semanal</span>
+                    </div>
+                </div>
+
+                {/* Parrilla Semanal Lunes a Viernes */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {weeklyGrid.map((grid, idx) => {
+                        const Icon = grid.icon;
+                        return (
+                            <div key={idx} className={`p-5 rounded-2xl border ${grid.color} space-y-3`}>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-black uppercase tracking-wider text-white">{grid.day}</span>
+                                    <Icon className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h5 className="text-xs font-bold text-white mb-0.5">{grid.category}</h5>
+                                    <span className="text-[10px] font-mono text-gray-400 block mb-2">{grid.format}</span>
+                                    <p className="text-[11px] text-gray-400 font-medium leading-snug">{grid.desc}</p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 8. HOJA DE RUTA / PLAN DE IMPLEMENTACIÓN EN 4 FASES */}
+            <div className="space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-white/5" />
+                    <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] whitespace-nowrap">
+                        7. Plan de Implementación — Hoja de Ruta de 4 Fases
+                    </h2>
+                    <div className="h-px flex-1 bg-white/5" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {roadmapPhases.map((phase, idx) => (
+                        <div key={idx} className={`p-6 rounded-[2.5rem] bg-[#0E0E18] border ${phase.color} flex flex-col justify-between space-y-4`}>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-2xl font-black font-mono">{phase.phase}</span>
+                                    <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/10 text-white">
+                                        {phase.duration}
+                                    </span>
+                                </div>
+                                <h4 className="text-base font-black text-white uppercase">{phase.name}</h4>
+                                <p className="text-lg font-black text-white tracking-tight">{phase.cost}</p>
+                                <div className="h-px bg-white/5 w-full" />
+                                <ul className="space-y-1.5 text-xs text-gray-400 font-medium">
+                                    {phase.items.map((it, iIdx) => (
+                                        <li key={iIdx} className="flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                            <span>{it}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="pt-2 border-t border-white/5">
+                                <span className="text-[10px] text-gray-500 font-bold italic block">{phase.note}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 9. HERRAMIENTAS ADICIONALES DE AUTOMATIZACIÓN, IA & PAUTA */}
+            <div className="bg-[#0E0E18] border border-white/5 p-8 sm:p-12 rounded-[3.5rem] space-y-8">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                    <div>
+                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Tecnología Adicional</span>
+                        <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                            8. Automatización, Inteligencia Artificial & Pauta
+                        </h3>
+                    </div>
+                    <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-gray-400 text-xs font-bold">
+                        Cotizadas aparte según la escala hospitalaria
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {hospitalTools.map((tool, idx) => {
+                        const Icon = tool.icon;
+                        return (
+                            <div key={idx} className="p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 space-y-4 flex flex-col justify-between">
+                                <div className="space-y-2">
+                                    <div className="p-3 w-fit rounded-xl bg-indigo-500/10 text-indigo-400">
+                                        <Icon className="w-5 h-5" />
+                                    </div>
+                                    <h5 className="text-xs font-black text-white uppercase">{tool.name}</h5>
+                                    <p className="text-[11px] text-gray-400 font-medium leading-relaxed">{tool.desc}</p>
+                                </div>
+                                <div className="pt-3 border-t border-white/5 space-y-1 text-xs">
+                                    <div className="flex justify-between text-gray-400 font-bold">
+                                        <span>Setup:</span>
+                                        <span className="text-white">{tool.setup}</span>
+                                    </div>
+                                    <div className="flex justify-between text-gray-400 font-bold">
+                                        <span>Mantenimiento:</span>
+                                        <span className="text-indigo-400">{tool.maint}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 10. SIMULADOR INTERACTIVO DE RETORNO DE INVERSIÓN (ROI) HOSPITALARIO */}
+            <div className="bg-[#0E0E18] border border-indigo-500/30 p-8 sm:p-12 rounded-[3.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.8)] space-y-10">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">
+                            <Calculator className="w-4 h-4" /> Simulador de Rentabilidad Hospitalaria en Tiempo Real
+                        </div>
+                        <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+                            9. Proyección de Retorno de Inversión (ROI Hospitalario)
+                        </h3>
+                        <p className="text-xs text-gray-400 font-medium mt-1">
+                            Calcula el impacto en facturación al captar consultas de especialidad, derivaciones a exámenes y cirugías de alta complejidad.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Interactive Controls & Results */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    {/* Controls */}
+                    <div className="lg:col-span-6 space-y-6">
+                        {/* Monthly Inquiries Slider */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs font-black text-gray-300">
+                                <span>Mensajes Recibidos al Mes (WhatsApp / Redes):</span>
+                                <span className="text-indigo-400 font-bold">{monthlyInquiries} pacientes</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="40"
+                                max="400"
+                                step="20"
+                                value={monthlyInquiries}
+                                onChange={(e) => setMonthlyInquiries(Number(e.target.value))}
+                                className="w-full accent-indigo-500 cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-gray-600 font-bold">
+                                <span>40 msgs</span>
+                                <span>120 (Promedio Nivel Profesional)</span>
+                                <span>400 msgs</span>
+                            </div>
+                        </div>
+
+                        {/* Conversion Rate */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs font-black text-gray-300">
+                                <span>Tasa de Conversión a Cita Médica:</span>
+                                <span className="text-emerald-400 font-bold">{conversionRate}% ({totalPatients} consultas agendadas)</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="15"
+                                max="50"
+                                step="5"
+                                value={conversionRate}
+                                onChange={(e) => setConversionRate(Number(e.target.value))}
+                                className="w-full accent-emerald-500 cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-gray-600 font-bold">
+                                <span>15%</span>
+                                <span>30% (Meta Estándar DIIC ZONE)</span>
+                                <span>50%</span>
+                            </div>
+                        </div>
+
+                        {/* Consultation Fee */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs font-black text-gray-300">
+                                <span>Valor Promedio de Consulta de Especialidad:</span>
+                                <span className="text-white font-bold">${consultationFee} USD</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2">
+                                {[35, 40, 50, 70].map((val) => (
+                                    <button
+                                        key={val}
+                                        onClick={() => setConsultationFee(val)}
+                                        className={`py-2 rounded-xl text-xs font-bold transition-all ${consultationFee === val ? 'bg-indigo-600 text-white' : 'bg-white/5 text-gray-400 hover:text-white'}`}
+                                    >
+                                        ${val} USD
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Cross-selling to Imaging / Lab */}
+                        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                            <div className="flex justify-between items-center text-xs font-black text-gray-300">
+                                <span className="text-indigo-300">Derivación a Imagenología / Laboratorio ({diagnosticRate}%):</span>
+                                <span className="text-purple-400 font-bold">{diagnosticPatients} estudios (+${diagnosticIncome.toLocaleString()} USD)</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-gray-500">Ticket promedio estudio:</span>
+                                <div className="flex gap-2">
+                                    {[50, 65, 85, 120].map((fee) => (
+                                        <button
+                                            key={fee}
+                                            onClick={() => setDiagnosticFee(fee)}
+                                            className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all ${diagnosticFee === fee ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400'}`}
+                                        >
+                                            ${fee}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Derived Surgeries / High-Complexity Procedures */}
+                        <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-2">
+                            <div className="flex justify-between items-center text-xs font-black text-gray-200">
+                                <span className="text-indigo-300">Cirugías / Procedimientos Complejos ({surgeryRate}%):</span>
+                                <span className="text-emerald-400 font-bold">{surgeryPatients} cirugías (+${surgeryIncome.toLocaleString()} USD)</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-gray-400">Valor promedio cirugía:</span>
+                                <div className="flex gap-2">
+                                    {[1200, 1800, 2500, 3500].map((sFee) => (
+                                        <button
+                                            key={sFee}
+                                            onClick={() => setSurgeryFee(sFee)}
+                                            className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all ${surgeryFee === sFee ? 'bg-indigo-600 text-white' : 'bg-white/5 text-gray-400'}`}
+                                        >
+                                            ${sFee}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Plan Tier Selection */}
+                        <div className="space-y-2">
+                            <span className="text-xs font-black text-gray-400 block">Nivel Hospitalario a Comparar:</span>
+                            <div className="grid grid-cols-4 gap-2">
+                                {[
+                                    { name: 'Esencial', price: 700 },
+                                    { name: 'Profesional', price: 1500 },
+                                    { name: 'Avanzado', price: 2500 },
+                                    { name: 'Élite', price: 3500 }
+                                ].map((tier) => (
+                                    <button
+                                        key={tier.price}
+                                        onClick={() => setSelectedHospitalTier(tier.price)}
+                                        className={`py-2 px-1 text-center rounded-xl transition-all border ${
+                                            selectedHospitalTier === tier.price
+                                                ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg'
+                                                : 'bg-white/5 border-white/5 text-gray-400 hover:text-white'
+                                        }`}
+                                    >
+                                        <span className="text-[10px] font-black uppercase block">{tier.name}</span>
+                                        <span className="text-xs font-bold">${tier.price}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Results Dashboard */}
+                    <div className="lg:col-span-6 bg-gradient-to-br from-indigo-950/40 via-black to-purple-950/30 border border-indigo-500/30 p-8 rounded-3xl space-y-6 shadow-2xl">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Consultas Médicas</span>
+                                <span className="text-2xl font-black text-white">{totalPatients} citas</span>
+                                <span className="text-[10px] text-gray-400 font-bold block">${consultationIncome.toLocaleString()} USD</span>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                                <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest block">Imágenes / Lab</span>
+                                <span className="text-2xl font-black text-purple-400">${diagnosticIncome.toLocaleString()}</span>
+                                <span className="text-[10px] text-gray-400 font-bold block">{diagnosticPatients} estudios</span>
+                            </div>
+                        </div>
+
+                        {/* Cirugías Box */}
+                        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex justify-between items-center text-xs">
+                            <div>
+                                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block">Cirugías & Procedimientos ({surgeryPatients})</span>
+                                <span className="text-2xl font-black text-white">+${surgeryIncome.toLocaleString()} USD</span>
+                            </div>
+                            <span className="text-xs text-emerald-300 font-bold bg-emerald-500/20 px-3 py-1.5 rounded-full border border-emerald-500/30">
+                                Alto Impacto
+                            </span>
+                        </div>
+
+                        <div className="space-y-3 border-t border-b border-white/10 py-4 text-xs font-medium text-gray-300">
+                            <div className="flex justify-between">
+                                <span>Ingreso Bruto Total Generado:</span>
+                                <span className="text-emerald-400 font-bold text-sm">${totalGrossHospitalIncome.toLocaleString()} USD</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Inversión Mensual DIIC ZONE:</span>
+                                <span className="text-gray-400 font-bold">${selectedHospitalTier.toLocaleString()} USD</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">Utilidad Neta Generada</span>
+                                <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                                    {netProfit >= 0 ? `+$${netProfit.toLocaleString()}` : `-$${Math.abs(netProfit).toLocaleString()}`} <span className="text-xs text-gray-500 font-normal">USD</span>
+                                </span>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Retorno Proyectado (ROI)</span>
+                                <span className={`text-2xl sm:text-3xl font-black font-mono ${roiPercentage >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                    {roiPercentage >= 0 ? `+${roiPercentage}%` : `${roiPercentage}%`}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 11. CIERRE ESTRATÉGICO & PROPUESTA DE ARRANQUE */}
+            <div className="bg-gradient-to-r from-emerald-950/30 via-[#0E0E18] to-indigo-950/30 border border-emerald-500/30 p-8 sm:p-12 rounded-[3.5rem] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="space-y-2 max-w-2xl">
+                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block">El Primer Paso Estratégico</span>
+                    <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+                        Aprobemos el Nivel 0 — Diagnóstico & Auditoría
+                    </h3>
+                    <p className="text-xs text-gray-300 font-medium leading-relaxed">
+                        Iniciemos con una auditoría digital completa de 2 semanas (<strong className="text-emerald-400 font-bold">Desde $500 – $700 USD</strong>), sin compromiso de continuidad, para presentar el plan a la medida del directorio médico.
+                    </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="px-6 py-4 rounded-2xl bg-emerald-500 text-black font-black text-xs uppercase tracking-wider text-center shadow-lg shadow-emerald-500/20">
+                        Diagnóstico Inicial Activo
+                    </div>
                 </div>
             </div>
         </div>
