@@ -2145,7 +2145,7 @@ function MedicalDossier() {
 function HospitalDossier() {
     // --- SIMULADOR DE ROI INTERACTIVO (SISTEMA HOSPITALES & CLÍNICAS) ---
     const [monthlyInquiries, setMonthlyInquiries] = useState(120);
-    const [conversionRate, setConversionRate] = useState(30); // 30% default conversion
+    const [responseTimeTier, setResponseTimeTier] = useState('fast'); // 'fast' (<5min), 'medium' (<30min), 'slow' (>2h)
     const [consultationFee, setConsultationFee] = useState(40);
     const [diagnosticRate, setDiagnosticRate] = useState(45); // 45% of patients need imaging/lab
     const [diagnosticFee, setDiagnosticFee] = useState(65);
@@ -2153,7 +2153,12 @@ function HospitalDossier() {
     const [surgeryFee, setSurgeryFee] = useState(1800);
     const [selectedHospitalTier, setSelectedHospitalTier] = useState(1500);
 
-    const totalPatients = Math.max(1, Math.round(monthlyInquiries * (conversionRate / 100)));
+    // Call Center response efficiency factor
+    const conversionMultiplier = responseTimeTier === 'fast' ? 1.25 : (responseTimeTier === 'medium' ? 1.0 : 0.6);
+    const baseConversionRate = 28;
+    const effectiveConversionRate = Math.min(50, Math.round(baseConversionRate * conversionMultiplier));
+
+    const totalPatients = Math.max(1, Math.round(monthlyInquiries * (effectiveConversionRate / 100)));
     const consultationIncome = totalPatients * consultationFee;
     const diagnosticPatients = Math.round(totalPatients * (diagnosticRate / 100));
     const diagnosticIncome = diagnosticPatients * diagnosticFee;
@@ -2162,6 +2167,54 @@ function HospitalDossier() {
     const totalGrossHospitalIncome = consultationIncome + diagnosticIncome + surgeryIncome;
     const netProfit = totalGrossHospitalIncome - selectedHospitalTier;
     const roiPercentage = selectedHospitalTier > 0 ? Math.round((netProfit / selectedHospitalTier) * 100) : 0;
+
+    const threeMasterPillars = [
+        {
+            num: '01',
+            pillar: 'Dirección Estratégica & Performance',
+            role: 'Ejecutado por DIIC ZONE',
+            badge: 'Estrategia Digital',
+            color: 'border-indigo-500/30 bg-indigo-500/5',
+            icon: Target,
+            desc: 'Estructuración de embudos de captación para cirugías y especialidades más rentables, investigación de demanda médica y pauta publicitaria hiper-segmentada.',
+            responsibilities: [
+                'Embudos de captación por patología y cirugía',
+                'Pauta publicitaria en Google Ads & Meta Ads',
+                'Segmentación geográfica y de alta intención médica',
+                'Medición mensual de ROI, CAC y costo por paciente'
+            ]
+        },
+        {
+            num: '02',
+            pillar: 'Producción Audiovisual & Branding In-Situ',
+            role: 'Ejecutado por DIIC ZONE',
+            badge: 'Producción Médica',
+            color: 'border-purple-500/30 bg-purple-500/5',
+            icon: Film,
+            desc: 'Equipo de filmación y fotografía médica in-situ en quirófanos y consultorios con estándares éticos y de bioseguridad, dirección cinematográfica y edición.',
+            responsibilities: [
+                'Filmmaker y fotógrafo médico en quirófanos y clínica',
+                'Edición de Reels, TikToks y testimonios con consentimiento',
+                'Identidad visual sólida y uniforme para todas las áreas',
+                'Guiones médicos estructurados para generar autoridad'
+            ]
+        },
+        {
+            num: '03',
+            pillar: 'Centro de Conversión, Admisión & Call Center',
+            role: 'Co-Operación (DIIC ZONE + Hospital)',
+            badge: 'El Nexo Crítico de Cierre',
+            color: 'border-emerald-500/30 bg-emerald-500/5',
+            icon: PhoneCall,
+            desc: 'DIIC ZONE implementa la tecnología CRM, chatbot de triaje IA 24/7 y capacita en protocolos rápidos (< 5 min). El hospital designa su responsable interno de admisiones.',
+            responsibilities: [
+                'DIIC ZONE: Configuración de CRM hospitalario y Bot IA 24/7',
+                'DIIC ZONE: Capacitación Academy en protocolo de respuesta < 5 min',
+                'HOSPITAL: Asigna operador interno con acceso a agenda médica y seguros',
+                'HOSPITAL: Cierre de citas, cobros y confirmación para evitar ausentismo'
+            ]
+        }
+    ];
 
     const hospitalPains = [
         {
@@ -2180,8 +2233,8 @@ function HospitalDossier() {
         },
         {
             num: '03',
-            title: 'Sin Seguimiento',
-            desc: 'Leads calificados que preguntan por cirugías o consultas en redes, pero nadie responde con inmediatez (< 2h) ni concreta el agendamiento.',
+            title: 'Fuga en Call Center / Admisión',
+            desc: 'Leads de cirugías que preguntan en redes pero nadie responde con inmediatez (< 5 min) o responden con frialdad sin agendar la cita médica.',
             icon: Clock,
             color: 'from-orange-500/20 to-amber-500/20 border-orange-500/30 text-orange-400'
         },
@@ -2209,9 +2262,9 @@ function HospitalDossier() {
     ];
 
     const zoneServices = [
-        { num: '01', name: 'Community Manager', role: 'Redes, leads, seguimiento y agendamiento 24/7', icon: MessageCircle, color: 'text-indigo-400 bg-indigo-500/10' },
+        { num: '01', name: 'Community Manager', role: 'Redes, leads, seguimiento y soporte operativo', icon: MessageCircle, color: 'text-indigo-400 bg-indigo-500/10' },
         { num: '02', name: 'Diseñador Gráfico', role: 'Branding, ads, stories y piezas clínicas de alta estética', icon: Palette, color: 'text-emerald-400 bg-emerald-500/10' },
-        { num: '03', name: 'Editor de Video', role: 'Reels, TikTok, testimoniales y videos institucionales', icon: Film, color: 'text-purple-400 bg-purple-500/10' },
+        { num: '03', name: 'Editor de Video', role: 'Reels, TikTok, testimoniales y piezas de autoridad', icon: Film, color: 'text-purple-400 bg-purple-500/10' },
         { num: '04', name: 'Filmmaker', role: 'Grabación profesional en quirófanos, salas y dirección médica', icon: Video, color: 'text-blue-400 bg-blue-500/10' },
         { num: '05', name: 'Fotógrafos', role: 'Fotografía médica, equipos, tecnología, staff y áreas', icon: ImageIcon, color: 'text-cyan-400 bg-cyan-500/10' },
         { num: '06', name: 'Cobertura de Eventos', role: 'Lanzamientos, jornadas médicas, ferias y coberturas en vivo', icon: Sparkles, color: 'text-amber-400 bg-amber-500/10' },
@@ -2219,106 +2272,71 @@ function HospitalDossier() {
         { num: '08', name: 'Desarrollo Web', role: 'Sitio web oficial, landing pages de especialidad y citas online', icon: Globe, color: 'text-teal-400 bg-teal-500/10' },
         { num: '09', name: 'Inteligencia Artificial', role: 'Chatbots WhatsApp 24/7, triaje inteligente y agentes IA', icon: Bot, color: 'text-pink-400 bg-pink-500/10' },
         { num: '10', name: 'Audio en Estudio', role: 'Grabaciones de voz, cuñas de radio, podcasts de salud y spots', icon: Headphones, color: 'text-violet-400 bg-violet-500/10' },
-        { num: '11', name: 'Academy', role: 'Capacitaciones continuas a recepcionistas y protocolo de atención', icon: BookOpen, color: 'text-rose-400 bg-rose-500/10' }
-    ];
-
-    const fourPillars = [
-        {
-            num: '01',
-            title: 'Posicionamiento',
-            desc: 'Construcción de marca moderna, confiable y con autoridad que humaniza el hospital.',
-            points: ['Marca moderna y confiable', 'Identidad visual sólida y uniforme', 'Humanización del hospital', 'Autoridad digital médica y quirúrgica'],
-            badge: 'Marca & Prestigio',
-            color: 'border-indigo-500/30 bg-indigo-500/5'
-        },
-        {
-            num: '02',
-            title: 'Captación',
-            desc: 'Atracción continua de pacientes hacia las especialidades más rentables.',
-            points: ['Reels y TikToks médicos educativos', 'Pauta digital hiper-segmentada', 'Médicos aliados estratégicos', 'Contenido emocional y testimonios reales'],
-            badge: 'Pacientes & Consultas',
-            color: 'border-purple-500/30 bg-purple-500/5'
-        },
-        {
-            num: '03',
-            title: 'Centralización',
-            desc: 'Canal único de atención y agendamiento con protocolo de respuesta rápida.',
-            points: ['WhatsApp único de entrada', 'CRM de pacientes y trazabilidad', 'Agendamiento digital coordinado', 'Community Manager activo (< 2h)'],
-            badge: 'Cero Fugas de Leads',
-            color: 'border-emerald-500/30 bg-emerald-500/5'
-        },
-        {
-            num: '04',
-            title: 'Fidelización',
-            desc: 'Retención y cross-selling continuo entre todas las áreas del hospital.',
-            points: ['Seguimiento post-cita y post-cirugía', 'Cross-selling entre departamentos', 'Ecosistema hospitalario integrado', 'Base de datos propia del hospital'],
-            badge: 'Valor de Vida del Paciente',
-            color: 'border-amber-500/30 bg-amber-500/5'
-        }
+        { num: '11', name: 'Academy', role: 'Capacitación a admisiones y protocolos de cierre y atención', icon: BookOpen, color: 'text-rose-400 bg-rose-500/10' }
     ];
 
     const hospitalEcosystem = [
-        { name: 'NovaScan / Imagenología', tag: 'Diagnóstico por Imagen', desc: 'Tomografía computarizada, Rayos X digitales, Ecografía 4D y Resonancia.', color: 'border-blue-500/30 text-blue-400' },
-        { name: 'NovaDent / Odontología', tag: 'Salud Dental Integral', desc: 'Implantología, estética dental, ortodoncia invisible y rehabilitación oral.', color: 'border-emerald-500/30 text-emerald-400' },
-        { name: 'NovaEstetik / Estética', tag: 'Medicina Estética & Cirugía', desc: 'Dermatología clínica, procedimientos mínimamente invasivos y cirugía plástica.', color: 'border-pink-500/30 text-pink-400' },
-        { name: 'NovaUrology / Urología', tag: 'Urología de Alta Gama', desc: 'Cirugía láser de próstata, litotricia, salud masculina y chequeos preventivos.', color: 'border-amber-500/30 text-amber-400' },
+        { name: 'Unidad de Diagnóstico & Imagenología', tag: 'Diagnóstico de Precisión', desc: 'Tomografía computarizada, Rayos X digitales, Ecografía 4D y Resonancia magnética.', color: 'border-blue-500/30 text-blue-400' },
+        { name: 'Unidad Odontológica Especializada', tag: 'Salud Dental Integral', desc: 'Implantología, estética dental, ortodoncia invisible y rehabilitación oral.', color: 'border-emerald-500/30 text-emerald-400' },
+        { name: 'Medicina Estética & Láser', tag: 'Estética Médica & Cirugía', desc: 'Dermatología clínica, procedimientos mínimamente invasivos y cirugía plástica.', color: 'border-pink-500/30 text-pink-400' },
+        { name: 'Urología & Cirugía Avanzada', tag: 'Urología de Alta Complejidad', desc: 'Cirugía láser de próstata, litotricia, salud masculina y chequeos preventivos.', color: 'border-amber-500/30 text-amber-400' },
         { name: 'Laboratorio Clínico 24/7', tag: 'Análisis Automatizados', desc: 'Toma de muestras a domicilio, perfiles prequirúrgicos y entrega digital de resultados.', color: 'border-purple-500/30 text-purple-400' },
-        { name: 'Staff de Especialistas', tag: '20+ Médicos Aliados', desc: 'Cardiología, Traumatología, Ginecología, Pediatría, Medicina Interna y más.', color: 'border-cyan-500/30 text-cyan-400' },
-        { name: 'Emergencias 24/7', tag: 'Atención Crítica Continua', desc: 'Ambulancia, shock room, quirófanos de urgencia y hospitalización completa.', color: 'border-rose-500/30 text-rose-400' },
-        { name: 'Medicina Preventiva', tag: 'Chequeos Ejecutivos & Vacunas', desc: 'Planes empresariales, chequeos anuales preventivos y control de salud familiar.', color: 'border-teal-500/30 text-teal-400' }
+        { name: 'Red de Especialistas Médicos', tag: '20+ Especialidades Integradas', desc: 'Cardiología, Traumatología, Ginecología, Pediatría, Medicina Interna y más.', color: 'border-cyan-500/30 text-cyan-400' },
+        { name: 'Emergencias & Hospitalización 24/7', tag: 'Atención Crítica Continua', desc: 'Ambulancia, shock room, quirófanos de urgencia y hospitalización completa.', color: 'border-rose-500/30 text-rose-400' },
+        { name: 'Medicina Preventiva & Chequeos', tag: 'Chequeos Ejecutivos & Ocupacionales', desc: 'Planes empresariales, chequeos anuales preventivos y control de salud familiar.', color: 'border-teal-500/30 text-teal-400' }
     ];
 
     const capturePipeline = [
         {
             step: '1',
             title: 'Descubrimiento',
-            subtitle: 'Reels · TikTok · Pauta · Referidos',
-            desc: 'El paciente encuentra un reel educativo de un especialista o un anuncio segmentado por su síntoma/dolencia.'
+            subtitle: 'Reels · TikTok · Pauta · Búsquedas',
+            desc: 'El paciente encuentra un reel educativo de un especialista o un anuncio segmentado por su síntoma o necesidad quirúrgica.'
         },
         {
             step: '2',
-            title: 'Canal Central',
+            title: 'Canal Centralizado',
             subtitle: 'WhatsApp Único · RRSS · Web',
-            desc: 'El interesado hace clic y entra directamente al canal oficial centralizado del hospital sin dispersión.'
+            desc: 'El paciente hace clic y entra directamente al canal oficial centralizado del hospital sin dispersión.'
         },
         {
             step: '3',
-            title: 'Gestión CM / Triaje',
-            subtitle: 'Respuesta < 2h · Clasificación',
-            desc: 'El equipo de DIIC ZONE atiende con calidez, identifica la necesidad y deriva con el especialista indicado.'
+            title: 'Triaje IA & Call Center',
+            subtitle: 'Respuesta < 5 min · Calificación',
+            desc: 'El bot IA 24/7 realiza el triaje inicial y deriva al operador interno de admisiones para calificar la necesidad médica.'
         },
         {
             step: '4',
-            title: 'Agendamiento',
+            title: 'Agendamiento Interno',
             subtitle: 'Médico · Horario · Confirmación',
-            desc: 'Se reserva el turno en el software del hospital y se activa recordatorio automático para evitar ausencias.'
+            desc: 'Admisión del hospital reserva en agenda real, valida seguro y activa recordatorio automático para evitar ausencias.'
         },
         {
             step: '5',
             title: 'Atención + Cross-selling',
             subtitle: 'Ecosistema Completo · Fidelización',
-            desc: 'Tras la consulta, el paciente es derivado a laboratorio, imágenes o farmacia, y recibe seguimiento post-cita.'
+            desc: 'Tras la consulta o cirugía, el paciente es derivado a laboratorio, imágenes o farmacia, y recibe seguimiento post-cita.'
         }
     ];
 
     const weeklyGrid = [
         { day: 'Lunes', category: 'Educativo Médico', format: 'Reel + Carrusel', desc: 'Explicación clara de síntomas, prevención y cuándo acudir al especialista para educar al paciente.', icon: BookOpen, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-        { day: 'Martes', category: 'Médico Aliado', format: 'Video + Story', desc: 'Presentación del staff médico: trayectoria, credenciales, especialidad y trato humano en consultorio.', icon: User, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
-        { day: 'Miércoles', category: 'Servicio / Especialidad', format: 'TikTok + Reel', desc: 'Foco en unidades clave: Quirófanos, Imagenología, Dental, Laboratorio o Estética.', icon: HeartPulse, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+        { day: 'Martes', category: 'Médico Especialista', format: 'Video + Story', desc: 'Presentación del staff médico: trayectoria, credenciales, especialidad y trato humano en consultorio.', icon: User, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+        { day: 'Miércoles', category: 'Especialidad / Unidad', format: 'TikTok + Reel', desc: 'Foco en unidades clave: Quirófanos, Imagenología, Dental, Laboratorio o Estética.', icon: HeartPulse, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
         { day: 'Jueves', category: 'Caso de Éxito', format: 'Testimonial en Video', desc: 'Historia real y emotiva de recuperación de un paciente (con consentimiento informado).', icon: Award, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-        { day: 'Viernes', category: 'Institucional & Quirófanos', format: 'Tecnología & Espacios', desc: 'Muestra de tecnología médica avanzada, bioseguridad, quirófanos y atención de emergencias 24/7.', icon: Shield, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' }
+        { day: 'Viernes', category: 'Institucional & Tecnología', format: 'Instalaciones & Quirófanos', desc: 'Muestra de tecnología médica avanzada, bioseguridad, quirófanos y atención de emergencias 24/7.', icon: Shield, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' }
     ];
 
     const hospitalTools = [
         {
             name: 'Chatbot para WhatsApp & Web',
-            desc: 'Respuesta automática 24/7, menú dinámico de especialidades, triaje básico y derivación al CM.',
+            desc: 'Respuesta automática 24/7, menú dinámico de especialidades, triaje básico y derivación al operador interno.',
             setup: '$300 – $600',
             maint: '$80 – $150/mes',
             icon: Bot
         },
         {
-            name: 'CRM Médico / Hospitalario',
+            name: 'CRM Hospitalario & Clínico',
             desc: 'Gestión unificada de pacientes, trazabilidad de derivaciones, historial y recordatorios automáticos de citas.',
             setup: '$200 – $400',
             maint: '$100 – $200/mes',
@@ -2393,14 +2411,14 @@ function HospitalDossier() {
                                 <HeartPulse className="w-5 h-5" />
                             </div>
                             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-400">
-                                ECOSISTEMA HOSPITALARIO DIIC ZONE 2026
+                                SISTEMA DE MARKETING & ESCALA HOSPITALARIA DIIC ZONE 2026
                             </span>
                         </div>
                         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white uppercase tracking-tight">
-                            Marketing y Posicionamiento para Hospitales & Clínicas
+                            Ecosistema de Marketing para Clínicas & Hospitales
                         </h2>
                         <p className="text-sm text-gray-300 font-medium mt-2 max-w-3xl leading-relaxed">
-                            Tu equipo creativo completo, a un solo nivel · <span className="text-indigo-300 font-bold">Un solo contrato. Un solo equipo. Todo incluido.</span>
+                            El modelo de 3 Pilares Maestros para posicionar centros médicos, captar cirugías de alta gama y cerrar pacientes en admisiones.
                         </p>
                     </div>
 
@@ -2408,8 +2426,8 @@ function HospitalDossier() {
                         <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-5 py-3 rounded-2xl">
                             <Shield className="w-5 h-5 text-emerald-400" />
                             <div className="text-left">
-                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block">Metodología Validada</span>
-                                <span className="text-xs font-black text-emerald-400">Nova Clínica Santa Anita (31 años)</span>
+                                <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest block">Metodología de Escala</span>
+                                <span className="text-xs font-black text-emerald-400">3 Pilares Sincronizados</span>
                             </div>
                         </div>
                     </div>
@@ -2419,42 +2437,91 @@ function HospitalDossier() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                     <div className="lg:col-span-7 space-y-4">
                         <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-                            “El hospital que <span className="text-indigo-400">lidera digitalmente</span> capta más pacientes y consolida su prestigio.”
+                            “El marketing médico no termina en el video: <span className="text-indigo-400">se consolida en la velocidad de la admisión</span>.”
                         </h3>
                         <p className="text-xs text-gray-300 font-medium leading-relaxed">
-                            Los centros de salud con décadas de trayectoria médica no pueden permitirse ser invisibles en la era digital. DIIC ZONE transforma el hospital en un ecosistema sincronizado donde cada área clínica, médico especialista y quirófano trabaja de forma articulada para atraer, atender y fidelizar pacientes.
+                            DIIC ZONE actúa como el brazo director en <strong className="text-white">Estrategia</strong> y <strong className="text-white">Producción Audiovisual</strong>, al tiempo que dota de tecnología CRM y capacitación al <strong className="text-emerald-400 font-bold">Call Center / Admisión interna del hospital</strong> para cerrar la cita en menos de 5 minutos.
                         </p>
                     </div>
 
                     <div className="lg:col-span-5 bg-black/50 border border-white/10 p-6 rounded-3xl space-y-3">
-                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block">La Promesa DIIC ZONE</span>
+                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block">Sinergia Operativa Hospitalaria</span>
                         <div className="grid grid-cols-3 gap-2 text-center pt-2">
                             <div className="p-3 bg-white/[0.03] rounded-2xl border border-white/5">
-                                <span className="text-2xl font-black text-white font-mono block">11</span>
-                                <span className="text-[9px] text-gray-400 font-bold uppercase">Servicios</span>
+                                <span className="text-xs font-black text-indigo-400 uppercase block mb-1">Pilar 1</span>
+                                <span className="text-[10px] text-white font-bold">Estrategia</span>
+                                <span className="text-[8px] text-gray-500 block">DIIC ZONE</span>
                             </div>
                             <div className="p-3 bg-white/[0.03] rounded-2xl border border-white/5">
-                                <span className="text-2xl font-black text-indigo-400 font-mono block">1</span>
-                                <span className="text-[9px] text-gray-400 font-bold uppercase">Interlocutor</span>
+                                <span className="text-xs font-black text-purple-400 uppercase block mb-1">Pilar 2</span>
+                                <span className="text-[10px] text-white font-bold">Producción</span>
+                                <span className="text-[8px] text-gray-500 block">DIIC ZONE</span>
                             </div>
                             <div className="p-3 bg-white/[0.03] rounded-2xl border border-white/5">
-                                <span className="text-2xl font-black text-emerald-400 font-mono block">∞</span>
-                                <span className="text-[9px] text-gray-400 font-bold uppercase">Crecimiento</span>
+                                <span className="text-xs font-black text-emerald-400 uppercase block mb-1">Pilar 3</span>
+                                <span className="text-[10px] text-white font-bold">Call Center</span>
+                                <span className="text-[8px] text-emerald-400 block">Admisión Interna</span>
                             </div>
                         </div>
                         <p className="text-[11px] text-gray-400 font-medium text-center pt-1 italic">
-                            Sin necesidad de contratar agencias dispersas ni nóminas pesadas.
+                            Un sistema sincronizado donde no hay fuga de pacientes.
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* 2. DIAGNÓSTICO INSTITUCIONAL: EL PROBLEMA REAL DEL HOSPITAL */}
+            {/* 2. LOS 3 PILARES MAESTROS DE LA ESCALA HOSPITALARIA */}
+            <div className="space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-white/5" />
+                    <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] whitespace-nowrap">
+                        1. La Arquitectura de los 3 Pilares Maestros
+                    </h2>
+                    <div className="h-px flex-1 bg-white/5" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {threeMasterPillars.map((pil, idx) => {
+                        const Icon = pil.icon;
+                        return (
+                            <div
+                                key={idx}
+                                className={`p-8 rounded-[2.5rem] bg-[#0E0E18] border ${pil.color} flex flex-col justify-between space-y-6 relative overflow-hidden`}
+                            >
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-3xl font-black text-gray-700 font-mono">{pil.num}</span>
+                                        <span className="text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-white/5 border border-white/10 text-indigo-300">
+                                            {pil.badge}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">{pil.role}</span>
+                                        <h4 className="text-lg font-black text-white uppercase">{pil.pillar}</h4>
+                                        <p className="text-xs text-gray-400 font-medium mt-2 leading-relaxed">{pil.desc}</p>
+                                    </div>
+                                    <div className="h-px bg-white/5 w-full" />
+                                    <ul className="space-y-2">
+                                        {pil.responsibilities.map((resp, rIdx) => (
+                                            <li key={rIdx} className="flex items-start gap-2.5 text-xs text-gray-300 font-medium">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                                                <span>{resp}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 3. DIAGNÓSTICO INSTITUCIONAL: LAS 6 DOLENCIAS DEL SECTOR */}
             <div className="space-y-8">
                 <div className="flex items-center gap-4">
                     <div className="h-px flex-1 bg-white/5" />
                     <h2 className="text-[10px] font-black text-rose-400 uppercase tracking-[0.5em] whitespace-nowrap">
-                        1. Diagnóstico Institucional — El Problema Real del Hospital
+                        2. Diagnóstico Institucional — El Problema Real de Clínicas y Hospitales
                     </h2>
                     <div className="h-px flex-1 bg-white/5" />
                 </div>
@@ -2464,11 +2531,11 @@ function HospitalDossier() {
                         <div>
                             <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Diagnóstico de Precisión</span>
                             <h3 className="text-2xl font-black text-white uppercase tracking-tight">
-                                “No es la falta de videos. Es la <span className="text-rose-400">falta de sistema</span>.”
+                                “No es la falta de videos. Es la <span className="text-rose-400">falta de sistema y la fuga en la atención</span>.”
                             </h3>
                         </div>
                         <div className="px-4 py-2 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold">
-                            6 Dolencias Críticas del Sector
+                            6 Fugas Críticas del Sector
                         </div>
                     </div>
 
@@ -2495,100 +2562,72 @@ function HospitalDossier() {
                 </div>
             </div>
 
-            {/* 3. TU ZONA CREATIVA COMPLETA: 11 SERVICIOS EN 1 SOLO EQUIPO */}
-            <div className="space-y-8">
-                <div className="flex items-center gap-4">
-                    <div className="h-px flex-1 bg-white/5" />
-                    <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] whitespace-nowrap">
-                        2. Tu Zona Creativa Completa — 11 Servicios en 1 Solo Equipo
-                    </h2>
-                    <div className="h-px flex-1 bg-white/5" />
+            {/* 4. EL PROTOCOLO DEL CALL CENTER & ADMISIÓN INTERNA */}
+            <div className="bg-gradient-to-br from-[#0E0E18] via-[#0E0E18] to-emerald-950/20 border border-emerald-500/30 p-8 sm:p-12 rounded-[3.5rem] space-y-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">
+                            <PhoneCall className="w-4 h-4" /> Pilar 3 en Acción
+                        </div>
+                        <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+                            3. Protocolo de Admisión & Call Center Interno (<span className="text-emerald-400">&lt; 5 Minutos</span>)
+                        </h3>
+                    </div>
+                    <div className="px-5 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black uppercase tracking-wider">
+                        Cero Pérdida de Pacientes
+                    </div>
                 </div>
 
-                <div className="bg-[#0E0E18] border border-white/5 p-8 sm:p-10 rounded-[3rem] space-y-6">
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                        <div>
-                            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Capacidad Operativa Total</span>
-                            <h3 className="text-2xl font-black text-white uppercase tracking-tight">
-                                Todo lo que necesita el hospital, disponible dentro de DIIC ZONE
-                            </h3>
-                        </div>
-                        <div className="px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold">
-                            Un solo contrato · Todo incluido
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    <div className="lg:col-span-6 space-y-4">
+                        <p className="text-xs text-gray-300 font-medium leading-relaxed">
+                            <strong className="text-white">¿Por qué el hospital debe asignar un operador interno?</strong> Porque solo el personal de la clínica conoce en tiempo real la disponibilidad médica, la agenda de quirófanos, la vigencia de convenios con aseguradoras y el protocolo de cobro.
+                        </p>
+                        <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+                            <h5 className="text-xs font-black text-white uppercase flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                Lo que DIIC ZONE le entrega al operador interno:
+                            </h5>
+                            <ul className="text-xs text-gray-400 font-medium space-y-2">
+                                <li>• <strong className="text-white">CRM Hospitalario unificado:</strong> Cada paciente entra catalogado por la especialidad o cirugía que busca.</li>
+                                <li>• <strong className="text-white">Bot IA de Triaje 24/7:</strong> Responde al instante fuera de horario y pre-clasifica el motivo de consulta.</li>
+                                <li>• <strong className="text-white">Guiones y Manuales de Objeciones:</strong> Entrenamos al personal de recepción para cerrar la cita con empatía.</li>
+                            </ul>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {zoneServices.map((srv, idx) => {
-                            const Icon = srv.icon;
-                            return (
-                                <div key={idx} className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 space-y-3 transition-all">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-black text-gray-600 font-mono">{srv.num}</span>
-                                        <div className={`p-2 rounded-xl ${srv.color}`}>
-                                            <Icon className="w-4 h-4" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h5 className="text-xs font-black text-white uppercase mb-1">{srv.name}</h5>
-                                        <p className="text-[11px] text-gray-400 font-medium leading-snug">{srv.role}</p>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                    <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-2">
+                            <span className="text-2xl font-black text-emerald-400 font-mono">&lt; 5 min</span>
+                            <h5 className="text-xs font-black text-white uppercase">Respuesta Inmediata</h5>
+                            <p className="text-[11px] text-gray-300">Multiplica por 3 la probabilidad de que el paciente confirme su consulta médica.</p>
+                        </div>
+                        <div className="p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-2">
+                            <span className="text-2xl font-black text-indigo-400 font-mono">24h / 48h</span>
+                            <h5 className="text-xs font-black text-white uppercase">Recordatorios Automáticos</h5>
+                            <p className="text-[11px] text-gray-300">Reduce el ausentismo (no-show) de consultas y valoraciones quirúrgicas al mínimo.</p>
+                        </div>
+                        <div className="p-5 rounded-2xl bg-purple-500/10 border border-purple-500/20 space-y-2">
+                            <span className="text-2xl font-black text-purple-400 font-mono">Cross-selling</span>
+                            <h5 className="text-xs font-black text-white uppercase">Derivación Interna</h5>
+                            <p className="text-[11px] text-gray-300">Deriva al paciente de consulta a estudios de imagenología, laboratorio o farmacia.</p>
+                        </div>
+                        <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-2">
+                            <span className="text-2xl font-black text-amber-400 font-mono">Seguimiento</span>
+                            <h5 className="text-xs font-black text-white uppercase">Post-Consulta / Cirugía</h5>
+                            <p className="text-[11px] text-gray-300">Fideliza al paciente y asegura que regrese para sus chequeos de control.</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* 4. LOS 4 PILARES DEL ECOSISTEMA HOSPITALARIO */}
-            <div className="space-y-8">
-                <div className="flex items-center gap-4">
-                    <div className="h-px flex-1 bg-white/5" />
-                    <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] whitespace-nowrap">
-                        3. Los 4 Pilares del Ecosistema Hospitalario
-                    </h2>
-                    <div className="h-px flex-1 bg-white/5" />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {fourPillars.map((pil, idx) => (
-                        <div
-                            key={idx}
-                            className={`p-6 rounded-[2.5rem] bg-[#0E0E18] border ${pil.color} flex flex-col justify-between space-y-5`}
-                        >
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-3xl font-black text-gray-700 font-mono">{pil.num}</span>
-                                    <span className="text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-white/5 border border-white/10 text-indigo-300">
-                                        {pil.badge}
-                                    </span>
-                                </div>
-                                <div>
-                                    <h4 className="text-lg font-black text-white uppercase">{pil.title}</h4>
-                                    <p className="text-xs text-gray-400 font-medium mt-1 leading-relaxed">{pil.desc}</p>
-                                </div>
-                                <div className="h-px bg-white/5 w-full" />
-                                <ul className="space-y-2">
-                                    {pil.points.map((pt, pIdx) => (
-                                        <li key={pIdx} className="flex items-start gap-2 text-xs text-gray-300 font-medium">
-                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
-                                            <span>{pt}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* 5. TODO EL HOSPITAL: UN SOLO ECOSISTEMA MULTIDISCIPLINARIO */}
+            {/* 5. TODO EL HOSPITAL: ECOSISTEMA MODULAR UNIVERSAL */}
             <div className="bg-gradient-to-br from-[#0E0E18] via-[#0E0E18] to-indigo-950/20 border border-indigo-500/20 p-8 sm:p-12 rounded-[3.5rem] space-y-8">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Sinergia & Cross-Selling</span>
                         <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
-                            4. Todo el Hospital. Un Solo Ecosistema.
+                            4. Ecosistema Modular Multidisciplinario
                         </h3>
                     </div>
                     <div className="px-5 py-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
@@ -2597,7 +2636,7 @@ function HospitalDossier() {
                 </div>
 
                 <p className="text-xs text-gray-300 font-medium leading-relaxed">
-                    Un paciente que entra por una consulta general o emergencia descubre <strong className="text-white">Imagenología, Odontología, Medicina Estética, Urología y Laboratorio</strong> dentro del mismo hospital, maximizando el valor de cada visita:
+                    Estructuramos la comunicación para que cada paciente que ingrese por una consulta de medicina general o emergencia descubra los servicios especializados del hospital:
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2616,7 +2655,7 @@ function HospitalDossier() {
                 <div className="flex items-center gap-4">
                     <div className="h-px flex-1 bg-white/5" />
                     <h2 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.5em] whitespace-nowrap">
-                        5. Flujo Centralizado de Captación de Pacientes
+                        5. Flujo Centralizado de Captación & Conversión
                     </h2>
                     <div className="h-px flex-1 bg-white/5" />
                 </div>
@@ -2790,7 +2829,7 @@ function HospitalDossier() {
                             9. Proyección de Retorno de Inversión (ROI Hospitalario)
                         </h3>
                         <p className="text-xs text-gray-400 font-medium mt-1">
-                            Calcula el impacto en facturación al captar consultas de especialidad, derivaciones a exámenes y cirugías de alta complejidad.
+                            Calcula el impacto en facturación según el volumen de mensajes y la <strong className="text-emerald-400 font-bold">velocidad de respuesta de tu Call Center</strong>.
                         </p>
                     </div>
                 </div>
@@ -2821,25 +2860,31 @@ function HospitalDossier() {
                             </div>
                         </div>
 
-                        {/* Conversion Rate */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-xs font-black text-gray-300">
-                                <span>Tasa de Conversión a Cita Médica:</span>
-                                <span className="text-emerald-400 font-bold">{conversionRate}% ({totalPatients} consultas agendadas)</span>
+                        {/* Call Center Response Speed Impact */}
+                        <div className="space-y-2 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                            <div className="flex justify-between text-xs font-black text-gray-300 mb-2">
+                                <span className="text-emerald-400">Velocidad de Respuesta del Call Center Interno:</span>
+                                <span className="text-white font-bold">{effectiveConversionRate}% de Cierre ({totalPatients} consultas)</span>
                             </div>
-                            <input
-                                type="range"
-                                min="15"
-                                max="50"
-                                step="5"
-                                value={conversionRate}
-                                onChange={(e) => setConversionRate(Number(e.target.value))}
-                                className="w-full accent-emerald-500 cursor-pointer"
-                            />
-                            <div className="flex justify-between text-[10px] text-gray-600 font-bold">
-                                <span>15%</span>
-                                <span>30% (Meta Estándar DIIC ZONE)</span>
-                                <span>50%</span>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { id: 'fast', label: '< 5 min (Óptimo)', desc: 'Máxima conversión (+25%)' },
+                                    { id: 'medium', label: '< 30 min (Estándar)', desc: 'Conversión normal' },
+                                    { id: 'slow', label: '> 2 horas (Lento)', desc: 'Fuga de pacientes (-40%)' }
+                                ].map((tier) => (
+                                    <button
+                                        key={tier.id}
+                                        onClick={() => setResponseTimeTier(tier.id)}
+                                        className={`p-2 rounded-xl text-center transition-all border ${
+                                            responseTimeTier === tier.id
+                                                ? 'bg-emerald-600 border-emerald-400 text-white shadow-md'
+                                                : 'bg-white/5 border-white/5 text-gray-400 hover:text-white'
+                                        }`}
+                                    >
+                                        <span className="text-[10px] font-black uppercase block">{tier.label}</span>
+                                        <span className="text-[8px] opacity-80 block">{tier.desc}</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
@@ -3010,7 +3055,6 @@ function HospitalDossier() {
 }
 
 function RealEstateDossier() {
-    // --- SIMULADOR DE ROI INTERACTIVO (MERCADO ECUADOR) ---
     const [adBudget, setAdBudget] = useState(160);
     const [avgCpl, setAvgCpl] = useState(8);
     const [propertyPrice, setPropertyPrice] = useState(80000);
