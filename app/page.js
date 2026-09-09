@@ -6,11 +6,22 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import BrandLogo from '@/components/ui/BrandLogo';
+
+// Landing Modular Components
+import LandingNavbar from '@/components/landing/LandingNavbar';
+import WhoWeAreSection from '@/components/landing/WhoWeAreSection';
+import BrandsShowcase from '@/components/landing/BrandsShowcase';
+import NicheExplorer from '@/components/landing/NicheExplorer';
+import ServicesSection from '@/components/landing/ServicesSection';
+import AcademySection from '@/components/landing/AcademySection';
+import PricingSection from '@/components/landing/PricingSection';
+import TestimonialsSection from '@/components/landing/TestimonialsSection';
+import CreativeZoneBanner from '@/components/landing/CreativeZoneBanner';
+
 import { 
-    ArrowRight, BarChart3, Bot, Clapperboard, Layers, Zap, 
-    Shield, MessageSquare, Package, Activity, Users, DollarSign, 
-    Calendar, MapPin, CheckCircle2, AlertCircle, Cpu, Clock, Send, 
-    MessageCircle, Play, Star 
+    ArrowRight, Sparkles, Clapperboard, Video, 
+    MapPin, Clock, CheckCircle2, Play, Star, ChevronDown,
+    Shield, Layers, Compass
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -181,14 +192,12 @@ export default function LandingPage() {
         <div className="space-y-4">
             <div className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Canal: Spiga de Oro (Socio)</div>
             <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4 h-[180px] overflow-y-auto flex flex-col justify-end text-xs">
-                {/* Message 1 */}
                 <div className="flex items-start gap-2.5">
                     <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center font-bold text-indigo-400 text-[10px] shrink-0">S</div>
                     <div className="bg-white/5 p-3 rounded-2xl rounded-tl-none border border-white/5 max-w-[80%] text-gray-300 leading-relaxed">
                         ¿Alex, cómo quedó el reel del postre de chocolate?
                     </div>
                 </div>
-                {/* Message 2 */}
                 <div className="flex items-start gap-2.5 self-end flex-row-reverse">
                     <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center font-bold text-emerald-400 text-[10px] shrink-0">A</div>
                     <div className="bg-emerald-600/10 p-3 rounded-2xl rounded-tr-none border border-emerald-500/20 max-w-[80%] text-gray-300 leading-relaxed text-right">
@@ -203,90 +212,81 @@ export default function LandingPage() {
         </div>
     );
 
-    if (loading) return null; // Prevent flicker
+    if (loading) return null;
 
     return (
-        <div className="min-h-screen bg-[#050510] text-white selection:bg-primary/30">
-            {/* Navbar */}
-            <nav className="fixed w-full z-50 backdrop-blur-md border-b border-white/5 bg-[#050510]/80">
-                <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-950/40">
-                            <BrandLogo className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="font-display font-bold text-xl tracking-tight">DIIC ZONE</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Link href="/login" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">
-                            Iniciar Sesión
-                        </Link>
-                        <Link href="/hub">
-                            <button className="px-5 py-2 rounded-full bg-white text-black font-bold text-sm hover:scale-105 transition-transform">
-                                Entrar al Dashboard
-                            </button>
-                        </Link>
-                    </div>
-                </div>
-            </nav>
+        <div className="min-h-screen bg-[#050510] text-white selection:bg-indigo-500/30 font-sans">
+            {/* Global Navbar */}
+            <LandingNavbar />
 
             {/* Hero Section */}
-            <section className="relative pt-32 pb-20 overflow-hidden">
-                {/* Background Blobs */}
-                <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] animate-pulse pointer-events-none"></div>
-                <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[120px] animate-pulse pointer-events-none delay-1000"></div>
+            <section className="relative pt-36 pb-20 overflow-hidden bg-gradient-to-b from-[#08081a] via-[#050510] to-[#050510]">
+                {/* Ambient Glows */}
+                <div className="absolute top-10 left-1/4 w-[600px] h-[600px] bg-indigo-600/15 rounded-full blur-[140px] pointer-events-none animate-pulse" />
+                <div className="absolute top-40 right-1/4 w-[500px] h-[500px] bg-purple-600/15 rounded-full blur-[140px] pointer-events-none animate-pulse delay-1000" />
 
-                <div className="container mx-auto px-6 relative z-10 text-center">
+                <div className="container mx-auto px-6 max-w-7xl relative z-10 text-center">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
                     >
-                        <span className="inline-block px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs font-medium text-emerald-400 mb-6 backdrop-blur-sm">
-                            ✨ La evolución del Marketing Digital
-                        </span>
-                        <h1 className="text-5xl md:text-7xl font-display font-bold leading-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-500">
-                            Tu Estudio Creativo <br /> en el Futuro
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-xs font-bold text-indigo-300 mb-6 backdrop-blur-md shadow-inner">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            Estudio Creativo Audiovisual & Marketing Inteligente
+                        </div>
+
+                        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-black leading-tight tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-100 to-gray-400">
+                            Tu Estudio Audiovisual <br className="hidden sm:block" />
+                            <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
+                                de Clase Mundial
+                            </span>
                         </h1>
-                        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-                            Centraliza tu estrategia, producción y métricas en una plataforma inteligente.
-                            DIIC ZONE combina IA, automatización y talento humano para escalar tu marca.
+
+                        <p className="text-gray-300 text-base sm:text-xl max-w-3xl mx-auto mb-10 leading-relaxed font-normal">
+                            Creamos producciones cinematográficas 4K, estrategias de contenido adaptadas a tu nicho y automatizaciones con IA para escalar tu marca con elegancia, autoridad y resultados medibles.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                            <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="relative group"
-                            >
-                                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient-x" />
+                        {/* Hero CTAs */}
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
                                 <Link 
                                     href="/onboarding?type=client"
-                                    className="relative flex items-center gap-3 px-10 py-5 rounded-full bg-black text-white font-black text-lg border border-white/10 group-hover:border-white/20 transition-all overflow-hidden"
+                                    className="flex items-center gap-3 px-9 py-4 rounded-2xl bg-white text-black font-black text-base shadow-2xl shadow-white/20 hover:bg-gray-100 transition-all"
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 via-transparent to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    Quiero Crecer Mi Marca 
-                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    Impulsar Mi Marca
+                                    <ArrowRight className="w-5 h-5" />
                                 </Link>
+                            </motion.div>
+
+                            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                                <a 
+                                    href="#quienes-somos"
+                                    className="flex items-center gap-2 px-8 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold text-base border border-white/10 transition-all"
+                                >
+                                    <Compass className="w-5 h-5 text-indigo-400" />
+                                    Conócenos & Manifiesto
+                                </a>
                             </motion.div>
                         </div>
                     </motion.div>
                 </div>
 
-                {/* Dashboard Preview / Interactive Showcase */}
+                {/* Dashboard / Studio Interactive Showcase */}
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 1 }}
-                    className="container mx-auto px-6 mt-20"
+                    transition={{ delay: 0.4, duration: 0.9 }}
+                    className="container mx-auto px-6 max-w-6xl mt-16"
                 >
-                    <div className="flex flex-col lg:flex-row gap-8 items-stretch max-w-5xl mx-auto">
+                    <div className="flex flex-col lg:flex-row gap-6 items-stretch">
                         {/* Tabs Column */}
-                        <div className="flex flex-row lg:flex-col justify-center lg:justify-start gap-4 flex-wrap lg:w-64 shrink-0">
+                        <div className="flex flex-row lg:flex-col justify-center lg:justify-start gap-3 flex-wrap lg:w-64 shrink-0">
                             {[
-                                { id: 'hq', label: 'Dirección Central (HQ)', desc: 'Control Central', color: 'border-indigo-500/30 text-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10' },
-                                { id: 'filmmaker', label: 'Filmmakers', desc: 'Control de Rodaje', color: 'border-red-500/30 text-red-400 bg-red-500/5 hover:bg-red-500/10' },
-                                { id: 'editor', label: 'Editores', desc: 'Cola de Render', color: 'border-purple-500/30 text-purple-400 bg-purple-500/5 hover:bg-purple-500/10' },
-                                { id: 'messages', label: 'Mensajería', desc: 'Chat & Aprobaciones', color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10' }
+                                { id: 'hq', label: 'Dirección Central (HQ)', desc: 'Estrategia y Métricas', color: 'border-indigo-500/30 text-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10' },
+                                { id: 'filmmaker', label: 'Filmmakers', desc: 'Control de Rodaje 4K', color: 'border-red-500/30 text-red-400 bg-red-500/5 hover:bg-red-500/10' },
+                                { id: 'editor', label: 'Suite de Edición', desc: 'Render & Color Grading', color: 'border-purple-500/30 text-purple-400 bg-purple-500/5 hover:bg-purple-500/10' },
+                                { id: 'messages', label: 'Hub de Mensajería', desc: 'Aprobaciones en Vivo', color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10' }
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
@@ -294,47 +294,47 @@ export default function LandingPage() {
                                         setActiveTab(tab.id);
                                         setAutoPlay(false);
                                     }}
-                                    className={`flex-1 lg:flex-none text-left p-5 rounded-3xl border transition-all duration-300 ${
+                                    className={`flex-1 lg:flex-none text-left p-4 rounded-2xl border transition-all duration-300 ${
                                         activeTab === tab.id
-                                            ? 'bg-white/10 border-white/20 text-white shadow-[0_0_30px_rgba(255,255,255,0.05)] scale-105'
+                                            ? 'bg-white/10 border-white/30 text-white shadow-xl scale-105'
                                             : `${tab.color} opacity-60 hover:opacity-100`
                                     }`}
                                 >
-                                    <div className="font-black text-xs uppercase tracking-widest leading-none mb-1">{tab.label}</div>
+                                    <div className="font-black text-xs uppercase tracking-wider leading-none mb-1">{tab.label}</div>
                                     <div className="text-[10px] text-gray-500 font-medium">{tab.desc}</div>
                                 </button>
                             ))}
                         </div>
 
-                        {/* Showcase Window (Laptop Mockup) */}
-                        <div className="flex-1 min-h-[420px] bg-[#080814]/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden flex flex-col justify-between">
-                            {/* Ambient Glows depending on active tab */}
-                            {activeTab === 'hq' && <div className="absolute inset-0 bg-indigo-500/5 blur-[120px] rounded-full" />}
-                            {activeTab === 'filmmaker' && <div className="absolute inset-0 bg-red-500/5 blur-[120px] rounded-full" />}
-                            {activeTab === 'editor' && <div className="absolute inset-0 bg-purple-500/5 blur-[120px] rounded-full" />}
-                            {activeTab === 'messages' && <div className="absolute inset-0 bg-emerald-500/5 blur-[120px] rounded-full" />}
+                        {/* Showcase Window */}
+                        <div className="flex-1 min-h-[400px] bg-[#080816]/95 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+                            {/* Ambient Glows */}
+                            {activeTab === 'hq' && <div className="absolute inset-0 bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none" />}
+                            {activeTab === 'filmmaker' && <div className="absolute inset-0 bg-red-500/5 blur-[120px] rounded-full pointer-events-none" />}
+                            {activeTab === 'editor' && <div className="absolute inset-0 bg-purple-500/5 blur-[120px] rounded-full pointer-events-none" />}
+                            {activeTab === 'messages' && <div className="absolute inset-0 bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />}
 
-                            {/* Windows Controls Bar */}
-                            <div className="flex items-center justify-between border-b border-white/5 pb-5 mb-5 relative z-10">
+                            {/* Controls Bar */}
+                            <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-4 relative z-10">
                                 <div className="flex gap-2">
                                     <div className="w-3 h-3 rounded-full bg-rose-500/40" />
                                     <div className="w-3 h-3 rounded-full bg-amber-500/40" />
                                     <div className="w-3 h-3 rounded-full bg-emerald-500/40" />
                                 </div>
-                                <div className="text-[9px] font-mono text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                                <div className="text-[9px] font-mono text-gray-500 uppercase tracking-widest flex items-center gap-2">
                                     <span className={`w-1.5 h-1.5 rounded-full ${
                                         activeTab === 'hq' ? 'bg-indigo-500' :
                                         activeTab === 'filmmaker' ? 'bg-red-500' :
                                         activeTab === 'editor' ? 'bg-purple-500' : 'bg-emerald-500'
                                     } animate-pulse`} />
-                                    {activeTab === 'hq' && 'HQ_CENTRAL.EXE'}
-                                    {activeTab === 'filmmaker' && 'FILMMAKER_SCHEDULER.EXE'}
-                                    {activeTab === 'editor' && 'RENDER_PIPELINE.EXE'}
-                                    {activeTab === 'messages' && 'COMMUNICATION_HUB.EXE'}
+                                    {activeTab === 'hq' && 'DIIC_HQ_ENGINE.SYS'}
+                                    {activeTab === 'filmmaker' && 'RODAJE_CINEMA_4K.EXE'}
+                                    {activeTab === 'editor' && 'COLOR_GRADING_PIPELINE.EXE'}
+                                    {activeTab === 'messages' && 'BRAND_SYNC_HUB.EXE'}
                                 </div>
                             </div>
 
-                            {/* Content Render with Framer Motion AnimatePresence */}
+                            {/* Content Render */}
                             <div className="flex-1 flex flex-col justify-center relative z-10">
                                 <AnimatePresence mode="wait">
                                     <motion.div
@@ -343,7 +343,7 @@ export default function LandingPage() {
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -15 }}
                                         transition={{ duration: 0.3 }}
-                                        className="w-full h-full"
+                                        className="w-full"
                                     >
                                         {activeTab === 'hq' && renderHQPreview()}
                                         {activeTab === 'filmmaker' && renderFilmmakerPreview()}
@@ -357,108 +357,91 @@ export default function LandingPage() {
                 </motion.div>
             </section>
 
-            {/* Features Section */}
-            <section className="py-24 bg-[#050510]">
-                <div className="container mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold mb-4">Todo lo que necesitas para crecer</h2>
-                        <p className="text-gray-400 max-w-2xl mx-auto">Deja de usar 10 herramientas diferentes. DIIC ZONE lo tiene todo integrado.</p>
-                    </div>
+            {/* Quiénes Somos & Manifiesto */}
+            <WhoWeAreSection />
 
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {/* Feature 1 */}
-                        <div className="p-8 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-colors group">
-                            <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 mb-6 group-hover:scale-110 transition-transform">
-                                <BarChart3 className="w-6 h-6" />
-                            </div>
-                            <h3 className="text-xl font-bold mb-3">Métricas Inteligentes</h3>
-                            <p className="text-gray-400 text-sm leading-relaxed">
-                                Dashboards en tiempo real que traducen datos complejos en "Niveles de Salud" claros para tu marca.
-                            </p>
-                        </div>
+            {/* Marcas & Portafolio */}
+            <BrandsShowcase />
 
-                        {/* Feature 2 */}
-                        <div className="p-8 rounded-2xl bg-white/5 border border-white/5 hover:border-purple-500/50 transition-colors group">
-                            <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500 mb-6 group-hover:scale-110 transition-transform">
-                                <Bot className="w-6 h-6" />
-                            </div>
-                            <h3 className="text-xl font-bold mb-3">Community Manager IA</h3>
-                            <p className="text-gray-400 text-sm leading-relaxed">
-                                Un asistente 24/7 que responde, analiza sentimientos y sugiere contenido basado en tendencias.
-                            </p>
-                        </div>
+            {/* Nichos Adaptativos */}
+            <NicheExplorer />
 
-                        {/* Feature 3 */}
-                        <div className="p-8 rounded-2xl bg-white/5 border border-white/5 hover:border-orange-500/50 transition-colors group">
-                            <div className="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 mb-6 group-hover:scale-110 transition-transform">
-                                <Clapperboard className="w-6 h-6" />
-                            </div>
-                            <h3 className="text-xl font-bold mb-3">Producción de Video</h3>
-                            <p className="text-gray-400 text-sm leading-relaxed">
-                                Sube raw, recibe piezas finales. Un flujo de trabajo optimizado para Reels y contenido de alto impacto.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            {/* Catálogo de Servicios */}
+            <ServicesSection />
 
-            {/* Creative Zone Call to Action */}
-            <section id="creative-zone" className="py-24 bg-gradient-to-b from-[#050510] to-[#0A0A1F] relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]" />
-                <div className="container mx-auto px-6 relative z-10">
-                    <div className="bg-white/[0.02] border border-white/5 rounded-[40px] p-12 md:p-20 text-center">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                        >
-                            <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">Ecosistema Profesional</span>
-                            <h2 className="text-4xl md:text-6xl font-black italic tracking-tighter mb-8 bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">
-                                ÚNETE A LA ZONA CREATIVA
-                            </h2>
-                            <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-12">
-                                ¿Eres editor, filmmaker, diseñador o community manager? 
-                                Conviértete en un Nodo Certificado y trabaja con las mejores marcas del país.
-                            </p>
+            {/* DIIC Academy */}
+            <AcademySection />
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-16">
-                                {[
-                                    { name: 'Editors', color: 'text-blue-400' },
-                                    { name: 'Filmmakers', color: 'text-red-400' },
-                                    { name: 'Designers', color: 'text-purple-400' },
-                                    { name: 'CMs', color: 'text-emerald-400' },
-                                    { name: 'Photographers', color: 'text-orange-400' },
-                                    { name: 'Models', color: 'text-pink-400' }
-                                ].map((role, i) => (
-                                    <div key={i} className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all flex flex-col items-center gap-3 group/role">
-                                        <div className={`w-10 h-10 rounded-full bg-white/5 flex items-center justify-center ${role.color} font-bold text-sm group-hover/role:scale-110 transition-transform`}>
-                                            {role.name[0]}
-                                        </div>
-                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{role.name}</span>
-                                    </div>
-                                ))}
-                            </div>
+            {/* Planes y Valores */}
+            <PricingSection />
 
-                            <Link href="/onboarding?type=creative">
-                                <button className="px-10 py-5 rounded-3xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-blue-500/20 transition-all hover:scale-105 flex items-center gap-3 mx-auto">
-                                    Únete como Talento 🎥
-                                </button>
-                            </Link>
-                        </motion.div>
-                    </div>
-                </div>
-            </section>
+            {/* Testimonios */}
+            <TestimonialsSection />
+
+            {/* Zona Creativa & Registro Side-by-Side */}
+            <CreativeZoneBanner />
 
             {/* Footer */}
-            <footer className="py-12 border-t border-white/5 bg-[#020205]">
-                <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="text-gray-400 text-sm">
-                        © 2026 DIIC ZONE. Todos los derechos reservados.
+            <footer className="py-16 border-t border-white/10 bg-[#020206] text-gray-400 text-xs">
+                <div className="container mx-auto px-6 max-w-7xl">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-10 mb-12">
+                        {/* Brand info (2 cols) */}
+                        <div className="md:col-span-2 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white">
+                                    <BrandLogo className="w-5 h-5 text-white" />
+                                </div>
+                                <span className="font-display font-black text-lg text-white">DIIC ZONE</span>
+                            </div>
+                            <p className="text-gray-400 text-xs leading-relaxed max-w-sm">
+                                Estudio integral de producción audiovisual, marketing digital con inteligencia artificial y ecosistema creativo para marcas de alto impacto.
+                            </p>
+                            <div className="text-[11px] text-gray-500 font-mono">
+                                Producciones 4K · Nodos Creativos Certificados · Estrategia Omnicanal
+                            </div>
+                        </div>
+
+                        {/* Navigation Links */}
+                        <div className="space-y-3">
+                            <h5 className="font-bold text-white text-xs uppercase tracking-wider">Estudio</h5>
+                            <ul className="space-y-2">
+                                <li><a href="#quienes-somos" className="hover:text-white transition-colors">Quiénes Somos</a></li>
+                                <li><a href="#marcas" className="hover:text-white transition-colors">Marcas Asociadas</a></li>
+                                <li><a href="#nichos" className="hover:text-white transition-colors">Nichos Adaptativos</a></li>
+                                <li><a href="#servicios" className="hover:text-white transition-colors">Servicios Audiovisuales</a></li>
+                            </ul>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h5 className="font-bold text-white text-xs uppercase tracking-wider">Ecosistema</h5>
+                            <ul className="space-y-2">
+                                <li><a href="#academy" className="hover:text-white transition-colors">DIIC Academy</a></li>
+                                <li><a href="#planes" className="hover:text-white transition-colors">Planes de Inversión</a></li>
+                                <li><a href="#zona-creativa" className="hover:text-white transition-colors">Zona Creativa (Talento)</a></li>
+                                <li><a href="#testimonios" className="hover:text-white transition-colors">Testimonios</a></li>
+                            </ul>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h5 className="font-bold text-white text-xs uppercase tracking-wider">Acceso & App</h5>
+                            <ul className="space-y-2">
+                                <li><Link href="/login" className="hover:text-white transition-colors">Iniciar Sesión</Link></li>
+                                <li><Link href="/onboarding?type=client" className="hover:text-white transition-colors">Registrar Empresa</Link></li>
+                                <li><Link href="/onboarding?type=creative" className="hover:text-white transition-colors">Postular como Creador</Link></li>
+                                <li><Link href="/hub" className="hover:text-white transition-colors">Entrar al Hub / Dashboard</Link></li>
+                            </ul>
+                        </div>
                     </div>
-                    <div className="flex gap-6">
-                        <a href="#" className="text-gray-400 hover:text-white transition-colors">Términos</a>
-                        <a href="#" className="text-gray-400 hover:text-white transition-colors">Privacidad</a>
-                        <a href="#" className="text-gray-400 hover:text-white transition-colors">Soporte</a>
+
+                    <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4 text-gray-500 text-[11px]">
+                        <div>
+                            © {new Date().getFullYear()} DIIC ZONE. Todos los derechos reservados.
+                        </div>
+                        <div className="flex gap-6">
+                            <Link href="/privacy" className="hover:text-white transition-colors">Privacidad</Link>
+                            <a href="#" className="hover:text-white transition-colors">Términos de Servicio</a>
+                            <a href="#" className="hover:text-white transition-colors">Soporte Directo</a>
+                        </div>
                     </div>
                 </div>
             </footer>
