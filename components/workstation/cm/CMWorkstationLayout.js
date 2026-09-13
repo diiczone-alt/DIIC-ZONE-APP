@@ -11,7 +11,8 @@ import {
     FolderOpen, Palette, Clock, Bot, FileText, Zap, ShieldCheck, Eye, Send,
     GraduationCap, Award, TrendingUp, Target, Brain, Sparkles, PenTool, Edit3,
     ChevronLeft as ChevronLeftIcon, Layers, MapPin, Activity,
-    User, Cake, Briefcase, Link2, Phone, Compass, Info
+    User, Cake, Briefcase, Link2, Phone, Compass, Info,
+    Camera, Copy, RefreshCw, Key, LogOut, CheckCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -63,6 +64,17 @@ export default function CMWorkstationLayout() {
     };
 
     const { user } = useAuth();
+    const [customUserName, setCustomUserName] = useState('');
+    const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+
+    useEffect(() => {
+        if (user?.full_name && !customUserName) {
+            setCustomUserName(user.full_name);
+        }
+        if (user?.avatar_url && !customAvatarUrl) {
+            setCustomAvatarUrl(user.avatar_url);
+        }
+    }, [user]);
 
     useEffect(() => {
         const tab = searchParams.get('tab');
@@ -150,23 +162,15 @@ export default function CMWorkstationLayout() {
         setIsSyncing(true);
         
         try {
-            const { data, error } = await supabase
-                .from('clients')
-                .select('*')
-                .eq('cm', user.full_name);
-            
-            if (data) {
+            const data = await agencyService.getClientsByCM(user.full_name);
+            if (data && data.length > 0) {
                 setClients(data);
-                // Also update general cache
-                const fullCache = localStorage.getItem('diic_clients');
-                if (fullCache) {
-                    try {
-                        const parsed = JSON.parse(fullCache);
-                        // Merge logic: Replace existing clients with updated ones
-                        const filtered = parsed.filter(c => c.cm !== user.full_name);
-                        localStorage.setItem('diic_clients', JSON.stringify([...data, ...filtered]));
-                    } catch(e) {}
-                }
+                localStorage.setItem('diic_clients', JSON.stringify(data));
+            } else {
+                const allClients = await agencyService.getClients();
+                const filtered = allClients.filter(c => c.cm === user.full_name);
+                setClients(filtered);
+                localStorage.setItem('diic_clients', JSON.stringify(filtered));
             }
         } catch (err) {
             console.error('Error fetching clients:', err);
@@ -253,14 +257,22 @@ export default function CMWorkstationLayout() {
                 <div className="w-64 bg-[#0E0E18] border-r border-white/5 flex flex-col shrink-0">
                     <div className="p-6 border-b border-white/5">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white font-bold shadow-lg shadow-cyan-500/20">
-                                {selectedClient ? selectedClient.name.charAt(0) : 'CM'}
-                            </div>
+                            {customAvatarUrl ? (
+                                <img 
+                                    src={customAvatarUrl} 
+                                    alt="Avatar" 
+                                    className="w-10 h-10 rounded-xl object-cover border border-cyan-500/30 shadow-lg shadow-cyan-500/20" 
+                                />
+                            ) : (
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white font-bold shadow-lg shadow-cyan-500/20">
+                                    {selectedClient ? selectedClient.name.charAt(0) : (customUserName || user?.full_name || 'C').charAt(0)}
+                                </div>
+                            )}
                             <div>
                                 <h2 className="text-white font-bold text-sm truncate max-w-[120px]">
                                     {selectedClient ? selectedClient.name : 'Workstation CM'}
                                 </h2>
-                                <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">{user?.full_name || 'Estratega'}</p>
+                                <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider truncate max-w-[120px]">{customUserName || user?.full_name || 'Estratega'}</p>
                             </div>
                         </div>
                     </div>
@@ -297,7 +309,7 @@ export default function CMWorkstationLayout() {
                         )}
                         <p className="text-[10px] text-cyan-400 font-bold uppercase mb-2">Objetivo del Rol</p>
                         <p className="text-[11px] text-gray-400 leading-relaxed font-medium">
-                            "Que {user?.full_name?.split(' ')[0] || 'el estratega'} no edite, no diseñe, pero controle, organice, revise y haga que todo fluya."
+                            "Que {(customUserName || user?.full_name)?.split(' ')[0] || 'el estratega'} no edite, no diseñe, pero controle, organice, revise y haga que todo fluya."
                         </p>
                     </div>
                 </div>
@@ -330,12 +342,20 @@ export default function CMWorkstationLayout() {
                             className="flex items-center gap-3 pl-6 border-l border-white/5 hover:bg-white/5 transition-all group"
                         >
                              <div className="text-right hidden sm:block">
-                                <p className="text-[10px] font-black text-white uppercase tracking-tight leading-none mb-1">{user?.full_name || 'Leslie'}</p>
+                                <p className="text-[10px] font-black text-white uppercase tracking-tight leading-none mb-1">{customUserName || user?.full_name || 'Leslie'}</p>
                                 <p className="text-[8px] font-bold text-cyan-400 uppercase tracking-widest leading-none opacity-60">Lead Estratega</p>
                             </div>
-                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-                                {user?.full_name?.charAt(0) || 'L'}
-                            </div>
+                            {customAvatarUrl ? (
+                                <img 
+                                    src={customAvatarUrl} 
+                                    alt="Avatar" 
+                                    className="w-10 h-10 rounded-2xl object-cover border border-cyan-500/30 shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform" 
+                                />
+                            ) : (
+                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+                                    {(customUserName || user?.full_name || 'L').charAt(0)}
+                                </div>
+                            )}
                         </button>
                     </div>
                 </header>
@@ -350,7 +370,10 @@ export default function CMWorkstationLayout() {
                             transition={{ duration: 0.2 }}
                             className="h-full"
                         >
-                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead, searchParams)}
+                            {renderContent(activeTab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead, searchParams, (updatedData) => {
+                                if (updatedData?.name) setCustomUserName(updatedData.name);
+                                if (updatedData?.avatar_url) setCustomAvatarUrl(updatedData.avatar_url);
+                            })}
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -359,7 +382,7 @@ export default function CMWorkstationLayout() {
     );
 }
 
-function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead, searchParams) {
+function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead, searchParams, onProfileUpdate) {
     if (!selectedClient) {
         if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} />;
         if (tab === 'academy') return <CMAcademy user={user} />;
@@ -367,7 +390,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         if (tab === 'tasks') return <GlobalTasksView tasks={globalTasks} loading={loadingTasks} onSelectClient={(c) => { setSelectedClient(c); setActiveTab('dashboard'); }} />;
 
         if (tab === 'notifications') return <NotificationsView notifications={notifications} loading={loadingNotifications} onMarkAsRead={handleMarkAsRead} />;
-        if (tab === 'profile') return <CMProfileView user={user} />;
+        if (tab === 'profile') return <CMProfileView user={user} onProfileUpdate={onProfileUpdate} />;
         
         return (
             <CMSettingsClients 
@@ -393,7 +416,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'creative': return <CreativeStudio isSubcomponent={true} />;
         case 'team': return <TeamView client={selectedClient} tasks={clientTasks} squad={squad} />;
         case 'reports': return <CMReports client={selectedClient} />;
-        case 'profile': return <CMProfileView user={user} />;
+        case 'profile': return <CMProfileView user={user} onProfileUpdate={onProfileUpdate} />;
         case 'academy': return <CMAcademy user={user} />;
         case 'growth': return <CMGrowth user={user} />;
         default: return <CMDashboard client={selectedClient} />;
@@ -3125,15 +3148,19 @@ const getAgeAndBirthday = (birthday) => {
     }
 };
 
-function CMProfileView({ user }) {
+function CMProfileView({ user, onProfileUpdate }) {
     const { logout } = useAuth();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [profileData, setProfileData] = useState(null);
     const [teamData, setTeamData] = useState(null);
+    const [activeTabSection, setActiveTabSection] = useState('identity');
 
     // Form inputs
     const [fullName, setFullName] = useState('');
+    const [avatarUrl, setAvatarUrl] = useState('');
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [showAvatarModal, setShowAvatarModal] = useState(false);
     const [birthDate, setBirthDate] = useState('');
     const [whatsapp, setWhatsapp] = useState('');
     const [city, setCity] = useState('');
@@ -3195,7 +3222,11 @@ function CMProfileView({ user }) {
                 }
 
                 // Hydrate form fields with highest priority: team > profile > user session
-                setFullName(team?.name || profile?.full_name || user?.full_name || user?.user_metadata?.full_name || '');
+                const initialName = team?.name || profile?.full_name || user?.full_name || user?.user_metadata?.full_name || '';
+                const initialAvatar = team?.avatar_url || profile?.avatar_url || user?.avatar_url || user?.user_metadata?.avatar_url || '';
+                
+                setFullName(initialName);
+                setAvatarUrl(initialAvatar);
                 setBirthDate(cleanDate(team?.birth_date || profile?.birth_date || user?.birth_date || user?.user_metadata?.birth_date) || '');
                 setWhatsapp(team?.whatsapp || profile?.whatsapp || user?.whatsapp || user?.user_metadata?.whatsapp || '');
                 setCity(team?.city || profile?.location || user?.location || user?.user_metadata?.location || '');
@@ -3211,6 +3242,10 @@ function CMProfileView({ user }) {
                     setSkills(loadedSkills.join(', '));
                 } else if (typeof loadedSkills === 'string') {
                     setSkills(loadedSkills);
+                }
+
+                if (onProfileUpdate) {
+                    onProfileUpdate({ name: initialName, avatar_url: initialAvatar });
                 }
             } catch (err) {
                 console.error("Error fetching CM profile details:", err);
@@ -3230,6 +3265,12 @@ function CMProfileView({ user }) {
         }
     };
 
+    const handleRemoveSkill = (skillToRemove) => {
+        const currentList = skills.split(',').map(s => s.trim()).filter(Boolean);
+        const updated = currentList.filter(s => s.toLowerCase() !== skillToRemove.toLowerCase()).join(', ');
+        setSkills(updated);
+    };
+
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -3245,6 +3286,7 @@ function CMProfileView({ user }) {
             if (user?.id) {
                 const profilePayload = {
                     full_name: effectiveName,
+                    avatar_url: avatarUrl.trim(),
                     whatsapp: whatsapp.trim(),
                     location: city.trim(),
                     address: address.trim(),
@@ -3272,6 +3314,7 @@ function CMProfileView({ user }) {
             // 2. Update public.team
             const teamPayload = {
                 name: effectiveName,
+                avatar_url: avatarUrl.trim(),
                 whatsapp: whatsapp.trim(),
                 city: city.trim(),
                 address: address.trim(),
@@ -3314,6 +3357,7 @@ function CMProfileView({ user }) {
                 await supabase.auth.updateUser({
                     data: {
                         full_name: effectiveName,
+                        avatar_url: avatarUrl.trim(),
                         birth_date: cleanBirth,
                         whatsapp: whatsapp.trim(),
                         location: city.trim(),
@@ -3328,9 +3372,16 @@ function CMProfileView({ user }) {
             // Synchronize in-memory user reference
             if (user) {
                 user.full_name = effectiveName;
+                user.avatar_url = avatarUrl.trim();
             }
 
-            toast.success("¡Expediente de CM Actualizado!", {
+            if (onProfileUpdate) {
+                onProfileUpdate({ name: effectiveName, avatar_url: avatarUrl.trim() });
+            }
+
+            setIsEditingName(false);
+
+            toast.success("¡Expediente y Nombre Sincronizados!", {
                 description: "Tus datos personales, fecha de nacimiento, CV, portafolio y habilidades se han guardado exitosamente."
             });
         } catch (err) {
@@ -3390,8 +3441,20 @@ function CMProfileView({ user }) {
     const commonSkillTags = [
         "Copywriting", "Meta Ads", "TikTok Strategy", "CapCut", 
         "Storytelling", "Content Planning", "Analytics", "Comunidad & Leads", 
-        "Canva Pro", "Notion", "Reels Viral"
+        "Canva Pro", "Notion", "Reels Viral", "Estrategia de Ventas", "Moderación"
     ];
+
+    const citySuggestions = ["Santo Domingo", "Quito", "Guayaquil", "Cuenca", "Manta", "Ambato", "Remoto"];
+
+    const avatarPresets = [
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop&crop=face",
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face",
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&crop=face",
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=face",
+        "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&h=300&fit=crop&crop=face"
+    ];
+
+    const currentSkillList = skills.split(',').map(s => s.trim()).filter(Boolean);
 
     if (loading) {
         return (
@@ -3403,28 +3466,113 @@ function CMProfileView({ user }) {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 pb-20">
-            {/* Header / Identity Card */}
-            <div className="bg-gradient-to-br from-[#0E0E18] to-[#050511] border border-white/5 rounded-[3rem] p-8 md:p-12 relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-600/10 blur-[120px] rounded-full pointer-events-none" />
+        <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 pb-24">
+            {/* Header / Identity Hero Card */}
+            <div className="bg-gradient-to-br from-[#0E0E18] via-[#090915] to-[#050511] border border-white/10 rounded-[3rem] p-8 md:p-12 relative overflow-hidden shadow-2xl shadow-cyan-950/20">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-600/10 blur-[130px] rounded-full pointer-events-none" />
+                <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
                 
-                <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-                    <div className="w-28 h-28 md:w-32 md:h-32 rounded-[2.5rem] bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white text-5xl font-black shadow-2xl shadow-cyan-500/20 uppercase shrink-0">
-                        {fullName?.charAt(0) || user?.full_name?.charAt(0) || "C"}
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
+                    {/* Avatar & Photo Picker */}
+                    <div className="relative group shrink-0">
+                        <div className="w-28 h-28 md:w-36 md:h-36 rounded-[2.5rem] bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 p-1 shadow-2xl shadow-cyan-500/20">
+                            {avatarUrl ? (
+                                <img 
+                                    src={avatarUrl} 
+                                    alt="Foto de Perfil" 
+                                    className="w-full h-full object-cover rounded-[2.3rem]" 
+                                    onError={() => setAvatarUrl('')}
+                                />
+                            ) : (
+                                <div className="w-full h-full rounded-[2.3rem] bg-[#0E0E18] flex items-center justify-center text-white text-5xl md:text-6xl font-black uppercase tracking-tighter">
+                                    {fullName?.charAt(0) || user?.full_name?.charAt(0) || "C"}
+                                </div>
+                            )}
+                        </div>
+                        <button 
+                            onClick={() => setShowAvatarModal(true)}
+                            className="absolute -bottom-2 -right-2 p-3 bg-cyan-500 text-black hover:bg-cyan-400 rounded-2xl shadow-xl transition-all hover:scale-110 flex items-center justify-center"
+                            title="Cambiar Foto de Perfil"
+                        >
+                            <Camera className="w-4 h-4" />
+                        </button>
                     </div>
-                    <div className="text-center md:text-left space-y-3 flex-1">
-                        <div className="flex flex-col md:flex-row md:items-center gap-3">
-                            <h2 className="text-3xl md:text-4xl font-black text-white italic uppercase tracking-tighter">
-                                {fullName || user?.full_name || "Community Manager"}
-                            </h2>
+
+                    {/* CM Info & Quick Name Edit */}
+                    <div className="text-center md:text-left space-y-4 flex-1 w-full">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            {/* Editable Name Field */}
+                            {isEditingName ? (
+                                <div className="flex items-center gap-2 max-w-md w-full">
+                                    <input 
+                                        type="text"
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        className="w-full px-4 py-3 bg-white/10 border border-cyan-500 rounded-2xl text-white text-2xl font-black italic uppercase tracking-tighter outline-none focus:bg-white/15 transition-all"
+                                        placeholder="Escribe tu nombre..."
+                                        autoFocus
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleSave();
+                                            if (e.key === 'Escape') setIsEditingName(false);
+                                        }}
+                                    />
+                                    <button 
+                                        onClick={handleSave}
+                                        disabled={saving}
+                                        className="px-4 py-3 bg-cyan-500 text-black font-black uppercase text-xs rounded-2xl hover:bg-cyan-400 transition-all shrink-0 flex items-center gap-1.5"
+                                    >
+                                        <Check className="w-4 h-4" /> Guardar
+                                    </button>
+                                    <button 
+                                        onClick={() => setIsEditingName(false)}
+                                        className="p-3 bg-white/5 text-gray-400 hover:text-white rounded-2xl transition-all"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center md:justify-start gap-3 group">
+                                    <h2 className="text-3xl md:text-4xl font-black text-white italic uppercase tracking-tighter">
+                                        {fullName || user?.full_name || "Community Manager"}
+                                    </h2>
+                                    <button 
+                                        onClick={() => setIsEditingName(true)}
+                                        className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-400 text-gray-400 text-xs font-bold transition-all flex items-center gap-1.5 border border-white/5 hover:border-cyan-500/30"
+                                        title="Cambiar Nombre"
+                                    >
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Cambiar Nombre</span>
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Top Quick Save Button */}
+                            <button 
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="px-6 py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black uppercase text-[11px] tracking-widest rounded-2xl hover:scale-105 transition-all shadow-xl shadow-cyan-500/20 flex items-center justify-center gap-2 shrink-0 self-center sm:self-auto"
+                            >
+                                {saving ? (
+                                    <>
+                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        Guardando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        Guardar Todo
+                                    </>
+                                )}
+                            </button>
                         </div>
 
+                        {/* Badges & Identity Pills */}
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
                             <span className="px-4 py-1.5 bg-cyan-600/15 border border-cyan-500/30 text-cyan-400 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
                                 <Sparkles className="w-3 h-3" />
                                 {specialty || teamData?.role || 'Lead Estratega & CM'}
                             </span>
-                            <span className="px-4 py-1.5 bg-white/5 border border-white/5 text-gray-400 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                            <span className="px-4 py-1.5 bg-white/5 border border-white/5 text-gray-300 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
                                 <MapPin className="w-3 h-3 text-cyan-400" />
                                 {city || 'Sede Remota'}
                             </span>
@@ -3434,19 +3582,20 @@ function CMProfileView({ user }) {
                                     {ageInfo.age} Años ({ageInfo.formatted})
                                 </span>
                             )}
-                            <span className="px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest">
+                            <span className="px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                <ShieldCheck className="w-3 h-3" />
                                 {availability === 'full-time' ? '🟢 Full-Time' : availability === 'part-time' ? '🟡 Part-Time' : '🟣 Freelance'}
                             </span>
                         </div>
 
-                        {/* Quick Action Links if available */}
-                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
+                        {/* Quick Direct Link Action Pills */}
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 pt-1">
                             {portfolioUrl && (
                                 <a 
                                     href={portfolioUrl.startsWith('http') ? portfolioUrl : `https://${portfolioUrl}`} 
                                     target="_blank" 
                                     rel="noreferrer"
-                                    className="px-3.5 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                                    className="px-3.5 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 hover:scale-105"
                                 >
                                     <Globe className="w-3.5 h-3.5" />
                                     Ver Portafolio <ExternalLink className="w-3 h-3 opacity-70" />
@@ -3457,7 +3606,7 @@ function CMProfileView({ user }) {
                                     href={cvUrl.startsWith('http') ? cvUrl : `https://${cvUrl}`} 
                                     target="_blank" 
                                     rel="noreferrer"
-                                    className="px-3.5 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                                    className="px-3.5 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 hover:scale-105"
                                 >
                                     <FileText className="w-3.5 h-3.5" />
                                     Ver CV <ExternalLink className="w-3 h-3 opacity-70" />
@@ -3468,315 +3617,513 @@ function CMProfileView({ user }) {
                                     href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`} 
                                     target="_blank" 
                                     rel="noreferrer"
-                                    className="px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                                    className="px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 hover:scale-105"
                                 >
                                     <MessageSquare className="w-3.5 h-3.5" />
                                     WhatsApp
                                 </a>
                             )}
+                            {user?.email && (
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(user.email);
+                                        toast.success("Correo copiado al portapapeles");
+                                    }}
+                                    className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                                >
+                                    <Mail className="w-3.5 h-3.5" />
+                                    {user.email}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 pt-8 border-t border-white/5">
-                    <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl">
-                        <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Ecosistemas</p>
+                {/* CM Metrics Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-10 pt-8 border-t border-white/10">
+                    <div className="bg-white/[0.03] border border-white/5 p-6 rounded-3xl relative overflow-hidden group hover:border-cyan-500/30 transition-all">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-xl group-hover:bg-cyan-500/10 transition-all" />
+                        <p className="text-gray-400 text-[10px] uppercase font-black tracking-widest mb-1 flex items-center gap-2">
+                            <FolderOpen className="w-3.5 h-3.5 text-cyan-400" /> Ecosistemas
+                        </p>
                         <h4 className="text-2xl font-black text-white italic tracking-tighter">{teamData?.activetasks || 0} ASIGNADOS</h4>
                     </div>
-                    <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl">
-                        <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">XP Acumulada</p>
+                    <div className="bg-white/[0.03] border border-white/5 p-6 rounded-3xl relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-all" />
+                        <p className="text-gray-400 text-[10px] uppercase font-black tracking-widest mb-1 flex items-center gap-2">
+                            <Zap className="w-3.5 h-3.5 text-emerald-400" /> XP Acumulada
+                        </p>
                         <h4 className="text-2xl font-black text-emerald-400 italic tracking-tighter">{profileData?.xp || 0} XP</h4>
                     </div>
-                    <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl">
-                        <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Nivel Operativo</p>
+                    <div className="bg-white/[0.03] border border-white/5 p-6 rounded-3xl relative overflow-hidden group hover:border-blue-500/30 transition-all">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl group-hover:bg-blue-500/10 transition-all" />
+                        <p className="text-gray-400 text-[10px] uppercase font-black tracking-widest mb-1 flex items-center gap-2">
+                            <Award className="w-3.5 h-3.5 text-blue-400" /> Nivel Operativo
+                        </p>
                         <h4 className="text-2xl font-black text-cyan-400 italic tracking-tighter">{profileData?.rank || 'Estratega Junior'}</h4>
                     </div>
                 </div>
             </div>
 
-            {/* Profile Editing Form */}
-            <div className="bg-[#0E0E18] border border-white/5 rounded-[3rem] p-8 md:p-12 space-y-10 shadow-2xl">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/5">
-                    <div>
-                        <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-3">
-                            <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-[0_0_12px_rgba(6,182,212,0.8)]" />
-                            Expediente & Logística del CM
-                        </h3>
-                        <p className="text-xs text-gray-400 mt-1 font-medium">Actualiza tu información personal, fecha de nacimiento, currículum, portafolio y habilidades clave.</p>
-                    </div>
-                    <button 
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:scale-105 transition-all shadow-xl shadow-cyan-500/20 flex items-center justify-center gap-2 self-start md:self-auto"
-                    >
-                        {saving ? (
-                            <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Guardando...
-                            </>
-                        ) : (
-                            <>
-                                <CheckCircle2 className="w-4 h-4" />
-                                Guardar Expediente
-                            </>
-                        )}
-                    </button>
-                </div>
-
-                {/* Section 1: Personal & Identity */}
-                <div className="space-y-6">
-                    <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-                        <User className="w-4 h-4" /> 1. Datos Personales & Identidad
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Full Name */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Nombre Completo del CM</label>
-                            <div className="relative flex items-center">
-                                <User className="w-4 h-4 text-gray-500 absolute left-4" />
-                                <input 
-                                    type="text"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
-                                    placeholder="Ej: Leslie Moran"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Birth Date / Year */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between items-center">
-                                <span>Año & Fecha de Nacimiento</span>
-                                {ageInfo.age !== '--' && (
-                                    <span className="text-purple-400 font-bold normal-case tracking-normal">
-                                        🎂 {ageInfo.age} años ({ageInfo.formatted})
-                                    </span>
-                                )}
-                            </label>
-                            <div className="relative flex items-center">
-                                <Cake className="w-4 h-4 text-gray-500 absolute left-4" />
-                                <input 
-                                    type="date"
-                                    value={birthDate}
-                                    onChange={(e) => setBirthDate(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
-                                />
-                            </div>
-                        </div>
-
-                        {/* WhatsApp */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Número de WhatsApp (con código país)</label>
-                            <div className="relative flex items-center">
-                                <MessageSquare className="w-4 h-4 text-gray-500 absolute left-4" />
-                                <input 
-                                    type="text"
-                                    value={whatsapp}
-                                    onChange={(e) => setWhatsapp(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
-                                    placeholder="Ej: +593999999999"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Ciudad / Sede */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Ciudad / Sede</label>
-                            <div className="relative flex items-center">
-                                <MapPin className="w-4 h-4 text-gray-500 absolute left-4" />
-                                <input 
-                                    type="text"
-                                    value={city}
-                                    onChange={(e) => setCity(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
-                                    placeholder="Ej: Santo Domingo, Ecuador"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Dirección Opcional */}
-                        <div className="space-y-2 md:col-span-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Dirección / Ubicación Física (Opcional)</label>
-                            <div className="relative flex items-center">
-                                <MapPin className="w-4 h-4 text-gray-500 absolute left-4" />
-                                <input 
-                                    type="text"
-                                    value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
-                                    placeholder="Ej: Av. Principal y Calle 5ta, Urb. Los Rosales"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Section 2: Especialidad & Disponibilidad */}
-                <div className="space-y-6 pt-6 border-t border-white/5">
-                    <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-                        <Briefcase className="w-4 h-4" /> 2. Enfoque Estratégico & Disponibilidad
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Specialty */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Especialidad / Rol Principal</label>
-                            <div className="relative flex items-center">
-                                <Award className="w-4 h-4 text-gray-500 absolute left-4" />
-                                <input 
-                                    type="text"
-                                    value={specialty}
-                                    onChange={(e) => setSpecialty(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
-                                    placeholder="Ej: Lead Estratega & Growth CM"
-                                />
-                            </div>
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                                {["Lead Estratega", "Growth & Meta Ads", "Content & Copywriting", "Community & Moderación"].map(tag => (
-                                    <button
-                                        key={tag}
-                                        type="button"
-                                        onClick={() => setSpecialty(tag)}
-                                        className="text-[10px] px-2.5 py-1 rounded-lg bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-300 text-gray-400 transition-all"
-                                    >
-                                        + {tag}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Availability */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Disponibilidad Operativa</label>
-                            <select 
-                                value={availability}
-                                onChange={(e) => setAvailability(e.target.value)}
-                                className="w-full px-5 py-4 bg-[#121222] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 transition-all font-medium"
+            {/* Main Profile Editor Card */}
+            <div className="bg-[#0E0E18] border border-white/10 rounded-[3rem] p-8 md:p-12 space-y-10 shadow-2xl">
+                {/* Section Navigation Tabs */}
+                <div className="flex flex-wrap items-center gap-2 p-1.5 bg-black/40 border border-white/5 rounded-2xl">
+                    {[
+                        { id: 'identity', label: '1. Identidad & Datos', icon: User },
+                        { id: 'strategy', label: '2. Especialidad & Roles', icon: Briefcase },
+                        { id: 'portfolio', label: '3. Portafolio, CV & Skills', icon: Globe },
+                        { id: 'career', label: '4. Trayectoria & Bio', icon: FileText },
+                        { id: 'security', label: '5. Cuenta & Seguridad', icon: ShieldCheck }
+                    ].map(tab => {
+                        const Icon = tab.icon;
+                        const isActive = activeTabSection === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTabSection(tab.id)}
+                                className={`flex-1 min-w-[140px] py-3.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                                    isActive
+                                        ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
+                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                }`}
                             >
-                                <option value="full-time">Full-Time (Dedicación Exclusiva)</option>
-                                <option value="part-time">Part-Time (Media Jornada)</option>
-                                <option value="freelance">Freelance / Por Proyectos Asignados</option>
-                            </select>
-                        </div>
-                    </div>
+                                <Icon className="w-4 h-4" />
+                                <span>{tab.label}</span>
+                            </button>
+                        );
+                    })}
                 </div>
 
-                {/* Section 3: Portafolio & Currículum */}
-                <div className="space-y-6 pt-6 border-t border-white/5">
-                    <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-                        <Globe className="w-4 h-4" /> 3. Portafolio & Currículum (Enlaces)
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Portafolio URL */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between items-center">
-                                <span>Vínculo de Portafolio / Showreel / Drive (URL)</span>
-                                {portfolioUrl && (
-                                    <a 
-                                        href={portfolioUrl.startsWith('http') ? portfolioUrl : `https://${portfolioUrl}`} 
-                                        target="_blank" 
-                                        rel="noreferrer" 
-                                        className="text-cyan-400 hover:underline flex items-center gap-1 normal-case tracking-normal text-xs font-bold"
-                                    >
-                                        Visitar Portafolio <ExternalLink className="w-3 h-3" />
-                                    </a>
+                {/* TAB 1: IDENTIDAD & DATOS PERSONALES */}
+                {activeTabSection === 'identity' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <div>
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
+                                <User className="w-5 h-5 text-cyan-400" /> Datos Personales y de Contacto
+                            </h3>
+                            <p className="text-xs text-gray-400 mt-1">Configura tu nombre, foto, número directo de WhatsApp y fecha de nacimiento.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Nombre Completo */}
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between">
+                                    <span>Nombre Completo del CM (Obligatorio)</span>
+                                    <span className="text-cyan-400 normal-case tracking-normal text-xs font-medium">Visible en toda la agencia</span>
+                                </label>
+                                <div className="relative flex items-center">
+                                    <User className="w-5 h-5 text-gray-500 absolute left-4" />
+                                    <input 
+                                        type="text"
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-base font-bold outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all"
+                                        placeholder="Ej: Leslie Moran"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Foto de Perfil (URL) */}
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between">
+                                    <span>URL de Foto de Perfil / Avatar</span>
+                                    {avatarUrl && (
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setAvatarUrl('')} 
+                                            className="text-red-400 hover:underline text-xs normal-case tracking-normal"
+                                        >
+                                            Quitar foto
+                                        </button>
+                                    )}
+                                </label>
+                                <div className="relative flex items-center">
+                                    <Camera className="w-5 h-5 text-gray-500 absolute left-4" />
+                                    <input 
+                                        type="text"
+                                        value={avatarUrl}
+                                        onChange={(e) => setAvatarUrl(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all"
+                                        placeholder="Ej: https://misitio.com/mi-foto.jpg"
+                                    />
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 pt-1">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Avatares sugeridos:</span>
+                                    {avatarPresets.map((preset, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => setAvatarUrl(preset)}
+                                            className="w-8 h-8 rounded-xl overflow-hidden border border-white/10 hover:border-cyan-400 transition-all hover:scale-110"
+                                        >
+                                            <img src={preset} alt="preset" className="w-full h-full object-cover" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Año y Fecha de Nacimiento */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between items-center">
+                                    <span>Año & Fecha de Nacimiento</span>
+                                    {ageInfo.age !== '--' && (
+                                        <span className="text-purple-400 font-bold normal-case tracking-normal text-xs">
+                                            🎂 {ageInfo.age} años ({ageInfo.formatted})
+                                        </span>
+                                    )}
+                                </label>
+                                <div className="relative flex items-center">
+                                    <Cake className="w-5 h-5 text-gray-500 absolute left-4" />
+                                    <input 
+                                        type="date"
+                                        value={birthDate}
+                                        onChange={(e) => setBirthDate(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all font-medium"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* WhatsApp */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between items-center">
+                                    <span>Número de WhatsApp</span>
+                                    {whatsapp && (
+                                        <a 
+                                            href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`} 
+                                            target="_blank" 
+                                            rel="noreferrer"
+                                            className="text-emerald-400 hover:underline normal-case tracking-normal text-xs font-bold flex items-center gap-1"
+                                        >
+                                            Probar enlace <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    )}
+                                </label>
+                                <div className="relative flex items-center">
+                                    <MessageSquare className="w-5 h-5 text-gray-500 absolute left-4" />
+                                    <input 
+                                        type="text"
+                                        value={whatsapp}
+                                        onChange={(e) => setWhatsapp(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all font-medium"
+                                        placeholder="Ej: +593999999999"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Ciudad / Sede */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Ciudad / Sede</label>
+                                <div className="relative flex items-center">
+                                    <MapPin className="w-5 h-5 text-gray-500 absolute left-4" />
+                                    <input 
+                                        type="text"
+                                        value={city}
+                                        onChange={(e) => setCity(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all font-medium"
+                                        placeholder="Ej: Santo Domingo, Ecuador"
+                                    />
+                                </div>
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {citySuggestions.map(c => (
+                                        <button
+                                            key={c}
+                                            type="button"
+                                            onClick={() => setCity(c)}
+                                            className="text-[10px] px-2.5 py-1 rounded-lg bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-300 text-gray-400 transition-all"
+                                        >
+                                            + {c}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Dirección Física */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Dirección / Sede Física</label>
+                                <div className="relative flex items-center">
+                                    <MapPin className="w-5 h-5 text-gray-500 absolute left-4" />
+                                    <input 
+                                        type="text"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all font-medium"
+                                        placeholder="Ej: Av. Principal y Calle 3ra"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* TAB 2: ESPECIALIDAD & DISPONIBILIDAD */}
+                {activeTabSection === 'strategy' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <div>
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
+                                <Briefcase className="w-5 h-5 text-cyan-400" /> Especialidad & Operatividad del CM
+                            </h3>
+                            <p className="text-xs text-gray-400 mt-1">Define tu enfoque estratégico principal y tu disponibilidad horaria en DIIC ZONE.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Especialidad */}
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Especialidad / Enfoque Profesional</label>
+                                <div className="relative flex items-center">
+                                    <Award className="w-5 h-5 text-gray-500 absolute left-4" />
+                                    <input 
+                                        type="text"
+                                        value={specialty}
+                                        onChange={(e) => setSpecialty(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm font-bold outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all"
+                                        placeholder="Ej: Lead Estratega de Contenido & Growth"
+                                    />
+                                </div>
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                    {[
+                                        "Lead Estratega Integral", 
+                                        "Growth & Meta Ads", 
+                                        "Content Strategy & Copywriting", 
+                                        "Community Management & Moderación",
+                                        "TikTok & Reels Organic Growth",
+                                        "Brand Management"
+                                    ].map(tag => (
+                                        <button
+                                            key={tag}
+                                            type="button"
+                                            onClick={() => setSpecialty(tag)}
+                                            className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-300 text-gray-300 border border-white/5 transition-all"
+                                        >
+                                            + {tag}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Disponibilidad */}
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Disponibilidad Horaria & Modalidad</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    {[
+                                        { id: 'full-time', title: '🟢 Full-Time', desc: 'Dedicación completa (40h/sem)' },
+                                        { id: 'part-time', title: '🟡 Part-Time', desc: 'Media jornada o tardes' },
+                                        { id: 'freelance', title: '🟣 Freelance', desc: 'Por marcas / proyectos asignados' }
+                                    ].map(option => (
+                                        <div
+                                            key={option.id}
+                                            onClick={() => setAvailability(option.id)}
+                                            className={`p-5 rounded-2xl border cursor-pointer transition-all ${
+                                                availability === option.id
+                                                    ? 'bg-cyan-500/15 border-cyan-500 text-white shadow-lg shadow-cyan-500/10'
+                                                    : 'bg-white/[0.02] border-white/5 text-gray-400 hover:border-white/20'
+                                            }`}
+                                        >
+                                            <h4 className="font-black text-sm">{option.title}</h4>
+                                            <p className="text-xs opacity-70 mt-1">{option.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* TAB 3: PORTAFOLIO, CV & SKILLS */}
+                {activeTabSection === 'portfolio' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <div>
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
+                                <Globe className="w-5 h-5 text-cyan-400" /> Portafolio, Currículum & Competencias
+                            </h3>
+                            <p className="text-xs text-gray-400 mt-1">Conecta tu Showreel, enlaces de Google Drive, Notion, Behance o PDF de CV para mostrar a clientes y directores.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Portafolio URL */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between items-center">
+                                    <span>Vínculo de Portafolio / Showreel / Drive (URL)</span>
+                                    {portfolioUrl && (
+                                        <a 
+                                            href={portfolioUrl.startsWith('http') ? portfolioUrl : `https://${portfolioUrl}`} 
+                                            target="_blank" 
+                                            rel="noreferrer" 
+                                            className="text-cyan-400 hover:underline flex items-center gap-1 normal-case tracking-normal text-xs font-bold"
+                                        >
+                                            Visitar Portafolio <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    )}
+                                </label>
+                                <div className="relative flex items-center">
+                                    <Globe className="w-5 h-5 text-gray-500 absolute left-4" />
+                                    <input 
+                                        type="text"
+                                        value={portfolioUrl}
+                                        onChange={(e) => setPortfolioUrl(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all font-medium"
+                                        placeholder="Ej: https://behance.net/... o drive.google.com/..."
+                                    />
+                                </div>
+                            </div>
+
+                            {/* CV URL */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between items-center">
+                                    <span>Vínculo de Currículum (CV URL)</span>
+                                    {cvUrl && (
+                                        <a 
+                                            href={cvUrl.startsWith('http') ? cvUrl : `https://${cvUrl}`} 
+                                            target="_blank" 
+                                            rel="noreferrer" 
+                                            className="text-cyan-400 hover:underline flex items-center gap-1 normal-case tracking-normal text-xs font-bold"
+                                        >
+                                            Ver Curriculum <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    )}
+                                </label>
+                                <div className="relative flex items-center">
+                                    <FileText className="w-5 h-5 text-gray-500 absolute left-4" />
+                                    <input 
+                                        type="text"
+                                        value={cvUrl}
+                                        onChange={(e) => setCvUrl(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all font-medium"
+                                        placeholder="Ej: https://drive.google.com/... o linkedin.com/in/..."
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Skills Tag Cloud */}
+                            <div className="space-y-4 md:col-span-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">
+                                    Habilidades & Competencias Clave
+                                </label>
+                                
+                                {/* Active Skill Chips */}
+                                {currentSkillList.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                        {currentSkillList.map((skillItem, sIdx) => (
+                                            <span 
+                                                key={sIdx}
+                                                className="px-3.5 py-1.5 bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 rounded-xl text-xs font-bold flex items-center gap-2 group"
+                                            >
+                                                {skillItem}
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => handleRemoveSkill(skillItem)}
+                                                    className="hover:text-red-400 transition-colors"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
                                 )}
-                            </label>
-                            <div className="relative flex items-center">
-                                <Globe className="w-4 h-4 text-gray-500 absolute left-4" />
-                                <input 
-                                    type="text"
-                                    value={portfolioUrl}
-                                    onChange={(e) => setPortfolioUrl(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
-                                    placeholder="Ej: https://behance.net/... o drive.google.com/..."
-                                />
+
+                                <div className="relative flex items-center">
+                                    <Award className="w-5 h-5 text-gray-500 absolute left-4" />
+                                    <input 
+                                        type="text"
+                                        value={skills}
+                                        onChange={(e) => setSkills(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all font-medium"
+                                        placeholder="Escribe habilidades separadas por comas..."
+                                    />
+                                </div>
+
+                                {/* Suggestion Chips */}
+                                <div className="flex flex-wrap items-center gap-2 pt-1">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Sugerencias rápidas:</span>
+                                    {commonSkillTags.map(tag => (
+                                        <button
+                                            key={tag}
+                                            type="button"
+                                            onClick={() => handleAddSkill(tag)}
+                                            className="text-[11px] font-medium px-3 py-1.5 rounded-xl bg-white/[0.03] hover:bg-cyan-500/20 hover:text-cyan-300 text-gray-300 border border-white/5 transition-all"
+                                        >
+                                            + {tag}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
+                    </div>
+                )}
 
-                        {/* CV URL */}
+                {/* TAB 4: TRAYECTORIA & BIO */}
+                {activeTabSection === 'career' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <div>
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-cyan-400" /> Trayectoria, Bio & Casos de Éxito
+                            </h3>
+                            <p className="text-xs text-gray-400 mt-1">Describe tu experiencia, estilo de liderazgo en comunidades, marcas con las que has trabajado y logros destacados.</p>
+                        </div>
+
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between items-center">
-                                <span>Vínculo de Currículum (CV URL)</span>
-                                {cvUrl && (
-                                    <a 
-                                        href={cvUrl.startsWith('http') ? cvUrl : `https://${cvUrl}`} 
-                                        target="_blank" 
-                                        rel="noreferrer" 
-                                        className="text-cyan-400 hover:underline flex items-center gap-1 normal-case tracking-normal text-xs font-bold"
-                                    >
-                                        Ver Curriculum <ExternalLink className="w-3 h-3" />
-                                    </a>
-                                )}
-                            </label>
-                            <div className="relative flex items-center">
-                                <FileText className="w-4 h-4 text-gray-500 absolute left-4" />
-                                <input 
-                                    type="text"
-                                    value={cvUrl}
-                                    onChange={(e) => setCvUrl(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
-                                    placeholder="Ej: https://drive.google.com/... o linkedin.com/in/..."
-                                />
-                            </div>
-                        </div>
-
-                        {/* Skills */}
-                        <div className="space-y-3 md:col-span-2">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">
-                                Habilidades & Competencias Clave (Separadas por comas)
-                            </label>
-                            <div className="relative flex items-center">
-                                <Award className="w-4 h-4 text-gray-500 absolute left-4" />
-                                <input 
-                                    type="text"
-                                    value={skills}
-                                    onChange={(e) => setSkills(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
-                                    placeholder="Ej: Copywriting, Reels, Meta Ads, TikTok Strategy, CapCut, Analítica"
-                                />
-                            </div>
-
-                            {/* Suggestion Chips */}
-                            <div className="flex flex-wrap items-center gap-2 pt-1">
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Sugerencias rápidas:</span>
-                                {commonSkillTags.map(tag => (
-                                    <button
-                                        key={tag}
-                                        type="button"
-                                        onClick={() => handleAddSkill(tag)}
-                                        className="text-[11px] font-medium px-3 py-1 rounded-xl bg-white/[0.03] hover:bg-cyan-500/20 hover:text-cyan-300 text-gray-400 border border-white/5 transition-all"
-                                    >
-                                        + {tag}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* CV Summary / Trayectoria */}
-                        <div className="space-y-2 md:col-span-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">
-                                Trayectoria / Perfil Profesional & Estilo de Estrategia
+                                Perfil Profesional & Propuesta de Valor
                             </label>
                             <textarea 
                                 value={cvSummary}
                                 onChange={(e) => setCvSummary(e.target.value)}
-                                className="w-full min-h-[160px] p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-gray-200 text-sm leading-relaxed outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium resize-y"
-                                placeholder="Describe tu trayectoria, casos de éxito, marcas con las que has trabajado, enfoque de crecimiento y estilo de gestión..."
+                                className="w-full min-h-[220px] p-6 bg-white/[0.03] border border-white/10 rounded-[2rem] text-gray-200 text-sm leading-relaxed outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all font-medium resize-y"
+                                placeholder="Ej: Especialista en Growth y Estrategia de Contenidos con más de 3 años de experiencia liderando marcas en TikTok y Meta Ads. Enfoque analítico con alta capacidad de storytelling, copywriting persuasivo y coordinación fluida con editores y diseñadores..."
                             />
                         </div>
                     </div>
-                </div>
+                )}
 
-                {/* Final Save Bar */}
-                <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <p className="text-xs text-gray-500 font-medium">
-                        Tus cambios se sincronizan en tiempo real con la base de datos de DIIC ZONE HQ.
+                {/* TAB 5: CUENTA & SEGURIDAD */}
+                {activeTabSection === 'security' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <div>
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
+                                <ShieldCheck className="w-5 h-5 text-cyan-400" /> Credenciales & Seguridad de la Cuenta
+                            </h3>
+                            <p className="text-xs text-gray-400 mt-1">Información de acceso a la plataforma DIIC ZONE y opciones de cuenta.</p>
+                        </div>
+
+                        <div className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Correo Electrónico Principal</p>
+                                    <p className="text-white font-mono font-bold mt-1">{user?.email || 'Sin correo asignado'}</p>
+                                </div>
+                                <span className="px-3 py-1 bg-cyan-500/10 text-cyan-400 text-xs font-bold rounded-xl border border-cyan-500/20">
+                                    Cuenta Autenticada
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Danger Zone */}
+                        <div className="bg-red-950/15 border border-red-900/40 rounded-3xl p-8 space-y-4">
+                            <h4 className="text-lg font-black text-red-500 uppercase italic tracking-tight flex items-center gap-2">
+                                <AlertTriangle className="w-5 h-5 text-red-500" /> Zona de Peligro
+                            </h4>
+                            <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                                Si decides eliminar tu cuenta, todos tus registros de autenticación, tu expediente de talento y tu vinculación con la agencia DIIC ZONE serán destruidos permanentemente de forma irreversible.
+                            </p>
+                            <button 
+                                onClick={() => setShowDeleteModal(true)}
+                                className="px-6 py-3 bg-red-600/15 border border-red-500/30 text-red-400 hover:bg-red-600 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-xl transition-all"
+                            >
+                                Eliminar Cuenta Permanentemente
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Bottom Global Save Bar */}
+                <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p className="text-xs text-gray-400 font-medium">
+                        ✨ Todos los cambios se sincronizan en tiempo real con DIIC ZONE HQ.
                     </p>
                     <button 
                         onClick={handleSave}
                         disabled={saving}
-                        className="w-full sm:w-auto px-10 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:scale-105 transition-all shadow-xl shadow-cyan-500/20 flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto px-12 py-5 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:scale-105 transition-all shadow-xl shadow-cyan-500/20 flex items-center justify-center gap-2"
                     >
                         {saving ? (
                             <>
@@ -3786,31 +4133,89 @@ function CMProfileView({ user }) {
                         ) : (
                             <>
                                 <CheckCircle2 className="w-5 h-5" />
-                                Actualizar Expediente Completo
+                                Guardar Expediente Completo
                             </>
                         )}
                     </button>
                 </div>
             </div>
 
-            {/* Danger Zone */}
-            <div className="bg-red-950/10 border border-red-900/30 rounded-[3rem] p-8 md:p-10 space-y-6">
-                <h3 className="text-xl font-black text-red-500 uppercase italic tracking-tighter flex items-center gap-3">
-                    <AlertTriangle className="w-5 h-5 text-red-500" />
-                    Zona de Peligro
-                </h3>
-                <p className="text-sm text-gray-400 font-medium leading-relaxed">
-                    Si decides eliminar tu cuenta, todos tus registros de autenticación, tu expediente de talento y tu vinculación con la agencia DIIC ZONE serán destruidos permanentemente de forma irreversible.
-                </p>
-                <div className="flex">
-                    <button 
-                        onClick={() => setShowDeleteModal(true)}
-                        className="px-6 py-3.5 bg-red-600/10 border border-red-500/20 text-red-500 font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-red-600 hover:text-white transition-all"
-                    >
-                        Eliminar Cuenta Permanentemente
-                    </button>
-                </div>
-            </div>
+            {/* Avatar Photo Modal */}
+            <AnimatePresence>
+                {showAvatarModal && (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            onClick={() => setShowAvatarModal(false)} 
+                            className="absolute inset-0 bg-black/85 backdrop-blur-md" 
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+                            animate={{ scale: 1, opacity: 1, y: 0 }} 
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }} 
+                            className="relative w-full max-w-lg bg-[#0E0E18] border border-cyan-500/30 rounded-[2.5rem] p-8 shadow-2xl z-10 space-y-6"
+                        >
+                            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
+                                    <Camera className="w-5 h-5 text-cyan-400" /> Foto de Perfil
+                                </h3>
+                                <button onClick={() => setShowAvatarModal(false)} className="text-gray-400 hover:text-white">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pega el enlace directo de tu foto:</label>
+                                <input 
+                                    type="text"
+                                    value={avatarUrl}
+                                    onChange={(e) => setAvatarUrl(e.target.value)}
+                                    placeholder="https://..."
+                                    className="w-full px-5 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 transition-all font-mono"
+                                />
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">O elige un avatar preset:</label>
+                                    <div className="grid grid-cols-5 gap-3">
+                                        {avatarPresets.map((preset, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => setAvatarUrl(preset)}
+                                                className={`w-full aspect-square rounded-2xl overflow-hidden border-2 transition-all hover:scale-105 ${
+                                                    avatarUrl === preset ? 'border-cyan-400 shadow-lg shadow-cyan-500/30' : 'border-white/10 hover:border-white/30'
+                                                }`}
+                                            >
+                                                <img src={preset} alt="preset" className="w-full h-full object-cover" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 pt-4 border-t border-white/10">
+                                <button 
+                                    onClick={() => setShowAvatarModal(false)}
+                                    className="flex-1 py-4 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                >
+                                    Cerrar
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        setShowAvatarModal(false);
+                                        handleSave();
+                                    }}
+                                    className="flex-1 py-4 bg-cyan-500 text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-cyan-400 transition-all shadow-lg shadow-cyan-500/20"
+                                >
+                                    Aplicar y Guardar
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Delete Account Modal */}
             <AnimatePresence>
