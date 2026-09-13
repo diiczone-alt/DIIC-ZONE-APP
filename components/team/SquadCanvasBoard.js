@@ -15,6 +15,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Shield, Zap, Flame, User, Globe, DollarSign, Database } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
+import { presenceService } from '@/services/presenceService';
 import { toast } from 'sonner';
 
 // ============================================
@@ -160,24 +161,21 @@ const getDepartmentStyle = (role) => {
 const MemberNode = ({ data, isConnectable }) => {
     const style = getDepartmentStyle(data.role);
 
-    const isOnline = useMemo(() => {
-        const isAct = (data.member?.status || '').toLowerCase().startsWith('act') || 
-                      (data.member?.status || '').toLowerCase() === 'active';
-        if (!isAct) return false;
-        const hash = (data.member?.name || '').charCodeAt(0) || 0;
-        return hash % 3 !== 0; // 66% online ratio
-    }, [data.member]);
+    // Live presence status computation (🟢 Verde, 🟡 Amarillo, 🔴 Rojo)
+    const liveStatus = useMemo(() => {
+        return presenceService.computeStatus(data.member, data.onlineEmails || new Set());
+    }, [data.member, data.onlineEmails]);
 
-    const isPending = data.member?.approval_status === 'pending_approval';
+    const isPending = liveStatus.status === 'unapproved';
     const niches = Array.isArray(data.member?.niche_affinities) ? data.member.niche_affinities : [];
     const quizScore = data.member?.onboarding_quiz_score;
 
     return (
-        <div className={`relative w-[280px] bg-[#0A0A14]/90 backdrop-blur-xl border ${isPending ? 'border-amber-500/50 shadow-[0_0_25px_rgba(245,158,11,0.2)]' : style.border} rounded-[2rem] p-6 flex flex-col shadow-2xl group transition-all duration-300`}>
+        <div className={`relative w-[280px] bg-[#0A0A14]/90 backdrop-blur-xl border ${isPending ? 'border-rose-500/40 shadow-[0_0_25px_rgba(244,63,94,0.2)]' : liveStatus.status === 'online' ? 'border-emerald-500/40 shadow-[0_0_25px_rgba(16,185,129,0.2)]' : style.border} rounded-[2rem] p-6 flex flex-col shadow-2xl group transition-all duration-300`}>
             
             {/* Contenedor Interno para recortar las luces sin recortar los conectores (Handles) */}
             <div className="absolute inset-0 overflow-hidden rounded-[2rem] pointer-events-none">
-                 <div className={`absolute -top-10 -right-10 w-32 h-32 ${isPending ? 'bg-amber-500/20' : style.glow} blur-[50px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
+                 <div className={`absolute -top-10 -right-10 w-32 h-32 ${isPending ? 'bg-rose-500/20' : liveStatus.status === 'online' ? 'bg-emerald-500/20' : style.glow} blur-[50px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
             </div>
 
             {/* Top Handle: Entrada (Recibe instrucciones del lider) */}
@@ -189,24 +187,33 @@ const MemberNode = ({ data, isConnectable }) => {
             />
             <div className={`absolute -top-8 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase ${style.badgeText} tracking-widest opacity-0 group-hover:opacity-100 transition-opacity`}>RECEPTOR</div>
 
-            {/* Status Pill on Top if Pending */}
-            {isPending && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-30 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[8px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1 backdrop-blur-md">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                    SALA DE ESPERA
+            {/* Status Pill on Top */}
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-30 px-3 py-0.5 rounded-full bg-black/60 border border-white/10 text-[8px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1.5 backdrop-blur-md">
+                <div className="relative flex items-center justify-center w-2 h-2">
+                    <span className={`absolute inline-flex h-full w-full rounded-full ${liveStatus.pingClass} opacity-75`} />
+                    <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${liveStatus.dotClass}`} />
                 </div>
-            )}
+                <span className={liveStatus.color === 'green' ? 'text-emerald-400 font-bold' : liveStatus.color === 'yellow' ? 'text-amber-400 font-bold' : 'text-rose-400 font-bold'}>
+                    {liveStatus.badgeText}
+                </span>
+            </div>
 
             {/* Avatar & Identidad */}
-            <div className="flex flex-col items-center mb-4 pt-2 relative z-10">
+            <div className="flex flex-col items-center mb-4 pt-3 relative z-10">
                 <div className="relative">
-                    <div className={`w-16 h-16 rounded-[1.2rem] bg-gradient-to-tr ${isPending ? 'from-amber-500 to-orange-600' : style.gradient} p-0.5 shadow-2xl transition-transform duration-500`}>
+                    <div className={`w-16 h-16 rounded-[1.2rem] bg-gradient-to-tr ${isPending ? 'from-rose-500 to-amber-600' : liveStatus.status === 'online' ? 'from-emerald-400 to-teal-600' : style.gradient} p-0.5 shadow-2xl transition-transform duration-500`}>
                         <div className="w-full h-full rounded-[1.1rem] bg-[#050510] flex items-center justify-center text-2xl font-black text-white italic tracking-tighter">
                             {data.label ? data.label[0] : '?'}
                         </div>
                     </div>
-                    {/* Status Dot */}
-                    <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-4 border-[#0A0A14] ${isPending ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' : isOnline ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'}`} />
+                    {/* Pulsating Realtime Status Light */}
+                    <div className="absolute -top-1.5 -right-1.5 flex items-center justify-center">
+                        <span className={`absolute w-5 h-5 rounded-full ${liveStatus.pingClass} opacity-60`} />
+                        <span 
+                            title={liveStatus.label}
+                            className={`relative w-4 h-4 rounded-full border-2 border-[#0A0A14] ${liveStatus.dotClass}`} 
+                        />
+                    </div>
                 </div>
                 <div className="text-center mt-3 w-full px-2">
                     <h3 className="text-lg font-black text-white uppercase italic tracking-tighter leading-none truncate max-w-full" title={data.label || 'Talento'}>
@@ -293,6 +300,17 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
     const [activeSede, setActiveSede] = useState('Todas');
+    const [onlineEmails, setOnlineEmails] = useState(new Set());
+
+    // Subscribe to Realtime Presence updates
+    useEffect(() => {
+        const unsubscribe = presenceService.subscribe((emailsSet) => {
+            setOnlineEmails(emailsSet);
+        });
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, []);
 
     // Initialize Layout with Persistent Memory
     useEffect(() => {
@@ -302,7 +320,7 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
             return;
         }
 
-        console.log(`📡 [SquadCanvas] Building structure for ${team.length} members. Sede: ${activeSede}`);
+        console.log(`📡 [SquadCanvas] Building structure for ${team.length} members. Sede: ${activeSede}. Online users: ${onlineEmails.size}`);
 
         const generatedNodes = [];
         const generatedEdges = [];
@@ -373,6 +391,7 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
                         city: m.city, 
                         salary: m.salary, 
                         member: m, 
+                        onlineEmails,
                         onAudit 
                     }
                 });
@@ -396,7 +415,7 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
 
         setNodes(generatedNodes);
         setEdges(generatedEdges);
-    }, [team, allClients, onAudit, activeSede]);
+    }, [team, allClients, onAudit, activeSede, onlineEmails]);
 
     const onNodesChange = useCallback(
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),

@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { presenceService } from '@/services/presenceService';
 
 import { toast } from 'sonner';
 
@@ -14,6 +15,21 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [isSyncingTokens, setIsSyncingTokens] = useState(false);
     const router = useRouter();
+
+    // Global Presence & Heartbeat: Automatically broadcasts presence for any logged-in user
+    useEffect(() => {
+        if (user?.email) {
+            presenceService.startHeartbeat({
+                email: user.email,
+                name: user.full_name || user.name || '',
+                role: user.role || ''
+            });
+
+            return () => {
+                presenceService.stopHeartbeat();
+            };
+        }
+    }, [user?.email]);
 
     const fetchProfile = async (userId, email = null, metadata = null) => {
         console.log(`[AuthContext] fetchProfile start for ${userId} (${email || 'no-email'})`);

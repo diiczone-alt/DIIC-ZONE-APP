@@ -1070,7 +1070,7 @@ export const agencyService = {
                 'whatsapp', 'email', 'birth_date', 'address',
                 'avatar_url', 'portfolio_url', 'specialty',
                 'niche_affinities', 'secondary_profession', 
-                'onboarding_quiz_score', 'approval_status'
+                'onboarding_quiz_score', 'approval_status', 'last_seen_at'
             ];
             
             const sanitizedUpdates = {};

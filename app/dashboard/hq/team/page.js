@@ -14,6 +14,7 @@ import {
     Copy, ArrowLeft, ExternalLink, ArrowRight
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
+import { presenceService } from '@/services/presenceService';
 import { toast } from 'sonner';
 import { isCloudConnected, supabase } from '@/lib/supabase';
 import PremiumDropdown from '@/components/shared/PremiumDropdown';
@@ -64,12 +65,7 @@ const deduplicateTeam = (teamArray) => {
             if (email) byEmail.set(email, member);
             if (normName) byName.set(normName, member);
         } else {
-            const existingScore = getScore(existing);
-            const newScore = getScore(member);
-            if (newScore > existingScore) {
-                if (existing.email) byEmail.delete(existing.email.toLowerCase().trim());
-                if (existing.name) byName.delete(existing.name.toLowerCase().trim());
-                
+            if (getScore(member) > getScore(existing)) {
                 if (email) byEmail.set(email, member);
                 if (normName) byName.set(normName, member);
             }
@@ -93,6 +89,7 @@ export default function HQTeamPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [onlineEmails, setOnlineEmails] = useState(new Set());
     const [newMember, setNewMember] = useState({
         name: '',
         role: 'Editor de Video',
@@ -103,6 +100,16 @@ export default function HQTeamPage() {
         birth_date: '',
         address: ''
     });
+
+    // Subscribe to Realtime Presence updates
+    useEffect(() => {
+        const unsubscribe = presenceService.subscribe((emailsSet) => {
+            setOnlineEmails(emailsSet);
+        });
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, []);
 
     const isHQLive = useRealtimeSync(['team', 'clients', 'profiles'], () => fetchData(true));
 
@@ -361,9 +368,9 @@ export default function HQTeamPage() {
                                     <h3 className="text-xl font-black text-indigo-400 uppercase italic tracking-tighter">Unidad CM: {cm.name}</h3>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-                                    <TeamMemberCard member={cm} team={team} allClients={clients} variant="lead" onAudit={() => openAudit(cm)} />
+                                    <TeamMemberCard member={cm} team={team} allClients={clients} variant="lead" onlineEmails={onlineEmails} onAudit={() => openAudit(cm)} />
                                     {cm.creativeTeam.map(creative => (
-                                        <TeamMemberCard key={creative.id} member={creative} team={team} allClients={clients} onAudit={() => openAudit(creative)} />
+                                        <TeamMemberCard key={creative.id} member={creative} team={team} allClients={clients} onlineEmails={onlineEmails} onAudit={() => openAudit(creative)} />
                                     ))}
                                 </div>
                             </div>
@@ -371,9 +378,9 @@ export default function HQTeamPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-                        <TeamMemberCard member={pod.lead} team={team} allClients={clients} variant="lead" onAudit={() => openAudit(pod.lead)} />
+                        <TeamMemberCard member={pod.lead} team={team} allClients={clients} variant="lead" onlineEmails={onlineEmails} onAudit={() => openAudit(pod.lead)} />
                         {pod.creativeTeam.map(creative => (
-                            <TeamMemberCard key={creative.id} member={creative} team={team} allClients={clients} onAudit={() => openAudit(creative)} />
+                            <TeamMemberCard key={creative.id} member={creative} team={team} allClients={clients} onlineEmails={onlineEmails} onAudit={() => openAudit(creative)} />
                         ))}
                     </div>
                 )}
@@ -496,7 +503,7 @@ export default function HQTeamPage() {
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
                                         {pendingMembers.map(m => (
-                                            <TeamMemberCard key={m.id} member={m} team={team} allClients={clients} onAudit={() => openAudit(m)} />
+                                            <TeamMemberCard key={m.id} member={m} team={team} allClients={clients} onlineEmails={onlineEmails} onAudit={() => openAudit(m)} />
                                         ))}
                                     </div>
                                 )}
@@ -523,7 +530,7 @@ export default function HQTeamPage() {
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                                         {dept.members.map((member) => (
-                                            <TeamMemberCard key={member.id} member={member} team={team} allClients={clients} onAudit={() => openAudit(member)} />
+                                            <TeamMemberCard key={member.id} member={member} team={team} allClients={clients} onlineEmails={onlineEmails} onAudit={() => openAudit(member)} />
                                         ))}
                                     </div>
                                 </div>
@@ -552,6 +559,7 @@ export default function HQTeamPage() {
                         member={selectedMember} 
                         team={team}
                         allClients={clients}
+                        onlineEmails={onlineEmails}
                         onClose={() => setIsAuditOpen(false)} 
                         onSave={() => fetchData()}
                     />
@@ -707,18 +715,15 @@ const getDepartmentStyle = (role) => {
     };
 };
 
-function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal', onAudit }) {
+function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal', onlineEmails = new Set(), onAudit }) {
     if (!member) return null;
     const isCM = (member.role || '').toLowerCase().includes('community manager');
     const style = getDepartmentStyle(member.role);
     
-    const isOnline = useMemo(() => {
-        const isAct = (member.status || '').toLowerCase().startsWith('act') || 
-                      (member.status || '').toLowerCase() === 'active';
-        if (!isAct) return false;
-        const hash = (member.name || '').charCodeAt(0) || 0;
-        return hash % 3 !== 0;
-    }, [member]);
+    // Live presence status computation (🟢 Verde, 🟡 Amarillo, 🔴 Rojo)
+    const liveStatus = useMemo(() => {
+        return presenceService.computeStatus(member, onlineEmails);
+    }, [member, onlineEmails]);
     
     // Filter brands assigned to this member
     const assignedBrands = allClients.filter(c => 
@@ -771,20 +776,28 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
     return (
         <motion.div 
             whileHover={{ y: -8, scale: 1.01 }} 
-            className={`relative w-full h-auto min-h-[540px] max-w-[310px] mx-auto bg-white/[0.02] backdrop-blur-3xl border ${style.border} rounded-[3rem] p-6 flex flex-col shadow-2xl group overflow-hidden`}
+            className={`relative w-full h-auto min-h-[540px] max-w-[310px] mx-auto bg-white/[0.02] backdrop-blur-3xl border ${liveStatus.status === 'unapproved' ? 'border-rose-500/40 shadow-[0_0_25px_rgba(244,63,94,0.15)]' : liveStatus.status === 'online' ? 'border-emerald-500/40 shadow-[0_0_25px_rgba(16,185,129,0.15)]' : style.border} rounded-[3rem] p-6 flex flex-col shadow-2xl group overflow-hidden`}
         >
             {/* Premium Glass Accents */}
             <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-${style.accentColor}/20 to-transparent`} />
-            <div className={`absolute -top-24 -right-24 w-48 h-48 ${style.glow} blur-[90px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
+            <div className={`absolute -top-24 -right-24 w-48 h-48 ${liveStatus.status === 'unapproved' ? 'bg-rose-500/20' : liveStatus.status === 'online' ? 'bg-emerald-500/20' : style.glow} blur-[90px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
             
             {/* Identity Header */}
             <div className="flex flex-col items-center mb-8 pt-4">
                 <div className="relative mb-5">
                     <div className={`absolute inset-0 ${style.glowHover} blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-all duration-700 scale-150`} />
-                    <div className={`w-20 h-20 rounded-[1.8rem] bg-gradient-to-tr ${style.gradient} p-0.5 shadow-2xl relative z-10 transition-transform duration-500 group-hover:rotate-6`}>
+                    <div className={`w-20 h-20 rounded-[1.8rem] bg-gradient-to-tr ${liveStatus.status === 'unapproved' ? 'from-rose-500 to-amber-600' : liveStatus.status === 'online' ? 'from-emerald-400 to-teal-600' : style.gradient} p-0.5 shadow-2xl relative z-10 transition-transform duration-500 group-hover:rotate-6`}>
                         <div className="w-full h-full rounded-[1.7rem] bg-[#050510] flex items-center justify-center text-3xl font-black text-white italic tracking-tighter shadow-inner">
                             {member.name ? member.name.charAt(0).toUpperCase() : '?'}
                         </div>
+                    </div>
+                    {/* Pulsating Realtime Status Light */}
+                    <div className="absolute -top-1.5 -right-1.5 flex items-center justify-center z-20">
+                        <span className={`absolute w-6 h-6 rounded-full ${liveStatus.pingClass} opacity-75`} />
+                        <span 
+                            title={liveStatus.label}
+                            className={`relative w-4.5 h-4.5 rounded-full border-2 border-[#050510] ${liveStatus.dotClass}`} 
+                        />
                     </div>
                 </div>
                 <div className="text-center w-full px-2">
@@ -853,11 +866,11 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
                         <span className="text-xs font-black text-white">{variant === 'lead' ? squadMembers.length : 'OK'}</span>
                     </div>
                 </div>
-                <div className={`bg-white/[0.03] border border-white/5 rounded-2xl p-3 text-center transition-all ${isOnline ? 'group-hover:border-emerald-500/20' : 'group-hover:border-rose-500/20'}`}>
-                    <p className={`text-[7px] font-black uppercase tracking-widest mb-1.5 italic font-mono ${isOnline ? 'text-emerald-400/50' : 'text-rose-400/50'}`}>Status</p>
+                <div className={`bg-white/[0.03] border border-white/5 rounded-2xl p-3 text-center transition-all ${liveStatus.color === 'green' ? 'group-hover:border-emerald-500/30' : liveStatus.color === 'yellow' ? 'group-hover:border-amber-500/30' : 'group-hover:border-rose-500/30'}`}>
+                    <p className={`text-[7px] font-black uppercase tracking-widest mb-1.5 italic font-mono ${liveStatus.color === 'green' ? 'text-emerald-400/70' : liveStatus.color === 'yellow' ? 'text-amber-400/70' : 'text-rose-400/70'}`}>Status</p>
                     <div className="flex items-center justify-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isOnline ? 'bg-emerald-500 shadow-[0_0_5px_#10b981]' : 'bg-rose-500 shadow-[0_0_5px_#f43f5e]'}`} />
-                        <span className="text-[9px] font-black text-white uppercase tracking-tighter">{isOnline ? 'ON' : 'OFF'}</span>
+                        <div className={`w-2 h-2 rounded-full ${liveStatus.dotClass}`} />
+                        <span className="text-[9px] font-black text-white uppercase tracking-tighter truncate max-w-[55px]">{liveStatus.badgeText}</span>
                     </div>
                 </div>
             </div>
@@ -913,7 +926,7 @@ function TeamMemberCard({ member, team = [], allClients = [], variant = 'normal'
     );
 }
 
-function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave }) {
+function TeamAuditModal({ member, team = [], allClients = [], onlineEmails = new Set(), onClose, onSave }) {
     const router = require('next/navigation').useRouter();
     const [formData, setFormData] = useState({ ...member });
     const [saving, setSaving] = useState(false);
@@ -921,6 +934,11 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
     const [activeTasks, setActiveTasks] = useState([]);
     const [skillsInput, setSkillsInput] = useState(Array.isArray(member.skills) ? member.skills.join(', ') : '');
     
+    // Live presence status computation (🟢 Verde, 🟡 Amarillo, 🔴 Rojo)
+    const liveStatus = useMemo(() => {
+        return presenceService.computeStatus(member, onlineEmails);
+    }, [member, onlineEmails]);
+
     const eligibleLeaders = team.filter(m => (
         (m.role || '').toLowerCase().includes('estratega') || 
         (m.role || '').toLowerCase().includes('community manager')
@@ -932,7 +950,7 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
     const squadMembers = team.filter(m => m.squad_lead_id === member.id);
     const style = getDepartmentStyle(formData.role);
 
-    const isPending = (formData.approval_status === 'pending_approval' || (formData.status || '').toLowerCase().includes('pend') || (isCM && assignedBrands.length === 0));
+    const isPending = liveStatus.status === 'unapproved';
     const quizScore = formData.onboarding_quiz_score || 0;
     const nicheAffinities = Array.isArray(formData.niche_affinities) ? formData.niche_affinities : [];
 
@@ -1083,6 +1101,14 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
                                     <span className="relative z-10">{formData.name?.[0] || 'T'}</span>
                                 </div>
+                                {/* Pulsating Realtime Status Light on Large Avatar */}
+                                <div className="absolute -top-1.5 -right-1.5 flex items-center justify-center z-20">
+                                    <span className={`absolute w-7 h-7 rounded-full ${liveStatus.pingClass} opacity-75`} />
+                                    <span 
+                                        title={liveStatus.label}
+                                        className={`relative w-5 h-5 rounded-full border-2 border-[#0A0A1F] ${liveStatus.dotClass}`} 
+                                    />
+                                </div>
                             </div>
                             <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter text-center leading-tight truncate max-w-full" title={formData.name}>{formData.name}</h2>
                             <div className={`h-[1.5px] w-16 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent my-4`} />
@@ -1139,10 +1165,10 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                     <div className="relative z-10 space-y-4 pt-6 border-t border-white/5">
                         <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
                             <span>Estado Operativo</span>
-                            <div className="flex items-center gap-1.5">
-                                <div className={`w-2 h-2 rounded-full ${isPending ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
-                                <span className={isPending ? 'text-amber-400' : 'text-emerald-400'}>
-                                    {isPending ? 'SALA DE ESPERA' : 'ACTIVO'}
+                            <div className="flex items-center gap-2">
+                                <div className={`w-2.5 h-2.5 rounded-full ${liveStatus.dotClass}`} />
+                                <span className={liveStatus.color === 'green' ? 'text-emerald-400 font-bold' : liveStatus.color === 'yellow' ? 'text-amber-400 font-bold' : 'text-rose-400 font-bold'}>
+                                    {liveStatus.label}
                                 </span>
                             </div>
                         </div>

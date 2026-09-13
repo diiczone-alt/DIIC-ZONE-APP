@@ -27,6 +27,7 @@ import CreativeStudio from '../../events/CreativeBoard';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
 import { aiService } from '@/services/aiService';
+import { presenceService } from '@/services/presenceService';
 import NewProjectWizard from '../../projects/NewProjectWizard';
 import CMGuidePlaybook from './CMGuidePlaybook';
 
@@ -48,26 +49,24 @@ export default function CMWorkstationLayout() {
     const [isSyncing, setIsSyncing] = useState(false);
     const [isHQLive, setIsHQLive] = useState(false);
 
-
-
-    const handleMarkAsRead = async (id) => {
-        try {
-            const { error } = await supabase
-                .from('notifications')
-                .update({ status: 'read' })
-                .eq('id', id);
-            
-            if (!error) {
-                setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'read' } : n));
-            }
-        } catch (err) {
-            console.error('Error marking notification as read:', err);
-        }
-    };
-
     const { user } = useAuth();
     const [customUserName, setCustomUserName] = useState('');
     const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+
+    // Realtime Presence Heartbeat: Turns CM Light 🟢 GREEN in HQ while active
+    useEffect(() => {
+        if (user?.email) {
+            presenceService.startHeartbeat({
+                email: user.email,
+                name: user.full_name || user.name || '',
+                role: 'Community Manager'
+            });
+
+            return () => {
+                presenceService.stopHeartbeat();
+            };
+        }
+    }, [user]);
 
     useEffect(() => {
         if (user?.full_name && !customUserName) {
