@@ -202,7 +202,9 @@ export const onboardingService = {
                             skills: formData.skills || [],
                             whatsapp: formData.whatsapp || '',
                             birth_date: birthDate,
-                            code: creativeCode
+                            code: creativeCode,
+                            portfolio_url: formData.website || formData.portfolio_url || '',
+                            website: formData.website || ''
                         }, { onConflict: 'id' })
                         .select()
                         .single();
@@ -232,6 +234,7 @@ export const onboardingService = {
                     whatsapp: formData.whatsapp || '',
                     birth_date: birthDate,
                     website: formData.website || user.user_metadata?.website || '',
+                    portfolio_url: formData.website || formData.portfolio_url || user.user_metadata?.website || '',
                     country: country,
                     address: address,
                     location: city,

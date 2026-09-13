@@ -2,15 +2,19 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, Phone, MapPin, FileText, ArrowRight, ChevronDown } from 'lucide-react';
+import { Globe, Phone, MapPin, FileText, ArrowRight, ChevronDown, User, Calendar } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
 export default function CreativeProfileStep({ onNext, updateData, data }) {
-    const [website, setWebsite] = useState(data?.website || '');
-    const [whatsapp, setWhatsapp] = useState(data?.whatsapp || '');
-    const [country, setCountry] = useState(data?.country || '');
-    const [city, setCity] = useState(data?.city || '');
-    const [cvSummary, setCvSummary] = useState(data?.cv_summary || '');
+    const { user } = useAuth();
+    const [name, setName] = useState(data?.name || data?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || '');
+    const [birthDate, setBirthDate] = useState(data?.birth_date || user?.user_metadata?.birth_date || '');
+    const [website, setWebsite] = useState(data?.website || user?.user_metadata?.website || '');
+    const [whatsapp, setWhatsapp] = useState(data?.whatsapp || user?.user_metadata?.whatsapp || '');
+    const [country, setCountry] = useState(data?.country || user?.user_metadata?.country || '');
+    const [city, setCity] = useState(data?.city || user?.user_metadata?.city || '');
+    const [cvSummary, setCvSummary] = useState(data?.cv_summary || data?.description || '');
 
     const [isCountryOpen, setIsCountryOpen] = useState(false);
     const [isCityOpen, setIsCityOpen] = useState(false);
@@ -48,11 +52,19 @@ export default function CreativeProfileStep({ onNext, updateData, data }) {
     const handleContinue = (e) => {
         e.preventDefault();
         
-        if (!website) {
+        if (!name.trim()) {
+            toast.error('Por favor, ingresa tu nombre completo.');
+            return;
+        }
+        if (!birthDate) {
+            toast.error('Por favor, ingresa tu fecha de nacimiento.');
+            return;
+        }
+        if (!website.trim()) {
             toast.error('Por favor, ingresa tu portafolio o sitio web.');
             return;
         }
-        if (!whatsapp) {
+        if (!whatsapp.trim()) {
             toast.error('Por favor, ingresa tu número de WhatsApp.');
             return;
         }
@@ -66,11 +78,15 @@ export default function CreativeProfileStep({ onNext, updateData, data }) {
         }
 
         updateData({ 
-            website,
-            whatsapp,
+            name: name.trim(),
+            full_name: name.trim(),
+            birth_date: birthDate,
+            website: website.trim(),
+            whatsapp: whatsapp.trim(),
             country,
             city,
             cv_summary: cvSummary,
+            description: cvSummary,
             address: data?.address || `Ciudad: ${city}`
         });
         
@@ -85,40 +101,75 @@ export default function CreativeProfileStep({ onNext, updateData, data }) {
                 </div>
                 <div>
                     <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Detalles de tu Perfil</h2>
-                    <p className="text-gray-400 text-sm">Completa tu información para conectarte al ecosistema DIIC ZONE.</p>
+                    <p className="text-gray-400 text-sm">Completa tu información personal y profesional para conectarte al ecosistema DIIC ZONE.</p>
                 </div>
             </div>
 
             <form onSubmit={handleContinue} className="space-y-5 bg-white/5 p-8 rounded-[2.5rem] border border-white/10 backdrop-blur-3xl relative overflow-hidden">
                 
-                {/* Field: Website / Portfolio */}
-                <div className="space-y-1 text-left">
-                    <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
-                        <Globe className="w-3 h-3" /> Portafolio o Sitio Web
-                    </label>
-                    <input 
-                        required
-                        type="text"
-                        placeholder="https://behance.net/tuperfil o tu web"
-                        value={website}
-                        onChange={e => setWebsite(e.target.value)}
-                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
-                    />
+                {/* Fields: Full Name & Birth Date (2-column layout) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Field: Full Name */}
+                    <div className="space-y-1 text-left">
+                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                            <User className="w-3 h-3" /> Nombre Completo
+                        </label>
+                        <input 
+                            required
+                            type="text"
+                            placeholder="Ej: Juan Pérez"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                        />
+                    </div>
+
+                    {/* Field: Birth Date */}
+                    <div className="space-y-1 text-left">
+                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                            <Calendar className="w-3 h-3" /> Fecha de Nacimiento
+                        </label>
+                        <input 
+                            required
+                            type="date"
+                            value={birthDate}
+                            onChange={e => setBirthDate(e.target.value)}
+                            className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700 [color-scheme:dark]"
+                        />
+                    </div>
                 </div>
 
-                {/* Field: WhatsApp */}
-                <div className="space-y-1 text-left">
-                    <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
-                        <Phone className="w-3 h-3" /> WhatsApp
-                    </label>
-                    <input 
-                        required
-                        type="tel"
-                        placeholder="Ej: +593 99 999 9999"
-                        value={whatsapp}
-                        onChange={e => setWhatsapp(e.target.value)}
-                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
-                    />
+                {/* Fields: Website & WhatsApp (2-column layout) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Field: Website / Portfolio */}
+                    <div className="space-y-1 text-left">
+                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                            <Globe className="w-3 h-3" /> Portafolio o Sitio Web
+                        </label>
+                        <input 
+                            required
+                            type="text"
+                            placeholder="https://behance.net/tuperfil o tu web"
+                            value={website}
+                            onChange={e => setWebsite(e.target.value)}
+                            className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                        />
+                    </div>
+
+                    {/* Field: WhatsApp */}
+                    <div className="space-y-1 text-left">
+                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                            <Phone className="w-3 h-3" /> WhatsApp
+                        </label>
+                        <input 
+                            required
+                            type="tel"
+                            placeholder="Ej: +593 99 999 9999"
+                            value={whatsapp}
+                            onChange={e => setWhatsapp(e.target.value)}
+                            className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-bold placeholder:text-gray-700"
+                        />
+                    </div>
                 </div>
 
                 {/* Fields: Country & City (2-column layout) */}

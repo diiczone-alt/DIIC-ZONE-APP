@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X, MapPin, Sparkles, Zap, Stethoscope, Network, Target, Globe, Calendar, HardDrive } from 'lucide-react';
+import { User, Lock, Bell, CreditCard, Save, Camera, Mail, Phone, Shield, X, MapPin, Sparkles, Zap, Stethoscope, Network, Target, Globe, Calendar, HardDrive, Key, Check, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
@@ -54,6 +54,13 @@ export default function ClientAccountSettings({ clientId }) {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [confirmEmail, setConfirmEmail] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Security & Login Credentials state
+    const [newEmail, setNewEmail] = useState('');
+    const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
     useEffect(() => {
         if (searchParams.get('upgrade') === 'crm') {
@@ -188,6 +195,82 @@ export default function ClientAccountSettings({ clientId }) {
         } finally {
             setIsDeleting(false);
             setIsDeleteModalOpen(false);
+        }
+    };
+
+    const handleUpdateEmail = async (e) => {
+        if (e) e.preventDefault();
+        const trimmed = (newEmail || '').trim().toLowerCase();
+        if (!trimmed || !trimmed.includes('@')) {
+            toast.error("Por favor ingresa un correo electrónico válido.");
+            return;
+        }
+
+        const currentEmail = (user?.email || profileData.email || '').trim().toLowerCase();
+        if (trimmed === currentEmail) {
+            toast.error("El nuevo correo debe ser diferente al correo actual.");
+            return;
+        }
+
+        setIsUpdatingEmail(true);
+        const toastId = toast.loading("Actualizando correo electrónico...");
+        try {
+            const { data, error } = await supabase.auth.updateUser({
+                email: trimmed
+            });
+
+            if (error) throw error;
+
+            // Update in profiles table if user is logged in
+            if (user?.id) {
+                await supabase.from('profiles').update({ email: trimmed }).eq('id', user.id);
+            }
+            
+            // Update in clients table if linked
+            const targetClientId = clientId || searchParams.get('client') || user?.client_id;
+            if (targetClientId) {
+                await supabase.from('clients').update({ email: trimmed }).eq('id', targetClientId);
+            }
+
+            setProfileData(prev => ({ ...prev, email: trimmed }));
+            setNewEmail('');
+            toast.success("¡Solicitud enviada! Revisa la bandeja de entrada de tu nuevo correo para confirmar el cambio.", { id: toastId, duration: 6000 });
+        } catch (err) {
+            console.error("Error updating email:", err);
+            toast.error("Error al actualizar correo: " + (err.message || err), { id: toastId });
+        } finally {
+            setIsUpdatingEmail(false);
+        }
+    };
+
+    const handleUpdatePassword = async (e) => {
+        if (e) e.preventDefault();
+        if (!newPassword || newPassword.length < 6) {
+            toast.error("La nueva contraseña debe tener al menos 6 caracteres.");
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            toast.error("Las contraseñas no coinciden.");
+            return;
+        }
+
+        setIsUpdatingPassword(true);
+        const toastId = toast.loading("Actualizando contraseña...");
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+
+            if (error) throw error;
+
+            toast.success("Contraseña actualizada exitosamente.", { id: toastId });
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (err) {
+            console.error("Error updating password:", err);
+            toast.error("Error al actualizar contraseña: " + (err.message || err), { id: toastId });
+        } finally {
+            setIsUpdatingPassword(false);
         }
     };
 
@@ -631,13 +714,25 @@ export default function ClientAccountSettings({ clientId }) {
                                 icon={Shield} 
                                 placeholder="Ej: Dra. Jessica Rey"
                             />
-                            <InputField 
-                                label="Correo Electrónico" 
-                                value={profileData.email} 
-                                type="email" 
-                                icon={Mail} 
-                                readOnly={true}
-                            />
+                            <div className="space-y-1">
+                                <InputField 
+                                    label="Correo Electrónico" 
+                                    value={profileData.email} 
+                                    type="email" 
+                                    icon={Mail} 
+                                    readOnly={true}
+                                />
+                                <div className="flex items-center justify-between px-1 pt-1 text-[11px] text-gray-500">
+                                    <span>Correo principal de acceso</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveSection('security')}
+                                        className="text-indigo-400 hover:text-indigo-300 font-bold transition-colors underline cursor-pointer"
+                                    >
+                                        Cambiar correo en Seguridad →
+                                    </button>
+                                </div>
+                            </div>
                             <InputField 
                                 label="Teléfono / WhatsApp" 
                                 value={profileData.phone} 
@@ -1122,18 +1217,111 @@ export default function ClientAccountSettings({ clientId }) {
                 {activeSection === 'security' && (
                     <div className="space-y-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="border-b border-white/5 pb-6">
-                            <h2 className="text-2xl font-bold text-white mb-2">Seguridad</h2>
-                            <p className="text-gray-400 text-sm">Protege tu cuenta y gestiona tus credenciales.</p>
+                            <h2 className="text-2xl font-bold text-white mb-2">Seguridad y Credenciales</h2>
+                            <p className="text-gray-400 text-sm">Gestiona tu correo electrónico de acceso, contraseñas y sesiones activas.</p>
                         </div>
 
-                        <div className="space-y-6 max-w-lg">
-                            <InputField label="Contraseña Actual" type="password" placeholder="••••••••••••" icon={Lock} />
-                            <div className="grid grid-cols-2 gap-4">
-                                <InputField label="Nueva Contraseña" type="password" placeholder="••••••••••••" icon={Lock} />
-                                <InputField label="Confirmar Contraseña" type="password" placeholder="••••••••••••" icon={Lock} />
+                        {/* Email Update Card */}
+                        <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                                    <Mail className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-bold text-base">Correo Electrónico de Inicio de Sesión</h3>
+                                    <p className="text-xs text-gray-400">Este es el correo que utilizas para acceder a tu plataforma.</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Correo Actual</label>
+                                    <div className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-mono select-all">
+                                        <Mail className="w-4 h-4 text-gray-500" />
+                                        <span>{user?.email || profileData.email || 'No especificado'}</span>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleUpdateEmail} className="space-y-4">
+                                    <InputField 
+                                        label="Nuevo Correo Electrónico" 
+                                        type="email" 
+                                        placeholder="ingresa-tu-nuevo-correo@ejemplo.com" 
+                                        value={newEmail}
+                                        onChange={(e) => setNewEmail(e.target.value)}
+                                        icon={Mail} 
+                                    />
+                                    <div className="flex items-center justify-between pt-2">
+                                        <p className="text-[11px] text-gray-400 max-w-sm">
+                                            ℹ️ Se enviará un enlace de verificación a tu nuevo correo para confirmar el cambio.
+                                        </p>
+                                        <button
+                                            type="submit"
+                                            disabled={isUpdatingEmail || !newEmail.trim()}
+                                            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center gap-2 active:scale-95"
+                                        >
+                                            {isUpdatingEmail ? (
+                                                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            ) : (
+                                                <Save className="w-3.5 h-3.5" />
+                                            )}
+                                            {isUpdatingEmail ? 'Guardando...' : 'Actualizar Correo'}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
 
+                        {/* Password Update Card */}
+                        <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                    <Key className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-bold text-base">Actualizar Contraseña</h3>
+                                    <p className="text-xs text-gray-400">Cambia tu contraseña para mantener protegida tu cuenta.</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleUpdatePassword} className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <InputField 
+                                        label="Nueva Contraseña" 
+                                        type="password" 
+                                        placeholder="•••••••••••• (mínimo 6 caracteres)" 
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        icon={Lock} 
+                                    />
+                                    <InputField 
+                                        label="Confirmar Contraseña" 
+                                        type="password" 
+                                        placeholder="Repite la nueva contraseña" 
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        icon={Lock} 
+                                    />
+                                </div>
+
+                                <div className="flex justify-end pt-2">
+                                    <button
+                                        type="submit"
+                                        disabled={isUpdatingPassword || !newPassword || !confirmPassword}
+                                        className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2 active:scale-95"
+                                    >
+                                        {isUpdatingPassword ? (
+                                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        ) : (
+                                            <Lock className="w-3.5 h-3.5" />
+                                        )}
+                                        {isUpdatingPassword ? 'Actualizando...' : 'Cambiar Contraseña'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Active Devices */}
                         <div className="pt-6 border-t border-white/5">
                             <h3 className="text-white font-bold mb-4">Dispositivos Activos</h3>
                             <div className="bg-white/5 rounded-xl p-4 flex items-center justify-between border border-white/5">
@@ -1142,10 +1330,10 @@ export default function ClientAccountSettings({ clientId }) {
                                         <Shield className="w-5 h-5 text-emerald-400" />
                                     </div>
                                     <div>
-                                        <h4 className="text-white font-bold text-sm">Windows PC - Chrome</h4>
+                                        <h4 className="text-white font-bold text-sm">Sesión Actual</h4>
                                         <p className="text-xs text-gray-400 flex items-center gap-2">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                            Activo ahora • {user?.user_metadata?.city || 'Santo Domingo'}
+                                            Activo ahora • {profileData.location || user?.user_metadata?.city || 'Santo Domingo'}
                                         </p>
                                     </div>
                                 </div>
