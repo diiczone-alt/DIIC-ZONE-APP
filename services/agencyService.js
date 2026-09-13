@@ -223,6 +223,31 @@ export const agencyService = {
         }
     },
 
+    getClientsByCM: async (cmName) => {
+        if (!cmName) return [];
+        try {
+            const allClients = await agencyService.getClients();
+            if (!Array.isArray(allClients)) return [];
+            const cleanName = (cmName || '').trim().toLowerCase();
+            return allClients.filter(c => c && (c.cm || '').trim().toLowerCase() === cleanName);
+        } catch (error) {
+            console.error("Error in getClientsByCM:", error);
+            return [];
+        }
+    },
+
+    getTeamByLead: async (leadId) => {
+        if (!leadId) return [];
+        try {
+            const team = await agencyService.getTeam();
+            if (!Array.isArray(team)) return [];
+            return team.filter(m => m && m.squad_lead_id === leadId);
+        } catch (error) {
+            console.error("Error in getTeamByLead:", error);
+            return [];
+        }
+    },
+
     getClientById: async (id) => {
         const timestamp = new Date().toLocaleTimeString();
         console.log(`🚀 [${timestamp}] Service: Fetching Client ${id}...`);

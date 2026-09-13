@@ -78,23 +78,27 @@ export default function CMWorkstationLayout() {
     }, [user]);
 
     useEffect(() => {
-        const tab = searchParams.get('tab');
+        const tab = searchParams?.get('tab');
         if (tab) setActiveTab(tab);
         
         if (user) {
             if (user.full_name) {
                 // 1. Instant Load from Cache
-                const cachedClients = localStorage.getItem('diic_clients');
+                const cachedClients = typeof window !== 'undefined' ? localStorage.getItem('diic_clients') : null;
                 if (cachedClients) {
                     try {
                         const parsed = JSON.parse(cachedClients);
-                        // Filter for this CM
-                        const myClients = parsed.filter(c => c.cm === user.full_name);
-                        if (myClients.length > 0) {
-                            setClients(myClients);
-                            setLoading(false);
+                        if (Array.isArray(parsed)) {
+                            // Filter for this CM
+                            const myClients = parsed.filter(c => c && (c.cm || '').trim().toLowerCase() === (user.full_name || '').trim().toLowerCase());
+                            if (myClients.length > 0) {
+                                setClients(myClients);
+                                setLoading(false);
+                            }
                         }
-                    } catch(e) {}
+                    } catch(e) {
+                        console.warn("Error parsing cached clients:", e);
+                    }
                 }
 
                 fetchClients(!!cachedClients);
@@ -102,21 +106,24 @@ export default function CMWorkstationLayout() {
 
                 // 2. Realtime Sync
                 setIsHQLive(true);
-                const cmChannel = supabase
-                    .channel('cm-sync-' + user.id)
-                    .on('postgres_changes', { 
-                        event: '*', 
-                        schema: 'public', 
-                        table: 'clients',
-                        filter: `cm=eq.${user.full_name}`
-                    }, () => fetchClients(true))
-                    .subscribe((status) => {
-                        setIsHQLive(status === 'SUBSCRIBED');
-                    });
+                try {
+                    const cmChannel = supabase
+                        .channel('cm-sync-' + (user.id || 'anonymous'))
+                        .on('postgres_changes', { 
+                            event: '*', 
+                            schema: 'public', 
+                            table: 'clients'
+                        }, () => fetchClients(true))
+                        .subscribe((status) => {
+                            setIsHQLive(status === 'SUBSCRIBED');
+                        });
 
-                return () => {
-                    supabase.removeChannel(cmChannel);
-                };
+                    return () => {
+                        supabase.removeChannel(cmChannel);
+                    };
+                } catch (err) {
+                    console.error("Realtime sync setup error:", err);
+                }
             } else {
                 setLoading(false);
             }
@@ -124,10 +131,11 @@ export default function CMWorkstationLayout() {
     }, [searchParams, user]);
 
     const fetchSquad = async (teamId) => {
+        if (!teamId) return;
         setLoadingSquad(true);
         try {
             const data = await agencyService.getTeamByLead(teamId);
-            if (data) setSquad(data);
+            if (Array.isArray(data)) setSquad(data);
         } catch (err) {
             console.error('Error fetching squad:', err);
         } finally {
@@ -136,6 +144,7 @@ export default function CMWorkstationLayout() {
     };
 
     const fetchClientTasks = async (clientId) => {
+        if (!clientId) return;
         setLoadingTasks(true);
         try {
             const { data, error } = await supabase
@@ -143,7 +152,7 @@ export default function CMWorkstationLayout() {
                 .select('*')
                 .eq('client', clientId);
             
-            if (data) setClientTasks(data);
+            if (data && Array.isArray(data)) setClientTasks(data);
         } catch (err) {
             console.error('Error fetching client tasks:', err);
         } finally {
@@ -152,29 +161,42 @@ export default function CMWorkstationLayout() {
     };
 
     useEffect(() => {
-        if (selectedClient) {
+        if (selectedClient && selectedClient.id) {
             fetchClientTasks(selectedClient.id);
         }
     }, [selectedClient]);
 
     const fetchClients = async (isBackground = false) => {
-        if (!user?.full_name) return;
+        if (!user?.full_name) {
+            setLoading(false);
+            setIsSyncing(false);
+            return;
+        }
         if (!isBackground) setLoading(true);
         setIsSyncing(true);
         
         try {
             const data = await agencyService.getClientsByCM(user.full_name);
-            if (data && data.length > 0) {
+            if (Array.isArray(data) && data.length > 0) {
                 setClients(data);
-                localStorage.setItem('diic_clients', JSON.stringify(data));
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('diic_clients', JSON.stringify(data));
+                }
             } else {
                 const allClients = await agencyService.getClients();
-                const filtered = allClients.filter(c => c.cm === user.full_name);
-                setClients(filtered);
-                localStorage.setItem('diic_clients', JSON.stringify(filtered));
+                if (Array.isArray(allClients)) {
+                    const filtered = allClients.filter(c => c && (c.cm || '').trim().toLowerCase() === (user.full_name || '').trim().toLowerCase());
+                    setClients(filtered);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('diic_clients', JSON.stringify(filtered));
+                    }
+                } else {
+                    setClients([]);
+                }
             }
         } catch (err) {
             console.error('Error fetching clients:', err);
+            setClients([]);
         } finally {
             setLoading(false);
             setIsSyncing(false);
@@ -2545,46 +2567,53 @@ function CMSettingsClients({ clients, onSelectClient, onNavigateTab, loading, us
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {clients.map(client => (
-                    <motion.div
-                        key={client.id}
-                        whileHover={{ y: -5 }}
-                        onClick={() => onSelectClient(client)}
-                        className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 cursor-pointer group hover:border-cyan-500/30 transition-all shadow-2xl relative overflow-hidden"
-                    >
-                        <div className={`absolute top-0 right-0 px-6 py-2 rounded-bl-3xl text-[10px] font-bold tracking-widest uppercase ${client.priority === 'ALTA' ? 'bg-red-500/10 text-red-500' :
-                            client.priority === 'MEDIA' ? 'bg-orange-500/10 text-orange-500' :
-                            'bg-gray-500/10 text-gray-500'
-                            }`}>
-                            Prioridad {client.priority}
-                        </div>
-
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white text-2xl font-bold mb-6 shadow-lg shadow-cyan-500/20 group-hover:scale-110 transition-transform">
-                            {client.name.charAt(0)}
-                        </div>
-
-                        <h3 className="text-xl font-bold text-white mb-1">{client.name}</h3>
-                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${(client.status === 'active' || client.status === 'trial' || client.status === 'ONBOARDING_COMPLETED') ? 'text-emerald-400' : 'text-gray-500'}`}>
-                            ● {(client.status === 'active' || client.status === 'trial' || client.status === 'ONBOARDING_COMPLETED') ? 'Activo' : 'En Pausa'}
-                        </p>
-                        <p className="text-[9px] text-cyan-400/60 font-black uppercase tracking-widest mb-6 italic">{client.plan || 'Sin Plan Asignado'}</p>
-
-                        <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/5">
-                            <div>
-                                <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Archivos</p>
-                                <p className="text-white font-bold">{client.projects || 0}</p>
+                {Array.isArray(clients) && clients.filter(Boolean).map(client => {
+                    const clientName = client?.name || 'Empresa';
+                    const initial = clientName.charAt(0).toUpperCase();
+                    const status = (client?.status || '').toLowerCase();
+                    const isActive = status === 'active' || status === 'trial' || status === 'onboarding_completed' || status === 'activo';
+                    
+                    return (
+                        <motion.div
+                            key={client.id || Math.random()}
+                            whileHover={{ y: -5 }}
+                            onClick={() => onSelectClient(client)}
+                            className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 cursor-pointer group hover:border-cyan-500/30 transition-all shadow-2xl relative overflow-hidden"
+                        >
+                            <div className={`absolute top-0 right-0 px-6 py-2 rounded-bl-3xl text-[10px] font-bold tracking-widest uppercase ${client.priority === 'ALTA' ? 'bg-red-500/10 text-red-500' :
+                                client.priority === 'MEDIA' ? 'bg-orange-500/10 text-orange-500' :
+                                'bg-gray-500/10 text-gray-500'
+                                }`}>
+                                Prioridad {client.priority || 'NORMAL'}
                             </div>
-                            <div>
-                                <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Publicación</p>
-                                <p className="text-white font-bold text-xs truncate">{client.nextPost || 'Pendiente'}</p>
-                            </div>
-                        </div>
 
-                        <div className="mt-8 flex items-center justify-between text-cyan-400 font-bold text-xs group-hover:translate-x-2 transition-all">
-                            Gestionar Estrategia <ChevronRightIcon className="w-4 h-4" />
-                        </div>
-                    </motion.div>
-                ))}
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white text-2xl font-bold mb-6 shadow-lg shadow-cyan-500/20 group-hover:scale-110 transition-transform">
+                                {initial}
+                            </div>
+
+                            <h3 className="text-xl font-bold text-white mb-1">{clientName}</h3>
+                            <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${isActive ? 'text-emerald-400' : 'text-gray-500'}`}>
+                                ● {isActive ? 'Activo' : 'En Pausa'}
+                            </p>
+                            <p className="text-[9px] text-cyan-400/60 font-black uppercase tracking-widest mb-6 italic">{client.plan || client.type || 'Plan Asignado'}</p>
+
+                            <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/5">
+                                <div>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Archivos</p>
+                                    <p className="text-white font-bold">{client.projects || 0}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Publicación</p>
+                                    <p className="text-white font-bold text-xs truncate">{client.nextPost || 'Pendiente'}</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex items-center justify-between text-cyan-400 font-bold text-xs group-hover:translate-x-2 transition-all">
+                                Gestionar Estrategia <ChevronRightIcon className="w-4 h-4" />
+                            </div>
+                        </motion.div>
+                    );
+                })}
             </div>
         </div>
     );
