@@ -20,6 +20,7 @@ import { isCloudConnected, supabase } from '@/lib/supabase';
 import PremiumDropdown from '@/components/shared/PremiumDropdown';
 import { ECUADOR_CITIES } from '@/lib/constants';
 import SquadCanvasBoard from '@/components/team/SquadCanvasBoard';
+import BrandsMatrixBoard from '@/components/team/BrandsMatrixBoard';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import dynamic from 'next/dynamic';
 
@@ -434,11 +435,20 @@ export default function HQTeamPage() {
                 </div>
                 <div className="flex gap-4">
                     <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1 h-fit">
-                        <button onClick={() => setViewMode('squads')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'squads' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Escuadrones</button>
-                        <button onClick={() => setViewMode('departments')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'departments' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Departamentos</button>
+                        <button onClick={() => setViewMode('squads')} className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'squads' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Escuadrones</button>
+                        <button 
+                            onClick={() => setViewMode('brands_matrix')} 
+                            className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'brands_matrix' ? 'bg-cyan-500 text-black shadow-lg font-black' : 'text-gray-500 hover:text-white'}`}
+                        >
+                            <span>Equipo & Marcas</span>
+                            <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-mono ${viewMode === 'brands_matrix' ? 'bg-black/20 text-black font-bold' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'}`}>
+                                5-7
+                            </span>
+                        </button>
+                        <button onClick={() => setViewMode('departments')} className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'departments' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Departamentos</button>
                         <button 
                             onClick={() => setViewMode('waiting')} 
-                            className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'waiting' ? 'bg-amber-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                            className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'waiting' ? 'bg-amber-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
                         >
                             <span>Sala de Espera</span>
                             {pendingMembers.length > 0 && (
@@ -447,7 +457,7 @@ export default function HQTeamPage() {
                                 </span>
                             )}
                         </button>
-                        <button onClick={() => setViewMode('map')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'map' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Mapa</button>
+                        <button onClick={() => setViewMode('map')} className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'map' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Mapa</button>
                     </div>
                     <button 
                         onClick={() => setIsAddModalOpen(true)}
@@ -476,6 +486,8 @@ export default function HQTeamPage() {
                     <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-32 pb-40">
                         {viewMode === 'squads' ? (
                             <SquadCanvasBoard team={team} allClients={clients} onAudit={openAudit} refreshTeam={() => fetchData(true)} />
+                        ) : viewMode === 'brands_matrix' ? (
+                            <BrandsMatrixBoard team={team} allClients={clients} onAudit={openAudit} refreshTeam={() => fetchData(true)} />
                         ) : viewMode === 'waiting' ? (
                             <div className="space-y-8">
                                 <div className="p-8 rounded-[3rem] bg-gradient-to-r from-amber-950/30 via-[#0A0A18] to-indigo-950/20 border border-amber-500/30">
@@ -1234,7 +1246,7 @@ function TeamAuditModal({ member, team = [], allClients = [], onlineEmails = new
                                         <div className="md:col-span-2">
                                             <CardInput label="Nombre de Talento" value={formData.name} onChange={(v) => setFormData({...formData, name: v})} icon={Database} />
                                         </div>
-                                        <CardInput label="Cargo Oficial" value={formData.role} onChange={(v) => setFormData({...formData, role: v})} icon={Briefcase} isSelect options={['Editor de Video', 'Community Manager', 'Filmmaker', 'Diseñador', 'Estratega', 'Director General']} />
+                                        <CardInput label="Cargo Oficial" value={formData.role} onChange={(v) => setFormData({...formData, role: v})} icon={Briefcase} isSelect options={['Editor de Video', 'Community Manager', 'Coordinadora de Contenido', 'Filmmaker', 'Diseñador', 'Estratega', 'Director General', 'Ingeniería de Audio', 'Fotografía', 'Modelos', 'Desarrollo Web']} />
                                         <CardInput label="Correo Electrónico" value={formData.email || ''} onChange={(v) => setFormData({...formData, email: v})} icon={Mail} type="email" />
                                         <CardInput label="Salario Base (USD)" value={formData.salary || ''} onChange={(v) => setFormData({...formData, salary: v})} icon={DollarSign} type="number" />
                                         <CardInput label="WhatsApp" value={formData.whatsapp || ''} onChange={(v) => setFormData({...formData, whatsapp: v})} icon={MessageSquare} />
@@ -1262,9 +1274,9 @@ function TeamAuditModal({ member, team = [], allClients = [], onlineEmails = new
                                     <div className="space-y-8">
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center px-4">
-                                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Marcas Designadas ({assignedBrands.length}/6)</h4>
-                                                <span className={`text-[10px] font-black ${assignedBrands.length >= 6 ? 'text-rose-500' : assignedBrands.length >= 5 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                                    {assignedBrands.length >= 6 ? '🔴 Sobrecargado' : assignedBrands.length >= 5 ? '🟡 Límite' : '🟢 Óptimo'}
+                                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Marcas Designadas ({assignedBrands.length}/7)</h4>
+                                                <span className={`text-[10px] font-black ${assignedBrands.length > 7 ? 'text-rose-500' : assignedBrands.length >= 5 ? 'text-emerald-400' : 'text-cyan-400'}`}>
+                                                    {assignedBrands.length > 7 ? '🔴 Sobrecargado (>7)' : assignedBrands.length >= 5 ? '🟢 Rango Óptimo (5-7)' : '⚡ Baja Carga (1-4)'}
                                                 </span>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1504,6 +1516,7 @@ function AddMemberModal({ newMember, setNewMember, onClose, onSubmit, isSubmitti
                             options={[
                                 { value: 'Editor de Video', label: 'Editor de Video' },
                                 { value: 'Community Manager', label: 'Community Manager' },
+                                { value: 'Coordinadora de Contenido', label: 'Coordinadora de Contenido' },
                                 { value: 'Diseñador', label: 'Diseñador' },
                                 { value: 'Filmmaker', label: 'Filmmaker' },
                                 { value: 'Estratega', label: 'Estratega' },
