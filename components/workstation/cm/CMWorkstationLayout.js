@@ -12,7 +12,8 @@ import {
     GraduationCap, Award, TrendingUp, Target, Brain, Sparkles, PenTool, Edit3,
     ChevronLeft as ChevronLeftIcon, Layers, MapPin, Activity,
     User, Cake, Briefcase, Link2, Phone, Compass, Info,
-    Camera, Copy, RefreshCw, Key, LogOut, CheckCheck
+    Camera, Copy, RefreshCw, Key, LogOut, CheckCheck,
+    BookOpen, Wheat, Stethoscope, UtensilsCrossed, Building2, Shirt, Dumbbell, Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -27,6 +28,7 @@ import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
 import { aiService } from '@/services/aiService';
 import NewProjectWizard from '../../projects/NewProjectWizard';
+import CMGuidePlaybook from './CMGuidePlaybook';
 
 export default function CMWorkstationLayout() {
     const searchParams = useSearchParams();
@@ -226,9 +228,12 @@ export default function CMWorkstationLayout() {
         { id: 'creative', label: 'Estudio Creativo', icon: Sparkles },
         { id: 'team', label: 'Equipo Asignado', icon: Palette },
         { id: 'reports', label: 'Generador de Reportes', icon: FileText },
+        { id: 'guide', label: 'Guía & Playbooks', icon: BookOpen },
     ] : [
         { id: 'dashboard_cm', label: 'Dashboard CM', icon: LayoutDashboard },
         { id: 'clients', label: 'Empresas', icon: Users },
+        { id: 'guide', label: 'Guía & Playbooks', icon: BookOpen },
+        { id: 'profile', label: 'Mi Perfil & Nichos', icon: User },
     ];
 
     if (!loading && (!user || (user.role !== 'COMMUNITY' && user.role !== 'CM'))) {
@@ -384,7 +389,8 @@ export default function CMWorkstationLayout() {
 
 function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead, searchParams, onProfileUpdate) {
     if (!selectedClient) {
-        if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} />;
+        if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} onNavigateTab={(targetTab) => setActiveTab(targetTab)} />;
+        if (tab === 'guide') return <CMGuidePlaybook user={user} onCompleteCertification={() => {}} />;
         if (tab === 'academy') return <CMAcademy user={user} />;
         if (tab === 'growth') return <CMGrowth user={user} />;
         if (tab === 'tasks') return <GlobalTasksView tasks={globalTasks} loading={loadingTasks} onSelectClient={(c) => { setSelectedClient(c); setActiveTab('dashboard'); }} />;
@@ -401,6 +407,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
                     setSelectedClient(client); 
                     setActiveTab('dashboard'); 
                 }} 
+                onNavigateTab={(targetTab) => setActiveTab(targetTab)}
             />
         );
     }
@@ -416,6 +423,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'creative': return <CreativeStudio isSubcomponent={true} />;
         case 'team': return <TeamView client={selectedClient} tasks={clientTasks} squad={squad} />;
         case 'reports': return <CMReports client={selectedClient} />;
+        case 'guide': return <CMGuidePlaybook user={user} onCompleteCertification={() => {}} />;
         case 'profile': return <CMProfileView user={user} onProfileUpdate={onProfileUpdate} />;
         case 'academy': return <CMAcademy user={user} />;
         case 'growth': return <CMGrowth user={user} />;
@@ -2356,7 +2364,7 @@ function ReportPreviewModal({ report, stats, client, onClose }) {
     );
 }
 
-function CMSettingsClients({ clients, onSelectClient, loading, userMissingProfile }) {
+function CMSettingsClients({ clients, onSelectClient, onNavigateTab, loading, userMissingProfile }) {
     const { user } = useAuth();
     if (loading && clients.length === 0) return (
         <div className="h-full flex flex-col items-center justify-center gap-6">
@@ -2377,29 +2385,158 @@ function CMSettingsClients({ clients, onSelectClient, loading, userMissingProfil
                 <ShieldCheck className="w-10 h-10" />
             </div>
             <div>
-                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">ERROR DE SINCRONIZACIÓN</h3>
-                <p className="text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
-                    Tu cuenta no tiene un **Nombre de Perfil** configurado. El sistema no puede asignar empresas sin una identidad válida.
-                    <br /><br />
-                    <span className="text-red-400 font-bold">ACCIÓN REQUERIDA:</span> Contacta con el Administrador para activar el perfil y vincular tus proyectos.
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">IDENTIDAD INCOMPLETA</h3>
+                <p className="text-sm text-gray-500 max-w-md mx-auto leading-relaxed mb-6">
+                    Tu cuenta no tiene un **Nombre de Perfil** configurado. Completa tu perfil para que la Dirección General pueda identificarte y asignarte marcas.
                 </p>
+                <button
+                    onClick={() => onNavigateTab && onNavigateTab('profile')}
+                    className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black uppercase text-xs tracking-widest rounded-2xl transition-all shadow-xl shadow-cyan-600/20"
+                >
+                    Configurar Mi Perfil Ahora
+                </button>
             </div>
         </div>
     );
 
-    if (clients.length === 0) return (
-        <div className="h-full flex flex-col items-center justify-center gap-8 p-10 bg-white/[0.02] border border-white/5 rounded-[3rem] text-center">
-            <div className="w-20 h-20 rounded-[2rem] bg-white/5 flex items-center justify-center text-gray-600">
-                <Users className="w-10 h-10" />
+    if (clients.length === 0) {
+        const quizScore = user?.onboarding_quiz_score || 0;
+        const isCertified = quizScore >= 80;
+        const directorPhone = '593988888888'; // HQ Contact
+        const waMessage = encodeURIComponent(`Hola Dirección HQ DIIC ZONE, soy el Estratega ${user?.full_name || ''}. He completado mi perfil y el Playbook de Inducción. Solicito la revisión y asignación de mis primeras marcas.`);
+        const waUrl = `https://wa.me/${directorPhone}?text=${waMessage}`;
+
+        return (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
+                {/* Hero Header Sala de Espera */}
+                <div className="relative rounded-[3rem] bg-gradient-to-r from-[#0C0C1F] via-[#10102E] to-[#0A0A18] border border-amber-500/30 p-8 md:p-12 overflow-hidden shadow-2xl">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 blur-[100px] rounded-full pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-80 h-80 bg-cyan-500/10 blur-[90px] rounded-full pointer-events-none" />
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <span className="px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" /> SALA DE ESPERA & INDUCCIÓN HQ
+                                </span>
+                                {isCertified ? (
+                                    <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                        <Trophy className="w-3 h-3 text-emerald-400" /> Certificado {quizScore}%
+                                    </span>
+                                ) : (
+                                    <span className="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-mono text-[10px] font-black uppercase tracking-widest">
+                                        Fase 01: Inducción
+                                    </span>
+                                )}
+                            </div>
+                            <h2 className="text-3xl md:text-5xl font-black text-white uppercase italic tracking-tighter">
+                                En Espera de <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-cyan-400">Asignación de Marcas</span>
+                            </h2>
+                            <p className="text-gray-400 text-sm max-w-2xl font-medium leading-relaxed">
+                                ¡Bienvenido a DIIC ZONE, <strong className="text-white">{user?.full_name || 'Estratega'}</strong>! Tu cuenta está activa en proceso de inducción. Completa los siguientes pasos para que la Dirección General te apruebe y asigne las marcas ideales según tus nichos de dominio.
+                            </p>
+                        </div>
+
+                        <a 
+                            href={waUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-xs tracking-widest rounded-2xl transition-all shadow-xl shadow-emerald-600/20 flex items-center gap-3 shrink-0"
+                        >
+                            <Phone className="w-4 h-4" /> Solicitar Activación HQ
+                        </a>
+                    </div>
+                </div>
+
+                {/* 4 Interactive Induction Step Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Step 1: Profile & Niches */}
+                    <div className="p-8 rounded-[2.5rem] bg-[#0E0E1C] border border-white/5 space-y-5 flex flex-col justify-between group hover:border-cyan-500/30 transition-all shadow-xl">
+                        <div className="space-y-3">
+                            <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                                <User className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black text-cyan-400 font-mono uppercase tracking-widest">PASO 01</span>
+                            <h3 className="text-lg font-black text-white uppercase italic">Perfil & Nichos Fuertes</h3>
+                            <p className="text-gray-400 text-xs leading-relaxed font-medium">
+                                Declara tus conocimientos específicos (Agropecuario, Salud, Gastronomía, Moda, etc.) y sube tu CV y portafolio.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => onNavigateTab && onNavigateTab('profile')}
+                            className="w-full py-3.5 rounded-xl bg-white/5 hover:bg-cyan-600 hover:text-white text-cyan-400 font-black uppercase text-[10px] tracking-widest border border-cyan-500/20 transition-all flex items-center justify-center gap-2"
+                        >
+                            Configurar Perfil <ChevronRightIcon className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+
+                    {/* Step 2: Playbooks */}
+                    <div className="p-8 rounded-[2.5rem] bg-[#0E0E1C] border border-white/5 space-y-5 flex flex-col justify-between group hover:border-indigo-500/30 transition-all shadow-xl">
+                        <div className="space-y-3">
+                            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                <BookOpen className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black text-indigo-400 font-mono uppercase tracking-widest">PASO 02</span>
+                            <h3 className="text-lg font-black text-white uppercase italic">Playbooks por Nicho</h3>
+                            <p className="text-gray-400 text-xs leading-relaxed font-medium">
+                                Domina la metodología semanal de DIIC ZONE, los ganchos de alto retorno y la regla de la Golden Hour.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => onNavigateTab && onNavigateTab('guide')}
+                            className="w-full py-3.5 rounded-xl bg-white/5 hover:bg-indigo-600 hover:text-white text-indigo-400 font-black uppercase text-[10px] tracking-widest border border-indigo-500/20 transition-all flex items-center justify-center gap-2"
+                        >
+                            Estudiar Guía <ChevronRightIcon className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+
+                    {/* Step 3: Certification Quiz */}
+                    <div className={`p-8 rounded-[2.5rem] bg-[#0E0E1C] border ${isCertified ? 'border-emerald-500/30' : 'border-white/5'} space-y-5 flex flex-col justify-between group hover:border-pink-500/30 transition-all shadow-xl`}>
+                        <div className="space-y-3">
+                            <div className={`w-12 h-12 rounded-2xl ${isCertified ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-pink-500/10 border border-pink-500/20 text-pink-400'} flex items-center justify-center`}>
+                                <Trophy className="w-6 h-6" />
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className={`text-[10px] font-black font-mono uppercase tracking-widest ${isCertified ? 'text-emerald-400' : 'text-pink-400'}`}>PASO 03</span>
+                                {isCertified && <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">APROBADO</span>}
+                            </div>
+                            <h3 className="text-lg font-black text-white uppercase italic">Certificación Rápida</h3>
+                            <p className="text-gray-400 text-xs leading-relaxed font-medium">
+                                Responde el cuestionario de 5 preguntas para validar que dominas el estándar de calidad de la agencia.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => onNavigateTab && onNavigateTab('guide')}
+                            className={`w-full py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest border transition-all flex items-center justify-center gap-2 ${
+                                isCertified 
+                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-600 hover:text-white' 
+                                    : 'bg-white/5 hover:bg-pink-600 hover:text-white text-pink-400 border-pink-500/20'
+                            }`}
+                        >
+                            {isCertified ? 'Ver Certificado' : 'Tomar Micro-Test'} <ChevronRightIcon className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+
+                    {/* Step 4: HQ Deployment */}
+                    <div className="p-8 rounded-[2.5rem] bg-[#0E0E1C] border border-white/5 space-y-5 flex flex-col justify-between group hover:border-emerald-500/30 transition-all shadow-xl">
+                        <div className="space-y-3">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                <ShieldCheck className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black text-emerald-400 font-mono uppercase tracking-widest">PASO 04</span>
+                            <h3 className="text-lg font-black text-white uppercase italic">Despliegue de Marcas</h3>
+                            <p className="text-gray-400 text-xs leading-relaxed font-medium">
+                                Una vez verificado, el Director en HQ vinculará tus marcas y esta pantalla se transformará en tu centro operativo.
+                            </p>
+                        </div>
+                        <div className="w-full py-3.5 rounded-xl bg-white/[0.02] border border-white/5 text-gray-500 font-bold uppercase text-[9px] tracking-widest text-center">
+                            Esperando Asignación HQ
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div>
-                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">SIN EMPRESAS ASIGNADAS</h3>
-                <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
-                    No tienes ninguna empresa vinculada a tu perfil de Estratega actualmente.
-                </p>
-            </div>
-        </div>
-    );
+        );
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -3171,6 +3308,8 @@ function CMProfileView({ user, onProfileUpdate }) {
     const [cvUrl, setCvUrl] = useState('');
     const [cvSummary, setCvSummary] = useState('');
     const [skills, setSkills] = useState('');
+    const [nicheAffinities, setNicheAffinities] = useState([]);
+    const [secondaryProfession, setSecondaryProfession] = useState('');
 
     // Delete flow
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -3244,6 +3383,10 @@ function CMProfileView({ user, onProfileUpdate }) {
                     setSkills(loadedSkills);
                 }
 
+                const loadedNiches = team?.niche_affinities || profile?.niche_affinities || [];
+                setNicheAffinities(Array.isArray(loadedNiches) ? loadedNiches : []);
+                setSecondaryProfession(team?.secondary_profession || profile?.secondary_profession || '');
+
                 if (onProfileUpdate) {
                     onProfileUpdate({ name: initialName, avatar_url: initialAvatar });
                 }
@@ -3256,6 +3399,16 @@ function CMProfileView({ user, onProfileUpdate }) {
 
         fetchProfileDetails();
     }, [user]);
+
+    const handleToggleNiche = (nicheName) => {
+        setNicheAffinities(prev => {
+            if (prev.includes(nicheName)) {
+                return prev.filter(n => n !== nicheName);
+            } else {
+                return [...prev, nicheName];
+            }
+        });
+    };
 
     const handleAddSkill = (skillTag) => {
         const currentList = skills.split(',').map(s => s.trim()).filter(Boolean);
@@ -3296,7 +3449,9 @@ function CMProfileView({ user, onProfileUpdate }) {
                     birth_date: cleanBirth,
                     specialty: specialty.trim(),
                     website: portfolioUrl.trim(),
-                    portfolio_url: portfolioUrl.trim()
+                    portfolio_url: portfolioUrl.trim(),
+                    niche_affinities: nicheAffinities,
+                    secondary_profession: secondaryProfession.trim()
                 };
 
                 const { error: profileUpdateErr } = await supabase
@@ -3325,7 +3480,9 @@ function CMProfileView({ user, onProfileUpdate }) {
                 availability: availability,
                 specialty: specialty.trim(),
                 portfolio_url: portfolioUrl.trim(),
-                website: portfolioUrl.trim()
+                website: portfolioUrl.trim(),
+                niche_affinities: nicheAffinities,
+                secondary_profession: secondaryProfession.trim()
             };
 
             if (teamData?.id) {
@@ -3867,6 +4024,72 @@ function CMProfileView({ user, onProfileUpdate }) {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Nichos de Afinidad (Smart Match) */}
+                            <div className="space-y-3 md:col-span-2 p-6 rounded-3xl bg-cyan-950/20 border border-cyan-500/30">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                    <label className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Wheat className="w-4 h-4 text-cyan-400" /> Nichos de Dominio & Conocimiento Especializado (Smart Match)
+                                    </label>
+                                    <span className="text-[10px] text-gray-400 font-mono">
+                                        {nicheAffinities.length} seleccionados
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-400 leading-relaxed">
+                                    Selecciona los sectores que dominas o entiendes en profundidad. El Director en HQ utilizará esta información para asignarte marcas compatibles:
+                                </p>
+                                <div className="flex flex-wrap gap-2.5 pt-2">
+                                    {[
+                                        { id: 'Agropecuario & Ganadería', icon: Wheat, color: 'text-amber-400 border-amber-500/30' },
+                                        { id: 'Salud & Médicos', icon: Stethoscope, color: 'text-cyan-400 border-cyan-500/30' },
+                                        { id: 'Gastronomía & Alimentos', icon: UtensilsCrossed, color: 'text-orange-400 border-orange-500/30' },
+                                        { id: 'Inmobiliaria & Construcción', icon: Building2, color: 'text-emerald-400 border-emerald-500/30' },
+                                        { id: 'Moda, Ropa & Belleza', icon: Shirt, color: 'text-pink-400 border-pink-500/30' },
+                                        { id: 'Servicios B2B & Legal', icon: Briefcase, color: 'text-indigo-400 border-indigo-500/30' },
+                                        { id: 'Fitness & Deportes', icon: Dumbbell, color: 'text-rose-400 border-rose-500/30' },
+                                        { id: 'Tecnología & E-commerce', icon: Zap, color: 'text-blue-400 border-blue-500/30' },
+                                        { id: 'Automotriz & Talleres', icon: Activity, color: 'text-red-400 border-red-500/30' },
+                                        { id: 'Educación & Cursos', icon: GraduationCap, color: 'text-teal-400 border-teal-500/30' }
+                                    ].map(n => {
+                                        const isSelected = nicheAffinities.includes(n.id);
+                                        const Icon = n.icon;
+                                        return (
+                                            <button
+                                                key={n.id}
+                                                type="button"
+                                                onClick={() => handleToggleNiche(n.id)}
+                                                className={`px-4 py-2.5 rounded-2xl border text-xs font-bold transition-all flex items-center gap-2 ${
+                                                    isSelected
+                                                        ? 'bg-cyan-500 text-black border-cyan-400 font-black shadow-lg shadow-cyan-500/20 scale-105'
+                                                        : 'bg-white/[0.03] border-white/10 text-gray-300 hover:border-white/30 hover:bg-white/5'
+                                                }`}
+                                            >
+                                                <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-black' : n.color.split(' ')[0]}`} />
+                                                <span>{n.id}</span>
+                                                {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Profesión Secundaria o Pasiones */}
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">
+                                    Profesión, Estudios Previos o Pasiones Adicionales
+                                </label>
+                                <div className="relative flex items-center">
+                                    <GraduationCap className="w-5 h-5 text-gray-500 absolute left-4" />
+                                    <input 
+                                        type="text"
+                                        value={secondaryProfession}
+                                        onChange={(e) => setSecondaryProfession(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 focus:bg-white/[0.05] transition-all font-medium"
+                                        placeholder="Ej: Ingeniero Agrónomo con experiencia en ganado / Egresado de Odontología / Chef aficionado..."
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500 italic pl-2">Esto ayuda al Director a saber exactamente qué tipo de marcas te apasiona manejar.</p>
+                            </div>
+
                             {/* Especialidad */}
                             <div className="space-y-2 md:col-span-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Especialidad / Enfoque Profesional</label>

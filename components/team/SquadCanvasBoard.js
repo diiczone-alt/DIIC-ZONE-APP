@@ -168,12 +168,16 @@ const MemberNode = ({ data, isConnectable }) => {
         return hash % 3 !== 0; // 66% online ratio
     }, [data.member]);
 
+    const isPending = data.member?.approval_status === 'pending_approval';
+    const niches = Array.isArray(data.member?.niche_affinities) ? data.member.niche_affinities : [];
+    const quizScore = data.member?.onboarding_quiz_score;
+
     return (
-        <div className={`relative w-[280px] bg-[#0A0A14]/90 backdrop-blur-xl border ${style.border} rounded-[2rem] p-6 flex flex-col shadow-2xl group transition-all duration-300`}>
+        <div className={`relative w-[280px] bg-[#0A0A14]/90 backdrop-blur-xl border ${isPending ? 'border-amber-500/50 shadow-[0_0_25px_rgba(245,158,11,0.2)]' : style.border} rounded-[2rem] p-6 flex flex-col shadow-2xl group transition-all duration-300`}>
             
             {/* Contenedor Interno para recortar las luces sin recortar los conectores (Handles) */}
             <div className="absolute inset-0 overflow-hidden rounded-[2rem] pointer-events-none">
-                 <div className={`absolute -top-10 -right-10 w-32 h-32 ${style.glow} blur-[50px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
+                 <div className={`absolute -top-10 -right-10 w-32 h-32 ${isPending ? 'bg-amber-500/20' : style.glow} blur-[50px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
             </div>
 
             {/* Top Handle: Entrada (Recibe instrucciones del lider) */}
@@ -185,29 +189,63 @@ const MemberNode = ({ data, isConnectable }) => {
             />
             <div className={`absolute -top-8 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase ${style.badgeText} tracking-widest opacity-0 group-hover:opacity-100 transition-opacity`}>RECEPTOR</div>
 
+            {/* Status Pill on Top if Pending */}
+            {isPending && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-30 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[8px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1 backdrop-blur-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                    SALA DE ESPERA
+                </div>
+            )}
+
             {/* Avatar & Identidad */}
-            <div className="flex flex-col items-center mb-6 pt-2 relative z-10">
+            <div className="flex flex-col items-center mb-4 pt-2 relative z-10">
                 <div className="relative">
-                    <div className={`w-16 h-16 rounded-[1.2rem] bg-gradient-to-tr ${style.gradient} p-0.5 shadow-2xl transition-transform duration-500`}>
+                    <div className={`w-16 h-16 rounded-[1.2rem] bg-gradient-to-tr ${isPending ? 'from-amber-500 to-orange-600' : style.gradient} p-0.5 shadow-2xl transition-transform duration-500`}>
                         <div className="w-full h-full rounded-[1.1rem] bg-[#050510] flex items-center justify-center text-2xl font-black text-white italic tracking-tighter">
                             {data.label ? data.label[0] : '?'}
                         </div>
                     </div>
                     {/* Status Dot */}
-                    <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-4 border-[#0A0A14] ${isOnline ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'}`} />
+                    <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-4 border-[#0A0A14] ${isPending ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' : isOnline ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'}`} />
                 </div>
-                <div className="text-center mt-4 w-full px-2">
-                    <h3 className="text-xl font-black text-white uppercase italic tracking-tighter leading-none truncate max-w-full" title={data.label || 'Talento'}>
+                <div className="text-center mt-3 w-full px-2">
+                    <h3 className="text-lg font-black text-white uppercase italic tracking-tighter leading-none truncate max-w-full" title={data.label || 'Talento'}>
                         {data.label || 'Talento'}
                     </h3>
-                    <p className={`text-[7px] font-black ${style.badgeText} uppercase tracking-[0.3em] mt-2 bg-white/5 py-1 px-3 rounded-full border border-white/5 inline-block`}>{data.role}</p>
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap mt-2">
+                        <p className={`text-[7px] font-black ${style.badgeText} uppercase tracking-[0.2em] bg-white/5 py-1 px-2.5 rounded-full border border-white/5 inline-block`}>{data.role}</p>
+                        {quizScore !== null && quizScore !== undefined && (
+                            <span className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-full border ${Number(quizScore) >= 80 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-400'}`}>
+                                Quiz {quizScore}%
+                            </span>
+                        )}
+                    </div>
+                    {data.member?.secondary_profession && (
+                        <p className="text-[8px] text-indigo-300/80 italic font-medium mt-1 truncate max-w-full px-1" title={data.member.secondary_profession}>
+                            ✨ {data.member.secondary_profession}
+                        </p>
+                    )}
                     {data.member?.email && (
-                        <p className="text-[9px] text-gray-500 group-hover:text-gray-400 transition-colors mt-2 select-all font-mono truncate max-w-full px-1" title={data.member.email}>
+                        <p className="text-[9px] text-gray-500 group-hover:text-gray-400 transition-colors mt-1 select-all font-mono truncate max-w-full px-1" title={data.member.email}>
                             {data.member.email}
                         </p>
                     )}
                 </div>
             </div>
+
+            {/* Niches Tags (if any) */}
+            {niches.length > 0 && (
+                <div className="flex flex-wrap items-center justify-center gap-1 mb-3 relative z-10 px-1">
+                    {niches.slice(0, 3).map((n, i) => (
+                        <span key={i} className="text-[7px] font-bold uppercase tracking-wider bg-white/[0.04] text-gray-300 border border-white/10 px-2 py-0.5 rounded-md truncate max-w-[80px]">
+                            {n}
+                        </span>
+                    ))}
+                    {niches.length > 3 && (
+                        <span className="text-[7px] font-bold text-gray-500">+{niches.length - 3}</span>
+                    )}
+                </div>
+            )}
 
             {/* Micro Stats */}
             <div className="grid grid-cols-2 gap-2 mb-4 relative z-10">
@@ -227,7 +265,7 @@ const MemberNode = ({ data, isConnectable }) => {
                     e.stopPropagation(); 
                     if(data.onAudit) data.onAudit(data.member); 
                 }} 
-                className="nodrag w-full py-3 rounded-xl bg-white/[0.02] border border-white/5 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 font-black uppercase text-[8px] tracking-[0.4em] transition-all relative z-10 backdrop-blur-md"
+                className="nodrag w-full py-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 font-black uppercase text-[8px] tracking-[0.4em] transition-all relative z-10 backdrop-blur-md"
             >
                 Ver Detalles
             </button>

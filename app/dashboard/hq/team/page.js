@@ -381,6 +381,15 @@ export default function HQTeamPage() {
         );
     };
 
+    const pendingMembers = useMemo(() => {
+        return team.filter(m => {
+            const isCM = (m.role || '').toLowerCase().includes('community manager') || (m.role || '').toLowerCase().includes('cm');
+            const isPendingStatus = (m.approval_status === 'pending_approval' || (m.status || '').toLowerCase().includes('pend'));
+            const hasNoBrands = isCM && !clients.some(c => c.cm === m.name);
+            return isPendingStatus || hasNoBrands;
+        });
+    }, [team, clients]);
+
     return (
         <div className="p-8 space-y-16 min-h-screen bg-[#05050A]">
             {/* Header */}
@@ -420,6 +429,17 @@ export default function HQTeamPage() {
                     <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1 h-fit">
                         <button onClick={() => setViewMode('squads')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'squads' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Escuadrones</button>
                         <button onClick={() => setViewMode('departments')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'departments' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Departamentos</button>
+                        <button 
+                            onClick={() => setViewMode('waiting')} 
+                            className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${viewMode === 'waiting' ? 'bg-amber-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                        >
+                            <span>Sala de Espera</span>
+                            {pendingMembers.length > 0 && (
+                                <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-mono text-[9px] border border-amber-400/30">
+                                    {pendingMembers.length}
+                                </span>
+                            )}
+                        </button>
                         <button onClick={() => setViewMode('map')} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'map' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>Mapa</button>
                     </div>
                     <button 
@@ -449,6 +469,38 @@ export default function HQTeamPage() {
                     <motion.div key={viewMode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-32 pb-40">
                         {viewMode === 'squads' ? (
                             <SquadCanvasBoard team={team} allClients={clients} onAudit={openAudit} refreshTeam={() => fetchData(true)} />
+                        ) : viewMode === 'waiting' ? (
+                            <div className="space-y-8">
+                                <div className="p-8 rounded-[3rem] bg-gradient-to-r from-amber-950/30 via-[#0A0A18] to-indigo-950/20 border border-amber-500/30">
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                        <div>
+                                            <span className="px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-2 mb-3">
+                                                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" /> GATING DE SEGURIDAD & INDUCCIÓN
+                                            </span>
+                                            <h2 className="text-3xl font-black text-white uppercase italic tracking-tight">Sala de Espera de Talentos</h2>
+                                            <p className="text-gray-400 text-sm mt-1">Talentos y Community Managers pendientes de aprobación formal o asignación de primeras marcas.</p>
+                                        </div>
+                                        <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-right">
+                                            <span className="text-[9px] font-black uppercase text-gray-500 tracking-widest block">Total en Espera</span>
+                                            <span className="text-2xl font-black text-amber-400 font-mono">{pendingMembers.length} Talento(s)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {pendingMembers.length === 0 ? (
+                                    <div className="p-20 text-center rounded-[3rem] bg-[#0A0A14] border border-white/5 space-y-3">
+                                        <Shield className="w-12 h-12 text-emerald-500 mx-auto opacity-50" />
+                                        <h3 className="text-xl font-black text-white uppercase italic">Todos los Talentos Operando</h3>
+                                        <p className="text-gray-500 text-xs font-medium">No hay ningún talento en sala de espera. Todo el equipo tiene marcas asignadas.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                                        {pendingMembers.map(m => (
+                                            <TeamMemberCard key={m.id} member={m} team={team} allClients={clients} onAudit={() => openAudit(m)} />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         ) : viewMode === 'map' ? (
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center px-4">
@@ -875,9 +927,14 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
     ) && m.id !== member.id);
     
     const isEstratega = (member.role || '').toLowerCase().includes('estratega');
+    const isCM = (member.role || '').toLowerCase().includes('community manager') || (member.role || '').toLowerCase().includes('cm');
     const assignedBrands = allClients.filter(c => c.cm === member.name || c.editor === member.name || c.filmmaker === member.name);
     const squadMembers = team.filter(m => m.squad_lead_id === member.id);
     const style = getDepartmentStyle(formData.role);
+
+    const isPending = (formData.approval_status === 'pending_approval' || (formData.status || '').toLowerCase().includes('pend') || (isCM && assignedBrands.length === 0));
+    const quizScore = formData.onboarding_quiz_score || 0;
+    const nicheAffinities = Array.isArray(formData.niche_affinities) ? formData.niche_affinities : [];
 
     useEffect(() => {
         const loadData = async () => {
@@ -899,6 +956,39 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
         } catch (error) {
             console.error("❌ [HQ-Team] Sync Failed:", error);
             toast.error("Error de sincronización");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleApproveMember = async () => {
+        setSaving(true);
+        try {
+            await agencyService.approveTeamMember(member.id, member.name);
+            setFormData(prev => ({ ...prev, status: 'active', approval_status: 'active' }));
+            toast.success("¡Talento Aprobado y Activado! 🟢", {
+                description: "El talento ahora tiene acceso completo para operar marcas."
+            });
+            onSave();
+        } catch (error) {
+            console.error("Error approving member:", error);
+            toast.error("Error al aprobar talento");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteMember = async () => {
+        if (!confirm(`¿Estás seguro de que deseas eliminar a "${formData.name || 'este talento'}" de DIIC ZONE? Esta acción desvinculará sus marcas y lo retirará del sistema.`)) return;
+        setSaving(true);
+        try {
+            await agencyService.deleteTeamMember(member.id, member.name);
+            toast.success("Talento retirado del sistema");
+            onSave();
+            onClose();
+        } catch (error) {
+            console.error("Error deleting member:", error);
+            toast.error("Error al eliminar");
         } finally {
             setSaving(false);
         }
@@ -928,6 +1018,33 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
         } catch (error) { toast.error("Error"); }
     };
 
+    const getMatchNiche = (client) => {
+        if (!nicheAffinities || nicheAffinities.length === 0) return null;
+        const target = `${client.name} ${client.industry || ''} ${client.type || ''} ${client.specialty || ''}`.toLowerCase();
+        for (const n of nicheAffinities) {
+            const key = n.toLowerCase().split('&')[0].trim();
+            if (target.includes(key) || 
+               (key.includes('agro') && (target.includes('agro') || target.includes('finca') || target.includes('ganad'))) ||
+               (key.includes('salud') && (target.includes('medic') || target.includes('dental') || target.includes('clinic') || target.includes('salud'))) ||
+               (key.includes('gastro') && (target.includes('rest') || target.includes('food') || target.includes('comida') || target.includes('cafe'))) ||
+               (key.includes('inmo') && (target.includes('inmo') || target.includes('bienes') || target.includes('casa') || target.includes('lote'))) ||
+               (key.includes('moda') && (target.includes('moda') || target.includes('ropa') || target.includes('boutique') || target.includes('estet'))) ||
+               (key.includes('fit') && (target.includes('gym') || target.includes('fit') || target.includes('deport')))
+            ) {
+                return n;
+            }
+        }
+        return null;
+    };
+
+    const unassignedBrands = allClients
+        .filter(c => !assignedBrands.find(ab => ab.id === c.id))
+        .sort((a, b) => {
+            const matchA = getMatchNiche(a) ? 1 : 0;
+            const matchB = getMatchNiche(b) ? 1 : 0;
+            return matchB - matchA;
+        });
+
     const tabs = [
         { id: 'perfil', label: 'Logística', icon: Layout },
         { id: 'profesional', label: 'Expediente', icon: Award },
@@ -946,73 +1063,108 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                 className="relative w-full max-w-6xl bg-[#080814] border border-white/10 rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row h-[85vh]"
             >
                 {/* LEFT SIDEBAR: Visual Branding */}
-                <div className="w-full md:w-[35%] h-full relative border-r border-white/5 bg-gradient-to-b from-[#04040A] to-[#090915] flex flex-col justify-between p-10 overflow-hidden">
+                <div className="w-full md:w-[35%] h-full relative border-r border-white/5 bg-gradient-to-b from-[#04040A] to-[#090915] flex flex-col justify-between p-8 overflow-y-auto custom-scrollbar">
                     <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
                         <div className={`absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-gradient-to-br ${style.glow} rounded-full blur-[120px]`} />
                     </div>
 
-                    <div className="relative z-10 space-y-12">
+                    <div className="relative z-10 space-y-8">
                         <div className="flex justify-between items-start">
-                            <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.5em] leading-none">0.6 — Final Identity</div>
+                            <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.5em] leading-none">HQ Talent Profile</div>
                             <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center">
                                 <Shield className="w-3.5 h-3.5 text-white/20" />
                             </div>
                         </div>
 
                         <div className="flex flex-col items-center">
-                            <div className="relative group mb-8">
+                            <div className="relative group mb-6">
                                 <div className={`absolute -inset-4 bg-gradient-to-r ${style.gradient} rounded-[40px] blur-2xl opacity-40 group-hover:opacity-80 transition duration-1000`} />
-                                <div className="relative w-32 h-32 rounded-[32px] bg-[#0A0A1F] border border-white/10 flex items-center justify-center text-5xl font-black text-white shadow-2xl overflow-hidden uppercase italic">
+                                <div className="relative w-28 h-28 rounded-[28px] bg-[#0A0A1F] border border-white/10 flex items-center justify-center text-4xl font-black text-white shadow-2xl overflow-hidden uppercase italic">
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
                                     <span className="relative z-10">{formData.name?.[0] || 'T'}</span>
                                 </div>
                             </div>
-                            <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter text-center leading-tight truncate max-w-full" title={formData.name}>{formData.name}</h2>
-                            <div className={`h-[1.5px] w-16 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent my-6`} />
-                            <span className={`text-[8px] font-black ${style.badgeText} uppercase tracking-[0.4em] bg-white/5 py-1.5 px-4 rounded-full border border-white/5 inline-block text-center`}>
-                                {formData.role}
-                            </span>
+                            <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter text-center leading-tight truncate max-w-full" title={formData.name}>{formData.name}</h2>
+                            <div className={`h-[1.5px] w-16 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent my-4`} />
+                            
+                            <div className="flex flex-wrap items-center justify-center gap-2">
+                                <span className={`text-[8px] font-black ${style.badgeText} uppercase tracking-[0.3em] bg-white/5 py-1 px-3 rounded-full border border-white/5 inline-block text-center`}>
+                                    {formData.role}
+                                </span>
+                                {quizScore >= 80 && (
+                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 py-1 px-3 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                                        <Award className="w-3 h-3 text-emerald-400" /> Quiz {quizScore}%
+                                    </span>
+                                )}
+                            </div>
+
                             {formData.email && (
                                 <div 
                                     onClick={() => {
                                         navigator.clipboard.writeText(formData.email);
                                         toast.success("Correo copiado al portapapeles");
                                     }}
-                                    className="flex items-center gap-2 mt-4 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 text-[10px] text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer group/email select-all"
+                                    className="flex items-center gap-2 mt-3 px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 text-[10px] text-gray-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer group/email select-all"
                                     title="Copiar Correo"
                                 >
                                     <Mail className="w-3.5 h-3.5 text-indigo-400 group-hover/email:scale-110 transition-transform" />
                                     <span className="font-mono font-medium truncate max-w-[180px]">{formData.email}</span>
                                 </div>
                             )}
+
+                            {/* Secondary Profession Card */}
+                            {formData.secondary_profession && (
+                                <div className="mt-4 p-3.5 rounded-2xl bg-white/[0.03] border border-cyan-500/20 text-left w-full">
+                                    <span className="text-[7px] font-black text-cyan-400 uppercase tracking-widest block font-mono">Profesión / Especialidad Extra</span>
+                                    <p className="text-[11px] text-gray-200 font-bold italic mt-0.5 leading-snug">{formData.secondary_profession}</p>
+                                </div>
+                            )}
+
+                            {/* Niche Affinities */}
+                            {nicheAffinities.length > 0 && (
+                                <div className="mt-4 space-y-1.5 text-left w-full">
+                                    <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest block font-mono">Nichos Fuertes Declarados</span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {nicheAffinities.map((n, i) => (
+                                            <span key={i} className="text-[8px] font-black px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                                                {n}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    <div className="relative z-10 space-y-8">
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500 border-b border-white/5 pb-2">
-                                <span>Security Protocol</span>
-                                <span className="text-indigo-400">ENCRYPTED</span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="flex-1 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
-                                    <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Talento ID</span>
-                                    <span className="text-xs font-mono font-bold text-white tracking-widest">{formData.id || 'CORE'}</span>
-                                </div>
-                                <div className="flex-1 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 flex flex-col gap-1">
-                                    <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Status</span>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Active</span>
-                                    </div>
-                                </div>
+                    <div className="relative z-10 space-y-4 pt-6 border-t border-white/5">
+                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
+                            <span>Estado Operativo</span>
+                            <div className="flex items-center gap-1.5">
+                                <div className={`w-2 h-2 rounded-full ${isPending ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
+                                <span className={isPending ? 'text-amber-400' : 'text-emerald-400'}>
+                                    {isPending ? 'SALA DE ESPERA' : 'ACTIVO'}
+                                </span>
                             </div>
                         </div>
-                        <div className="flex items-end justify-between opacity-20">
-                            <div className="space-y-1">
-                                <div className="w-16 h-[1px] bg-white" /><div className="w-10 h-[1px] bg-white" />
-                            </div>
-                            <div className="text-[8px] font-mono text-white leading-none text-right">ADMIN_HUB_V4.8<br />SYSTEMS_CORE_INIT</div>
+
+                        {/* Quick Action Buttons */}
+                        <div className="space-y-2 pt-2">
+                            {isPending && (
+                                <button
+                                    onClick={handleApproveMember}
+                                    disabled={saving}
+                                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-[9px] tracking-widest rounded-2xl transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+                                >
+                                    <Check className="w-4 h-4" /> Aprobar & Activar Talento
+                                </button>
+                            )}
+                            <button
+                                onClick={handleDeleteMember}
+                                disabled={saving}
+                                className="w-full py-3 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white font-black uppercase text-[9px] tracking-widest rounded-2xl border border-rose-500/20 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" /> Quitar / Eliminar Talento
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1046,7 +1198,7 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                             <SummaryCard label="Cargo Operativo" value={formData.role} icon={Briefcase} />
                             <SummaryCard label="Salario Base" value={`$${formData.salary || 0}`} icon={DollarSign} />
                             <SummaryCard label="Sede Central" value={formData.city || 'Remoto'} icon={MapPin} />
-                            <SummaryCard label="Marcas" value={assignedBrands.length} icon={Database} />
+                            <SummaryCard label="Marcas Asignadas" value={assignedBrands.length} icon={Database} />
                         </div>
 
                         <AnimatePresence mode="wait">
@@ -1069,7 +1221,8 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
 
                                 {activeTab === 'profesional' && (
                                     <div className="space-y-8">
-                                        <CardInput label="Vínculo de Expediente (URL)" value={formData.cv_url || ''} onChange={(v) => setFormData({...formData, cv_url: v})} icon={ExternalLink} />
+                                        <CardInput label="Vínculo de Expediente / Portafolio (URL)" value={formData.cv_url || formData.portfolio_url || ''} onChange={(v) => setFormData({...formData, cv_url: v, portfolio_url: v})} icon={ExternalLink} />
+                                        <CardInput label="Profesión / Estudios Previos o Pasiones" value={formData.secondary_profession || ''} onChange={(v) => setFormData({...formData, secondary_profession: v})} icon={Award} />
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Resumen de Trayectoria</label>
                                             <div className="p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] min-h-[200px]">
@@ -1082,7 +1235,12 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                                 {activeTab === 'marcas' && (
                                     <div className="space-y-8">
                                         <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-4">Marcas Designadas</h4>
+                                            <div className="flex justify-between items-center px-4">
+                                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Marcas Designadas ({assignedBrands.length}/6)</h4>
+                                                <span className={`text-[10px] font-black ${assignedBrands.length >= 6 ? 'text-rose-500' : assignedBrands.length >= 5 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                                    {assignedBrands.length >= 6 ? '🔴 Sobrecargado' : assignedBrands.length >= 5 ? '🟡 Límite' : '🟢 Óptimo'}
+                                                </span>
+                                            </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {assignedBrands.map(b => {
                                                     const isClientOnline = (() => {
@@ -1100,7 +1258,7 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                                                                 </div>
                                                                 <div className="flex flex-col">
                                                                     <span className="text-[11px] font-black text-white uppercase italic">{b.name}</span>
-                                                                    <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest">{b.type || 'ACTIVE_SLOT'}</span>
+                                                                    <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest">{b.type || b.industry || 'ACTIVE_SLOT'}</span>
                                                                 </div>
                                                             </div>
                                                         <div className="flex items-center gap-2">
@@ -1110,24 +1268,52 @@ function TeamAuditModal({ member, team = [], allClients = [], onClose, onSave })
                                                             >
                                                                 Estrategia
                                                             </button>
-                                                            <button onClick={() => toggleBrand(b.id, true)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"><X className="w-4 h-4" /></button>
+                                                            <button onClick={() => toggleBrand(b.id, true)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100" title="Desvincular"><X className="w-4 h-4" /></button>
                                                         </div>
                                                     </div>
                                                     );
                                                 })}
                                             </div>
-                                            {assignedBrands.length === 0 && <p className="text-center py-10 text-gray-600 font-bold uppercase text-[9px] tracking-widest italic border border-dashed border-white/5 rounded-3xl">Sin marcas asignadas</p>}
+                                            {assignedBrands.length === 0 && <p className="text-center py-10 text-gray-600 font-bold uppercase text-[9px] tracking-widest italic border border-dashed border-white/5 rounded-3xl">Sin marcas asignadas (Talento en Sala de Espera)</p>}
                                         </div>
 
                                         <div className="pt-8 border-t border-white/5 space-y-4">
-                                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] px-4">Vincular Nueva Hoja de Ruta</h4>
-                                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                                                {allClients.filter(c => !assignedBrands.find(ab => ab.id === c.id)).slice(0, 6).map(b => (
-                                                    <button key={b.id} onClick={() => toggleBrand(b.id)} className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/5 hover:border-indigo-500/30 transition-all text-left flex flex-col gap-1">
-                                                        <span className="text-[10px] font-black text-white uppercase truncate">{b.name}</span>
-                                                        <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Connect {'->'}</span>
-                                                    </button>
-                                                ))}
+                                            <div className="flex items-center justify-between px-4">
+                                                <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Vincular Nueva Hoja de Ruta</h4>
+                                                {nicheAffinities.length > 0 && (
+                                                    <span className="text-[9px] font-bold text-cyan-400 flex items-center gap-1">
+                                                        <Sparkles className="w-3 h-3" /> Smart Niche-Match Activo
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                {unassignedBrands.slice(0, 9).map(b => {
+                                                    const matchNiche = getMatchNiche(b);
+                                                    return (
+                                                        <button 
+                                                            key={b.id} 
+                                                            onClick={() => toggleBrand(b.id)} 
+                                                            className={`p-4 rounded-2xl transition-all text-left flex flex-col gap-1.5 border ${
+                                                                matchNiche 
+                                                                    ? 'bg-cyan-500/10 border-cyan-500/40 hover:bg-cyan-500/20 shadow-lg shadow-cyan-500/10' 
+                                                                    : 'bg-white/[0.02] border-white/5 hover:bg-white/5 hover:border-indigo-500/30'
+                                                            }`}
+                                                        >
+                                                            <div className="flex justify-between items-start gap-1">
+                                                                <span className="text-[10px] font-black text-white uppercase truncate">{b.name}</span>
+                                                                {matchNiche && (
+                                                                    <span className="text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-cyan-400 text-black shrink-0 font-mono">
+                                                                        Match
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest truncate">{b.industry || b.type || 'General'}</span>
+                                                                <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">+ Vincular</span>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </div>

@@ -1067,7 +1067,10 @@ export const agencyService = {
                 'name', 'role', 'status', 'city', 'coords', 
                 'availability', 'activetasks', 'salary', 
                 'squad_lead_id', 'cv_url', 'cv_summary', 'skills', 
-                'whatsapp', 'email', 'birth_date', 'address'
+                'whatsapp', 'email', 'birth_date', 'address',
+                'avatar_url', 'portfolio_url', 'specialty',
+                'niche_affinities', 'secondary_profession', 
+                'onboarding_quiz_score', 'approval_status'
             ];
             
             const sanitizedUpdates = {};
@@ -1077,6 +1080,7 @@ export const agencyService = {
                     // Casting especial para tipos de datos DB
                     if (field === 'salary' && value !== null) value = Number(value);
                     if (field === 'activetasks' && value !== null) value = parseInt(value);
+                    if (field === 'onboarding_quiz_score' && value !== null) value = Number(value);
                     sanitizedUpdates[field] = value;
                 }
             });
@@ -1106,6 +1110,26 @@ export const agencyService = {
                 console.error("Supabase Update Error:", error);
                 throw error;
             }
+
+            // Dual sync to profiles if email matches
+            if (sanitizedUpdates.email || (data && data[0]?.email)) {
+                const targetEmail = sanitizedUpdates.email || data[0]?.email;
+                if (targetEmail) {
+                    const profileUpdates = {};
+                    if (sanitizedUpdates.name) profileUpdates.full_name = sanitizedUpdates.name;
+                    if (sanitizedUpdates.avatar_url) profileUpdates.avatar_url = sanitizedUpdates.avatar_url;
+                    if (sanitizedUpdates.whatsapp) profileUpdates.whatsapp = sanitizedUpdates.whatsapp;
+                    if (sanitizedUpdates.city) profileUpdates.location = sanitizedUpdates.city;
+                    if (sanitizedUpdates.niche_affinities) profileUpdates.niche_affinities = sanitizedUpdates.niche_affinities;
+                    if (sanitizedUpdates.secondary_profession) profileUpdates.secondary_profession = sanitizedUpdates.secondary_profession;
+                    if (sanitizedUpdates.onboarding_quiz_score !== undefined) profileUpdates.onboarding_quiz_score = sanitizedUpdates.onboarding_quiz_score;
+                    if (sanitizedUpdates.approval_status) profileUpdates.approval_status = sanitizedUpdates.approval_status;
+                    
+                    if (Object.keys(profileUpdates).length > 0) {
+                        await supabase.from('profiles').update(profileUpdates).eq('email', targetEmail);
+                    }
+                }
+            }
             
             // Sync Local Cache
             if (typeof window !== 'undefined') {
@@ -1120,6 +1144,86 @@ export const agencyService = {
             return data[0];
         } catch (error) {
             console.error(`❌ [${timestamp}] Error updating member:`, error);
+            throw error;
+        }
+    },
+
+    deleteTeamMember: async (id, memberName = '') => {
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`🚀 [${timestamp}] Service: Deleting Team Member ${id} (${memberName})...`);
+        try {
+            // 1. Unassign from all clients where this member was CM, editor, or filmmaker
+            if (memberName) {
+                await supabase.from('clients').update({ cm: 'Sin Asignar' }).eq('cm', memberName);
+                await supabase.from('clients').update({ editor: 'Sin Asignar' }).eq('editor', memberName);
+                await supabase.from('clients').update({ filmmaker: 'Sin Asignar' }).eq('filmmaker', memberName);
+            }
+
+            // 2. Unlink any subordinates in squad
+            await supabase.from('team').update({ squad_lead_id: null }).eq('squad_lead_id', id);
+
+            // 3. Delete from team table
+            const { data, error } = await supabase
+                .from('team')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                console.error("Supabase Delete Error:", error);
+                throw error;
+            }
+
+            // 4. Sync Local Cache
+            if (typeof window !== 'undefined') {
+                const stored = localStorage.getItem('diic_team');
+                if (stored) {
+                    const curr = JSON.parse(stored);
+                    const updated = curr.filter(m => m.id !== id);
+                    localStorage.setItem('diic_team', JSON.stringify(updated));
+                }
+                localStorage.removeItem('diiczone_squad_layout');
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error(`❌ [${timestamp}] Error deleting member:`, error);
+            throw error;
+        }
+    },
+
+    approveTeamMember: async (id, memberName = '', initialBrands = []) => {
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`🚀 [${timestamp}] Service: Approving Team Member ${id}...`);
+        try {
+            // 1. Update status to active and approval_status to active
+            const { data, error } = await supabase
+                .from('team')
+                .update({ 
+                    status: 'active',
+                    approval_status: 'active'
+                })
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+
+            // 2. If brands provided, assign them
+            if (memberName && Array.isArray(initialBrands) && initialBrands.length > 0) {
+                for (const clientId of initialBrands) {
+                    await supabase.from('clients').update({ cm: memberName }).eq('id', clientId);
+                }
+            }
+
+            // 3. Dual sync to profiles
+            if (data && data[0]?.email) {
+                await supabase.from('profiles').update({ 
+                    approval_status: 'active'
+                }).eq('email', data[0].email);
+            }
+
+            return data[0];
+        } catch (error) {
+            console.error(`❌ [${timestamp}] Error approving member:`, error);
             throw error;
         }
     },
