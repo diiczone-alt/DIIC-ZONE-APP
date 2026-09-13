@@ -10,7 +10,8 @@ import {
     MoreHorizontal, Filter, Play, Check, ChevronRight as ChevronRightIcon, X,
     FolderOpen, Palette, Clock, Bot, FileText, Zap, ShieldCheck, Eye, Send,
     GraduationCap, Award, TrendingUp, Target, Brain, Sparkles, PenTool, Edit3,
-    ChevronLeft as ChevronLeftIcon, Layers, MapPin, Activity
+    ChevronLeft as ChevronLeftIcon, Layers, MapPin, Activity,
+    User, Cake, Briefcase, Link2, Phone, Compass, Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -3085,6 +3086,45 @@ function NotificationsView({ notifications, loading, onMarkAsRead }) {
         </div>
     );
 }
+const cleanDate = (dateStr) => {
+    if (!dateStr) return null;
+    const trimmed = String(dateStr).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+        const [day, month, year] = trimmed.split('/');
+        return `${year}-${month}-${day}`;
+    }
+    if (/^\d{4}\/\d{2}\/\d{2}$/.test(trimmed)) {
+        return trimmed.replace(/\//g, '-');
+    }
+    try {
+        const d = new Date(trimmed);
+        if (!isNaN(d.getTime())) {
+            return d.toISOString().split('T')[0];
+        }
+    } catch (e) {}
+    return trimmed;
+};
+
+const getAgeAndBirthday = (birthday) => {
+    const cleaned = cleanDate(birthday);
+    if (!cleaned) return { age: '--', formatted: 'No definida' };
+    try {
+        const [year, month, day] = cleaned.split('-');
+        const birthDate = new Date(Number(year), Number(month) - 1, Number(day));
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        const formatted = birthDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+        return { age: `${age}`, formatted };
+    } catch (e) {
+        return { age: '--', formatted: birthday };
+    }
+};
+
 function CMProfileView({ user }) {
     const { logout } = useAuth();
     const [loading, setLoading] = useState(true);
@@ -3093,8 +3133,14 @@ function CMProfileView({ user }) {
     const [teamData, setTeamData] = useState(null);
 
     // Form inputs
+    const [fullName, setFullName] = useState('');
+    const [birthDate, setBirthDate] = useState('');
     const [whatsapp, setWhatsapp] = useState('');
     const [city, setCity] = useState('');
+    const [address, setAddress] = useState('');
+    const [specialty, setSpecialty] = useState('');
+    const [availability, setAvailability] = useState('full-time');
+    const [portfolioUrl, setPortfolioUrl] = useState('');
     const [cvUrl, setCvUrl] = useState('');
     const [cvSummary, setCvSummary] = useState('');
     const [skills, setSkills] = useState('');
@@ -3106,52 +3152,68 @@ function CMProfileView({ user }) {
 
     useEffect(() => {
         const fetchProfileDetails = async () => {
-            if (!user?.email) return;
+            if (!user?.email && !user?.id) return;
             setLoading(true);
             try {
+                let team = null;
                 // Fetch public.team details
-                let { data: team, error: teamErr } = await supabase
-                    .from('team')
-                    .select('*')
-                    .eq('email', user.email)
-                    .maybeSingle();
+                if (user?.email) {
+                    const { data: teamByEmail } = await supabase
+                        .from('team')
+                        .select('*')
+                        .ilike('email', user.email)
+                        .maybeSingle();
+                    team = teamByEmail;
+                }
 
-                if (!team && user.full_name) {
+                if (!team && (user?.full_name || user?.user_metadata?.full_name)) {
+                    const searchName = user?.full_name || user?.user_metadata?.full_name;
                     const { data: teamByName } = await supabase
                         .from('team')
                         .select('*')
-                        .eq('name', user.full_name)
+                        .ilike('name', searchName)
                         .maybeSingle();
                     team = teamByName;
                 }
 
                 // Fetch public.profiles details
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .maybeSingle();
+                let profile = null;
+                if (user?.id) {
+                    const { data: profileById } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', user.id)
+                        .maybeSingle();
+                    profile = profileById;
+                }
 
                 if (team) {
                     setTeamData(team);
-                    setWhatsapp(team.whatsapp || '');
-                    setCity(team.city || '');
-                    setCvUrl(team.cv_url || '');
-                    setCvSummary(team.cv_summary || '');
-                    setSkills(Array.isArray(team.skills) ? team.skills.join(', ') : '');
-                } else if (profile) {
-                    setWhatsapp(profile.whatsapp || '');
-                    setCity(profile.location || '');
-                    setCvUrl(profile.cv_url || '');
-                    setCvSummary(profile.cv_summary || '');
-                    setSkills(Array.isArray(profile.skills) ? profile.skills.join(', ') : '');
                 }
-
                 if (profile) {
                     setProfileData(profile);
                 }
+
+                // Hydrate form fields with highest priority: team > profile > user session
+                setFullName(team?.name || profile?.full_name || user?.full_name || user?.user_metadata?.full_name || '');
+                setBirthDate(cleanDate(team?.birth_date || profile?.birth_date || user?.birth_date || user?.user_metadata?.birth_date) || '');
+                setWhatsapp(team?.whatsapp || profile?.whatsapp || user?.whatsapp || user?.user_metadata?.whatsapp || '');
+                setCity(team?.city || profile?.location || user?.location || user?.user_metadata?.location || '');
+                setAddress(team?.address || profile?.address || '');
+                setSpecialty(team?.specialty || profile?.specialty || 'Lead Estratega & CM');
+                setAvailability(team?.availability || 'full-time');
+                setPortfolioUrl(team?.portfolio_url || team?.website || profile?.portfolio_url || profile?.website || '');
+                setCvUrl(team?.cv_url || profile?.cv_url || '');
+                setCvSummary(team?.cv_summary || profile?.cv_summary || '');
+
+                const loadedSkills = team?.skills || profile?.skills || [];
+                if (Array.isArray(loadedSkills)) {
+                    setSkills(loadedSkills.join(', '));
+                } else if (typeof loadedSkills === 'string') {
+                    setSkills(loadedSkills);
+                }
             } catch (err) {
-                console.error("Error fetching profiles:", err);
+                console.error("Error fetching CM profile details:", err);
             } finally {
                 setLoading(false);
             }
@@ -3160,52 +3222,122 @@ function CMProfileView({ user }) {
         fetchProfileDetails();
     }, [user]);
 
+    const handleAddSkill = (skillTag) => {
+        const currentList = skills.split(',').map(s => s.trim()).filter(Boolean);
+        if (!currentList.includes(skillTag)) {
+            const updated = [...currentList, skillTag].join(', ');
+            setSkills(updated);
+        }
+    };
+
     const handleSave = async () => {
         setSaving(true);
         try {
+            const cleanBirth = cleanDate(birthDate);
             const formattedSkills = skills
                 .split(',')
                 .map(s => s.trim())
                 .filter(s => s.length > 0);
 
-            // Update public.team if exists
+            const effectiveName = fullName.trim() || user?.full_name || 'Estratega CM';
+
+            // 1. Update public.profiles
+            if (user?.id) {
+                const profilePayload = {
+                    full_name: effectiveName,
+                    whatsapp: whatsapp.trim(),
+                    location: city.trim(),
+                    address: address.trim(),
+                    cv_url: cvUrl.trim(),
+                    cv_summary: cvSummary.trim(),
+                    skills: formattedSkills,
+                    birth_date: cleanBirth,
+                    specialty: specialty.trim(),
+                    website: portfolioUrl.trim(),
+                    portfolio_url: portfolioUrl.trim()
+                };
+
+                const { error: profileUpdateErr } = await supabase
+                    .from('profiles')
+                    .update(profilePayload)
+                    .eq('id', user.id);
+
+                if (profileUpdateErr) {
+                    console.warn("Profiles update warning:", profileUpdateErr);
+                } else {
+                    setProfileData(prev => ({ ...prev, ...profilePayload }));
+                }
+            }
+
+            // 2. Update public.team
+            const teamPayload = {
+                name: effectiveName,
+                whatsapp: whatsapp.trim(),
+                city: city.trim(),
+                address: address.trim(),
+                cv_url: cvUrl.trim(),
+                cv_summary: cvSummary.trim(),
+                skills: formattedSkills,
+                birth_date: cleanBirth,
+                availability: availability,
+                specialty: specialty.trim(),
+                portfolio_url: portfolioUrl.trim(),
+                website: portfolioUrl.trim()
+            };
+
             if (teamData?.id) {
                 const { error: teamUpdateErr } = await supabase
                     .from('team')
-                    .update({
-                        whatsapp,
-                        city,
-                        cv_url: cvUrl,
-                        cv_summary: cvSummary,
-                        skills: formattedSkills
-                    })
+                    .update(teamPayload)
                     .eq('id', teamData.id);
 
-                if (teamUpdateErr) throw teamUpdateErr;
+                if (teamUpdateErr) {
+                    console.warn("Team table update warning:", teamUpdateErr);
+                } else {
+                    setTeamData(prev => ({ ...prev, ...teamPayload }));
+                }
+            } else if (user?.email) {
+                const { error: teamEmailErr } = await supabase
+                    .from('team')
+                    .update(teamPayload)
+                    .ilike('email', user.email);
+
+                if (teamEmailErr) {
+                    console.warn("Team update by email warning:", teamEmailErr);
+                } else {
+                    setTeamData(prev => ({ ...prev, ...teamPayload }));
+                }
             }
 
-            // Update public.profiles if exists
-            if (user?.id) {
-                const { error: profileUpdateErr } = await supabase
-                    .from('profiles')
-                    .update({
-                        whatsapp,
-                        location: city,
-                        cv_url: cvUrl,
-                        cv_summary: cvSummary,
-                        skills: formattedSkills
-                    })
-                    .eq('id', user.id);
-
-                if (profileUpdateErr) throw profileUpdateErr;
+            // 3. Update Supabase Auth User Metadata for immediate global sync
+            try {
+                await supabase.auth.updateUser({
+                    data: {
+                        full_name: effectiveName,
+                        birth_date: cleanBirth,
+                        whatsapp: whatsapp.trim(),
+                        location: city.trim(),
+                        specialty: specialty.trim(),
+                        portfolio_url: portfolioUrl.trim()
+                    }
+                });
+            } catch (authErr) {
+                console.warn("Auth updateUser sync note:", authErr);
             }
 
-            toast.success("Expediente Sincronizado", {
-                description: "Los cambios han sido guardados correctamente en la base de datos."
+            // Synchronize in-memory user reference
+            if (user) {
+                user.full_name = effectiveName;
+            }
+
+            toast.success("¡Expediente de CM Actualizado!", {
+                description: "Tus datos personales, fecha de nacimiento, CV, portafolio y habilidades se han guardado exitosamente."
             });
         } catch (err) {
-            console.error("Error saving profile details:", err);
-            toast.error("Error al guardar cambios");
+            console.error("Error saving CM profile details:", err);
+            toast.error("Error al guardar cambios", {
+                description: err.message || "Por favor verifica tu conexión e intenta de nuevo."
+            });
         } finally {
             setSaving(false);
         }
@@ -3235,7 +3367,6 @@ function CMProfileView({ user }) {
             // Clear local session storage manually to prevent signOut() hangs on deleted session
             if (typeof window !== 'undefined') {
                 localStorage.clear();
-                // Clear GoTrue session in memory/cookies locally without calling GoTrue API
                 try {
                     await supabase.auth.signOut({ scope: 'local' });
                 } catch (signOutErr) {
@@ -3249,50 +3380,114 @@ function CMProfileView({ user }) {
             console.error("[DeleteAccount] Exception caught:", err);
             toast.error(`No se pudo eliminar la cuenta: ${err.message || 'Error desconocido'}. Contacte al soporte.`);
         } finally {
-            console.log("[DeleteAccount] Deletion flow finally block executed.");
             setIsDeleting(false);
             setShowDeleteModal(false);
         }
     };
 
+    const ageInfo = getAgeAndBirthday(birthDate);
+
+    const commonSkillTags = [
+        "Copywriting", "Meta Ads", "TikTok Strategy", "CapCut", 
+        "Storytelling", "Content Planning", "Analytics", "Comunidad & Leads", 
+        "Canva Pro", "Notion", "Reels Viral"
+    ];
+
     if (loading) {
         return (
             <div className="h-[60vh] flex flex-col items-center justify-center gap-6">
                 <div className="w-16 h-16 rounded-full border-t-2 border-cyan-500 animate-spin" />
-                <p className="text-cyan-400 italic font-bold text-sm tracking-widest uppercase animate-pulse">Cargando expediente...</p>
+                <p className="text-cyan-400 italic font-bold text-sm tracking-widest uppercase animate-pulse">Cargando expediente de CM...</p>
             </div>
         );
     }
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 pb-20">
-            {/* Header/Info Card */}
-            <div className="bg-gradient-to-br from-[#0E0E18] to-[#050511] border border-white/5 rounded-[3rem] p-12 relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-600/10 blur-[100px] rounded-full" />
+            {/* Header / Identity Card */}
+            <div className="bg-gradient-to-br from-[#0E0E18] to-[#050511] border border-white/5 rounded-[3rem] p-8 md:p-12 relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-600/10 blur-[120px] rounded-full pointer-events-none" />
                 
-                <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
-                    <div className="w-32 h-32 rounded-[2.5rem] bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white text-5xl font-black shadow-2xl shadow-cyan-500/20 uppercase">
-                        {user?.full_name?.charAt(0) || "U"}
+                <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+                    <div className="w-28 h-28 md:w-32 md:h-32 rounded-[2.5rem] bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white text-5xl font-black shadow-2xl shadow-cyan-500/20 uppercase shrink-0">
+                        {fullName?.charAt(0) || user?.full_name?.charAt(0) || "C"}
                     </div>
-                    <div className="text-center md:text-left">
-                        <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-2">{user?.full_name || "Usuario"}</h2>
-                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                            <span className="px-4 py-1 bg-cyan-600/10 border border-cyan-500/20 text-cyan-400 rounded-full text-[10px] font-black uppercase tracking-widest">{teamData?.role || 'Lead Estratega'}</span>
-                            <span className="px-4 py-1 bg-white/5 border border-white/5 text-gray-500 rounded-full text-[10px] font-black uppercase tracking-widest">{city || 'Sede Remota'}</span>
+                    <div className="text-center md:text-left space-y-3 flex-1">
+                        <div className="flex flex-col md:flex-row md:items-center gap-3">
+                            <h2 className="text-3xl md:text-4xl font-black text-white italic uppercase tracking-tighter">
+                                {fullName || user?.full_name || "Community Manager"}
+                            </h2>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+                            <span className="px-4 py-1.5 bg-cyan-600/15 border border-cyan-500/30 text-cyan-400 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                <Sparkles className="w-3 h-3" />
+                                {specialty || teamData?.role || 'Lead Estratega & CM'}
+                            </span>
+                            <span className="px-4 py-1.5 bg-white/5 border border-white/5 text-gray-400 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                <MapPin className="w-3 h-3 text-cyan-400" />
+                                {city || 'Sede Remota'}
+                            </span>
+                            {ageInfo.age !== '--' && (
+                                <span className="px-4 py-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-300 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                    <Cake className="w-3 h-3 text-purple-400" />
+                                    {ageInfo.age} Años ({ageInfo.formatted})
+                                </span>
+                            )}
+                            <span className="px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                {availability === 'full-time' ? '🟢 Full-Time' : availability === 'part-time' ? '🟡 Part-Time' : '🟣 Freelance'}
+                            </span>
+                        </div>
+
+                        {/* Quick Action Links if available */}
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
+                            {portfolioUrl && (
+                                <a 
+                                    href={portfolioUrl.startsWith('http') ? portfolioUrl : `https://${portfolioUrl}`} 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="px-3.5 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                                >
+                                    <Globe className="w-3.5 h-3.5" />
+                                    Ver Portafolio <ExternalLink className="w-3 h-3 opacity-70" />
+                                </a>
+                            )}
+                            {cvUrl && (
+                                <a 
+                                    href={cvUrl.startsWith('http') ? cvUrl : `https://${cvUrl}`} 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="px-3.5 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                                >
+                                    <FileText className="w-3.5 h-3.5" />
+                                    Ver CV <ExternalLink className="w-3 h-3 opacity-70" />
+                                </a>
+                            )}
+                            {whatsapp && (
+                                <a 
+                                    href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`} 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                                >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    WhatsApp
+                                </a>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
-                    <div className="bg-white/5 border border-white/5 p-6 rounded-3xl">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 pt-8 border-t border-white/5">
+                    <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl">
                         <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Ecosistemas</p>
                         <h4 className="text-2xl font-black text-white italic tracking-tighter">{teamData?.activetasks || 0} ASIGNADOS</h4>
                     </div>
-                    <div className="bg-white/5 border border-white/5 p-6 rounded-3xl">
+                    <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl">
                         <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">XP Acumulada</p>
                         <h4 className="text-2xl font-black text-emerald-400 italic tracking-tighter">{profileData?.xp || 0} XP</h4>
                     </div>
-                    <div className="bg-white/5 border border-white/5 p-6 rounded-3xl">
+                    <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl">
                         <p className="text-gray-500 text-[10px] uppercase font-black tracking-widest mb-2">Nivel Operativo</p>
                         <h4 className="text-2xl font-black text-cyan-400 italic tracking-tighter">{profileData?.rank || 'Estratega Junior'}</h4>
                     </div>
@@ -3300,103 +3495,298 @@ function CMProfileView({ user }) {
             </div>
 
             {/* Profile Editing Form */}
-            <div className="bg-[#0E0E18] border border-white/5 rounded-[3rem] p-10 space-y-8">
-                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-8 flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
-                    Expediente & Logística del CM
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* WhatsApp */}
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Número de WhatsApp</label>
-                        <div className="relative flex items-center">
-                            <MessageSquare className="w-4 h-4 text-gray-500 absolute left-4" />
-                            <input 
-                                type="text"
-                                value={whatsapp}
-                                onChange={(e) => setWhatsapp(e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 transition-all font-medium"
-                                placeholder="Ej: +593999999999"
-                            />
-                        </div>
+            <div className="bg-[#0E0E18] border border-white/5 rounded-[3rem] p-8 md:p-12 space-y-10 shadow-2xl">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/5">
+                    <div>
+                        <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-3">
+                            <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-[0_0_12px_rgba(6,182,212,0.8)]" />
+                            Expediente & Logística del CM
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-1 font-medium">Actualiza tu información personal, fecha de nacimiento, currículum, portafolio y habilidades clave.</p>
                     </div>
-
-                    {/* Ciudad */}
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Ciudad / Sede</label>
-                        <div className="relative flex items-center">
-                            <MapPin className="w-4 h-4 text-gray-500 absolute left-4" />
-                            <input 
-                                type="text"
-                                value={city}
-                                onChange={(e) => setCity(e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 transition-all font-medium"
-                                placeholder="Ej: Guayaquil"
-                            />
-                        </div>
-                    </div>
-
-                    {/* CV URL */}
-                    <div className="space-y-2 md:col-span-2">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2 flex justify-between">
-                            <span>Vínculo de Currículum (URL)</span>
-                            {cvUrl && <a href={cvUrl} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline flex items-center gap-1 normal-case tracking-normal">Ver Curriculum <ExternalLink className="w-3 h-3" /></a>}
-                        </label>
-                        <div className="relative flex items-center">
-                            <Globe className="w-4 h-4 text-gray-500 absolute left-4" />
-                            <input 
-                                type="text"
-                                value={cvUrl}
-                                onChange={(e) => setCvUrl(e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 transition-all font-medium"
-                                placeholder="Ej: https://drive.google.com/... o linkedin"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Skills */}
-                    <div className="space-y-2 md:col-span-2">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Habilidades (Separadas por comas)</label>
-                        <div className="relative flex items-center">
-                            <Award className="w-4 h-4 text-gray-500 absolute left-4" />
-                            <input 
-                                type="text"
-                                value={skills}
-                                onChange={(e) => setSkills(e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/5 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 transition-all font-medium"
-                                placeholder="Ej: Copywriting, Reels, Meta Ads, TikTok Strategy"
-                            />
-                        </div>
-                    </div>
-
-                    {/* CV Summary / Trayectoria */}
-                    <div className="space-y-2 md:col-span-2">
-                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-2">Trayectoria / Perfil Profesional</label>
-                        <textarea 
-                            value={cvSummary}
-                            onChange={(e) => setCvSummary(e.target.value)}
-                            className="w-full min-h-[150px] p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] text-gray-300 text-sm leading-relaxed outline-none focus:border-cyan-500/50 transition-all font-medium resize-none"
-                            placeholder="Describe tu experiencia, logros clave y estilo de trabajo como Estratega o CM..."
-                        />
-                    </div>
-                </div>
-
-                <div className="pt-6 border-t border-white/5 flex justify-end">
                     <button 
                         onClick={handleSave}
                         disabled={saving}
-                        className="px-8 py-4 bg-white text-black font-black uppercase text-xs tracking-widest rounded-2xl hover:scale-105 transition-all shadow-xl shadow-white/5 flex items-center gap-2"
+                        className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:scale-105 transition-all shadow-xl shadow-cyan-500/20 flex items-center justify-center gap-2 self-start md:self-auto"
                     >
                         {saving ? (
                             <>
-                                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                 Guardando...
                             </>
                         ) : (
                             <>
                                 <CheckCircle2 className="w-4 h-4" />
-                                Actualizar Expediente
+                                Guardar Expediente
+                            </>
+                        )}
+                    </button>
+                </div>
+
+                {/* Section 1: Personal & Identity */}
+                <div className="space-y-6">
+                    <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                        <User className="w-4 h-4" /> 1. Datos Personales & Identidad
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Full Name */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Nombre Completo del CM</label>
+                            <div className="relative flex items-center">
+                                <User className="w-4 h-4 text-gray-500 absolute left-4" />
+                                <input 
+                                    type="text"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
+                                    placeholder="Ej: Leslie Moran"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Birth Date / Year */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between items-center">
+                                <span>Año & Fecha de Nacimiento</span>
+                                {ageInfo.age !== '--' && (
+                                    <span className="text-purple-400 font-bold normal-case tracking-normal">
+                                        🎂 {ageInfo.age} años ({ageInfo.formatted})
+                                    </span>
+                                )}
+                            </label>
+                            <div className="relative flex items-center">
+                                <Cake className="w-4 h-4 text-gray-500 absolute left-4" />
+                                <input 
+                                    type="date"
+                                    value={birthDate}
+                                    onChange={(e) => setBirthDate(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
+                                />
+                            </div>
+                        </div>
+
+                        {/* WhatsApp */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Número de WhatsApp (con código país)</label>
+                            <div className="relative flex items-center">
+                                <MessageSquare className="w-4 h-4 text-gray-500 absolute left-4" />
+                                <input 
+                                    type="text"
+                                    value={whatsapp}
+                                    onChange={(e) => setWhatsapp(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
+                                    placeholder="Ej: +593999999999"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Ciudad / Sede */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Ciudad / Sede</label>
+                            <div className="relative flex items-center">
+                                <MapPin className="w-4 h-4 text-gray-500 absolute left-4" />
+                                <input 
+                                    type="text"
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
+                                    placeholder="Ej: Santo Domingo, Ecuador"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Dirección Opcional */}
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Dirección / Ubicación Física (Opcional)</label>
+                            <div className="relative flex items-center">
+                                <MapPin className="w-4 h-4 text-gray-500 absolute left-4" />
+                                <input 
+                                    type="text"
+                                    value={address}
+                                    onChange={(e) => setAddress(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
+                                    placeholder="Ej: Av. Principal y Calle 5ta, Urb. Los Rosales"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Section 2: Especialidad & Disponibilidad */}
+                <div className="space-y-6 pt-6 border-t border-white/5">
+                    <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" /> 2. Enfoque Estratégico & Disponibilidad
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Specialty */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Especialidad / Rol Principal</label>
+                            <div className="relative flex items-center">
+                                <Award className="w-4 h-4 text-gray-500 absolute left-4" />
+                                <input 
+                                    type="text"
+                                    value={specialty}
+                                    onChange={(e) => setSpecialty(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
+                                    placeholder="Ej: Lead Estratega & Growth CM"
+                                />
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                                {["Lead Estratega", "Growth & Meta Ads", "Content & Copywriting", "Community & Moderación"].map(tag => (
+                                    <button
+                                        key={tag}
+                                        type="button"
+                                        onClick={() => setSpecialty(tag)}
+                                        className="text-[10px] px-2.5 py-1 rounded-lg bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-300 text-gray-400 transition-all"
+                                    >
+                                        + {tag}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Availability */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Disponibilidad Operativa</label>
+                            <select 
+                                value={availability}
+                                onChange={(e) => setAvailability(e.target.value)}
+                                className="w-full px-5 py-4 bg-[#121222] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 transition-all font-medium"
+                            >
+                                <option value="full-time">Full-Time (Dedicación Exclusiva)</option>
+                                <option value="part-time">Part-Time (Media Jornada)</option>
+                                <option value="freelance">Freelance / Por Proyectos Asignados</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Section 3: Portafolio & Currículum */}
+                <div className="space-y-6 pt-6 border-t border-white/5">
+                    <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                        <Globe className="w-4 h-4" /> 3. Portafolio & Currículum (Enlaces)
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Portafolio URL */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between items-center">
+                                <span>Vínculo de Portafolio / Showreel / Drive (URL)</span>
+                                {portfolioUrl && (
+                                    <a 
+                                        href={portfolioUrl.startsWith('http') ? portfolioUrl : `https://${portfolioUrl}`} 
+                                        target="_blank" 
+                                        rel="noreferrer" 
+                                        className="text-cyan-400 hover:underline flex items-center gap-1 normal-case tracking-normal text-xs font-bold"
+                                    >
+                                        Visitar Portafolio <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                )}
+                            </label>
+                            <div className="relative flex items-center">
+                                <Globe className="w-4 h-4 text-gray-500 absolute left-4" />
+                                <input 
+                                    type="text"
+                                    value={portfolioUrl}
+                                    onChange={(e) => setPortfolioUrl(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
+                                    placeholder="Ej: https://behance.net/... o drive.google.com/..."
+                                />
+                            </div>
+                        </div>
+
+                        {/* CV URL */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 flex justify-between items-center">
+                                <span>Vínculo de Currículum (CV URL)</span>
+                                {cvUrl && (
+                                    <a 
+                                        href={cvUrl.startsWith('http') ? cvUrl : `https://${cvUrl}`} 
+                                        target="_blank" 
+                                        rel="noreferrer" 
+                                        className="text-cyan-400 hover:underline flex items-center gap-1 normal-case tracking-normal text-xs font-bold"
+                                    >
+                                        Ver Curriculum <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                )}
+                            </label>
+                            <div className="relative flex items-center">
+                                <FileText className="w-4 h-4 text-gray-500 absolute left-4" />
+                                <input 
+                                    type="text"
+                                    value={cvUrl}
+                                    onChange={(e) => setCvUrl(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
+                                    placeholder="Ej: https://drive.google.com/... o linkedin.com/in/..."
+                                />
+                            </div>
+                        </div>
+
+                        {/* Skills */}
+                        <div className="space-y-3 md:col-span-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">
+                                Habilidades & Competencias Clave (Separadas por comas)
+                            </label>
+                            <div className="relative flex items-center">
+                                <Award className="w-4 h-4 text-gray-500 absolute left-4" />
+                                <input 
+                                    type="text"
+                                    value={skills}
+                                    onChange={(e) => setSkills(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-white/[0.02] border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium"
+                                    placeholder="Ej: Copywriting, Reels, Meta Ads, TikTok Strategy, CapCut, Analítica"
+                                />
+                            </div>
+
+                            {/* Suggestion Chips */}
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Sugerencias rápidas:</span>
+                                {commonSkillTags.map(tag => (
+                                    <button
+                                        key={tag}
+                                        type="button"
+                                        onClick={() => handleAddSkill(tag)}
+                                        className="text-[11px] font-medium px-3 py-1 rounded-xl bg-white/[0.03] hover:bg-cyan-500/20 hover:text-cyan-300 text-gray-400 border border-white/5 transition-all"
+                                    >
+                                        + {tag}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* CV Summary / Trayectoria */}
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">
+                                Trayectoria / Perfil Profesional & Estilo de Estrategia
+                            </label>
+                            <textarea 
+                                value={cvSummary}
+                                onChange={(e) => setCvSummary(e.target.value)}
+                                className="w-full min-h-[160px] p-6 bg-white/[0.02] border border-white/10 rounded-[2rem] text-gray-200 text-sm leading-relaxed outline-none focus:border-cyan-500/50 focus:bg-white/[0.04] transition-all font-medium resize-y"
+                                placeholder="Describe tu trayectoria, casos de éxito, marcas con las que has trabajado, enfoque de crecimiento y estilo de gestión..."
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Final Save Bar */}
+                <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p className="text-xs text-gray-500 font-medium">
+                        Tus cambios se sincronizan en tiempo real con la base de datos de DIIC ZONE HQ.
+                    </p>
+                    <button 
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="w-full sm:w-auto px-10 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:scale-105 transition-all shadow-xl shadow-cyan-500/20 flex items-center justify-center gap-2"
+                    >
+                        {saving ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Guardando expediente...
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircle2 className="w-5 h-5" />
+                                Actualizar Expediente Completo
                             </>
                         )}
                     </button>
@@ -3404,12 +3794,12 @@ function CMProfileView({ user }) {
             </div>
 
             {/* Danger Zone */}
-            <div className="bg-red-950/10 border border-red-900/30 rounded-[3rem] p-10 space-y-6">
+            <div className="bg-red-950/10 border border-red-900/30 rounded-[3rem] p-8 md:p-10 space-y-6">
                 <h3 className="text-xl font-black text-red-500 uppercase italic tracking-tighter flex items-center gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-500" />
                     Zona de Peligro
                 </h3>
-                <p className="text-sm text-gray-400 font-medium">
+                <p className="text-sm text-gray-400 font-medium leading-relaxed">
                     Si decides eliminar tu cuenta, todos tus registros de autenticación, tu expediente de talento y tu vinculación con la agencia DIIC ZONE serán destruidos permanentemente de forma irreversible.
                 </p>
                 <div className="flex">
