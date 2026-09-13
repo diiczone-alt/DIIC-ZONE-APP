@@ -257,14 +257,25 @@ export default function CMWorkstationLayout() {
         { id: 'profile', label: 'Mi Perfil & Nichos', icon: User },
     ];
 
-    if (!loading && (!user || (user.role !== 'COMMUNITY' && user.role !== 'CM'))) {
+    const isCMOrAdmin = user && (
+        user.role === 'COMMUNITY' || 
+        user.role === 'CM' || 
+        user.role === 'ADMIN' || 
+        user.role === 'ESTRATEGA' || 
+        (user.role || '').toLowerCase().includes('community') || 
+        (user.role || '').toLowerCase().includes('estratega') ||
+        (user.role || '').toLowerCase().includes('admin') ||
+        (user.role || '').toLowerCase().includes('lead')
+    );
+
+    if (!loading && user && !isCMOrAdmin) {
         return (
             <div className="h-full flex flex-col items-center justify-center bg-[#050511] text-white p-10 text-center">
                 <div className="w-20 h-20 rounded-3xl bg-red-500/10 flex items-center justify-center mb-8 border border-red-500/20">
                     <ShieldCheck className="w-10 h-10 text-red-500" />
                 </div>
-                <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-4">Acceso Denegado</h1>
-                <p className="text-gray-400 mb-10 max-w-sm mx-auto font-medium">Debes iniciar sesión con tu cuenta de Estratega para acceder a esta área.</p>
+                <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-4">Acceso Restringido</h1>
+                <p className="text-gray-400 mb-10 max-w-sm mx-auto font-medium">Debes iniciar sesión con tu cuenta de Estratega o Community Manager para acceder a esta área.</p>
                 <button 
                     onClick={() => window.location.href = '/login'}
                     className="px-12 py-5 bg-white text-black font-black uppercase tracking-widest rounded-2xl hover:bg-gray-200 transition-all shadow-2xl shadow-white/5"
@@ -408,20 +419,20 @@ export default function CMWorkstationLayout() {
     );
 }
 
-function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients, loading, clientTasks, loadingTasks, user, squad, globalTasks, notifications, loadingNotifications, handleMarkAsRead, searchParams, onProfileUpdate) {
+function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, clients = [], loading = false, clientTasks = [], loadingTasks = false, user = null, squad = [], globalTasks = [], notifications = [], loadingNotifications = false, handleMarkAsRead, searchParams, onProfileUpdate) {
     if (!selectedClient) {
-        if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients} loading={loading} onNavigateTab={(targetTab) => setActiveTab(targetTab)} />;
+        if (tab === 'dashboard_cm') return <CMOverviewDashboard clients={clients || []} loading={loading} onNavigateTab={(targetTab) => setActiveTab(targetTab)} />;
         if (tab === 'guide') return <CMGuidePlaybook user={user} onCompleteCertification={() => {}} />;
         if (tab === 'academy') return <CMAcademy user={user} />;
         if (tab === 'growth') return <CMGrowth user={user} />;
-        if (tab === 'tasks') return <GlobalTasksView tasks={globalTasks} loading={loadingTasks} onSelectClient={(c) => { setSelectedClient(c); setActiveTab('dashboard'); }} />;
+        if (tab === 'tasks') return <GlobalTasksView tasks={globalTasks || []} loading={loadingTasks} onSelectClient={(c) => { setSelectedClient(c); setActiveTab('dashboard'); }} />;
 
-        if (tab === 'notifications') return <NotificationsView notifications={notifications} loading={loadingNotifications} onMarkAsRead={handleMarkAsRead} />;
+        if (tab === 'notifications') return <NotificationsView notifications={notifications || []} loading={loadingNotifications} onMarkAsRead={handleMarkAsRead} />;
         if (tab === 'profile') return <CMProfileView user={user} onProfileUpdate={onProfileUpdate} />;
         
         return (
             <CMSettingsClients 
-                clients={clients} 
+                clients={clients || []} 
                 loading={loading}
                 userMissingProfile={user && !user.full_name}
                 onSelectClient={(client) => { 
@@ -1610,30 +1621,31 @@ function TeamView({ client, tasks, squad }) {
     );
 }
 
-function CMOverviewDashboard({ clients, loading }) {
+function CMOverviewDashboard({ clients = [], loading = false }) {
     const { user } = useAuth();
+    const safeClients = Array.isArray(clients) ? clients.filter(Boolean) : [];
     const stats = [
-        { label: 'Contenidos Activos', value: clients.reduce((acc, c) => acc + (c.projects || 0), 0).toString(), icon: FileText, color: 'text-cyan-400' },
+        { label: 'Contenidos Activos', value: safeClients.reduce((acc, c) => acc + (c?.projects || 0), 0).toString(), icon: FileText, color: 'text-cyan-400' },
         { label: 'Campañas en Curso', value: '3', icon: Share2, color: 'text-purple-400' },
-        { label: 'Marcas Activas', value: clients.filter(c => {
-            const s = (c.status || '').toLowerCase();
-            return s === 'active' || s === 'trial' || s === 'onboarding_completed';
+        { label: 'Marcas Activas', value: safeClients.filter(c => {
+            const s = (c?.status || '').toLowerCase();
+            return s === 'active' || s === 'trial' || s === 'onboarding_completed' || s === 'activo';
         }).length.toString(), icon: ShieldCheck, color: 'text-emerald-400' },
         { label: 'Alertas de Hoy', value: '2', icon: AlertTriangle, color: 'text-red-400' },
     ];
 
-    if (loading) return <div className="h-full flex items-center justify-center text-cyan-400 italic font-bold">Sincronizando con Admin HQ...</div>;
+    if (loading && safeClients.length === 0) return <div className="h-full flex items-center justify-center text-cyan-400 italic font-bold">Sincronizando con Admin HQ...</div>;
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-end">
                 <div>
                     <h2 className="text-4xl font-bold text-white mb-2">¡Hola, {user?.full_name?.split(' ')[0] || 'Estratega'}!</h2>
-                    <p className="text-gray-500 italic">Aquí tienes el pulso general de tus {clients.length} marcas asignadas.</p>
+                    <p className="text-gray-500 italic">Aquí tienes el pulso general de tus {safeClients.length} marcas asignadas.</p>
                 </div>
                 <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-balance">Limit: {clients.length}/10 Clientes Capacidad</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-balance">Capacidad: {safeClients.length}/7 Marcas</span>
                 </div>
             </div>
 
