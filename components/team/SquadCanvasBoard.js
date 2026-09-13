@@ -158,6 +158,9 @@ const getDepartmentStyle = (role) => {
 // ============================================
 // CUSTOM NODE COMPONENT (Tarjeta Visual)
 // ============================================
+// ============================================
+// CUSTOM NODE COMPONENT (Tarjeta Visual de Talento)
+// ============================================
 const MemberNode = ({ data, isConnectable }) => {
     const style = getDepartmentStyle(data.role);
 
@@ -169,6 +172,21 @@ const MemberNode = ({ data, isConnectable }) => {
     const isPending = liveStatus.status === 'unapproved';
     const niches = Array.isArray(data.member?.niche_affinities) ? data.member.niche_affinities : [];
     const quizScore = data.member?.onboarding_quiz_score;
+    const isCM = (data.role || '').toLowerCase().includes('community manager') || (data.role || '').toLowerCase().includes('cm');
+
+    // 5 to 7 Brands Capacity Logic
+    const assignedBrandsCount = data.assignedBrandsCount !== undefined 
+        ? data.assignedBrandsCount 
+        : (data.allClients || []).filter(c => (c.cm || '').trim().toLowerCase() === (data.label || '').trim().toLowerCase()).length;
+
+    const getCapacityInfo = (count) => {
+        if (count <= 4) return { label: `${count}/7 (Baja Carga)`, color: 'text-cyan-400', barBg: 'bg-cyan-500', isOptimal: false, isOver: false, progress: (count / 7) * 100 };
+        if (count <= 6) return { label: `${count}/7 (Rango 5-7 Óptimo)`, color: 'text-emerald-400', barBg: 'bg-emerald-500 shadow-[0_0_8px_#10b981]', isOptimal: true, isOver: false, progress: (count / 7) * 100 };
+        if (count === 7) return { label: `7/7 (Límite Máximo)`, color: 'text-amber-400', barBg: 'bg-amber-400 shadow-[0_0_8px_#f59e0b]', isOptimal: true, isOver: false, progress: 100 };
+        return { label: `${count}/7 (⚠️ Sobrecargado)`, color: 'text-rose-500', barBg: 'bg-rose-500 animate-pulse shadow-[0_0_8px_#f43f5e]', isOptimal: false, isOver: true, progress: 100 };
+    };
+
+    const capInfo = getCapacityInfo(assignedBrandsCount);
 
     return (
         <div className={`relative w-[280px] bg-[#0A0A14]/90 backdrop-blur-xl border ${isPending ? 'border-rose-500/40 shadow-[0_0_25px_rgba(244,63,94,0.2)]' : liveStatus.status === 'online' ? 'border-emerald-500/40 shadow-[0_0_25px_rgba(16,185,129,0.2)]' : style.border} rounded-[2rem] p-6 flex flex-col shadow-2xl group transition-all duration-300`}>
@@ -178,14 +196,18 @@ const MemberNode = ({ data, isConnectable }) => {
                  <div className={`absolute -top-10 -right-10 w-32 h-32 ${isPending ? 'bg-rose-500/20' : liveStatus.status === 'online' ? 'bg-emerald-500/20' : style.glow} blur-[50px] rounded-full group-hover:opacity-100 transition-all duration-1000`} />
             </div>
 
-            {/* Top Handle: Entrada (Recibe instrucciones del lider) */}
-            <Handle 
-                type="target" 
-                position={Position.Top} 
-                isConnectable={isConnectable} 
-                className={`w-6 h-6 -top-3 rounded-full border-[4px] border-[#0A0A14] ${style.handleBg} cursor-crosshair transition-transform hover:scale-125 ${style.shadowColor} z-50`} 
-            />
-            <div className={`absolute -top-8 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase ${style.badgeText} tracking-widest opacity-0 group-hover:opacity-100 transition-opacity`}>RECEPTOR</div>
+            {/* Top Handle: Entrada (Recibe instrucciones del lider) - Solo en modo Squad */}
+            {data.canvasMode !== 'brands' && (
+                <>
+                    <Handle 
+                        type="target" 
+                        position={Position.Top} 
+                        isConnectable={isConnectable} 
+                        className={`w-6 h-6 -top-3 rounded-full border-[4px] border-[#0A0A14] ${style.handleBg} cursor-crosshair transition-transform hover:scale-125 ${style.shadowColor} z-50`} 
+                    />
+                    <div className={`absolute -top-8 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase ${style.badgeText} tracking-widest opacity-0 group-hover:opacity-100 transition-opacity`}>RECEPTOR</div>
+                </>
+            )}
 
             {/* Status Pill on Top */}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-30 px-3 py-0.5 rounded-full bg-black/60 border border-white/10 text-[8px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1.5 backdrop-blur-md">
@@ -199,7 +221,7 @@ const MemberNode = ({ data, isConnectable }) => {
             </div>
 
             {/* Avatar & Identidad */}
-            <div className="flex flex-col items-center mb-4 pt-3 relative z-10">
+            <div className="flex flex-col items-center mb-3 pt-3 relative z-10">
                 <div className="relative">
                     <div className={`w-16 h-16 rounded-[1.2rem] bg-gradient-to-tr ${isPending ? 'from-rose-500 to-amber-600' : liveStatus.status === 'online' ? 'from-emerald-400 to-teal-600' : style.gradient} p-0.5 shadow-2xl transition-transform duration-500`}>
                         <div className="w-full h-full rounded-[1.1rem] bg-[#050510] flex items-center justify-center text-2xl font-black text-white italic tracking-tighter">
@@ -240,6 +262,19 @@ const MemberNode = ({ data, isConnectable }) => {
                 </div>
             </div>
 
+            {/* 5-7 Brands Load Capacity Meter (for CMs) */}
+            {isCM && (
+                <div className="mb-3 p-2.5 rounded-xl bg-white/[0.03] border border-white/5 relative z-10">
+                    <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-[7px] font-black uppercase tracking-widest text-gray-400">Capacidad Marcas (5-7)</span>
+                        <span className={`text-[8px] font-black ${capInfo.color}`}>{capInfo.label}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div className={`h-full transition-all duration-500 ${capInfo.barBg}`} style={{ width: `${Math.min(capInfo.progress, 100)}%` }} />
+                    </div>
+                </div>
+            )}
+
             {/* Niches Tags (if any) */}
             {niches.length > 0 && (
                 <div className="flex flex-wrap items-center justify-center gap-1 mb-3 relative z-10 px-1">
@@ -255,7 +290,7 @@ const MemberNode = ({ data, isConnectable }) => {
             )}
 
             {/* Micro Stats */}
-            <div className="grid grid-cols-2 gap-2 mb-4 relative z-10">
+            <div className="grid grid-cols-2 gap-2 mb-3 relative z-10">
                 <div className="bg-white/[0.02] border border-white/5 rounded-xl p-2 flex flex-col items-center justify-center">
                     <Globe className="w-3 h-3 text-gray-500 mb-1" />
                     <span className="text-[8px] font-black text-white uppercase tracking-tighter truncate w-full text-center">{data.city || 'Remoto'}</span>
@@ -272,26 +307,109 @@ const MemberNode = ({ data, isConnectable }) => {
                     e.stopPropagation(); 
                     if(data.onAudit) data.onAudit(data.member); 
                 }} 
-                className="nodrag w-full py-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 font-black uppercase text-[8px] tracking-[0.4em] transition-all relative z-10 backdrop-blur-md"
+                className="nodrag w-full py-2 rounded-xl bg-white/[0.02] border border-white/5 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 font-black uppercase text-[8px] tracking-[0.4em] transition-all relative z-10 backdrop-blur-md"
             >
                 Ver Detalles
             </button>
             
-            {/* Bottom Handle: Salida (Lidera a otros) */}
+            {/* Bottom Handle: Salida (Lidera a otros o Conecta con Marcas) */}
             <Handle 
                 type="source" 
                 position={Position.Bottom} 
                 isConnectable={isConnectable} 
-                className="w-8 h-8 -bottom-4 rounded-full border-[4px] border-[#0A0A14] bg-emerald-500 cursor-crosshair transition-transform hover:scale-110 shadow-[0_0_20px_rgba(16,185,129,0.5)] z-50 flex items-center justify-center" 
+                className={`w-8 h-8 -bottom-4 rounded-full border-[4px] border-[#0A0A14] ${data.canvasMode === 'brands' ? 'bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.6)]' : 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]'} cursor-crosshair transition-transform hover:scale-110 z-50 flex items-center justify-center`} 
             >
                 <div className="w-2 h-2 rounded-full bg-white animate-ping" />
             </Handle>
-            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase text-emerald-500 tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">ARRASTRAR PARA LIDERAR</div>
+            <div className={`absolute -bottom-10 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase ${data.canvasMode === 'brands' ? 'text-cyan-400' : 'text-emerald-500'} tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap`}>
+                {data.canvasMode === 'brands' ? 'ARRASTRAR PARA ASIGNAR MARCA' : 'ARRASTRAR PARA LIDERAR'}
+            </div>
         </div>
     );
 };
 
-const nodeTypes = { customMember: MemberNode };
+// ============================================
+// CUSTOM BRAND NODE (Tarjeta Visual de Marca)
+// ============================================
+const BrandNode = ({ data, isConnectable }) => {
+    const client = data.client || {};
+    const hasCM = !!client.cm;
+    const isMatched = data.isMatched;
+
+    return (
+        <div className={`relative w-[260px] bg-[#0A0A14]/95 backdrop-blur-xl border ${isMatched ? 'border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.25)]' : hasCM ? 'border-indigo-500/40 shadow-[0_0_20px_rgba(99,102,241,0.2)]' : 'border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)]'} rounded-[2rem] p-5 flex flex-col group transition-all duration-300`}>
+            
+            {/* Top Handle: Entrada para recibir asignación del CM */}
+            <Handle 
+                type="target" 
+                position={Position.Top} 
+                isConnectable={isConnectable} 
+                className="w-7 h-7 -top-3.5 rounded-full border-[4px] border-[#0A0A14] bg-cyan-400 cursor-crosshair transition-transform hover:scale-125 shadow-[0_0_15px_rgba(34,211,238,0.6)] z-50 flex items-center justify-center" 
+            >
+                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            </Handle>
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase text-cyan-400 tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">CONECTAR CM AQUÍ</div>
+
+            {/* Match Badge if any */}
+            {isMatched && (
+                <div className="absolute -top-3 right-4 z-30 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[8px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1 backdrop-blur-md animate-pulse">
+                    ✨ Match Nicho
+                </div>
+            )}
+
+            {/* Brand Header */}
+            <div className="flex items-center gap-3 mb-3 pt-1">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 p-0.5 shadow-lg flex-shrink-0">
+                    <div className="w-full h-full rounded-[14px] bg-[#050510] flex items-center justify-center text-xl font-black text-white italic">
+                        {client.name ? client.name.charAt(0).toUpperCase() : 'M'}
+                    </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-black text-white uppercase italic tracking-tight truncate" title={client.name}>
+                        {client.name || 'Marca'}
+                    </h4>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider truncate">
+                        {client.industry || client.type || 'Comercial'}
+                    </p>
+                    <span className="text-[7px] text-gray-500 font-mono flex items-center gap-1 mt-0.5">
+                        <Globe className="w-2.5 h-2.5 text-gray-400" /> {client.city || 'Quito'}
+                    </span>
+                </div>
+            </div>
+
+            {/* Assignment Status Box */}
+            <div className={`p-2.5 rounded-xl border mb-3 flex items-center justify-between ${hasCM ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-amber-500/10 border-amber-500/20'}`}>
+                <div className="min-w-0 flex-1 mr-2">
+                    <span className="text-[7px] font-black uppercase tracking-widest text-gray-400 block">CM Asignado</span>
+                    <span className={`text-[9px] font-black uppercase truncate block ${hasCM ? 'text-indigo-300' : 'text-amber-400 animate-pulse'}`}>
+                        {hasCM ? `👤 ${client.cm}` : '⚠️ Sin Asignar'}
+                    </span>
+                </div>
+                {hasCM && data.onDisconnectBrand && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            data.onDisconnectBrand(client.id, client.name);
+                        }}
+                        className="nodrag px-2 py-1 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white rounded-lg border border-rose-500/20 text-[7px] font-black uppercase transition-all"
+                        title="Desvincular CM"
+                    >
+                        Liberar
+                    </button>
+                )}
+            </div>
+
+            <div className="text-[8px] text-center text-gray-500 font-bold uppercase tracking-widest">
+                {hasCM ? '🟢 Marca Vinculada' : '🔵 Arrastra un CM arriba'}
+            </div>
+        </div>
+    );
+};
+
+const nodeTypes = { 
+    customMember: MemberNode,
+    customBrand: BrandNode 
+};
 
 // ============================================
 // MAIN VISUAL BOARD
@@ -300,6 +418,7 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
     const [activeSede, setActiveSede] = useState('Todas');
+    const [canvasMode, setCanvasMode] = useState('squad'); // 'squad' | 'brands'
     const [onlineEmails, setOnlineEmails] = useState(new Set());
 
     // Subscribe to Realtime Presence updates
@@ -312,6 +431,17 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
         };
     }, []);
 
+    // Helper: Disconnect Brand callback
+    const handleDisconnectBrand = useCallback(async (clientId, clientName) => {
+        try {
+            await agencyService.updateClient(clientId, { cm: null });
+            toast.success(`Marca "${clientName}" desvinculada`);
+            if (refreshTeam) refreshTeam();
+        } catch (e) {
+            toast.error("Error al desvincular marca");
+        }
+    }, [refreshTeam]);
+
     // Initialize Layout with Persistent Memory
     useEffect(() => {
         if (!team || team.length === 0) {
@@ -320,26 +450,28 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
             return;
         }
 
-        console.log(`📡 [SquadCanvas] Building structure for ${team.length} members. Sede: ${activeSede}. Online users: ${onlineEmails.size}`);
+        console.log(`📡 [SquadCanvas] Building structure. Mode: ${canvasMode}, Sede: ${activeSede}`);
 
         const generatedNodes = [];
         const generatedEdges = [];
-        const savedLayout = JSON.parse(localStorage.getItem('diiczone_squad_layout') || '{}');
+        const savedLayout = JSON.parse(localStorage.getItem(`diiczone_${canvasMode}_layout`) || '{}');
 
         // Filter by Sede
         let filteredTeam = [...team];
+        let filteredClients = [...allClients];
 
         if (activeSede !== 'Todas') {
-            const sedeClients = (allClients || []).filter(c => (c.city || '').toLowerCase().trim() === activeSede.toLowerCase().trim());
+            const targetSede = activeSede.toLowerCase().trim();
+            filteredClients = allClients.filter(c => (c.city || '').toLowerCase().trim() === targetSede);
+            
             const activePersonnelNames = new Set(
-                sedeClients.flatMap(c => [c.cm, c.editor, c.filmmaker])
+                filteredClients.flatMap(c => [c.cm, c.editor, c.filmmaker])
                     .filter(Boolean)
                     .map(name => name.trim())
             );
             
             const coreMembers = team.filter(m => {
                 const memberCity = (m.city || '').toLowerCase().trim();
-                const targetSede = activeSede.toLowerCase().trim();
                 const isResident = memberCity === targetSede;
                 return activePersonnelNames.has((m.name || '').trim()) || isResident;
             });
@@ -368,11 +500,98 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
             return role.includes('community manager') || role.includes('cm') || role.includes('social media');
         };
 
-        const strategists = filteredTeam.filter(m => isEstrategaRole(m.role));
         const cms = filteredTeam.filter(m => isCMRole(m.role));
+
+        // ============================================
+        // MODE 1: BRANDS MATRIX CANVAS (CMs arriba, Marcas abajo)
+        // ============================================
+        if (canvasMode === 'brands') {
+            const CM_Y = 60;
+            const CM_SPACING = 360;
+            const BRAND_START_Y = 520;
+            const BRAND_SPACING_X = 300;
+            const BRAND_SPACING_Y = 240;
+            const BRANDS_PER_ROW = Math.max(4, Math.ceil(Math.sqrt(filteredClients.length * 1.5)));
+
+            // 1. Add CM Nodes
+            const startXCM = -((cms.length - 1) * CM_SPACING) / 2;
+            cms.forEach((cm, idx) => {
+                const assignedCount = allClients.filter(c => (c.cm || '').trim().toLowerCase() === (cm.name || '').trim().toLowerCase()).length;
+                
+                generatedNodes.push({
+                    id: cm.id,
+                    type: 'customMember',
+                    position: savedLayout[cm.id] || { x: startXCM + (idx * CM_SPACING), y: CM_Y },
+                    data: { 
+                        label: cm.name || 'Sin Nombre', 
+                        role: cm.role || 'Community Manager', 
+                        city: cm.city, 
+                        salary: cm.salary, 
+                        member: cm, 
+                        onlineEmails,
+                        canvasMode: 'brands',
+                        assignedBrandsCount: assignedCount,
+                        allClients,
+                        onAudit 
+                    }
+                });
+            });
+
+            // 2. Add Brand Nodes
+            const totalCols = Math.min(filteredClients.length, BRANDS_PER_ROW) || 1;
+            const startXBrand = -((totalCols - 1) * BRAND_SPACING_X) / 2;
+
+            filteredClients.forEach((client, idx) => {
+                const row = Math.floor(idx / BRANDS_PER_ROW);
+                const col = idx % BRANDS_PER_ROW;
+                const nodeId = `brand-${client.id}`;
+
+                // Check if brand matches any CM's niches
+                const assignedCM = cms.find(m => (m.name || '').trim().toLowerCase() === (client.cm || '').trim().toLowerCase());
+                const isMatched = !!(assignedCM && Array.isArray(assignedCM.niche_affinities) && assignedCM.niche_affinities.some(n => {
+                    const key = n.toLowerCase().split('&')[0].trim();
+                    const target = `${client.name} ${client.industry || ''} ${client.type || ''}`.toLowerCase();
+                    return target.includes(key);
+                }));
+
+                generatedNodes.push({
+                    id: nodeId,
+                    type: 'customBrand',
+                    position: savedLayout[nodeId] || { 
+                        x: startXBrand + (col * BRAND_SPACING_X), 
+                        y: BRAND_START_Y + (row * BRAND_SPACING_Y) 
+                    },
+                    data: {
+                        client,
+                        isMatched,
+                        onDisconnectBrand: handleDisconnectBrand
+                    }
+                });
+
+                // Add connection edge if brand has assigned CM
+                if (assignedCM) {
+                    generatedEdges.push({
+                        id: `e-brand-${assignedCM.id}-${client.id}`,
+                        source: assignedCM.id,
+                        target: nodeId,
+                        animated: true,
+                        style: { stroke: '#10b981', strokeWidth: 3.5, filter: 'drop-shadow(0 0 10px rgba(16,185,129,0.7))' },
+                        markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' },
+                    });
+                }
+            });
+
+            setNodes(generatedNodes);
+            setEdges(generatedEdges);
+            return;
+        }
+
+        // ============================================
+        // MODE 2: SQUAD & HIERARCHY CANVAS (Organigrama)
+        // ============================================
+        const strategists = filteredTeam.filter(m => isEstrategaRole(m.role));
         const creatives = filteredTeam.filter(m => !isEstrategaRole(m.role) && !isCMRole(m.role));
 
-        // Simple layouting math
         const LEVEL_Y = { ESTRATEGAS: 50, CMS: 450, CREATIVES: 850 };
         const X_SPACING = { ESTRATEGAS: 400, CMS: 350, CREATIVES: 320 };
 
@@ -392,6 +611,8 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
                         salary: m.salary, 
                         member: m, 
                         onlineEmails,
+                        canvasMode: 'squad',
+                        allClients,
                         onAudit 
                     }
                 });
@@ -415,7 +636,7 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
 
         setNodes(generatedNodes);
         setEdges(generatedEdges);
-    }, [team, allClients, onAudit, activeSede, onlineEmails]);
+    }, [team, allClients, onAudit, activeSede, canvasMode, onlineEmails, handleDisconnectBrand]);
 
     const onNodesChange = useCallback(
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -423,11 +644,11 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
     );
 
     const onNodeDragStop = useCallback((event, node) => {
-        // Save coordinates persistently when the user stops dragging
-        const currentSaved = JSON.parse(localStorage.getItem('diiczone_squad_layout') || '{}');
+        // Save coordinates persistently per canvas mode
+        const currentSaved = JSON.parse(localStorage.getItem(`diiczone_${canvasMode}_layout`) || '{}');
         currentSaved[node.id] = node.position;
-        localStorage.setItem('diiczone_squad_layout', JSON.stringify(currentSaved));
-    }, []);
+        localStorage.setItem(`diiczone_${canvasMode}_layout`, JSON.stringify(currentSaved));
+    }, [canvasMode]);
 
     const onEdgesChange = useCallback(
         (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
@@ -436,9 +657,56 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
 
     const onConnect = useCallback(async (params) => {
         // params: { source, target, sourceHandle, targetHandle }
-        console.log("🔗 New Edge Connecting:", params);
-        
-        // Optimistic UI updates
+        console.log("🔗 New Edge Connecting:", params, "Mode:", canvasMode);
+
+        // ============================================
+        // BRAND ASSIGNMENT CONNECTION (CM -> Brand)
+        // ============================================
+        if (canvasMode === 'brands' || params.target.startsWith('brand-')) {
+            const clientId = params.target.replace('brand-', '');
+            const cm = team.find(m => m.id === params.source);
+            const client = allClients.find(c => String(c.id) === String(clientId));
+
+            if (!cm) {
+                toast.error("Selecciona un Community Manager válido");
+                return;
+            }
+
+            // Check 5 to 7 brands capacity rule
+            const currentCMBrands = allClients.filter(c => (c.cm || '').trim().toLowerCase() === (cm.name || '').trim().toLowerCase());
+            if (currentCMBrands.length >= 7) {
+                toast.warning(`⚠️ Límite de Capacidad: ${cm.name} ya gestiona ${currentCMBrands.length} marcas (rango recomendado: 5 a 7 marcas).`, {
+                    description: "Se ha asignado la marca adicional bajo sobrecarga."
+                });
+            }
+
+            // Optimistic UI updates
+            const newEdge = { 
+                ...params, 
+                id: `e-brand-${cm.id}-${clientId}`, 
+                animated: true, 
+                style: { stroke: '#10b981', strokeWidth: 4, filter: 'drop-shadow(0 0 12px rgba(16,185,129,0.8))' }, 
+                markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' }
+            };
+            
+            setEdges((eds) => addEdge(newEdge, eds.filter(e => e.target !== params.target)));
+
+            try {
+                await agencyService.assignClientToCM(clientId, cm.name);
+                toast.success(`Marca "${client?.name || 'Cliente'}" asignada a ${cm.name} ✨`, {
+                    description: `Carga actual: ${currentCMBrands.length + 1}/7 marcas`
+                });
+                if (refreshTeam) refreshTeam();
+            } catch (error) {
+                console.error("Brand assignment error:", error);
+                toast.error("Error al asignar marca");
+            }
+            return;
+        }
+
+        // ============================================
+        // SQUAD HIERARCHY CONNECTION (Leader -> Member)
+        // ============================================
         const newEdge = { 
             ...params, 
             id: `e-${params.source}-${params.target}`, 
@@ -447,13 +715,9 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
             markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' }
         };
         
-        setEdges((eds) => addEdge(newEdge, eds));
-        
-        // Remove prior edges that target the same node (a person can only have 1 direct squad_lead_id)
-        setEdges((eds) => eds.filter(e => e.target !== params.target || e.source === params.source));
+        setEdges((eds) => addEdge(newEdge, eds.filter(e => e.target !== params.target || e.source === params.source)));
 
         try {
-            // Update Database: target member now reports to source member
             await agencyService.updateTeamMember(params.target, { squad_lead_id: params.source });
             toast.success("Vínculo de Mando Actualizado ✨", {
                 description: "La estructura jerárquica ha sido sincronizada en la base central."
@@ -463,16 +727,24 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
             console.error("Link update failed:", error);
             toast.error("Error al establecer el mando");
         }
-    }, [refreshTeam]);
+    }, [canvasMode, team, allClients, refreshTeam]);
 
     const onEdgeDoubleClick = useCallback(async (event, edge) => {
-        // Disconnect behavior
         try {
-            setEdges((eds) => eds.filter((e) => e.id !== edge.id));
-            await agencyService.updateTeamMember(edge.target, { squad_lead_id: null });
-            toast.success("Vínculo Desconectado", {
-                description: "La unidad vuelve a ser independiente."
-            });
+            if (edge.id.startsWith('e-brand-') || edge.target.startsWith('brand-')) {
+                const clientId = edge.target.replace('brand-', '');
+                setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+                await agencyService.updateClient(clientId, { cm: null });
+                toast.success("Marca Desvinculada", {
+                    description: "La marca vuelve a estar disponible para asignación."
+                });
+            } else {
+                setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+                await agencyService.updateTeamMember(edge.target, { squad_lead_id: null });
+                toast.success("Vínculo Desconectado", {
+                    description: "La unidad vuelve a ser independiente."
+                });
+            }
             if (refreshTeam) refreshTeam();
         } catch (e) {
             toast.error("Error al desconectar");
@@ -480,32 +752,60 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
     }, [refreshTeam]);
 
     return (
-        <div className="w-full h-[800px] bg-[#05050A] rounded-[3rem] border border-white/5 overflow-hidden group/board relative shadow-2xl">
+        <div className="w-full h-[820px] bg-[#05050A] rounded-[3rem] border border-white/5 overflow-hidden group/board relative shadow-2xl">
             {/* HUD OVERLAY */}
-            <div className="absolute top-8 left-8 z-10 pointer-events-none">
+            <div className="absolute top-8 left-8 z-10 pointer-events-none space-y-4">
                 <div className="flex items-center gap-3">
                     <Database className="w-5 h-5 text-indigo-500 animate-pulse" />
-                    <h3 className="text-sm font-black text-white uppercase tracking-[0.5em] italic">Squad Canvas</h3>
+                    <h3 className="text-sm font-black text-white uppercase tracking-[0.5em] italic">Squad & Brands Canvas</h3>
                 </div>
-                <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest mt-2 ml-8 mb-6">Sistema Conexión Dinámica</p>
+
+                {/* Canvas Mode Switcher */}
+                <div className="flex items-center gap-2 bg-[#0A0A14]/90 p-1.5 rounded-2xl border border-white/10 backdrop-blur-md pointer-events-auto shadow-2xl">
+                    <button
+                        onClick={() => setCanvasMode('squad')}
+                        className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                            canvasMode === 'squad' 
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-[1.02]' 
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        <Shield className="w-3.5 h-3.5" /> Escuadras & Jerarquía
+                    </button>
+                    <button
+                        onClick={() => setCanvasMode('brands')}
+                        className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                            canvasMode === 'brands' 
+                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 scale-[1.02]' 
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        <Globe className="w-3.5 h-3.5" /> Red de Marcas & CMs (5-7)
+                    </button>
+                </div>
                 
                 {/* Sede Selectors */}
-                <div className="flex flex-col gap-3 ml-8 pointer-events-auto">
+                <div className="flex flex-col gap-2 pointer-events-auto">
                     {['Todas', 'Santo Domingo', 'Quito', 'Manta'].map(sede => (
                         <button 
                             key={sede}
                             onClick={() => setActiveSede(sede)}
-                            className={`px-5 py-3 text-left rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all backdrop-blur-md ${activeSede === sede ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : 'bg-[#0A0A14]/80 border-white/5 text-gray-500 hover:text-white hover:border-white/20'}`}
+                            className={`px-4 py-2 text-left rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all backdrop-blur-md ${activeSede === sede ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : 'bg-[#0A0A14]/80 border-white/5 text-gray-500 hover:text-white hover:border-white/20'}`}
                         >
-                            <span className={`inline-block w-2 h-2 rounded-full mr-3 ${activeSede === sede ? 'bg-indigo-400 animate-pulse' : 'bg-gray-700'}`}></span>
+                            <span className={`inline-block w-2 h-2 rounded-full mr-2.5 ${activeSede === sede ? 'bg-indigo-400 animate-pulse' : 'bg-gray-700'}`}></span>
                             {sede === 'Todas' ? 'Directorio Global' : `Sede ${sede}`}
                         </button>
                     ))}
                 </div>
             </div>
+
+            {/* Instruction Banner */}
             <div className="absolute top-8 right-8 z-10 pointer-events-none text-right">
-                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-4 py-2 border border-indigo-500/20 rounded-full">
-                    Arrastra el conector de 🟢 Salida hacia 🔴 Entrada
+                <p className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 border rounded-full backdrop-blur-md shadow-lg ${canvasMode === 'brands' ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300' : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'}`}>
+                    {canvasMode === 'brands' 
+                        ? 'Arrastra desde el conector inferior del 🟢 CM hacia la 🔵 Marca (5-7 marcas máx)' 
+                        : 'Arrastra el conector de 🟢 Salida hacia 🔴 Entrada'
+                    }
                 </p>
                 <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">
                     Doble clic en la línea para Desvincular
@@ -514,48 +814,48 @@ export default function SquadCanvasBoard({ team, allClients = [], onAudit, refre
 
             <div className="relative w-full h-full bg-[#0A0A14]/40 rounded-[3rem] border border-white/5 overflow-hidden group shadow-2xl">
                 <ReactFlow
-                key={`flow-${activeSede}`}
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onNodeDragStop={onNodeDragStop}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onEdgeDoubleClick={onEdgeDoubleClick}
-                nodeTypes={nodeTypes}
-                onInit={(instance) => {
-                    setTimeout(() => instance.fitView({ padding: 0.2 }), 100);
-                }}
-                fitView
-                fitViewOptions={{ padding: 0.2 }}
-                minZoom={0.2}
-                maxZoom={2}
-                className="custom-flow-theme"
-            >
-                <Background color="#ffffff" gap={32} size={1} opacity={0.03} />
-                <Controls 
-                    className="bg-[#0A0A14] border border-white/10 rounded-2xl p-2 shadow-2xl fill-white" 
-                    showInteractive={false} // clean look
-                />
-            </ReactFlow>
+                    key={`flow-${canvasMode}-${activeSede}`}
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onNodeDragStop={onNodeDragStop}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onEdgeDoubleClick={onEdgeDoubleClick}
+                    nodeTypes={nodeTypes}
+                    onInit={(instance) => {
+                        setTimeout(() => instance.fitView({ padding: 0.2 }), 100);
+                    }}
+                    fitView
+                    fitViewOptions={{ padding: 0.2 }}
+                    minZoom={0.2}
+                    maxZoom={2}
+                    className="custom-flow-theme"
+                >
+                    <Background color="#ffffff" gap={32} size={1} opacity={0.03} />
+                    <Controls 
+                        className="bg-[#0A0A14] border border-white/10 rounded-2xl p-2 shadow-2xl fill-white" 
+                        showInteractive={false}
+                    />
+                </ReactFlow>
 
-            {/* Custom CSS overrides for React Flow inner elements to match DIIC Zone aesthetic */}
-            <style dangerouslySetInnerHTML={{__html: `
-                .react-flow__controls-button {
-                    background-color: transparent !important;
-                    border: none !important;
-                    fill: #9ca3af !important;
-                }
-                .react-flow__controls-button:hover {
-                    fill: #ffffff !important;
-                }
-                .react-flow__pane {
-                    cursor: grab;
-                }
-                .react-flow__pane:active {
-                    cursor: grabbing;
-                }
-            `}} />
+                {/* Custom CSS overrides for React Flow inner elements to match DIIC Zone aesthetic */}
+                <style dangerouslySetInnerHTML={{__html: `
+                    .react-flow__controls-button {
+                        background-color: transparent !important;
+                        border: none !important;
+                        fill: #9ca3af !important;
+                    }
+                    .react-flow__controls-button:hover {
+                        fill: #ffffff !important;
+                    }
+                    .react-flow__pane {
+                        cursor: grab;
+                    }
+                    .react-flow__pane:active {
+                        cursor: grabbing;
+                    }
+                `}} />
             </div>
         </div>
     );
