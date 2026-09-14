@@ -877,6 +877,17 @@ export const agencyService = {
 
             if (teamError) throw teamError;
 
+            // Strict Creative Roles Whitelist
+            const ALLOWED_CREATIVE_ROLES = new Set([
+                'CREATIVE', 'CREATOR', 'TALENT', 'EDITOR', 'FILMMAKER',
+                'DESIGNER', 'DESIGN', 'DISEÑADOR', 'AUDIO', 'INGENIERÍA DE AUDIO',
+                'FOTOGRAFIA', 'FOTOGRAFÍA', 'FOTO', 'PHOTOGRAPHY', 'PHOTO',
+                'MODELO', 'MODEL', 'MODELOS', 'WEB', 'DESARROLLO WEB', 'PROGRAMADOR',
+                'PRINT', 'IMPRENTA', 'IMPRENTA / MERCH', 'MERCH',
+                'EVENT', 'EVENTO', 'EVENTOS', 'EVENTOS / PROD', 'ESTRATEGA',
+                'COMMUNITY', 'CM', 'COMMUNITY MANAGER', 'COORDINADORA DE CONTENIDO', 'DIRECTOR GENERAL'
+            ]);
+
             // Map lowercase or incomplete roles from DB/onboarding to proper display roles
             const mapRoleToDisplay = (role) => {
                 if (!role) return 'Creative';
@@ -892,22 +903,35 @@ export const agencyService = {
                 if (r === 'print' || r === 'imprenta / merch') return 'Imprenta / Merch';
                 if (r === 'event' || r === 'eventos / prod') return 'Eventos / Prod';
                 if (r === 'estratega') return 'Estratega';
+                if (r === 'coordinadora de contenido') return 'Coordinadora de Contenido';
+                if (r === 'director general') return 'Director General';
                 
                 // Return capitalized version of original
                 return role.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
             };
 
-            const mappedTeamData = (teamData || []).map(member => ({
-                ...member,
-                role: mapRoleToDisplay(member.role)
-            }));
+            // Filter out any invalid / generic user accounts that may exist in team table
+            const mappedTeamData = (teamData || [])
+                .filter(member => {
+                    if (!member || !member.name) return false;
+                    const r = (member.role || '').trim().toUpperCase();
+                    if (r === 'USER' || r === 'CLIENT' || r === 'AUTHENTICATED' || r === '') return false;
+                    return true;
+                })
+                .map(member => ({
+                    ...member,
+                    role: mapRoleToDisplay(member.role)
+                }));
 
-            // 1. Fetch profiles that are creatives using case-insensitive ilike filters
+            // 1. Fetch profiles that are explicitly creatives with allowed roles
             const { data: profiles, error: pError } = await supabase
                 .from('profiles')
                 .select('*')
+                .not('role', 'is', null)
                 .not('role', 'ilike', 'client')
-                .not('role', 'ilike', 'admin');
+                .not('role', 'ilike', 'admin')
+                .not('role', 'ilike', 'user')
+                .not('role', 'ilike', 'authenticated');
 
             if (!pError && Array.isArray(profiles)) {
                 // Normalize names for comparison
@@ -926,6 +950,12 @@ export const agencyService = {
                 
                 const missingCreatives = profiles.filter(p => {
                     if (!p.full_name) return false;
+                    
+                    const pRole = (p.role || '').trim().toUpperCase();
+                    // MUST be an explicitly permitted creative role
+                    if (!pRole || !ALLOWED_CREATIVE_ROLES.has(pRole)) {
+                        return false;
+                    }
                     
                     const pEmail = (p.email || '').toLowerCase().trim();
                     const pNameNorm = normalizeName(p.full_name);

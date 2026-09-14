@@ -10,15 +10,29 @@ export const onboardingService = {
         if (!user) throw new Error('Usuario no autenticado para finalizar onboarding');
 
         // 1. Preparar datos de Identidad
-        const fullName = formData.name || user.user_metadata?.full_name || '';
+        const fullName = formData.name || formData.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '';
         const brandName = formData.brand || user.user_metadata?.brand || (fullName ? `${fullName} Workspace` : 'Sin Marca');
         const city = formData.city || user.user_metadata?.city || 'Santo Domingo';
         const country = formData.country || user.user_metadata?.country || 'Ecuador';
         const address = formData.address || user.user_metadata?.address || '';
-        const profileType = formData.type || 'client'; // creative or client
+        
+        // Smart Creative Detection: Check form data, metadata and name patterns
+        const hasCreativeIndicators = 
+            formData.role || 
+            user.user_metadata?.role === 'CREATOR' || 
+            user.user_metadata?.role === 'COMMUNITY' ||
+            fullName.toUpperCase().includes(' CM') || 
+            fullName.toUpperCase().includes('(CM)') ||
+            fullName.toUpperCase().includes('ESTRATEGA');
+
+        let profileType = formData.type || user.user_metadata?.type || user.user_metadata?.profile_type;
+        if (!profileType || (profileType === 'client' && hasCreativeIndicators && formData.role)) {
+            profileType = hasCreativeIndicators ? 'creative' : 'client';
+        }
+
         const birthDate = formData.birth_date || user.user_metadata?.birth_date || null;
 
-        console.log('[OnboardingService] Iniciando finalización para:', user.email);
+        console.log('[OnboardingService] Iniciando finalización para:', user.email, 'Tipo:', profileType);
 
         try {
             // A. Obtener el perfil actual para ver si ya tenemos un ID asociado
@@ -26,7 +40,7 @@ export const onboardingService = {
                 .from('profiles')
                 .select('client_id, team_id')
                 .eq('id', user.id)
-                .single();
+                .maybeSingle();
 
             let clientId = currentProfile?.client_id;
             let teamId = currentProfile?.team_id;
@@ -59,102 +73,83 @@ export const onboardingService = {
             // 2. Sincronización de Base de Datos (Clients or Team)
             try {
                 if (profileType === 'client') {
-                    // --- LÓGICA ANTI-DUPLICADOS (Búsqueda Proactiva) ---
-                    if (!clientId) {
-                        const { data: existingClient } = await supabase
-                            .from('clients')
-                            .select('id')
-                            .eq('email', user.email)
-                            .maybeSingle();
-                        
-                        if (existingClient) {
-                            console.log('[OnboardingService] Cliente existente detectado mediante email:', existingClient.id);
-                            clientId = existingClient.id;
-                        }
-                    }
-
-                    const targetId = clientId || `${brandName.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
-                    
-                    const trialDate = new Date();
-                    trialDate.setDate(trialDate.getDate() + 15);
-                    const startDateStr = trialDate.toISOString().split('T')[0];
-
-                    const isEcuador = (country || '').toLowerCase().trim() === 'ecuador';
-                    const initialFilmmaker = isEcuador ? 'Sin asignar' : 'En revisión / Por coordinar';
-
+                    const targetClientId = clientId || `CLI-${Math.floor(1000 + Math.random() * 9000)}`;
                     const { data: clientData, error: clientError } = await supabase
                         .from('clients')
                         .upsert({
-                            id: targetId,
+                            id: targetClientId,
                             name: brandName,
-                            slug: brandSlug,
-                            email: user.email,
+                            contact: fullName,
+                            email: user.email || formData.email || '',
+                            industry: industryName,
+                            category: formData.profileType || 'general',
                             city: city,
                             country: country,
                             address: address,
-                            type: industryName,
-                            industry: industryName,
-                            specialty: formData.niche || 'General',
-                            status: 'ONBOARDING_COMPLETED',
-                            priority: 'MEDIUM',
-                            plan: formData.selectedPlan?.name || 'SOLO USO DE APP (BÁSICO)',
-                            price: formData.selectedPlan?.price !== undefined ? formData.selectedPlan.price : 70,
-                            start_date: startDateStr,
-                            filmmaker: initialFilmmaker,
-                            birth_date: birthDate,
-                            website: formData.website || user.user_metadata?.website || '',
-                            goals: formData.goals || [],
-                            onboarding_data: formData 
+                            whatsapp: formData.whatsapp || user.user_metadata?.whatsapp || '',
+                            plan: 'Pro',
+                            status: 'activo',
+                            health: 'excelente',
+                            monthly_growth: '+0.0%',
+                            social: formData.social || {},
+                            crm_usage: formData.businessInfo?.usesCRM || false,
+                            brand_identity: formData.brandIdentity || {}
                         }, { onConflict: 'id' })
                         .select()
-                        .single();
+                        .maybeSingle();
 
-                    if (!clientError) clientId = clientData.id;
+                    if (!clientError && clientData) clientId = clientData.id;
                     else console.warn('[OnboardingService] Error en upsert de cliente:', clientError);
 
                 } else if (profileType === 'creative') {
                     // --- LÓGICA DE RECONCILIACIÓN PARA CREATIVOS EXISTENTES ---
                     if (!teamId) {
                         // 1. Intentar buscar por email en la tabla 'team'
-                        const { data: existingByEmail } = await supabase
-                            .from('team')
-                            .select('id')
-                            .eq('email', user.email)
-                            .maybeSingle();
-
-                        if (existingByEmail) {
-                            teamId = existingByEmail.id;
-                        } else {
-                            // 2. Intentar buscar por nombre normalizado (para vincular cuentas previamente creadas por admin sin email)
-                            const { data: allTeam } = await supabase
+                        if (user.email) {
+                            const { data: existingByEmail } = await supabase
                                 .from('team')
-                                .select('id, name');
-                            
-                            const normalizeName = (n) => (n || '').toLowerCase()
-                                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                                .replace(/[^\w]/g, '')
-                                .trim();
+                                .select('id, code')
+                                .ilike('email', user.email)
+                                .maybeSingle();
 
-                            const pNameNorm = normalizeName(fullName);
-                            const matched = allTeam?.find(t => normalizeName(t.name) === pNameNorm);
-                            if (matched) {
-                                teamId = matched.id;
+                            if (existingByEmail) {
+                                teamId = existingByEmail.id;
+                                creativeCode = existingByEmail.code;
+                            }
+                        }
+                        
+                        if (!teamId && fullName) {
+                            // 2. Intentar buscar por nombre normalizado
+                            const { data: existingByName } = await supabase
+                                .from('team')
+                                .select('id, code')
+                                .ilike('name', fullName)
+                                .maybeSingle();
+
+                            if (existingByName) {
+                                teamId = existingByName.id;
+                                creativeCode = existingByName.code;
                             }
                         }
                     }
 
-                    const targetTeamId = teamId || `TEAM-${Math.floor(1000 + Math.random() * 9000)}`;
+                    const targetTeamId = teamId || `tea-${Math.floor(1000 + Math.random() * 9000)}`;
                     
                     const mapRoleToDb = (role) => {
-                        if (!role) return 'Creative';
+                        if (!role) {
+                            if (fullName.toUpperCase().includes('CM') || fullName.toUpperCase().includes('ESTRATEGA')) {
+                                return 'Community Manager';
+                            }
+                            return 'Community Manager';
+                        }
                         const r = role.toLowerCase().trim();
                         if (r === 'editor') return 'Editor de Video';
                         if (r === 'filmmaker') return 'Filmmaker';
                         if (r === 'designer' || r === 'diseñador') return 'Diseñador';
                         if (r === 'audio') return 'Ingeniería de Audio';
-                        if (r === 'community') return 'Community Manager';
-                        if (r === 'photo') return 'Fotografía';
-                        if (r === 'model') return 'Modelos';
+                        if (r === 'community' || r === 'cm' || r.includes('community')) return 'Community Manager';
+                        if (r === 'photo' || r === 'fotografía') return 'Fotografía';
+                        if (r === 'model' || r === 'modelos') return 'Modelos';
                         if (r === 'web') return 'Desarrollo Web';
                         if (r === 'print') return 'Imprenta / Merch';
                         if (r === 'event') return 'Eventos / Prod';
@@ -164,53 +159,52 @@ export const onboardingService = {
 
                     const dbRole = mapRoleToDb(formData.role);
 
-                    // Check if team member already has a code
-                    let existingCode = null;
-                    if (teamId) {
-                        try {
-                            const { data: existingTeam } = await supabase
-                                .from('team')
-                                .select('code')
-                                .eq('id', teamId)
-                                .maybeSingle();
-                            if (existingTeam?.code) {
-                                existingCode = existingTeam.code;
-                            }
-                        } catch (codeErr) {
-                            console.warn('[OnboardingService] Error checking existing team code:', codeErr);
-                        }
+                    if (!creativeCode) {
+                        const sluggifyName = (fullName || 'CORP').replace(/[^a-zA-Z]/g, '').toUpperCase();
+                        const namePart = sluggifyName.substring(0, 4) || 'CORP';
+                        const randomPart = Math.floor(1000 + Math.random() * 9000);
+                        creativeCode = `DIIC-${namePart}-${randomPart}`;
                     }
-
-                    const sluggifyName = (fullName || 'CORP').replace(/[^a-zA-Z]/g, '').toUpperCase();
-                    const namePart = sluggifyName.substring(0, 4) || 'CORP';
-                    const randomPart = Math.floor(1000 + Math.random() * 9000);
-                    creativeCode = existingCode || `DIIC-${namePart}-${randomPart}`;
                     
+                    const teamPayload = {
+                        id: targetTeamId,
+                        name: fullName || 'Talento Creativo',
+                        email: user.email || formData.email || '',
+                        role: dbRole,
+                        status: 'activo',
+                        city: city,
+                        availability: 'full-time',
+                        activetasks: 0,
+                        cv_url: formData.cv_url || '',
+                        cv_summary: formData.cv_summary || '',
+                        skills: formData.skills || [],
+                        whatsapp: formData.whatsapp || '',
+                        birth_date: birthDate,
+                        code: creativeCode,
+                        portfolio_url: formData.website || formData.portfolio_url || '',
+                        website: formData.website || ''
+                    };
+
                     const { data: teamData, error: teamError } = await supabase
                         .from('team')
-                        .upsert({
-                            id: targetTeamId,
-                            name: fullName,
-                            email: user.email || formData.email || '',
-                            role: dbRole,
-                            status: 'activo',
-                            city: city,
-                            availability: 'full-time',
-                            activetasks: 0,
-                            cv_url: formData.cv_url || '',
-                            cv_summary: formData.cv_summary || '',
-                            skills: formData.skills || [],
-                            whatsapp: formData.whatsapp || '',
-                            birth_date: birthDate,
-                            code: creativeCode,
-                            portfolio_url: formData.website || formData.portfolio_url || '',
-                            website: formData.website || ''
-                        }, { onConflict: 'id' })
+                        .upsert(teamPayload, { onConflict: 'id' })
                         .select()
-                        .single();
+                        .maybeSingle();
 
-                    if (!teamError) teamId = teamData.id;
-                    else console.warn('[OnboardingService] Error en upsert de equipo:', teamError);
+                    if (!teamError && teamData) {
+                        teamId = teamData.id;
+                    } else {
+                        console.warn('[OnboardingService] Fallback en upsert de equipo, intentando update directo:', teamError?.message);
+                        if (user.email) {
+                            const { data: updatedTeam } = await supabase
+                                .from('team')
+                                .update(teamPayload)
+                                .ilike('email', user.email)
+                                .select()
+                                .maybeSingle();
+                            if (updatedTeam) teamId = updatedTeam.id;
+                        }
+                    }
                 }
             } catch (dbErr) {
                 console.error('[OnboardingService] Error crítico en DB Sync:', dbErr);
@@ -218,14 +212,28 @@ export const onboardingService = {
 
             // 3. Actualizar el Perfil del Usuario
             try {
+                const mapProfileRole = (pType, rawRole) => {
+                    if (pType !== 'creative') return 'CLIENT';
+                    if (!rawRole) return 'COMMUNITY';
+                    const r = rawRole.toLowerCase();
+                    if (r.includes('community') || r.includes('cm') || r.includes('estratega')) return 'COMMUNITY';
+                    if (r.includes('film')) return 'FILMMAKER';
+                    if (r.includes('edit')) return 'EDITOR';
+                    if (r.includes('diseñ') || r.includes('design')) return 'DESIGNER';
+                    if (r.includes('audio')) return 'AUDIO';
+                    return rawRole.toUpperCase();
+                };
+
+                const finalProfileRole = mapProfileRole(profileType, formData.role);
+
                 const profileUpdate = {
                     full_name: fullName,
                     email: user.email, // Guardar email en profiles para reconciliaciones futuras
-                    role: profileType === 'creative' ? (formData.role || 'CREATIVE').toUpperCase() : profileType.toUpperCase(),
+                    role: finalProfileRole,
                     client_id: clientId || null,
                     team_id: teamId || null,
                     industry: industryName,
-                    specialty: formData.niche || 'General',
+                    specialty: formData.role ? formData.role.toUpperCase() : (formData.niche || 'General'),
                     industry_slug: industrySlug,
                     client_slug: brandSlug,
                     cv_url: formData.cv_url || '',

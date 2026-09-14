@@ -28,47 +28,57 @@ export default function FinancePage() {
     });
 
     const fetchFinanceData = useCallback(async () => {
-        if (!user?.id) return;
+        if (!user?.id) {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
 
         try {
             // Fetch Profile for Payment Config
-            const { data: profile } = await supabase
+            const { data: profile, error: profileErr } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', user.id)
-                .single();
+                .maybeSingle();
             
-            setProfileData(profile);
+            if (profile) {
+                setProfileData(profile);
+            }
 
-            // Fetch Transactions
-            const { data, error } = await supabase
-                .from('financial_transactions')
-                .select('*')
-                .ilike('description', `%${user.full_name}%`)
-                .order('date', { ascending: false });
+            const searchName = user.full_name || profile?.full_name || '';
 
-            if (error) throw error;
+            // Fetch Transactions safely
+            let query = supabase.from('financial_transactions').select('*');
+            if (searchName) {
+                query = query.ilike('description', `%${searchName}%`);
+            }
+            const { data, error } = await query.order('date', { ascending: false });
 
-            const formatted = (data || []).map(tx => ({
-                id: tx.id.slice(0, 8).toUpperCase(),
-                project: tx.description,
-                date: new Date(tx.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
-                amount: `$${Number(tx.amount).toLocaleString()}`,
+            if (error) {
+                console.warn('Finance transactions notice:', error.message);
+            }
+
+            const txList = data || [];
+            const formatted = txList.map(tx => ({
+                id: (tx.id || '').slice(0, 8).toUpperCase(),
+                project: tx.description || 'Transacción',
+                date: tx.date ? new Date(tx.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Reciente',
+                amount: `$${Number(tx.amount || 0).toLocaleString()}`,
                 status: tx.type === 'expense' ? 'available' : 
                         tx.type === 'payout_request' ? 'pending' : 'pending'
             }));
 
             setTransactions(formatted);
 
-            const totalAvailable = (data || [])
+            const totalAvailable = txList
                 .filter(tx => tx.type === 'expense')
-                .reduce((acc, curr) => acc + Number(curr.amount), 0);
+                .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
             // Restamos las solicitudes de retiro pendientes del saldo disponible visualmente
-            const totalRequested = (data || [])
+            const totalRequested = txList
                 .filter(tx => tx.type === 'payout_request' && tx.status === 'pending')
-                .reduce((acc, curr) => acc + Number(curr.amount), 0);
+                .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
             setMetrics({
                 available: (totalAvailable - totalRequested).toLocaleString(),

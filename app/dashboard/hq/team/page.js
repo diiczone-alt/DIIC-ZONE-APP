@@ -51,6 +51,12 @@ const deduplicateTeam = (teamArray) => {
 
     teamArray.forEach(member => {
         if (!member) return;
+        const roleUpper = (member.role || '').trim().toUpperCase();
+        // Strict guard: reject generic USER or CLIENT accounts
+        if (roleUpper === 'USER' || roleUpper === 'CLIENT' || roleUpper === 'AUTHENTICATED' || !member.name) {
+            return;
+        }
+
         const email = (member.email || '').toLowerCase().trim();
         const normName = (member.name || '').toLowerCase().trim();
         

@@ -284,19 +284,34 @@ export default function CMWorkstationLayout() {
         { id: 'profile', label: 'Mi Perfil & Nichos', icon: User },
     ];
 
+    const userRole = (user?.role || user?.user_metadata?.role || '').toLowerCase();
+    const userSpecialty = (user?.specialty || user?.user_metadata?.specialty || '').toLowerCase();
+    const userFullName = (user?.full_name || user?.user_metadata?.full_name || user?.name || '').toLowerCase();
+    const userEmail = (user?.email || '').toLowerCase();
+
     const isCMOrAdmin = user && (
-        user.role === 'COMMUNITY' || 
-        user.role === 'CM' || 
-        user.role === 'ADMIN' || 
-        user.role === 'ESTRATEGA' || 
-        user.role === 'CREATOR' ||
-        user.role === 'CREATIVE' ||
-        (user.role || '').toLowerCase().includes('community') || 
-        (user.role || '').toLowerCase().includes('estratega') ||
-        (user.role || '').toLowerCase().includes('admin') ||
-        (user.role || '').toLowerCase().includes('lead') ||
-        (user.role || '').toLowerCase().includes('creator') ||
-        (user.role || '').toLowerCase().includes('creative')
+        userRole === 'community' || 
+        userRole === 'cm' || 
+        userRole === 'admin' || 
+        userRole === 'estratega' || 
+        userRole === 'creator' ||
+        userRole === 'creative' ||
+        userRole.includes('community') || 
+        userRole.includes('estratega') ||
+        userRole.includes('admin') ||
+        userRole.includes('lead') ||
+        userRole.includes('creator') ||
+        userRole.includes('creative') ||
+        userSpecialty.includes('community') ||
+        userSpecialty.includes('estratega') ||
+        userFullName.includes(' cm') ||
+        userFullName.includes('(cm)') ||
+        userFullName.includes('community') ||
+        userFullName.includes('estratega') ||
+        userEmail.startsWith('cm') ||
+        userEmail.includes('.cm') ||
+        userEmail.includes('cm.') ||
+        userEmail.includes('cmdiiczone')
     );
 
     if (!loading && user && !isCMOrAdmin) {
@@ -3393,7 +3408,10 @@ function CMProfileView({ user, onProfileUpdate }) {
 
     useEffect(() => {
         const fetchProfileDetails = async () => {
-            if (!user?.email && !user?.id) return;
+            if (!user) {
+                setLoading(false);
+                return;
+            }
             setLoading(true);
             try {
                 let team = null;

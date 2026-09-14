@@ -221,9 +221,16 @@ export default function ProfilePage() {
                         }
                     }
 
-                    // Auto-provision team card if still not found
-                    if (!team && user.email) {
-                        console.log('[Profile] Team record not found. Auto-provisioning team card...');
+                    // Auto-provision team card if still not found ONLY for verified creative roles
+                    const roleUpper = (activeProfile?.role || '').trim().toUpperCase();
+                    const isAllowedCreative = [
+                        'CREATIVE', 'CREATOR', 'TALENT', 'EDITOR', 'FILMMAKER',
+                        'DESIGNER', 'DESIGN', 'AUDIO', 'COMMUNITY', 'CM', 'FOTO',
+                        'PHOTOGRAPHY', 'MODEL', 'MODELO', 'WEB', 'PRINT', 'EVENT', 'ESTRATEGA'
+                    ].includes(roleUpper);
+
+                    if (!team && user.email && isAllowedCreative) {
+                        console.log('[Profile] Creative team record not found. Auto-provisioning team card...');
                         const newId = `TEAM-${Math.floor(1000 + Math.random() * 9000)}`;
                         const newTeamMember = {
                             id: newId,
