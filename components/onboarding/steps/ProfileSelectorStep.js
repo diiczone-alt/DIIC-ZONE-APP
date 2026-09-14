@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     GraduationCap, Stethoscope, UtensilsCrossed, Cpu, Gavel, HeartHandshake, Home,
     MoreHorizontal, Sprout, Briefcase, User, HeartPulse, Mic, Megaphone, ShoppingBag,
-    Coins, Store, Factory, HardHat, Truck, Plane, Landmark, Croissant, X
+    Coins, Store, Factory, HardHat, Truck, Plane, Landmark, Croissant, X, Trophy
 } from 'lucide-react';
 
 export default function ProfileSelectorStep({ onNext, updateData }) {
@@ -14,6 +14,7 @@ export default function ProfileSelectorStep({ onNext, updateData }) {
 
     const profiles = [
         { id: 'general', label: 'Estrategia General', desc: 'Crecimiento estándar y marca', icon: Briefcase, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'hover:border-indigo-500' },
+        { id: 'sports', label: 'Club Deportivo / Basket', desc: 'Equipos, ligas, academias y basket pro', icon: Trophy, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'hover:border-amber-500' },
         { id: 'personal', label: 'Marca Personal', desc: 'Autoridad para profesionales', icon: User, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'hover:border-blue-500' },
         { id: 'doctor', label: 'Marketing Médico', desc: 'Funnels para médicos y especialistas', icon: Stethoscope, color: 'text-red-400', bg: 'bg-red-500/10', border: 'hover:border-red-500' },
         { id: 'hospital', label: 'Sistema Hospitales', desc: 'Reputación & directorio médico', icon: HeartPulse, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'hover:border-rose-500' },

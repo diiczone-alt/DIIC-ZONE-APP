@@ -37,6 +37,7 @@ export default function HQServicesPage() {
     });
     const [activeCategory, setActiveCategory] = useState('plan'); // 'plan' or 'pack'
     const [selectedNiche, setSelectedNiche] = useState('general');
+    const [selectedSport, setSelectedSport] = useState('basketball');
 
     // --- ESTADOS Y REFS PARA FIRMA DIGITAL & PAGO ---
     const canvasRef = useRef(null);
@@ -304,6 +305,7 @@ export default function HQServicesPage() {
                 <div className="bg-[#0E0E18]/80 backdrop-blur-2xl p-8 rounded-[3.5rem] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] w-full">
                     {[
                         { id: 'general', label: 'Estrategia General', desc: 'Crecimiento estándar y marca', icon: Briefcase },
+                        { id: 'sports', label: 'Club Deportivo / Basket', desc: 'Equipos, ligas, academias y basket pro', icon: Trophy },
                         { id: 'personal', label: 'Marca Personal', desc: 'Autoridad para profesionales', icon: User },
                         { id: 'medical', label: 'Marketing Médico', desc: 'Funnels para médicos y especialistas', icon: Stethoscope },
                         { id: 'hospital', label: 'Sistema Hospitales', desc: 'Reputación & directorio médico', icon: HeartPulse },
@@ -362,6 +364,73 @@ export default function HQServicesPage() {
                     })}
                 </div>
             </div>
+
+            {/* Sport Type Sub-Selector for Sports Niche */}
+            {selectedNiche === 'sports' && (
+                <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full max-w-[1600px] mx-auto bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-purple-500/10 border border-amber-500/30 p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.6)] space-y-4 -mt-4 mb-2"
+                >
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400">
+                                <Trophy className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black text-white uppercase tracking-wider">Selecciona la Disciplina Deportiva</h3>
+                                <p className="text-[11px] text-gray-400 font-medium">Personaliza el enfoque audiovisual, boletería, patrocinadores y formativas según el deporte.</p>
+                            </div>
+                        </div>
+                        <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                            Deporte Activo: {
+                                selectedSport === 'basketball' ? '🏀 Baloncesto Pro' :
+                                selectedSport === 'soccer' ? '⚽ Fútbol' :
+                                selectedSport === 'padel' ? '🎾 Pádel / Tenis' :
+                                selectedSport === 'crossfit' ? '🏋️ CrossFit / Gym' :
+                                selectedSport === 'volleyball' ? '🏐 Voleibol' :
+                                selectedSport === 'combat' ? '🥊 Boxeo / MMA' :
+                                selectedSport === 'running' ? '🏃 Running' : '🏆 Polideportivo'
+                            }
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 pt-2">
+                        {[
+                            { id: 'basketball', label: 'Baloncesto', icon: '🏀', desc: 'Basket Pro, Ligas & Coliseos' },
+                            { id: 'soccer', label: 'Fútbol', icon: '⚽', desc: 'Clubes & Formativas' },
+                            { id: 'padel', label: 'Pádel / Tenis', icon: '🎾', desc: 'Clubes & Torneos' },
+                            { id: 'crossfit', label: 'CrossFit / Gym', icon: '🏋️‍♂️', desc: 'Boxes & Fitness' },
+                            { id: 'volleyball', label: 'Voleibol', icon: '🏐', desc: 'Sala & Playa' },
+                            { id: 'combat', label: 'Boxeo / MMA', icon: '🥊', desc: 'Artes Marciales & Veladas' },
+                            { id: 'running', label: 'Running / Bici', icon: '🏃‍♂️', desc: 'Teams & Carreras' },
+                            { id: 'multi', label: 'Polideportivo', icon: '🏆', desc: 'Club Multidisciplina' }
+                        ].map((sport) => {
+                            const isSelected = selectedSport === sport.id;
+                            return (
+                                <button
+                                    key={sport.id}
+                                    onClick={() => setSelectedSport(sport.id)}
+                                    className={`p-3 rounded-2xl text-left transition-all border flex flex-col justify-between gap-1.5 ${
+                                        isSelected 
+                                            ? 'bg-gradient-to-br from-amber-500/30 to-amber-600/20 border-amber-400 text-white shadow-[0_10px_25px_rgba(245,158,11,0.25)]' 
+                                            : 'bg-white/[0.02] border-white/5 text-gray-400 hover:text-white hover:bg-white/[0.05]'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xl">{sport.icon}</span>
+                                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b]" />}
+                                    </div>
+                                    <div>
+                                        <span className="font-black text-[11px] uppercase block tracking-wider text-white leading-tight">{sport.label}</span>
+                                        <span className="text-[9px] text-gray-400 line-clamp-1 block mt-0.5">{sport.desc}</span>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </motion.div>
+            )}
 
             {/* Category Switcher */}
             <div className="flex justify-center">
@@ -3755,6 +3824,730 @@ function RealEstateDossier() {
                     <Shield className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
                     <span>
                         <strong className="text-white font-bold">Aclaración de Transparencia:</strong> El presupuesto de pauta en sí se paga directamente a Meta o Google desde la tarjeta de crédito del cliente — DIIC ZONE cobra exclusivamente por la estrategia, segmentación, diseño de creatividades y optimización técnica de la campaña.
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function SportsDossier({ selectedSport = 'basketball', onSelectSport }) {
+    // Sport specific presets
+    const sportPresets = {
+        basketball: {
+            title: 'Club de Baloncesto Profesional & Academias',
+            icon: '🏀',
+            defaultFans: 800,
+            defaultTicket: 6,
+            defaultMatches: 3,
+            defaultSponsors: 4,
+            defaultSponsorFee: 500,
+            defaultMerch: 1200,
+            defaultStudents: 75,
+            defaultStudentFee: 45,
+            venueName: 'Coliseo',
+            fanTerm: 'Fanáticos del Baloncesto',
+            competitionTerm: 'Partidos de Liga & Play-offs',
+            merchTerm: 'Camisetas, Shorts & Balones Oficiales',
+            academyTerm: 'Academia Formativa de Basket',
+            sponsorItems: 'Vallas LED en Cancha, Camiseta & Transmisión en Vivo'
+        },
+        soccer: {
+            title: 'Club de Fútbol Profesional & Formativas',
+            icon: '⚽',
+            defaultFans: 1500,
+            defaultTicket: 8,
+            defaultMatches: 2,
+            defaultSponsors: 5,
+            defaultSponsorFee: 750,
+            defaultMerch: 2000,
+            defaultStudents: 120,
+            defaultStudentFee: 50,
+            venueName: 'Estadio / Cancha',
+            fanTerm: 'Hinchada y Afición de Fútbol',
+            competitionTerm: 'Fechas de Campeonato & Torneos',
+            merchTerm: 'Camisetas Oficiales, Bufandas & Gorras',
+            academyTerm: 'Escuela de Fútbol Cantera',
+            sponsorItems: 'Frontal de Camiseta, Banderines & Pantallas'
+        },
+        padel: {
+            title: 'Club de Pádel, Tenis & Circuitos Open',
+            icon: '🎾',
+            defaultFans: 250,
+            defaultTicket: 20,
+            defaultMatches: 2,
+            defaultSponsors: 6,
+            defaultSponsorFee: 400,
+            defaultMerch: 1500,
+            defaultStudents: 60,
+            defaultStudentFee: 80,
+            venueName: 'Complejo de Pistas',
+            fanTerm: 'Jugadores y Socios de Pádel/Tenis',
+            competitionTerm: 'Torneos Open, Americanos & Master',
+            merchTerm: 'Palas, Ropa Técnica, Grips & Accesorios',
+            academyTerm: 'Clases Particulares & Academia Juvenil',
+            sponsorItems: 'Lonas de Pistas, Premios & Naming del Torneo'
+        },
+        crossfit: {
+            title: 'Box de CrossFit, Gimnasio & Centro Fitness',
+            icon: '🏋️‍♂️',
+            defaultFans: 200,
+            defaultTicket: 15,
+            defaultMatches: 1,
+            defaultSponsors: 4,
+            defaultSponsorFee: 300,
+            defaultMerch: 800,
+            defaultStudents: 90,
+            defaultStudentFee: 65,
+            venueName: 'Box / Instalaciones',
+            fanTerm: 'Atletas y Comunidad Fitness',
+            competitionTerm: 'Open Games, Competencias & Retos',
+            merchTerm: 'Ropa Deportiva, Shakers & Suplementos',
+            academyTerm: 'Membresías Mensuales & Clases Guiadas',
+            sponsorItems: 'Marcas de Nutrición, Equipamiento & Banners'
+        },
+        volleyball: {
+            title: 'Club de Voleibol & Deportes de Sala',
+            icon: '🏐',
+            defaultFans: 450,
+            defaultTicket: 4,
+            defaultMatches: 3,
+            defaultSponsors: 3,
+            defaultSponsorFee: 350,
+            defaultMerch: 600,
+            defaultStudents: 50,
+            defaultStudentFee: 35,
+            venueName: 'Coliseo de Voleibol',
+            fanTerm: 'Afición de Vóley & Familias',
+            competitionTerm: 'Torneos Interclubes & Copas',
+            merchTerm: 'Uniformes, Rodilleras & Merchandising',
+            academyTerm: 'Formativa de Voleibol Menores',
+            sponsorItems: 'Redes, Balón Oficial & Camisetas'
+        },
+        combat: {
+            title: 'Academia de Boxeo, MMA & Artes Marciales',
+            icon: '🥊',
+            defaultFans: 500,
+            defaultTicket: 12,
+            defaultMatches: 1,
+            defaultSponsors: 4,
+            defaultSponsorFee: 500,
+            defaultMerch: 900,
+            defaultStudents: 65,
+            defaultStudentFee: 55,
+            venueName: 'Arena / Ring / Octágono',
+            fanTerm: 'Aficionados a los Deportes de Combate',
+            competitionTerm: 'Veladas de Peleas, Noches de Gala & Ranks',
+            merchTerm: 'Guantes, Vendas, Rashguards & Poleras',
+            academyTerm: 'Entrenamiento BJJ, Box & Muay Thai',
+            sponsorItems: 'Lona del Octágono, Pantalones de Peleadores'
+        },
+        running: {
+            title: 'Team de Running, Ciclismo & Eventos de Ruta',
+            icon: '🏃‍♂️',
+            defaultFans: 600,
+            defaultTicket: 20,
+            defaultMatches: 1,
+            defaultSponsors: 5,
+            defaultSponsorFee: 600,
+            defaultMerch: 1400,
+            defaultStudents: 50,
+            defaultStudentFee: 45,
+            venueName: 'Ruta / Circuito Urbano',
+            fanTerm: 'Runners, Ciclistas & Triatletas',
+            competitionTerm: 'Carreras 5K/10K/21K & Rodadas Oficiales',
+            merchTerm: 'Jerseys, Medallas, Rompevientos & Botellas',
+            academyTerm: 'Planes de Entrenamiento Personalizado',
+            sponsorItems: 'Arco de Meta, Camiseta Oficial & Medallas'
+        },
+        multi: {
+            title: 'Club Polideportivo Multidisciplinario & Socios',
+            icon: '🏆',
+            defaultFans: 1000,
+            defaultTicket: 8,
+            defaultMatches: 3,
+            defaultSponsors: 6,
+            defaultSponsorFee: 800,
+            defaultMerch: 2500,
+            defaultStudents: 150,
+            defaultStudentFee: 60,
+            venueName: 'Complejo Polideportivo',
+            fanTerm: 'Socios, Aficionados y Familias del Club',
+            competitionTerm: 'Juegos Deportivos & Múltiples Ligas',
+            merchTerm: 'Línea de Ropa Oficial del Club Multideporte',
+            academyTerm: 'Escuelas Polideportivas & Cursos Vacacionales',
+            sponsorItems: 'Instalaciones, Revista Oficial & Canchas'
+        }
+    };
+
+    const currentPreset = sportPresets[selectedSport] || sportPresets.basketball;
+
+    // Interactive Simulator States
+    const [fansPerMatch, setFansPerMatch] = useState(currentPreset.defaultFans);
+    const [ticketPrice, setTicketPrice] = useState(currentPreset.defaultTicket);
+    const [matchesPerMonth, setMatchesPerMonth] = useState(currentPreset.defaultMatches);
+    const [activeSponsors, setActiveSponsors] = useState(currentPreset.defaultSponsors);
+    const [sponsorFee, setSponsorFee] = useState(currentPreset.defaultSponsorFee);
+    const [merchRevenue, setMerchRevenue] = useState(currentPreset.defaultMerch);
+    const [academyStudents, setAcademyStudents] = useState(currentPreset.defaultStudents);
+    const [academyFee, setAcademyFee] = useState(currentPreset.defaultStudentFee);
+    const [selectedTierPrice, setSelectedTierPrice] = useState(550);
+
+    // Sync when sport preset changes
+    useEffect(() => {
+        const p = sportPresets[selectedSport] || sportPresets.basketball;
+        setFansPerMatch(p.defaultFans);
+        setTicketPrice(p.defaultTicket);
+        setMatchesPerMonth(p.defaultMatches);
+        setActiveSponsors(p.defaultSponsors);
+        setSponsorFee(p.defaultSponsorFee);
+        setMerchRevenue(p.defaultMerch);
+        setAcademyStudents(p.defaultStudents);
+        setAcademyFee(p.defaultStudentFee);
+    }, [selectedSport]);
+
+    // Financial calculations
+    const monthlyTicketing = fansPerMatch * ticketPrice * matchesPerMonth;
+    const monthlySponsors = activeSponsors * sponsorFee;
+    const monthlyAcademy = academyStudents * academyFee;
+    const totalClubGross = monthlyTicketing + monthlySponsors + merchRevenue + monthlyAcademy;
+    const netProfit = totalClubGross - selectedTierPrice;
+    const roiPercentage = selectedTierPrice > 0 ? Math.round((netProfit / selectedTierPrice) * 100) : 0;
+
+    const sportsPillars = [
+        {
+            num: '01',
+            pillar: 'Cultura de Hinchada & Lleno de Cancha',
+            role: 'Ejecutado por DIIC ZONE',
+            badge: 'Ticketing & Fan Engagement',
+            color: 'border-amber-500/30 bg-amber-500/5',
+            icon: Flame,
+            desc: 'Estructuración de campañas de expectativa y cuenta regresiva Game Day en Meta Ads para llenar el coliseo/estadio en cada fecha.',
+            responsibilities: [
+                'Pauta hiper-segmentada a 10km de la cancha 48h antes del partido',
+                'Motion graphics dinámicos con alineación titular y horario',
+                'Bot de WhatsApp para reserva y compra de entradas con QR',
+                'Fidelización de la afición para compra de abonos de temporada'
+            ]
+        },
+        {
+            num: '02',
+            pillar: 'Dossier Comercial de Patrocinios Digitales',
+            role: 'Ejecutado por DIIC ZONE',
+            badge: 'Atracción de Auspiciantes',
+            color: 'border-indigo-500/30 bg-indigo-500/5',
+            icon: Target,
+            desc: 'Diseño de propuestas comerciales de alto impacto con métricas auditables de visualizaciones para cobrar tarifas de $500 a $5,000+ a empresas.',
+            responsibilities: [
+                'Dossier digital PDF interactivo y web para presentación a marcas',
+                'Reporte mensual de impresiones y alcance generado para cada sponsor',
+                'Integración visual del logo en scoreboards, reels y streaming',
+                'Estrategia de menciones y colaboraciones en redes sociales'
+            ]
+        },
+        {
+            num: '03',
+            pillar: 'Producción Audiovisual Cinematográfica de Partido',
+            role: 'Ejecutado por DIIC ZONE',
+            badge: 'Producción In-Situ',
+            color: 'border-purple-500/30 bg-purple-500/5',
+            icon: Film,
+            desc: 'Filmmaker en cancha con tomas en cámara lenta, audio ambiente inmersivo, hype reels individuales y cobertura Inside the Locker Room.',
+            responsibilities: [
+                'Cobertura cinematográfica en partidos y entrenamientos',
+                'Highlight Reels de jugadas top y MVPs publicados en < 2h post-partido',
+                'Micro-documentales de vestuario y entrevistas exclusivas al DT',
+                'Fotografía profesional de plantilla, poses y momentos clave'
+            ]
+        }
+    ];
+
+    const sportsPains = [
+        {
+            num: '01',
+            title: 'Coliseos y Gradas Vacías',
+            desc: 'El club publica únicamente una imagen estática horas antes del partido, sin pauta geolocalizada ni sentido de urgencia para llenar el aforo.',
+            icon: AlertCircle,
+            color: 'from-amber-500/20 to-orange-500/20 border-amber-500/30 text-amber-400'
+        },
+        {
+            num: '02',
+            title: 'Auspiciantes que Pagan Poco',
+            desc: 'Marcas que aportan montos mínimos o canjes porque el equipo no cuenta con un dossier profesional ni métricas digitales que justifiquen una inversión alta.',
+            icon: DollarSign,
+            color: 'from-rose-500/20 to-red-500/20 border-rose-500/30 text-rose-400'
+        },
+        {
+            num: '03',
+            title: 'Cero Hype ni Highlights de Jugadores',
+            desc: 'Jugadores talentosos y jugadas espectaculares (triples, volcadas, goles) que nadie ve porque no hay un filmmaker dedicado editando reels dinámicos.',
+            icon: Video,
+            color: 'from-purple-500/20 to-indigo-500/20 border-purple-500/30 text-purple-400'
+        },
+        {
+            num: '04',
+            title: 'Venta de Boletos Lenta y en Fila Física',
+            desc: 'Aficionados que desisten de ir al partido por no poder comprar su entrada directamente por WhatsApp con confirmación instantánea en 30 segundos.',
+            icon: Clock,
+            color: 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-400'
+        },
+        {
+            num: '05',
+            title: 'Formativas y Escuela Sin Alumnos',
+            desc: 'La cantera deportiva no genera ingresos recurrentes suficientes por falta de embudos de inscripción dirigidos a padres de familia de la ciudad.',
+            icon: Users,
+            color: 'from-emerald-500/20 to-teal-500/20 border-emerald-500/30 text-emerald-400'
+        },
+        {
+            num: '06',
+            title: 'Merchandising Sin Visibilidad',
+            desc: 'Camisetas oficiales y accesorios guardados en cajas en lugar de tener un catálogo automatizado y campañas para que los fans vistan los colores del club.',
+            icon: ShoppingBag,
+            color: 'from-yellow-500/20 to-amber-500/20 border-yellow-500/30 text-yellow-400'
+        }
+    ];
+
+    const conversionSteps = [
+        { num: '01', title: 'Lanzamiento de Fecha (72h antes)', desc: 'Post dinámico de Game Day, rival, horario y llamado directo a asegurar entradas.' },
+        { num: '02', title: 'Pauta Geolocalizada (48h antes)', desc: 'Meta Ads impacta a fanáticos del deporte y familias en la ciudad con urgencia de localidades.' },
+        { num: '03', title: 'Bot de Ticketing en WhatsApp', desc: 'El aficionado elige su localidad (General, Cancha, Palco), paga y recibe su comprobante.' },
+        { num: '04', title: 'Experiencia en Cancha & Merch', desc: 'Música, locución, cobertura en vivo y venta de camisetas oficiales en el coliseo.' },
+        { num: '05', title: 'Highlights en < 2 Horas', desc: 'Reels de las mejores jugadas y volcadas que viralizan la victoria en TikTok e Instagram.' },
+        { num: '06', title: 'Fidelización & Abonos de Temporada', desc: 'Reactivación de la base de datos de asistentes para ofrecer el pase completo de la liga.' }
+    ];
+
+    const weeklyRoadmap = [
+        { day: 'Lunes', type: 'Recap de Partido & Marcador', format: 'Reel + Foto Scoreboard', desc: 'Celebración de la victoria, estadísticas finales y agradecimiento a la afición.' },
+        { day: 'Martes', type: 'MVP & Highlights Individuales', format: 'Reel Cinematográfico', desc: 'Mejores jugadas, triples, volcadas o momentos decisivos del jugador destacado.' },
+        { day: 'Miércoles', type: 'Inside the Locker Room & DT', format: 'Micro-documental / Story', desc: 'Charla técnica, preparación física en entrenamientos y palabras del entrenador.' },
+        { day: 'Jueves', type: 'Formativas & Tienda Oficial', format: 'Carrusel + Reel de Alumnos', desc: 'Convocatoria a entrenamientos juveniles, pruebas de talento y venta de indumentaria.' },
+        { day: 'Viernes / Sábado', type: 'Game Day Motion & Boletos', format: 'Motion Graphic + Bot', desc: 'Anuncio del partido estelar, fixture, venta rápida de entradas por WhatsApp.' }
+    ];
+
+    const adTiers = [
+        { spend: 'Hasta $100/mes de pauta', fee: '20% de comisión (mínimo $20)' },
+        { spend: '$101 – $200/mes', fee: '15% de comisión' },
+        { spend: '$201 – $500/mes', fee: '12% de comisión' },
+        { spend: '$500/mes en adelante', fee: '10% de comisión' }
+    ];
+
+    return (
+        <div className="space-y-16 py-8 relative z-10 w-full max-w-[1600px] mx-auto">
+            {/* 1. Header & Sport Switcher */}
+            <div className="bg-gradient-to-br from-[#0E0E18] via-[#141226] to-[#0E0E18] border border-amber-500/30 p-8 sm:p-12 rounded-[3.5rem] shadow-[0_30px_100px_rgba(245,158,11,0.1)] space-y-8">
+                <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 pb-6 border-b border-white/10">
+                    <div>
+                        <div className="flex items-center gap-2 text-amber-400 text-xs font-black uppercase tracking-[0.3em] mb-2">
+                            <Trophy className="w-5 h-5 text-amber-400" /> Dossier Estratégico Especializado
+                        </div>
+                        <h2 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight italic">
+                            Ecosistema 360° para <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500">{currentPreset.title}</span>
+                        </h2>
+                        <p className="text-xs sm:text-sm text-gray-400 font-medium mt-2 max-w-3xl leading-relaxed">
+                            Deporte profesional, coliseos llenos, atracción masiva de patrocinadores corporativos y automatización completa de venta de boletos e inscripciones formativas.
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 p-4 rounded-3xl">
+                        <span className="text-3xl">{currentPreset.icon}</span>
+                        <div>
+                            <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block">Disciplina Seleccionada</span>
+                            <span className="text-sm font-black text-white uppercase">{currentPreset.venueName} · {selectedSport.toUpperCase()}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Sport Tabs */}
+                <div className="space-y-3">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Cambiar Tipo de Deporte o Club:</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                        {Object.entries(sportPresets).map(([key, item]) => {
+                            const isSelected = selectedSport === key;
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => onSelectSport && onSelectSport(key)}
+                                    className={`p-3 rounded-2xl text-left transition-all border flex items-center gap-2 ${
+                                        isSelected 
+                                            ? 'bg-amber-500 text-black border-amber-400 font-black shadow-lg shadow-amber-500/20' 
+                                            : 'bg-white/5 border-white/5 text-gray-300 hover:text-white hover:bg-white/10'
+                                    }`}
+                                >
+                                    <span className="text-lg">{item.icon}</span>
+                                    <span className="text-[11px] uppercase font-bold truncate">{key === 'basketball' ? 'Basket' : key === 'soccer' ? 'Fútbol' : key === 'crossfit' ? 'Fitness' : key === 'volleyball' ? 'Vóley' : key}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. Diagnóstico: Dolores Críticos de los Clubes Deportivos */}
+            <div className="bg-[#0E0E18] border border-white/5 p-8 sm:p-12 rounded-[3.5rem] space-y-8">
+                <div className="max-w-3xl">
+                    <span className="text-[10px] font-black text-amber-400 uppercase tracking-[0.3em]">Diagnóstico de Mercado</span>
+                    <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mt-1">
+                        Los 6 Dolores Críticos que Impiden a un Club Monetizar
+                    </h3>
+                    <p className="text-xs text-gray-400 font-medium mt-2">
+                        La mayoría de clubes deportivos sufren de invisibilidad digital y procesos manuales que reducen sus ingresos de taquilla y patrocinio:
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {sportsPains.map((pain, idx) => {
+                        const Icon = pain.icon;
+                        return (
+                            <div key={idx} className={`p-6 rounded-3xl border bg-gradient-to-br ${pain.color} flex flex-col justify-between gap-4`}>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-2xl font-black font-mono">{pain.num}</span>
+                                    <div className="p-2.5 rounded-xl bg-white/10 text-white">
+                                        <Icon className="w-5 h-5" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black text-white uppercase mb-1">{pain.title}</h4>
+                                    <p className="text-xs text-gray-300 font-medium leading-relaxed">{pain.desc}</p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 3. Los 3 Pilares Maestros de DIIC ZONE */}
+            <div className="space-y-6">
+                <div className="text-center max-w-2xl mx-auto space-y-2">
+                    <span className="text-[10px] font-black text-amber-400 uppercase tracking-[0.4em]">Metodología Deportiva Comprobada</span>
+                    <h3 className="text-2xl sm:text-4xl font-black text-white uppercase tracking-tight">
+                        Los 3 Pilares para Convertir un Club en Franquicia Rentable
+                    </h3>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {sportsPillars.map((p, idx) => {
+                        const Icon = p.icon;
+                        return (
+                            <div key={idx} className={`p-8 rounded-[3rem] border ${p.color} flex flex-col justify-between space-y-6 backdrop-blur-xl`}>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <span className="text-4xl font-black text-amber-400/60 font-mono">{p.num}</span>
+                                        <span className="text-[9px] font-black text-amber-300 uppercase tracking-widest px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">
+                                            {p.badge}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-400">
+                                            <Icon className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-lg font-black text-white uppercase leading-tight">{p.pillar}</h4>
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{p.role}</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-300 font-medium leading-relaxed">{p.desc}</p>
+                                </div>
+
+                                <div className="space-y-2 border-t border-white/10 pt-4">
+                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Entregables Clave:</span>
+                                    <ul className="space-y-2">
+                                        {p.responsibilities.map((r, i) => (
+                                            <li key={i} className="flex items-start gap-2 text-[11px] text-gray-300 font-medium">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+                                                <span>{r}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 4. SIMULADOR INTERACTIVO DE MONETIZACIÓN DEPORTIVA */}
+            <div className="bg-[#0E0E18] border border-amber-500/30 p-8 sm:p-12 rounded-[3.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.8)] space-y-10">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 text-amber-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">
+                            <Calculator className="w-4 h-4" /> Simulador de Rentabilidad & Monetización Deportiva
+                        </div>
+                        <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+                            Proyección de Facturación Mensual para {currentPreset.title}
+                        </h3>
+                        <p className="text-xs text-gray-400 font-medium mt-1">
+                            Fórmula Oficial: <code className="text-amber-300 font-mono bg-white/5 px-2 py-0.5 rounded">Facturación Total = Taquilla + Patrocinios + Merch + Formativas</code>
+                        </p>
+                    </div>
+                </div>
+
+                {/* Interactive Controls */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    <div className="lg:col-span-6 space-y-6">
+                        {/* Asistentes por partido */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs font-black text-gray-300">
+                                <span>Asistentes Estimados por Partido ({currentPreset.venueName}):</span>
+                                <span className="text-amber-400 font-mono font-bold">{fansPerMatch.toLocaleString()} personas</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="100"
+                                max="4000"
+                                step="50"
+                                value={fansPerMatch}
+                                onChange={(e) => setFansPerMatch(Number(e.target.value))}
+                                className="w-full accent-amber-500 cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-gray-600 font-bold">
+                                <span>100 fans</span>
+                                <span>{currentPreset.defaultFans} (Promedio {selectedSport})</span>
+                                <span>4,000 fans</span>
+                            </div>
+                        </div>
+
+                        {/* Precio entrada y partidos al mes */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Precio Entrada ($)</label>
+                                <select
+                                    value={ticketPrice}
+                                    onChange={(e) => setTicketPrice(Number(e.target.value))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs font-bold focus:border-amber-500 focus:outline-none"
+                                >
+                                    <option value="3" className="bg-[#0E0E18]">$3 USD (Popular / Estudiantil)</option>
+                                    <option value="5" className="bg-[#0E0E18]">$5 USD (General)</option>
+                                    <option value="8" className="bg-[#0E0E18]">$8 USD (Preferencia)</option>
+                                    <option value="12" className="bg-[#0E0E18]">$12 USD (Cancha / Palco)</option>
+                                    <option value="20" className="bg-[#0E0E18]">$20 USD (VIP / Open Tour)</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Partidos Local / Mes</label>
+                                <select
+                                    value={matchesPerMonth}
+                                    onChange={(e) => setMatchesPerMonth(Number(e.target.value))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs font-bold focus:border-amber-500 focus:outline-none"
+                                >
+                                    <option value="1" className="bg-[#0E0E18]">1 Partido / Fecha</option>
+                                    <option value="2" className="bg-[#0E0E18]">2 Partidos / Fechas</option>
+                                    <option value="3" className="bg-[#0E0E18]">3 Partidos (Estándar)</option>
+                                    <option value="4" className="bg-[#0E0E18]">4 Partidos / Fechas</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Sponsors y Fee */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Sponsors Activos</label>
+                                <select
+                                    value={activeSponsors}
+                                    onChange={(e) => setActiveSponsors(Number(e.target.value))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs font-bold focus:border-amber-500 focus:outline-none"
+                                >
+                                    <option value="2" className="bg-[#0E0E18]">2 Marcas Auspiciantes</option>
+                                    <option value="4" className="bg-[#0E0E18]">4 Marcas Auspiciantes</option>
+                                    <option value="6" className="bg-[#0E0E18]">6 Marcas Auspiciantes</option>
+                                    <option value="10" className="bg-[#0E0E18]">10+ Marcas Auspiciantes</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Valor Promedio Sponsor</label>
+                                <select
+                                    value={sponsorFee}
+                                    onChange={(e) => setSponsorFee(Number(e.target.value))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs font-bold focus:border-amber-500 focus:outline-none"
+                                >
+                                    <option value="250" className="bg-[#0E0E18]">$250 / mes (Auspicio Básico)</option>
+                                    <option value="500" className="bg-[#0E0E18]">$500 / mes (Auspicio Silver)</option>
+                                    <option value="800" className="bg-[#0E0E18]">$800 / mes (Auspicio Gold)</option>
+                                    <option value="1500" className="bg-[#0E0E18]">$1,500 / mes (Main Sponsor)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Alumnos en Academia Formativa */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Alumnos en Formativas</label>
+                                <select
+                                    value={academyStudents}
+                                    onChange={(e) => setAcademyStudents(Number(e.target.value))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs font-bold focus:border-amber-500 focus:outline-none"
+                                >
+                                    <option value="30" className="bg-[#0E0E18]">30 Alumnos Inscritos</option>
+                                    <option value="60" className="bg-[#0E0E18]">60 Alumnos Inscritos</option>
+                                    <option value="100" className="bg-[#0E0E18]">100 Alumnos Inscritos</option>
+                                    <option value="180" className="bg-[#0E0E18]">180+ Alumnos Inscritos</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Cuota Mensual Formativas</label>
+                                <select
+                                    value={academyFee}
+                                    onChange={(e) => setAcademyFee(Number(e.target.value))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs font-bold focus:border-amber-500 focus:outline-none"
+                                >
+                                    <option value="30" className="bg-[#0E0E18]">$30 USD / mes</option>
+                                    <option value="45" className="bg-[#0E0E18]">$45 USD / mes</option>
+                                    <option value="60" className="bg-[#0E0E18]">$60 USD / mes</option>
+                                    <option value="80" className="bg-[#0E0E18]">$80 USD / mes</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Nivel DIIC ZONE Seleccionado */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Nivel Plan DIIC ZONE Seleccionado</label>
+                            <div className="grid grid-cols-5 gap-1.5">
+                                {[
+                                    { name: 'N1 Identidad', price: 350 },
+                                    { name: 'N2 Hype', price: 550 },
+                                    { name: 'N3 Marca', price: 850 },
+                                    { name: 'N4 Ticketing', price: 1200 },
+                                    { name: 'N5 Broadcast', price: 1800 }
+                                ].map((tier) => (
+                                    <button
+                                        key={tier.price}
+                                        onClick={() => setSelectedTierPrice(tier.price)}
+                                        className={`py-2.5 rounded-xl text-center transition-all ${selectedTierPrice === tier.price ? 'bg-amber-400 text-black font-black shadow-lg shadow-amber-400/20' : 'bg-white/5 text-gray-400 hover:text-white text-xs font-bold'}`}
+                                    >
+                                        <div className="text-[9px] uppercase">{tier.name}</div>
+                                        <div>${tier.price}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Results Dashboard */}
+                    <div className="lg:col-span-6 bg-gradient-to-br from-amber-950/30 via-black to-purple-950/20 border border-amber-500/30 p-8 rounded-3xl space-y-6 shadow-2xl">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">🎟️ Taquilla Mensual</span>
+                                <span className="text-2xl font-black text-white">${monthlyTicketing.toLocaleString()} <span className="text-xs text-gray-400">USD</span></span>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                                <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest block">🤝 Sponsors & Auspicios</span>
+                                <span className="text-2xl font-black text-amber-400">${monthlySponsors.toLocaleString()} <span className="text-xs text-gray-400">USD</span></span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">👕 Merch & Indumentaria</span>
+                                <span className="text-xl font-black text-white">${merchRevenue.toLocaleString()} <span className="text-xs text-gray-400">USD</span></span>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block">🎓 Formativas / Cantera</span>
+                                <span className="text-xl font-black text-emerald-400">${monthlyAcademy.toLocaleString()} <span className="text-xs text-gray-400">USD</span></span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 border-t border-b border-white/10 py-4 text-xs font-medium text-gray-300">
+                            <div className="flex justify-between">
+                                <span>Facturación Bruta Mensual del Club:</span>
+                                <span className="text-white font-bold text-sm">${totalClubGross.toLocaleString()} USD</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Inversión en Producción DIIC ZONE:</span>
+                                <span className="text-gray-400 font-bold">${selectedTierPrice.toLocaleString()} USD</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">Ganancia Neta Estimada</span>
+                                <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                                    +${netProfit.toLocaleString()} <span className="text-xs text-gray-500 font-normal">USD/mes</span>
+                                </span>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block">Retorno Proyectado (ROI)</span>
+                                <span className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">
+                                    +{roiPercentage}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 5. Embudo de Ticketing & Fan Experience */}
+            <div className="bg-[#0E0E18] border border-white/5 p-8 sm:p-12 rounded-[3.5rem] space-y-8">
+                <div>
+                    <span className="text-[10px] font-black text-amber-400 uppercase tracking-[0.3em]">Embudo Automatizado</span>
+                    <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mt-1">
+                        Flujo de Venta de Boletos & Conversión en Días de Partido
+                    </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {conversionSteps.map((step, idx) => (
+                        <div key={idx} className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 flex gap-4 items-start">
+                            <span className="text-2xl font-black text-amber-400 font-mono">{step.num}</span>
+                            <div>
+                                <h5 className="text-xs font-black text-white uppercase mb-1">{step.title}</h5>
+                                <p className="text-[11px] text-gray-400 font-medium leading-relaxed">{step.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 6. Grilla de Contenido Semanal */}
+            <div className="bg-[#0E0E18] border border-white/5 p-8 sm:p-12 rounded-[3.5rem] space-y-8">
+                <div>
+                    <span className="text-[10px] font-black text-amber-400 uppercase tracking-[0.3em]">Plan de Publicación</span>
+                    <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mt-1">
+                        Parrilla Semanal de Contenido para el Club
+                    </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    {weeklyRoadmap.map((item, idx) => (
+                        <div key={idx} className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-black text-amber-400 uppercase">{item.day}</span>
+                                <span className="text-[9px] text-gray-400 font-mono bg-white/5 px-2 py-0.5 rounded">{item.format}</span>
+                            </div>
+                            <h5 className="text-xs font-bold text-white leading-snug">{item.type}</h5>
+                            <p className="text-[10px] text-gray-400 leading-relaxed">{item.desc}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 7. Gestión de Pauta Publicitaria */}
+            <div className="bg-[#0E0E18] border border-white/5 p-8 sm:p-12 rounded-[3.5rem] space-y-8">
+                <div>
+                    <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest">Comisiones Transparentes</span>
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                        Gestión de Pauta Publicitaria de Partidos — A partir del Nivel 2
+                    </h3>
+                </div>
+
+                <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                    DIIC ZONE cobra un porcentaje sobre el presupuesto de pauta invertido — <strong className="text-white">nunca un monto fijo</strong>. El presupuesto se invierte en Meta Ads geolocalizado en la ciudad del encuentro deportivo:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {adTiers.map((tier, idx) => (
+                        <div key={idx} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                            <span className="text-xs font-black text-white block">{tier.spend}</span>
+                            <span className="text-sm font-bold text-amber-400 block">{tier.fee}</span>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex items-start gap-4 text-xs text-gray-400 font-medium italic">
+                    <Shield className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <span>
+                        <strong className="text-white font-bold">Aclaración de Transparencia:</strong> El presupuesto de pauta de los partidos se paga directamente a Meta o Google desde la tarjeta de crédito del club — DIIC ZONE cobra exclusivamente por la estrategia de ticketing, segmentación de fanáticos, diseño de creatividades audiovisuales y optimización técnica de la campaña.
                     </span>
                 </div>
             </div>

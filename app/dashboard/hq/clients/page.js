@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ArrowLeft, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe, Activity, Mail, Stethoscope, Briefcase, HeartPulse, Sprout, GraduationCap, Video, Cake, Calendar, MapPin, Coffee, LayoutGrid, LayoutList, ChevronRight, Columns } from 'lucide-react';
+import { Users, Search, Filter, Plus, MoreVertical, ExternalLink, Shield, TrendingUp, AlertCircle, CheckCircle2, Trash2, Edit, Pause, Play, BookOpen, Target, Clock, MessageSquare, ArrowRight, ArrowLeft, ChevronDown, Building2, Fingerprint, Copy, UserPlus, Zap, DollarSign, Star, Layout, Sparkles, Globe, Activity, Mail, Stethoscope, Briefcase, HeartPulse, Sprout, GraduationCap, Video, Cake, Calendar, MapPin, Coffee, LayoutGrid, LayoutList, ChevronRight, Columns, Trophy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { agencyService } from '@/services/agencyService';
 import VisionEcosystem from '@/components/VisionEcosystem';
@@ -20,6 +20,16 @@ const getIndustryStyle = (industry) => {
     const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
     const ind = cleanNiche(industry);
     
+    if (ind.includes('sport') || ind.includes('deport') || ind.includes('basket') || ind.includes('baloncesto') || ind.includes('club') || ind.includes('futbol')) {
+        return {
+            bg: 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.15)]',
+            dot: 'bg-amber-400',
+            label: 'Club Deportivo / Basket',
+            icon: Trophy,
+            textColor: 'text-amber-400',
+            glowShadow: 'shadow-[0_0_20px_rgba(245,158,11,0.3)]'
+        };
+    }
     if (ind.includes('medico') || ind.includes('salud') || ind.includes('health') || ind.includes('doctor')) {
         return {
             bg: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.15)]',
@@ -146,6 +156,7 @@ const getBrandColorClass = (industry) => {
 
 const NICHE_ITEMS = [
     { value: 'all', label: 'Todos los Sectores', icon: Layout, iconColor: 'text-indigo-400', activeBg: 'bg-indigo-500/10' },
+    { value: 'deportivo', label: 'Club Deportivo / Basket', icon: Trophy, iconColor: 'text-amber-400', activeBg: 'bg-amber-500/10' },
     { value: 'medico', label: 'Salud / Médico', icon: Stethoscope, iconColor: 'text-cyan-400', activeBg: 'bg-cyan-500/10' },
     { value: 'hospital', label: 'Hospitales', icon: HeartPulse, iconColor: 'text-blue-400', activeBg: 'bg-blue-500/10' },
     { value: 'agropecuario', label: 'Agropecuario', icon: Sprout, iconColor: 'text-emerald-400', activeBg: 'bg-emerald-500/10' },

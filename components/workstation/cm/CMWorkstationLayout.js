@@ -30,6 +30,7 @@ import { aiService } from '@/services/aiService';
 import { presenceService } from '@/services/presenceService';
 import NewProjectWizard from '../../projects/NewProjectWizard';
 import CMGuidePlaybook from './CMGuidePlaybook';
+import CMConnectivityModule from './CMConnectivityModule';
 
 export default function CMWorkstationLayout() {
     const searchParams = useSearchParams();
@@ -270,6 +271,7 @@ export default function CMWorkstationLayout() {
         { id: 'projects', label: 'Proyectos', icon: FolderOpen },
         { id: 'contents', label: 'Contenidos (Kanban)', icon: LayoutDashboard },
         { id: 'chat', label: 'Centro de Comunicación', icon: MessageSquare },
+        { id: 'connectivity', label: 'Conectividad & Redes', icon: Share2 },
         { id: 'meta', label: 'Módulo Meta (Ads)', icon: BarChart3 },
         { id: 'calendar', label: 'Calendario', icon: Calendar },
         { id: 'strategy', label: 'Pizarra Estratégica', icon: Share2 },
@@ -496,6 +498,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'projects': return <CMProjects client={selectedClient} tasks={clientTasks} loading={loadingTasks} squad={squad} />;
         case 'contents': return <ContentKanban role="cm" client={selectedClient} />;
         case 'chat': return <CommunicationCenter client={selectedClient} user={user} squad={squad} tasks={clientTasks} initialChatWith={searchParams.get('chatWith')} />;
+        case 'connectivity': return <CMConnectivityModule client={selectedClient} user={user} />;
         case 'meta': return <MetaAdsModule client={selectedClient} />;
         case 'calendar': return <UnifiedCalendar role="cm" />;
         case 'strategy': return <StrategyBoard role="cm" isSubcomponent={true} clientId={selectedClient?.id} onClose={() => setActiveTab('dashboard')} />;

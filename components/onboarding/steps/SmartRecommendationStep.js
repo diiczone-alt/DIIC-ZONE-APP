@@ -59,13 +59,16 @@ export default function SmartRecommendationStep({ onNext, formData, updateData }
     const resolvedNiche = formData.profileType === 'doctor' ? 'medical' :
                           formData.profileType === 'health' ? 'hospital' :
                           formData.profileType === 'education' ? 'educativo' :
-                          formData.profileType === 'horeca' ? 'hospitality' : formData.profileType || 'general';
+                          formData.profileType === 'horeca' ? 'hospitality' :
+                          formData.profileType === 'sport' || formData.profileType === 'sports' || formData.profileType === 'basketball' ? 'sports' : formData.profileType || 'general';
 
     const nicheDetails = NICHE_DETAILS[resolvedNiche] || NICHE_DETAILS['general'];
     const plans = nicheDetails.plans;
 
     const nicheNames = {
         general: 'Estrategia General',
+        sports: 'Club Deportivo / Baloncesto',
+        sport: 'Club Deportivo / Baloncesto',
         personal: 'Marca Personal',
         medical: 'Marketing Médico',
         doctor: 'Marketing Médico',
