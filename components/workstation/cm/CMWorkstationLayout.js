@@ -1745,9 +1745,9 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
     const clientId = client?.id;
     const clientName = client?.name || 'Cliente';
 
-    // Helper to generate realistic starter campaigns based on client context
-    const getInitialCampaigns = () => {
-        if (client?.onboarding_data?.meta_campaigns && Array.isArray(client.onboarding_data.meta_campaigns) && client.onboarding_data.meta_campaigns.length > 0) {
+    // Strictly load real saved campaigns (NO fake/simulated fallback data)
+    const getSavedCampaigns = () => {
+        if (client?.onboarding_data?.meta_campaigns && Array.isArray(client.onboarding_data.meta_campaigns)) {
             return client.onboarding_data.meta_campaigns;
         }
 
@@ -1756,85 +1756,15 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
             if (cached) {
                 try {
                     const parsed = JSON.parse(cached);
-                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                    if (Array.isArray(parsed)) return parsed;
                 } catch (e) {}
             }
         }
 
-        // Generate contextual campaigns for this specific brand
-        const brand = (client?.name || '').toLowerCase();
-        const industry = (client?.industry || client?.type || '').toLowerCase();
-        const services = client?.onboarding_data?.services || [];
-
-        if (services.length > 0) {
-            return services.slice(0, 2).map((srv, idx) => ({
-                id: `ad_${idx + 1}_${Date.now()}`,
-                name: `Pauta: ${srv.name || 'Servicio Principal'}`,
-                objective: 'Mensajes a WhatsApp',
-                status: idx === 0 ? 'Activo' : 'Pausado',
-                budget: idx === 0 ? '$250/mo' : '$150/mo',
-                metrics: {
-                    reach: idx === 0 ? '8.4K' : '4.2K',
-                    clicks: idx === 0 ? 520 : 180,
-                    leads: idx === 0 ? 18 : 6
-                },
-                advanced: {
-                    ctr: idx === 0 ? '2.8%' : '1.9%',
-                    cpc: idx === 0 ? '$0.48' : '$0.83',
-                    roas: idx === 0 ? '4.5x' : '2.8x',
-                    cpm: idx === 0 ? '$7.20' : '$9.10',
-                    watchTime: '14s',
-                    cpl: idx === 0 ? '$4.20' : '$8.50'
-                },
-                activeAdvanced: ['cpl', 'roas'],
-                isAdvantagePlus: idx === 0
-            }));
-        }
-
-        if (brand.includes('neyser') || brand.includes('espiga') || industry.includes('alimento') || industry.includes('general')) {
-            return [
-                {
-                    id: `ad_1_${Date.now()}`,
-                    name: 'Ventas Directas WhatsApp - Catálogo & Pedidos',
-                    objective: 'Mensajes a WhatsApp',
-                    status: 'Activo',
-                    budget: '$280/mo',
-                    metrics: { reach: '14.8K', clicks: 920, leads: 34 },
-                    advanced: { ctr: '3.2%', cpc: '$0.30', roas: '5.2x', cpm: '$6.50', watchTime: '16s', cpl: '$2.80' },
-                    activeAdvanced: ['cpl', 'roas', 'ctr'],
-                    isAdvantagePlus: true
-                },
-                {
-                    id: `ad_2_${Date.now()}`,
-                    name: 'Reconocimiento Local & Promoción Especial',
-                    objective: 'Alcance & Interacción',
-                    status: 'Pausado',
-                    budget: '$150/mo',
-                    metrics: { reach: '9.4K', clicks: 310, leads: 8 },
-                    advanced: { ctr: '1.8%', cpc: '$0.48', roas: '2.9x', cpm: '$5.80', watchTime: '11s', cpl: '$6.20' },
-                    activeAdvanced: ['ctr', 'cpc'],
-                    isAdvantagePlus: false
-                }
-            ];
-        }
-
-        // Generic custom initial state
-        return [
-            {
-                id: `ad_1_${Date.now()}`,
-                name: `Campaña Principal - ${clientName}`,
-                objective: 'Generación de Clientes Potenciales',
-                status: 'Activo',
-                budget: '$300/mo',
-                metrics: { reach: '10.5K', clicks: 640, leads: 15 },
-                advanced: { ctr: '2.5%', cpc: '$0.46', roas: '3.8x', cpm: '$8.00', watchTime: '15s', cpl: '$4.50' },
-                activeAdvanced: ['cpl', 'roas'],
-                isAdvantagePlus: true
-            }
-        ];
+        return [];
     };
 
-    const [ads, setAds] = useState(getInitialCampaigns);
+    const [ads, setAds] = useState(getSavedCampaigns);
     const [metaConnection, setMetaConnection] = useState({ isConnected: false, accountName: null, accountId: null, token: null });
     const [loadingConns, setLoadingConns] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -1845,17 +1775,12 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
     const [showAudienceModal, setShowAudienceModal] = useState(false);
     const [showCreativeModal, setShowCreativeModal] = useState(false);
     const [showCampaignModal, setShowCampaignModal] = useState(false);
-    const [showConnectModal, setShowConnectModal] = useState(false);
+    const [showDirectConnectModal, setShowDirectConnectModal] = useState(false);
+    const [showOAuthModal, setShowOAuthModal] = useState(false);
     const [editingAd, setEditingAd] = useState(null);
     const [selectedAdForMetrics, setSelectedAdForMetrics] = useState(null);
 
-    // Re-initialize when client changes
-    useEffect(() => {
-        setAds(getInitialCampaigns());
-        checkMetaConnection();
-    }, [clientId]);
-
-    // Check if Meta is connected for this client
+    // Check Meta connection from Supabase
     const checkMetaConnection = async () => {
         if (!clientId) return;
         setLoadingConns(true);
@@ -1876,10 +1801,12 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
 
             const conn = brandConn || socialConn;
             if (conn && conn.access_token) {
+                const accId = conn.metadata?.ad_account_id || conn.provider_id || conn.external_id || 'act_default';
+                const accName = conn.metadata?.account_name || conn.metadata?.name || accId;
                 setMetaConnection({
                     isConnected: true,
-                    accountName: conn.metadata?.name || conn.provider_id || 'Meta Ad Account',
-                    accountId: conn.provider_id || conn.external_id || 'act_active',
+                    accountName: accName,
+                    accountId: accId,
                     token: conn.access_token
                 });
             } else {
@@ -1891,6 +1818,12 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
             setLoadingConns(false);
         }
     };
+
+    // Re-initialize when client changes
+    useEffect(() => {
+        setAds(getSavedCampaigns());
+        checkMetaConnection();
+    }, [clientId]);
 
     // Save campaigns to Supabase & localStorage
     const persistCampaigns = async (updatedAds) => {
@@ -1927,83 +1860,58 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
         }
     };
 
-    // Live Meta Graph API Sync
+    // Live Meta Graph API Sync via backend route
     const handleSync = async () => {
+        if (!clientId) return;
         setIsSyncing(true);
-        toast.loading("Consultando Meta Graph API...", { id: 'meta-sync' });
+        toast.loading("Consultando Meta Graph API en tiempo real...", { id: 'meta-sync' });
 
         try {
-            if (metaConnection.isConnected && metaConnection.token) {
-                // Real Graph API call to fetch Ad Accounts and Campaigns
-                try {
-                    const accResponse = await fetch(`https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,account_id,currency,amount_spent,account_status&access_token=${metaConnection.token}`);
-                    const accData = await accResponse.json();
+            const res = await fetch('/api/meta/ads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clientId,
+                    action: 'fetch_campaigns'
+                })
+            });
 
-                    if (accData.data && accData.data.length > 0) {
-                        const targetAccount = accData.data[0];
-                        const campResponse = await fetch(`https://graph.facebook.com/v19.0/${targetAccount.id}/campaigns?fields=id,name,status,daily_budget,lifetime_budget,objective,insights{reach,impressions,clicks,spend,cpc,cpm,ctr,actions,cost_per_action_type}&access_token=${metaConnection.token}`);
-                        const campData = await campResponse.json();
+            const data = await res.json();
 
-                        if (campData.data && campData.data.length > 0) {
-                            const realMappedAds = campData.data.map((c, i) => {
-                                const insight = c.insights?.data?.[0] || {};
-                                const rawBudget = c.daily_budget ? `$${(c.daily_budget / 100).toFixed(0)}/día` : c.lifetime_budget ? `$${(c.lifetime_budget / 100).toFixed(0)}/mo` : '$200/mo';
-                                const reachNum = insight.reach ? Number(insight.reach) : 1000 + i * 500;
-                                const reachStr = reachNum > 1000 ? `${(reachNum / 1000).toFixed(1)}K` : `${reachNum}`;
-                                const clicksNum = insight.clicks ? Number(insight.clicks) : 120 + i * 45;
-                                
-                                const leadActions = (insight.actions || []).find(a => a.action_type === 'lead' || a.action_type.includes('messaging') || a.action_type.includes('conversion'));
-                                const leadsCount = leadActions ? Number(leadActions.value) : Math.max(2, Math.round(clicksNum * 0.03));
-                                const spendNum = insight.spend ? Number(insight.spend) : 50;
-                                const cplCalc = leadsCount > 0 ? (spendNum / leadsCount).toFixed(2) : '3.50';
-
-                                return {
-                                    id: c.id,
-                                    name: c.name,
-                                    objective: c.objective || 'Ventas & Leads',
-                                    status: c.status === 'ACTIVE' ? 'Activo' : 'Pausado',
-                                    budget: rawBudget,
-                                    metrics: {
-                                        reach: reachStr,
-                                        clicks: clicksNum,
-                                        leads: leadsCount
-                                    },
-                                    advanced: {
-                                        ctr: insight.ctr ? `${Number(insight.ctr).toFixed(2)}%` : '2.4%',
-                                        cpc: insight.cpc ? `$${Number(insight.cpc).toFixed(2)}` : '$0.45',
-                                        roas: '4.2x',
-                                        cpm: insight.cpm ? `$${Number(insight.cpm).toFixed(2)}` : '$7.80',
-                                        watchTime: '15s',
-                                        cpl: `$${cplCalc}`
-                                    },
-                                    activeAdvanced: ['cpl', 'roas'],
-                                    isAdvantagePlus: true
-                                };
-                            });
-
-                            await persistCampaigns(realMappedAds);
-                            toast.success(`¡Sincronización Meta Exitosa!`, {
-                                id: 'meta-sync',
-                                description: `${realMappedAds.length} campañas reales obtenidas en vivo de Meta Business Manager.`
-                            });
-                            return;
-                        }
-                    }
-                } catch (apiErr) {
-                    console.warn('[MetaAdsModule] Direct Meta API error, fallback to cloud cache:', apiErr);
+            if (!data.success) {
+                if (data.connected === false) {
+                    toast.info("Cuenta de Meta no conectada", {
+                        id: 'meta-sync',
+                        description: "Vincula tu token o cuenta publicitaria para sincronizar datos reales."
+                    });
+                    setShowDirectConnectModal(true);
+                    return;
                 }
+                throw new Error(data.error || 'Error al obtener campañas de Meta');
             }
 
-            // Fallback sync / re-save verification
-            await new Promise(r => setTimeout(r, 1200));
-            await persistCampaigns(ads);
-            toast.success("DIIC Meta Sync Completado", {
+            const realCampaigns = data.campaigns || [];
+            await persistCampaigns(realCampaigns);
+
+            toast.success(`¡Métricas Reales Sincronizadas!`, {
                 id: 'meta-sync',
-                description: `Pauta de ${clientName} verificada y guardada en base de datos.`
+                description: `${realCampaigns.length} campañas activas obtenidas directamente de Meta Ads Manager.`
             });
+
+            if (data.adAccount) {
+                setMetaConnection(prev => ({
+                    ...prev,
+                    isConnected: true,
+                    accountId: data.adAccount.id,
+                    accountName: data.adAccount.name
+                }));
+            }
         } catch (err) {
             console.error('[MetaAdsModule] Sync error:', err);
-            toast.error("Error al sincronizar con Meta API", { id: 'meta-sync' });
+            toast.error("Error de sincronización con Meta", {
+                id: 'meta-sync',
+                description: err.message || 'Verifica la validez de tu token de acceso de Meta.'
+            });
         } finally {
             setIsSyncing(false);
         }
@@ -2014,7 +1922,6 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
         { id: 'cpc', label: 'CPC', color: 'text-emerald-400' },
         { id: 'roas', label: 'ROAS', color: 'text-purple-400' },
         { id: 'cpm', label: 'CPM', color: 'text-amber-400' },
-        { id: 'watchTime', label: 'Avg. Watch', color: 'text-rose-400' },
         { id: 'cpl', label: 'CPL', color: 'text-cyan-400' },
     ];
 
@@ -2053,7 +1960,7 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
             if (ad.id === adId) {
                 const isNowOn = !ad.isAdvantagePlus;
                 toast.info(isNowOn ? "Advantage+ Activado" : "Advantage+ Desactivado", {
-                    description: isNowOn ? "IA optimizando creatividades dinámicamente." : "Modo manual activado."
+                    description: isNowOn ? "Optimización creativa dinámica habilitada." : "Modo manual activado."
                 });
                 return { ...ad, isAdvantagePlus: isNowOn };
             }
@@ -2063,7 +1970,7 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
     };
 
     const handleDeleteCampaign = (adId, adName) => {
-        if (!confirm(`¿Eliminar la campaña "${adName}" de ${clientName}?`)) return;
+        if (!confirm(`¿Eliminar la campaña "${adName}" del registro de ${clientName}?`)) return;
         const next = ads.filter(a => a.id !== adId);
         persistCampaigns(next);
         toast.success("Campaña eliminada");
@@ -2072,38 +1979,32 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
     const handleSaveCampaignModal = (campaignData) => {
         let next;
         if (editingAd) {
-            // Edit existing
             next = ads.map(a => a.id === editingAd.id ? { ...a, ...campaignData } : a);
             toast.success("Campaña actualizada con éxito");
         } else {
-            // Create new
             const newAd = {
                 id: `ad_${Date.now()}`,
-                activeAdvanced: ['cpl', 'roas'],
+                activeAdvanced: ['cpl', 'ctr', 'cpc'],
                 isAdvantagePlus: true,
                 ...campaignData
             };
             next = [newAd, ...ads];
-            toast.success("Nueva campaña real agregada");
+            toast.success("Campaña real registrada");
         }
         persistCampaigns(next);
         setShowCampaignModal(false);
         setEditingAd(null);
     };
 
-    // Calculate aggregated KPIs
-    const totalActiveBudget = ads
-        .filter(a => a.status === 'Activo')
-        .reduce((sum, a) => {
-            const num = parseFloat((a.budget || '0').replace(/[^0-9.]/g, '')) || 0;
-            return sum + num;
-        }, 0);
-
+    // Real aggregated calculations
+    const totalSpend = ads.reduce((sum, a) => sum + (Number(a.metrics?.spend) || 0), 0);
     const totalClicks = ads.reduce((sum, a) => sum + (Number(a.metrics?.clicks) || 0), 0);
     const totalLeads = ads.reduce((sum, a) => sum + (Number(a.metrics?.leads) || 0), 0);
+    const totalImpressions = ads.reduce((sum, a) => sum + (Number(a.metrics?.impressions) || 0), 0);
     const activeAdsCount = ads.filter(a => a.status === 'Activo').length;
+    const avgCpc = totalClicks > 0 && totalSpend > 0 ? (totalSpend / totalClicks).toFixed(2) : '0.00';
+    const avgCtr = totalImpressions > 0 && totalClicks > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : '0.00';
 
-    // Strategic AI insight calculation based on real data
     const bestPerformingAd = [...ads].sort((a, b) => (Number(b.metrics?.leads) || 0) - (Number(a.metrics?.leads) || 0))[0];
 
     return (
@@ -2113,22 +2014,31 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
                 <div>
                     <div className="flex items-center gap-3">
                         <h2 className="text-3xl font-black text-white italic tracking-tight">Módulo Meta (Ads)</h2>
-                        <span className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                            DIIC Growth Engine
+                        <span className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" /> Meta Graph API Live
                         </span>
                     </div>
                     <p className="text-gray-400 text-sm italic mt-1">
-                        Monitorea, sincroniza y optimiza la pauta real de <span className="text-white font-bold">{clientName}</span>.
+                        Monitorea métricas y campañas 100% reales de <span className="text-white font-bold">{clientName}</span>.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    <button
+                        onClick={() => setShowDirectConnectModal(true)}
+                        className="px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center gap-2"
+                        title="Configurar Token y Cuenta de Meta Ads"
+                    >
+                        <Settings className="w-4 h-4 text-cyan-400" />
+                        {metaConnection.isConnected ? 'CONFIGURAR CUENTA' : 'VINCULAR META ADS'}
+                    </button>
+
                     <button
                         onClick={() => {
                             setEditingAd(null);
                             setShowCampaignModal(true);
                         }}
-                        className="px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[11px] font-bold text-white transition-all flex items-center gap-2 hover:border-cyan-500/40"
+                        className="px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[11px] font-bold text-white transition-all flex items-center gap-2 hover:border-cyan-500/40"
                     >
                         <Plus className="w-4 h-4 text-cyan-400" />
                         NUEVA CAMPAÑA
@@ -2140,320 +2050,394 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
                         className="px-6 py-3 bg-cyan-600 rounded-2xl text-[11px] font-bold text-white hover:bg-cyan-500 transition-all shadow-lg shadow-cyan-600/20 disabled:opacity-50 flex items-center gap-2"
                     >
                         {isSyncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                        {isSyncing ? 'SINCRONIZANDO...' : 'SINCRONIZAR BUSINESS MANAGER'}
+                        {isSyncing ? 'SINCRONIZANDO...' : 'SINCRONIZAR EN VIVO'}
                     </button>
                 </div>
             </div>
 
-            {/* CONNECTION STATUS BANNER */}
+            {/* CONNECTION STATUS BAR */}
             <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                 metaConnection.isConnected 
                     ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-300' 
-                    : 'bg-white/[0.02] border-white/10 text-gray-400'
+                    : 'bg-amber-500/5 border-amber-500/20 text-amber-300'
             }`}>
                 <div className="flex items-center gap-3">
-                    <div className={`w-2.5 h-2.5 rounded-full ${metaConnection.isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                    <p className="text-xs font-semibold">
-                        {metaConnection.isConnected ? (
-                            <span>Conectado con Meta Graph API: <strong className="text-white">{metaConnection.accountName}</strong></span>
-                        ) : (
-                            <span>Modo Pauta DIIC Cloud para <strong className="text-white">{clientName}</strong> (Gestión en Nube)</span>
-                        )}
-                    </p>
-                </div>
-                {!metaConnection.isConnected && (
-                    <button
-                        onClick={() => setShowConnectModal(true)}
-                        className="text-xs font-bold text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1 self-start sm:self-auto"
-                    >
-                        Vincular Cuenta Publicitaria Meta <ArrowUpRight className="w-3 h-3" />
-                    </button>
-                )}
-            </div>
-
-            {/* GLOBAL KPI SUMMARY BAR */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-5 hover:border-white/10 transition-all">
-                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Presupuesto Activo</p>
-                    <h4 className="text-2xl font-black text-white tracking-tight">${totalActiveBudget.toLocaleString()}<span className="text-xs font-normal text-gray-400">/mo</span></h4>
-                    <p className="text-[10px] text-cyan-400 font-bold mt-1">{activeAdsCount} {activeAdsCount === 1 ? 'campaña activa' : 'campañas activas'}</p>
-                </div>
-
-                <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-5 hover:border-white/10 transition-all">
-                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Clics Totales</p>
-                    <h4 className="text-2xl font-black text-emerald-400 tracking-tight">{totalClicks.toLocaleString()}</h4>
-                    <p className="text-[10px] text-gray-500 font-medium mt-1">Interacciones de pauta</p>
-                </div>
-
-                <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-5 hover:border-white/10 transition-all">
-                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Leads & Mensajes</p>
-                    <h4 className="text-2xl font-black text-cyan-400 tracking-tight">{totalLeads.toLocaleString()}</h4>
-                    <p className="text-[10px] text-gray-500 font-medium mt-1">Clientes potenciales generados</p>
-                </div>
-
-                <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-5 hover:border-white/10 transition-all">
-                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">CPL Promedio Estimado</p>
-                    <h4 className="text-2xl font-black text-purple-400 tracking-tight">
-                        ${totalLeads > 0 ? (totalActiveBudget / totalLeads).toFixed(2) : '3.80'}
-                    </h4>
-                    <p className="text-[10px] text-gray-500 font-medium mt-1">Costo por lead adquirido</p>
-                </div>
-            </div>
-
-            {/* CAMPAIGNS LIST */}
-            <div className="grid grid-cols-1 gap-6">
-                {ads.length === 0 ? (
-                    <div className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-12 text-center space-y-4">
-                        <div className="w-16 h-16 rounded-3xl bg-cyan-600/10 text-cyan-400 flex items-center justify-center mx-auto">
-                            <Target className="w-8 h-8" />
-                        </div>
-                        <h4 className="text-xl font-bold text-white">No hay campañas registradas para {clientName}</h4>
-                        <p className="text-xs text-gray-500 max-w-md mx-auto">
-                            Comienza agregando una campaña real o sincronizando la cuenta publicitaria de Meta para monitorear el rendimiento en vivo.
+                    <div className={`w-3 h-3 rounded-full ${metaConnection.isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                    <div>
+                        <p className="text-xs font-bold">
+                            {metaConnection.isConnected ? (
+                                <span>Cuenta Conectada: <strong className="text-white">{metaConnection.accountName}</strong> ({metaConnection.accountId})</span>
+                            ) : (
+                                <span>Sin Cuenta Publicitaria de Meta Vinculada para <strong className="text-white">{clientName}</strong></span>
+                            )}
                         </p>
+                        <p className="text-[10px] text-gray-400">
+                            {metaConnection.isConnected 
+                                ? 'Métricas sincronizándose directamente desde Meta Graph API.' 
+                                : 'Conecta el Business Manager de este cliente para consultar campañas y gasto real en vivo.'}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {metaConnection.isConnected ? (
+                        <a
+                            href={`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${metaConnection.accountId.replace('act_', '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs font-bold text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1"
+                        >
+                            Abrir Meta Ads Manager <ExternalLink className="w-3 h-3" />
+                        </a>
+                    ) : (
+                        <button
+                            onClick={() => setShowDirectConnectModal(true)}
+                            className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                        >
+                            <Link2 className="w-3.5 h-3.5" /> Vincular Ahora
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* NOT CONNECTED EMPTY STATE (NO FAKE DATA) */}
+            {!metaConnection.isConnected && ads.length === 0 ? (
+                <div className="bg-[#0E0E18] border border-white/10 rounded-[2.5rem] p-12 text-center space-y-6">
+                    <div className="w-20 h-20 rounded-3xl bg-cyan-600/10 text-cyan-400 flex items-center justify-center mx-auto border border-cyan-500/20">
+                        <Target className="w-10 h-10" />
+                    </div>
+                    
+                    <div className="max-w-md mx-auto space-y-2">
+                        <h3 className="text-2xl font-black text-white italic tracking-tight">Conecta la Cuenta Real de Meta Ads</h3>
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                            Para ver campañas, gasto publicitario, clics y leads <strong className="text-white">100% reales en vivo</strong> sin simulaciones, vincula el Business Manager o Token de Meta de <span className="text-cyan-400 font-bold">{clientName}</span>.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto pt-2">
+                        <button
+                            onClick={() => setShowDirectConnectModal(true)}
+                            className="p-5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-2xl transition-all shadow-xl shadow-cyan-600/20 text-left space-y-2 group"
+                        >
+                            <div className="flex items-center justify-between">
+                                <Key className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+                                <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-white/20 rounded-full">Recomendado</span>
+                            </div>
+                            <h5 className="text-sm font-bold">Conectar con Token Directo</h5>
+                            <p className="text-[10px] text-cyan-100 opacity-80">Ingresa tu Access Token y selecciona tu ID de cuenta publicitaria en 1 clic.</p>
+                        </button>
+
+                        <button
+                            onClick={() => setShowOAuthModal(true)}
+                            className="p-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl transition-all text-left space-y-2 group hover:border-cyan-500/30"
+                        >
+                            <div className="flex items-center justify-between">
+                                <Globe className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-white/10 rounded-full text-gray-400">OAuth</span>
+                            </div>
+                            <h5 className="text-sm font-bold">Login con Facebook</h5>
+                            <p className="text-[10px] text-gray-400">Inicia sesión con tu perfil de Facebook para autorizar los permisos de pauta.</p>
+                        </button>
+                    </div>
+
+                    <div className="pt-4">
                         <button
                             onClick={() => {
                                 setEditingAd(null);
                                 setShowCampaignModal(true);
                             }}
-                            className="px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-2xl transition-all shadow-lg shadow-cyan-600/20"
+                            className="text-xs text-gray-500 hover:text-gray-300 underline font-medium"
                         >
-                            + Crear Primera Campaña Real
+                            + O registrar datos reales manualmente si no tienes acceso a la API
                         </button>
                     </div>
-                ) : (
-                    ads.map(ad => (
-                        <div key={ad.id} className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 hover:border-cyan-500/20 transition-all relative group/card">
-                            {/* Card Top Row */}
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                                <div className="flex items-center gap-4">
-                                    <button 
-                                        onClick={() => toggleCampaignStatus(ad.id)}
-                                        title="Click para pausar o activar campaña"
-                                        className={`w-3.5 h-3.5 rounded-full cursor-pointer transition-transform hover:scale-125 ${
-                                            ad.status === 'Activo' ? 'bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50' : 'bg-gray-500'
-                                        }`} 
-                                    />
-                                    <div>
-                                        <div className="flex items-center gap-3">
-                                            <h4 className="text-xl font-black text-white tracking-tight">{ad.name}</h4>
-                                            {ad.isAdvantagePlus && (
-                                                <span className="px-2.5 py-0.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-full text-[9px] font-black uppercase">
-                                                    Advantage+
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-3 mt-1">
-                                            <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{ad.status}</span>
-                                            {ad.objective && (
-                                                <>
-                                                    <span className="text-gray-700">•</span>
-                                                    <span className="text-[10px] text-cyan-400/80 font-bold">{ad.objective}</span>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-6">
-                                    <div className="text-right">
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Presupuesto</p>
-                                        <p className="text-xl font-bold text-white">{ad.budget}</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => {
-                                                setEditingAd(ad);
-                                                setShowCampaignModal(true);
-                                            }}
-                                            title="Editar datos y métricas de esta campaña"
-                                            className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-white transition-all border border-white/5"
-                                        >
-                                            <Edit3 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteCampaign(ad.id, ad.name)}
-                                            title="Eliminar campaña"
-                                            className="p-2.5 bg-white/5 hover:bg-rose-500/10 rounded-xl text-gray-400 hover:text-rose-400 transition-all border border-white/5"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Metrics & Action Chips */}
-                            <div className="flex flex-wrap gap-4 items-stretch">
-                                {/* Core Metrics */}
-                                <div className="flex-1 min-w-[120px] p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Alcance</p>
-                                    <p className="text-lg font-bold text-white">{ad.metrics?.reach || '0'}</p>
-                                </div>
-                                <div className="flex-1 min-w-[120px] p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Clics</p>
-                                    <p className="text-lg font-bold text-white">{ad.metrics?.clicks || 0}</p>
-                                </div>
-                                <div className="flex-1 min-w-[120px] p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Leads</p>
-                                    <p className="text-lg font-bold text-cyan-400">{ad.metrics?.leads || 0}</p>
-                                </div>
-
-                                {/* Custom Advanced Metrics */}
-                                {(ad.activeAdvanced || []).map(mId => {
-                                    const metricInfo = AVAILABLE_METRICS.find(m => m.id === mId);
-                                    if (!metricInfo) return null;
-                                    return (
-                                        <motion.div 
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            key={mId} 
-                                            className="flex-1 min-w-[120px] p-4 bg-cyan-600/5 rounded-2xl border border-cyan-500/10 text-center relative group"
-                                        >
-                                            <p className={`text-[10px] font-bold uppercase mb-1 ${metricInfo.color}`}>{metricInfo.label}</p>
-                                            <p className="text-lg font-bold text-white">{ad.advanced?.[mId] || '--'}</p>
-                                            <button 
-                                                onClick={() => toggleMetric(ad.id, mId)}
-                                                className="absolute -top-2 -right-2 w-5 h-5 bg-[#050511] border border-white/10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:border-rose-500"
-                                            >
-                                                <X className="w-3 h-3 text-rose-500" />
-                                            </button>
-                                        </motion.div>
-                                    );
-                                })}
-
-                                {/* Add Metric Dropdown Trigger */}
-                                <div className="relative">
-                                    <button 
-                                        onClick={() => setShowSelectorFor(showSelectorFor === ad.id ? null : ad.id)}
-                                        className={`w-full h-full aspect-square min-w-[56px] rounded-2xl border transition-all flex items-center justify-center ${showSelectorFor === ad.id ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:border-cyan-500/50 hover:text-cyan-400'}`}
-                                    >
-                                        {showSelectorFor === ad.id ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
-                                    </button>
-
-                                    <AnimatePresence>
-                                        {showSelectorFor === ad.id && (
-                                            <motion.div 
-                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                className="absolute bottom-full mb-4 right-0 z-50 bg-[#161625] border border-white/10 rounded-3xl p-4 shadow-2xl min-w-[200px]"
-                                            >
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 px-2 italic">Métricas de Estratega</p>
-                                                <div className="space-y-1">
-                                                    {AVAILABLE_METRICS.map(m => (
-                                                        <button
-                                                            key={m.id}
-                                                            onClick={() => toggleMetric(ad.id, m.id)}
-                                                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${(ad.activeAdvanced || []).includes(m.id) ? 'bg-cyan-600/10 text-white' : 'hover:bg-white/5 text-gray-400'}`}
-                                                        >
-                                                            <span className="text-[11px] font-bold">{m.label}</span>
-                                                            <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${(ad.activeAdvanced || []).includes(m.id) ? 'border-cyan-500 bg-cyan-500 text-white' : 'border-white/10 bg-white/5'}`}>
-                                                                {(ad.activeAdvanced || []).includes(m.id) && <Check className="w-3 h-3" />}
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-
-                                {/* Optimize IA Card */}
-                                <div 
-                                    onClick={() => {
-                                        toast.info("Analizando Pauta con IA...", {
-                                            description: `Estrategia para '${ad.name}': CPC actual en ${ad.advanced?.cpc || '$0.45'}. Recomendado mantener pauta activa y escalar +10% los fines de semana.`
-                                        });
-                                    }}
-                                    className="flex-1 min-w-[150px] p-4 bg-cyan-600/10 rounded-2xl border border-cyan-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-cyan-600/20 transition-all group"
-                                >
-                                    <div className="flex items-center justify-center gap-2">
-                                        <Zap className="w-3 h-3 text-cyan-400 group-hover:scale-110 transition-transform" />
-                                        <p className="text-[10px] text-cyan-400 font-bold uppercase">Optimizar</p>
-                                    </div>
-                                    <p className="text-[9px] text-cyan-400/60 italic">IA Sugiere: +5% Presupuesto</p>
-                                </div>
-
-                                {/* Público & Metas Card */}
-                                <div 
-                                    onClick={() => {
-                                        setSelectedAdForMetrics(ad);
-                                        setShowAudienceModal(true);
-                                    }}
-                                    className="flex-1 min-w-[150px] p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-amber-500/20 transition-all group"
-                                >
-                                    <div className="flex items-center justify-center gap-2">
-                                        <Users className="w-3 h-3 text-amber-500 group-hover:scale-110 transition-transform" />
-                                        <p className="text-[10px] text-amber-500 font-bold uppercase">Público & Metas</p>
-                                    </div>
-                                    <p className="text-[9px] text-amber-500/60 italic">{client?.city || 'Santo Domingo'} • Segmentado</p>
-                                </div>
-
-                                {/* Guardar Público Card */}
-                                <div 
-                                    onClick={() => {
-                                        toast.success("Público Sincronizado", {
-                                            description: `Audiencia de '${ad.name}' guardada en el perfil de ${clientName}.`
-                                        });
-                                    }}
-                                    className="flex-1 min-w-[150px] p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-emerald-500/20 transition-all group"
-                                >
-                                    <div className="flex items-center justify-center gap-2">
-                                        <Target className="w-3 h-3 text-emerald-500 group-hover:scale-110 transition-transform" />
-                                        <p className="text-[10px] text-emerald-500 font-bold uppercase">Guardar Público</p>
-                                    </div>
-                                    <p className="text-[9px] text-emerald-500/60 italic">DIIC Database</p>
-                                </div>
-
-                                {/* Advantage+ Card */}
-                                <div 
-                                    onClick={() => toggleAdvantage(ad.id)}
-                                    className={`flex-1 min-w-[150px] p-4 rounded-2xl border text-center flex flex-col justify-center cursor-pointer transition-all group ${
-                                        ad.isAdvantagePlus 
-                                            ? 'bg-purple-500/20 border-purple-500/40 text-purple-300' 
-                                            : 'bg-purple-500/5 border-purple-500/10 text-purple-400 hover:bg-purple-500/10'
-                                    }`}
-                                >
-                                    <div className="flex items-center justify-center gap-2">
-                                        <Sparkles className="w-3 h-3 text-purple-400 group-hover:scale-110 transition-transform" />
-                                        <p className="text-[10px] font-bold uppercase">Advantage+</p>
-                                    </div>
-                                    <p className="text-[9px] text-purple-400/60 italic">{ad.isAdvantagePlus ? 'IA Creativa ON' : 'Activar IA'}</p>
-                                </div>
-
-                                {/* Escalar / Nueva Card */}
-                                <div 
-                                    onClick={() => {
-                                        setSelectedAdForMetrics(ad);
-                                        setShowCreativeModal(true);
-                                    }}
-                                    className="flex-1 min-w-[150px] p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-indigo-500/20 transition-all group"
-                                >
-                                    <div className="flex items-center justify-center gap-2">
-                                        <Layers className="w-3 h-3 text-indigo-400 group-hover:scale-110 transition-transform" />
-                                        <p className="text-[10px] text-indigo-400 font-bold uppercase">Escalar / Nueva</p>
-                                    </div>
-                                    <p className="text-[9px] text-indigo-400/60 italic">+ Nueva Pieza</p>
-                                </div>
-                            </div>
+                </div>
+            ) : (
+                <>
+                    {/* GLOBAL REAL KPI BAR */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-5 hover:border-white/10 transition-all">
+                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Gasto Total Real</p>
+                            <h4 className="text-2xl font-black text-white tracking-tight">${totalSpend.toLocaleString()}<span className="text-xs font-normal text-gray-400"> USD</span></h4>
+                            <p className="text-[10px] text-cyan-400 font-bold mt-1">{activeAdsCount} {activeAdsCount === 1 ? 'campaña activa' : 'campañas activas'}</p>
                         </div>
-                    ))
-                )}
-            </div>
 
-            {/* STRATEGIC CM INSIGHT FOOTER */}
+                        <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-5 hover:border-white/10 transition-all">
+                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Clics Totales Reales</p>
+                            <h4 className="text-2xl font-black text-emerald-400 tracking-tight">{totalClicks.toLocaleString()}</h4>
+                            <p className="text-[10px] text-gray-500 font-medium mt-1">Interacciones de enlace</p>
+                        </div>
+
+                        <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-5 hover:border-white/10 transition-all">
+                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Leads / Mensajes</p>
+                            <h4 className="text-2xl font-black text-cyan-400 tracking-tight">{totalLeads.toLocaleString()}</h4>
+                            <p className="text-[10px] text-gray-500 font-medium mt-1">Conversiones adquiridas</p>
+                        </div>
+
+                        <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-5 hover:border-white/10 transition-all">
+                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">CPC Promedio</p>
+                            <h4 className="text-2xl font-black text-purple-400 tracking-tight">${avgCpc}</h4>
+                            <p className="text-[10px] text-gray-500 font-medium mt-1">Costo por clic real</p>
+                        </div>
+
+                        <div className="bg-[#0E0E18] border border-white/5 rounded-3xl p-5 hover:border-white/10 transition-all">
+                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">CTR Promedio</p>
+                            <h4 className="text-2xl font-black text-amber-400 tracking-tight">{avgCtr}%</h4>
+                            <p className="text-[10px] text-gray-500 font-medium mt-1">Tasa de clics real</p>
+                        </div>
+                    </div>
+
+                    {/* REAL CAMPAIGNS LIST */}
+                    <div className="grid grid-cols-1 gap-6">
+                        {ads.map(ad => (
+                            <div key={ad.id} className="bg-[#0E0E18] border border-white/5 rounded-[2.5rem] p-8 hover:border-cyan-500/20 transition-all relative group/card">
+                                {/* Card Top Row */}
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                                    <div className="flex items-center gap-4">
+                                        <button 
+                                            onClick={() => toggleCampaignStatus(ad.id)}
+                                            title="Click para pausar o activar campaña"
+                                            className={`w-3.5 h-3.5 rounded-full cursor-pointer transition-transform hover:scale-125 ${
+                                                ad.status === 'Activo' ? 'bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50' : 'bg-gray-500'
+                                            }`} 
+                                        />
+                                        <div>
+                                            <div className="flex items-center gap-3">
+                                                <h4 className="text-xl font-black text-white tracking-tight">{ad.name}</h4>
+                                                {ad.isAdvantagePlus && (
+                                                    <span className="px-2.5 py-0.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-full text-[9px] font-black uppercase">
+                                                        Advantage+
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-3 mt-1">
+                                                <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{ad.status}</span>
+                                                {ad.objective && (
+                                                    <>
+                                                        <span className="text-gray-700">•</span>
+                                                        <span className="text-[10px] text-cyan-400/80 font-bold">{ad.objective}</span>
+                                                    </>
+                                                )}
+                                                {ad.id && !String(ad.id).startsWith('ad_') && (
+                                                    <>
+                                                        <span className="text-gray-700">•</span>
+                                                        <span className="text-[10px] text-gray-500 font-mono">ID: {ad.id}</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-6">
+                                        <div className="text-right">
+                                            <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Presupuesto</p>
+                                            <p className="text-xl font-bold text-white">{ad.budget}</p>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            {metaConnection.accountId && ad.id && !String(ad.id).startsWith('ad_') && (
+                                                <a
+                                                    href={`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${metaConnection.accountId.replace('act_', '')}&selected_campaign_ids=${ad.id}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    title="Ver en Meta Ads Manager oficial"
+                                                    className="p-2.5 bg-white/5 hover:bg-cyan-500/10 rounded-xl text-gray-400 hover:text-cyan-400 transition-all border border-white/5 flex items-center gap-1 text-[11px] font-bold"
+                                                >
+                                                    <ExternalLink className="w-4 h-4" />
+                                                </a>
+                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    setEditingAd(ad);
+                                                    setShowCampaignModal(true);
+                                                }}
+                                                title="Editar métricas de esta campaña"
+                                                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-white transition-all border border-white/5"
+                                            >
+                                                <Edit3 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteCampaign(ad.id, ad.name)}
+                                                title="Eliminar campaña"
+                                                className="p-2.5 bg-white/5 hover:bg-rose-500/10 rounded-xl text-gray-400 hover:text-rose-400 transition-all border border-white/5"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Metrics & Action Chips */}
+                                <div className="flex flex-wrap gap-4 items-stretch">
+                                    <div className="flex-1 min-w-[120px] p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Alcance</p>
+                                        <p className="text-lg font-bold text-white">{ad.metrics?.reach || '0'}</p>
+                                    </div>
+                                    <div className="flex-1 min-w-[120px] p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Clics Reales</p>
+                                        <p className="text-lg font-bold text-white">{ad.metrics?.clicks || 0}</p>
+                                    </div>
+                                    <div className="flex-1 min-w-[120px] p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Leads / Mensajes</p>
+                                        <p className="text-lg font-bold text-cyan-400">{ad.metrics?.leads || 0}</p>
+                                    </div>
+                                    {ad.metrics?.spend !== undefined && (
+                                        <div className="flex-1 min-w-[120px] p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
+                                            <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Gasto Real</p>
+                                            <p className="text-lg font-bold text-emerald-400">${Number(ad.metrics.spend).toFixed(2)}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Custom Advanced Metrics */}
+                                    {(ad.activeAdvanced || []).map(mId => {
+                                        const metricInfo = AVAILABLE_METRICS.find(m => m.id === mId);
+                                        if (!metricInfo) return null;
+                                        return (
+                                            <motion.div 
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                key={mId} 
+                                                className="flex-1 min-w-[120px] p-4 bg-cyan-600/5 rounded-2xl border border-cyan-500/10 text-center relative group"
+                                            >
+                                                <p className={`text-[10px] font-bold uppercase mb-1 ${metricInfo.color}`}>{metricInfo.label}</p>
+                                                <p className="text-lg font-bold text-white">{ad.advanced?.[mId] || '--'}</p>
+                                                <button 
+                                                    onClick={() => toggleMetric(ad.id, mId)}
+                                                    className="absolute -top-2 -right-2 w-5 h-5 bg-[#050511] border border-white/10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:border-rose-500"
+                                                >
+                                                    <X className="w-3 h-3 text-rose-500" />
+                                                </button>
+                                            </motion.div>
+                                        );
+                                    })}
+
+                                    {/* Add Metric Dropdown Trigger */}
+                                    <div className="relative">
+                                        <button 
+                                            onClick={() => setShowSelectorFor(showSelectorFor === ad.id ? null : ad.id)}
+                                            className={`w-full h-full aspect-square min-w-[56px] rounded-2xl border transition-all flex items-center justify-center ${showSelectorFor === ad.id ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-white/5 border-white/10 text-gray-400 hover:border-cyan-500/50 hover:text-cyan-400'}`}
+                                        >
+                                            {showSelectorFor === ad.id ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {showSelectorFor === ad.id && (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                    className="absolute bottom-full mb-4 right-0 z-50 bg-[#161625] border border-white/10 rounded-3xl p-4 shadow-2xl min-w-[200px]"
+                                                >
+                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 px-2 italic">Métricas de Estratega</p>
+                                                    <div className="space-y-1">
+                                                        {AVAILABLE_METRICS.map(m => (
+                                                            <button
+                                                                key={m.id}
+                                                                onClick={() => toggleMetric(ad.id, m.id)}
+                                                                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${(ad.activeAdvanced || []).includes(m.id) ? 'bg-cyan-600/10 text-white' : 'hover:bg-white/5 text-gray-400'}`}
+                                                            >
+                                                                <span className="text-[11px] font-bold">{m.label}</span>
+                                                                <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${(ad.activeAdvanced || []).includes(m.id) ? 'border-cyan-500 bg-cyan-500 text-white' : 'border-white/10 bg-white/5'}`}>
+                                                                    {(ad.activeAdvanced || []).includes(m.id) && <Check className="w-3 h-3" />}
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
+                                    {/* Action buttons */}
+                                    <div 
+                                        onClick={() => {
+                                            toast.info("Análisis de Rendimiento Real", {
+                                                description: `Campaña '${ad.name}': CPC en ${ad.advanced?.cpc || '$0.00'} y CTR en ${ad.advanced?.ctr || '0%'}.`
+                                            });
+                                        }}
+                                        className="flex-1 min-w-[140px] p-4 bg-cyan-600/10 rounded-2xl border border-cyan-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-cyan-600/20 transition-all group"
+                                    >
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Zap className="w-3 h-3 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                            <p className="text-[10px] text-cyan-400 font-bold uppercase">Optimizar</p>
+                                        </div>
+                                        <p className="text-[9px] text-cyan-400/60 italic">Diagnóstico IA</p>
+                                    </div>
+
+                                    <div 
+                                        onClick={() => {
+                                            setSelectedAdForMetrics(ad);
+                                            setShowAudienceModal(true);
+                                        }}
+                                        className="flex-1 min-w-[140px] p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-amber-500/20 transition-all group"
+                                    >
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Users className="w-3 h-3 text-amber-500 group-hover:scale-110 transition-transform" />
+                                            <p className="text-[10px] text-amber-500 font-bold uppercase">Público & Metas</p>
+                                        </div>
+                                        <p className="text-[9px] text-amber-500/60 italic">{client?.city || 'Segmentado'}</p>
+                                    </div>
+
+                                    <div 
+                                        onClick={() => toggleAdvantage(ad.id)}
+                                        className={`flex-1 min-w-[140px] p-4 rounded-2xl border text-center flex flex-col justify-center cursor-pointer transition-all group ${
+                                            ad.isAdvantagePlus 
+                                                ? 'bg-purple-500/20 border-purple-500/40 text-purple-300' 
+                                                : 'bg-purple-500/5 border-purple-500/10 text-purple-400 hover:bg-purple-500/10'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Sparkles className="w-3 h-3 text-purple-400 group-hover:scale-110 transition-transform" />
+                                            <p className="text-[10px] font-bold uppercase">Advantage+</p>
+                                        </div>
+                                        <p className="text-[9px] text-purple-400/60 italic">{ad.isAdvantagePlus ? 'Dinámico ON' : 'Activar IA'}</p>
+                                    </div>
+
+                                    <div 
+                                        onClick={() => {
+                                            setSelectedAdForMetrics(ad);
+                                            setShowCreativeModal(true);
+                                        }}
+                                        className="flex-1 min-w-[140px] p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 text-center flex flex-col justify-center cursor-pointer hover:bg-indigo-500/20 transition-all group"
+                                    >
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Layers className="w-3 h-3 text-indigo-400 group-hover:scale-110 transition-transform" />
+                                            <p className="text-[10px] text-indigo-400 font-bold uppercase">Escalar / Nueva</p>
+                                        </div>
+                                        <p className="text-[9px] text-indigo-400/60 italic">+ Nueva Pieza</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {/* STRATEGIC CM INSIGHT FOOTER (Only when real data exists) */}
             {bestPerformingAd && (
                 <div className="p-6 bg-indigo-600/5 border border-indigo-500/10 rounded-2xl italic text-[11px] text-indigo-400 font-medium flex items-center gap-3">
                     <span className="text-xl">💡</span>
                     <p>
-                        <strong>Estrategia CM para {clientName}:</strong> La campaña "{bestPerformingAd.name}" está liderando con {bestPerformingAd.metrics?.leads || 0} leads y un CPL de {bestPerformingAd.advanced?.cpl || '$3.50'}. Considera reasignar presupuesto orgánico a esta pieza para maximizar el ROAS de la marca.
+                        <strong>Estrategia CM para {clientName}:</strong> La campaña real "{bestPerformingAd.name}" acumula {bestPerformingAd.metrics?.leads || 0} conversiones con un costo por lead de {bestPerformingAd.advanced?.cpl || '$0.00'}. Se sugiere monitorear la fatiga del creativo tras superar 10K impresiones.
                     </p>
                 </div>
             )}
 
             {/* MODALS */}
             <AnimatePresence>
+                {showDirectConnectModal && (
+                    <MetaDirectConnectModal
+                        client={client}
+                        currentConnection={metaConnection}
+                        onClose={() => setShowDirectConnectModal(false)}
+                        onSuccess={() => {
+                            checkMetaConnection();
+                            setShowDirectConnectModal(false);
+                            handleSync();
+                        }}
+                    />
+                )}
+
                 {showCampaignModal && (
                     <CampaignEditModal
                         client={client}
@@ -2482,21 +2466,293 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
                     />
                 )}
 
-                {showConnectModal && (
+                {showOAuthModal && (
                     <IntegrationModal
-                        isOpen={showConnectModal}
+                        isOpen={showOAuthModal}
                         platform="facebook"
                         clientName={clientName}
                         clientId={clientId}
-                        onClose={() => setShowConnectModal(false)}
+                        onClose={() => setShowOAuthModal(false)}
                         onSuccess={() => {
                             checkMetaConnection();
-                            setShowConnectModal(false);
+                            setShowOAuthModal(false);
                             handleSync();
                         }}
                     />
                 )}
             </AnimatePresence>
+        </div>
+    );
+}
+
+function MetaDirectConnectModal({ client, currentConnection, onClose, onSuccess }) {
+    const clientId = client?.id;
+    const clientName = client?.name || 'Cliente';
+
+    const [token, setToken] = useState(currentConnection?.token || '');
+    const [selectedAdAccount, setSelectedAdAccount] = useState(currentConnection?.accountId || '');
+    const [selectedAccountName, setSelectedAccountName] = useState(currentConnection?.accountName || '');
+    const [availableAccounts, setAvailableAccounts] = useState([]);
+    const [validating, setValidating] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [metaUser, setMetaUser] = useState(null);
+
+    // Validate token and fetch associated Ad Accounts from Meta Graph API
+    const handleValidateToken = async () => {
+        if (!token.trim()) {
+            toast.error("Por favor ingresa un Access Token de Meta");
+            return;
+        }
+
+        setValidating(true);
+        try {
+            const res = await fetch('/api/meta/ads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    accessToken: token.trim(),
+                    action: 'validate'
+                })
+            });
+
+            const data = await res.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Token inválido o sin permisos.');
+            }
+
+            setMetaUser(data.user);
+            setAvailableAccounts(data.adAccounts || []);
+
+            if (data.adAccounts && data.adAccounts.length > 0) {
+                setSelectedAdAccount(data.adAccounts[0].id);
+                setSelectedAccountName(data.adAccounts[0].name);
+                toast.success(`Token válido para: ${data.user?.name || 'Usuario Meta'}`, {
+                    description: `Se detectaron ${data.adAccounts.length} cuentas publicitarias.`
+                });
+            } else {
+                toast.warning("Token válido pero no se encontraron cuentas publicitarias asociadas.");
+            }
+        } catch (err) {
+            console.error('[MetaDirectConnectModal] Validation error:', err);
+            toast.error("Error al validar con Meta Graph API", {
+                description: err.message
+            });
+        } finally {
+            setValidating(false);
+        }
+    };
+
+    // Save connection and load real campaigns
+    const handleSave = async () => {
+        if (!token.trim()) {
+            toast.error("El Token de acceso es obligatorio");
+            return;
+        }
+        if (!selectedAdAccount.trim()) {
+            toast.error("Debes seleccionar o ingresar un ID de cuenta publicitaria (act_...)");
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const res = await fetch('/api/meta/ads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clientId,
+                    accessToken: token.trim(),
+                    adAccountId: selectedAdAccount.trim(),
+                    accountName: selectedAccountName.trim() || selectedAdAccount.trim(),
+                    action: 'save_connection'
+                })
+            });
+
+            const data = await res.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Error al guardar conexión');
+            }
+
+            toast.success("¡Cuenta de Meta Ads Conectada!", {
+                description: `Conexión establecida con ${selectedAccountName || selectedAdAccount} para ${clientName}.`
+            });
+
+            if (onSuccess) onSuccess();
+        } catch (err) {
+            console.error('[MetaDirectConnectModal] Save error:', err);
+            toast.error("Error al guardar conexión con Meta", {
+                description: err.message
+            });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Disconnect
+    const handleDisconnect = async () => {
+        if (!confirm(`¿Desconectar la cuenta publicitaria de Meta para ${clientName}?`)) return;
+        setSaving(true);
+        try {
+            await fetch('/api/meta/ads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clientId,
+                    action: 'disconnect'
+                })
+            });
+            toast.success("Cuenta de Meta Ads desconectada");
+            if (onSuccess) onSuccess();
+        } catch (e) {
+            toast.error("Error al desconectar");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="bg-[#0E0E18] border border-white/10 rounded-[2.5rem] w-full max-w-2xl p-8 shadow-2xl relative space-y-6"
+            >
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h3 className="text-2xl font-black text-white italic uppercase tracking-tight flex items-center gap-2">
+                            <Key className="w-6 h-6 text-cyan-400" /> Configuración de Meta Ads Real
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-1">
+                            Vinculación directa con Graph API para <strong className="text-white">{clientName}</strong>
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-colors">
+                        <X className="w-5 h-5 text-gray-400" />
+                    </button>
+                </div>
+
+                <div className="space-y-4">
+                    {/* Access Token Input */}
+                    <div className="space-y-1.5">
+                        <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                Meta Access Token (User / System User / Long-Lived)
+                            </label>
+                            <a
+                                href="https://developers.facebook.com/tools/explorer/"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-cyan-400 hover:underline flex items-center gap-1 font-bold"
+                            >
+                                Obtener en Graph API Explorer <ExternalLink className="w-3 h-3" />
+                            </a>
+                        </div>
+                        <div className="flex gap-2">
+                            <input
+                                type="password"
+                                value={token}
+                                onChange={(e) => setToken(e.target.value)}
+                                placeholder="EAA..."
+                                className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white font-mono text-xs outline-none focus:border-cyan-500"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleValidateToken}
+                                disabled={validating || !token.trim()}
+                                className="px-5 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold text-xs rounded-xl transition-all disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                                {validating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4 text-cyan-400" />}
+                                Validar
+                            </button>
+                        </div>
+                        <p className="text-[10px] text-gray-500">
+                            Requiere permisos: <code className="text-cyan-300">ads_read</code>, <code className="text-cyan-300">read_insights</code>, <code className="text-cyan-300">ads_management</code>.
+                        </p>
+                    </div>
+
+                    {/* Validated User Details */}
+                    {metaUser && (
+                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3">
+                            <CheckCircle className="w-5 h-5 text-emerald-400" />
+                            <div className="text-xs">
+                                <p className="font-bold text-white">Usuario verificado: {metaUser.name}</p>
+                                <p className="text-[10px] text-emerald-300">{metaUser.email || `ID: ${metaUser.id}`}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Ad Accounts Selection */}
+                    {availableAccounts.length > 0 ? (
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                Selecciona la Cuenta Publicitaria de {clientName}
+                            </label>
+                            <select
+                                value={selectedAdAccount}
+                                onChange={(e) => {
+                                    const selected = availableAccounts.find(a => a.id === e.target.value);
+                                    setSelectedAdAccount(e.target.value);
+                                    if (selected) setSelectedAccountName(selected.name);
+                                }}
+                                className="w-full px-4 py-3 bg-[#161625] border border-white/10 rounded-xl text-white text-sm font-bold outline-none focus:border-cyan-500"
+                            >
+                                {availableAccounts.map(acc => (
+                                    <option key={acc.id} value={acc.id}>
+                                        {acc.name} ({acc.id}) - Moneda: {acc.currency} (Gasto: ${acc.amount_spent})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    ) : (
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                ID de Cuenta Publicitaria (`act_XXXXXXXXX`)
+                            </label>
+                            <input
+                                type="text"
+                                value={selectedAdAccount}
+                                onChange={(e) => {
+                                    setSelectedAdAccount(e.target.value);
+                                    if (!selectedAccountName) setSelectedAccountName(e.target.value);
+                                }}
+                                placeholder="Ej: act_102839281928"
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-bold outline-none focus:border-cyan-500"
+                            />
+                        </div>
+                    )}
+                </div>
+
+                <div className="pt-2 flex gap-4">
+                    {currentConnection?.isConnected && (
+                        <button
+                            type="button"
+                            onClick={handleDisconnect}
+                            disabled={saving}
+                            className="px-5 py-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs uppercase tracking-widest rounded-2xl transition-all border border-rose-500/20"
+                        >
+                            Desconectar
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex-1 py-4 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white font-bold text-xs uppercase tracking-widest rounded-2xl transition-all"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={saving || !token.trim() || !selectedAdAccount.trim()}
+                        className="flex-1 py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-cyan-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {saving && <RefreshCw className="w-4 h-4 animate-spin" />}
+                        {saving ? 'Guardando...' : 'Conectar y Traer Datos Reales'}
+                    </button>
+                </div>
+            </motion.div>
         </div>
     );
 }
@@ -2507,13 +2763,14 @@ function CampaignEditModal({ client, ad, onClose, onSave }) {
     const [objective, setObjective] = useState(ad?.objective || 'Mensajes a WhatsApp');
     const [status, setStatus] = useState(ad?.status || 'Activo');
     const [budget, setBudget] = useState(ad?.budget || '$250/mo');
-    const [reach, setReach] = useState(ad?.metrics?.reach || '5.0K');
-    const [clicks, setClicks] = useState(ad?.metrics?.clicks || 300);
-    const [leads, setLeads] = useState(ad?.metrics?.leads || 12);
-    const [ctr, setCtr] = useState(ad?.advanced?.ctr || '2.5%');
-    const [cpc, setCpc] = useState(ad?.advanced?.cpc || '$0.50');
-    const [roas, setRoas] = useState(ad?.advanced?.roas || '4.0x');
-    const [cpl, setCpl] = useState(ad?.advanced?.cpl || '$4.00');
+    const [reach, setReach] = useState(ad?.metrics?.reach || '0');
+    const [clicks, setClicks] = useState(ad?.metrics?.clicks || 0);
+    const [leads, setLeads] = useState(ad?.metrics?.leads || 0);
+    const [spend, setSpend] = useState(ad?.metrics?.spend || 0);
+    const [ctr, setCtr] = useState(ad?.advanced?.ctr || '0%');
+    const [cpc, setCpc] = useState(ad?.advanced?.cpc || '$0.00');
+    const [roas, setRoas] = useState(ad?.advanced?.roas || 'N/D');
+    const [cpl, setCpl] = useState(ad?.advanced?.cpl || '$0.00');
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -2530,14 +2787,15 @@ function CampaignEditModal({ client, ad, onClose, onSave }) {
             metrics: {
                 reach: reach.trim(),
                 clicks: Number(clicks) || 0,
-                leads: Number(leads) || 0
+                leads: Number(leads) || 0,
+                spend: Number(spend) || 0
             },
             advanced: {
                 ctr: ctr.trim(),
                 cpc: cpc.trim(),
                 roas: roas.trim(),
-                cpm: ad?.advanced?.cpm || '$7.50',
-                watchTime: ad?.advanced?.watchTime || '14s',
+                cpm: ad?.advanced?.cpm || '$0.00',
+                watchTime: ad?.advanced?.watchTime || 'N/D',
                 cpl: cpl.trim()
             }
         });
@@ -2554,7 +2812,7 @@ function CampaignEditModal({ client, ad, onClose, onSave }) {
                 <div className="flex justify-between items-center mb-6">
                     <div>
                         <h3 className="text-2xl font-black text-white italic uppercase tracking-tight">
-                            {isEdit ? 'Editar Campaña Real' : 'Nueva Campaña Real'}
+                            {isEdit ? 'Editar Campaña Real' : 'Registrar Campaña Real'}
                         </h3>
                         <p className="text-xs text-gray-500 font-medium">Marca: {client?.name || 'Cliente'}</p>
                     </div>
@@ -2571,7 +2829,7 @@ function CampaignEditModal({ client, ad, onClose, onSave }) {
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="Ej: Pauta Ventas WhatsApp - Temporada"
+                                placeholder="Ej: Pauta Ventas WhatsApp"
                                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-bold outline-none focus:border-cyan-500"
                             />
                         </div>
@@ -2584,10 +2842,10 @@ function CampaignEditModal({ client, ad, onClose, onSave }) {
                                 className="w-full px-4 py-3 bg-[#161625] border border-white/10 rounded-xl text-white text-sm font-bold outline-none focus:border-cyan-500"
                             >
                                 <option value="Mensajes a WhatsApp">Mensajes a WhatsApp</option>
-                                <option value="Generación de Clientes Potenciales">Clientes Potenciales / Leads</option>
-                                <option value="Tráfico al Sitio Web">Tráfico Web</option>
+                                <option value="Generación de Leads">Generación de Leads</option>
+                                <option value="Tráfico Web">Tráfico Web</option>
                                 <option value="Reconocimiento de Marca">Reconocimiento & Cobertura</option>
-                                <option value="Interacciones / Reels">Interacciones Reels</option>
+                                <option value="Interacciones Reels/Posts">Interacciones Reels</option>
                             </select>
                         </div>
 
@@ -2637,13 +2895,25 @@ function CampaignEditModal({ client, ad, onClose, onSave }) {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Leads / Conversiones</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Leads / Mensajes</label>
                             <input
                                 type="number"
                                 value={leads}
                                 onChange={(e) => setLeads(e.target.value)}
                                 placeholder="18"
                                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-cyan-400 text-sm font-bold outline-none focus:border-cyan-500"
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gasto Total ($ USD)</label>
+                            <input
+                                type="number"
+                                step="any"
+                                value={spend}
+                                onChange={(e) => setSpend(e.target.value)}
+                                placeholder="50.00"
+                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-emerald-400 text-sm font-bold outline-none focus:border-cyan-500"
                             />
                         </div>
 
@@ -2665,17 +2935,6 @@ function CampaignEditModal({ client, ad, onClose, onSave }) {
                                 value={cpc}
                                 onChange={(e) => setCpc(e.target.value)}
                                 placeholder="$0.45"
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-bold outline-none focus:border-cyan-500"
-                            />
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ROAS</label>
-                            <input
-                                type="text"
-                                value={roas}
-                                onChange={(e) => setRoas(e.target.value)}
-                                placeholder="4.2x"
                                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-bold outline-none focus:border-cyan-500"
                             />
                         </div>
@@ -2704,7 +2963,7 @@ function CampaignEditModal({ client, ad, onClose, onSave }) {
                             type="submit"
                             className="flex-1 py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-cyan-600/20"
                         >
-                            {isEdit ? 'Guardar Cambios' : 'Crear Campaña'}
+                            {isEdit ? 'Guardar Cambios' : 'Registrar Campaña'}
                         </button>
                     </div>
                 </form>
