@@ -280,43 +280,43 @@ export default function Sidebar() {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-3 mt-2 overflow-y-auto custom-scrollbar pt-2 pb-4 space-y-1">
+            <nav className="flex-1 px-3 overflow-y-auto custom-scrollbar flex flex-col justify-center">
+                <div className="my-auto w-full space-y-1 py-2">
+                    {/* 1. Main Items (Flat List) */}
+                    {MAIN_ITEMS.map((item, index) => (
+                        <div key={item.href}>
+                            <Link href={getScopedHref(item.href)} className="block">
+                                <div
+                                    className={`flex items-center gap-4 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden group/item ${pathname === item.href
+                                        ? 'bg-white/10 text-white'
+                                        : item.glow
+                                            ? 'bg-gradient-to-r from-fuchsia-900/20 to-purple-900/10 border border-fuchsia-500/20 text-white'
+                                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                        }`}
+                                >
+                                    {pathname === item.href && (
+                                        <motion.div
+                                            layoutId="activeTabStudio"
+                                            className="absolute left-0 top-1 bottom-1 w-1 bg-indigo-500 rounded-r-full"
+                                        />
+                                    )}
+                                    <item.icon className={`w-5 h-5 shrink-0 transition-colors ${pathname === item.href ? 'text-indigo-400' : (item.color || 'text-gray-500')} ${item.glow ? 'text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,121,249,0.5)]' : ''}`} />
+                                    <span className={`text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap ${item.glow ? 'text-fuchsia-100' : ''}`}>
+                                        {item.name}
+                                    </span>
+                                </div>
+                            </Link>
+                            
+                            {/* INYECCIÓN DE STRATEGIA DEBAJO DE ZONA CREATIVA (índice 2) */}
+                            {index === 2 && ACCORDION_GROUPS.filter(g => g.id === 'strategy').map(renderAccordionGroup)}
+                        </div>
+                    ))}
 
-                {/* 1. Main Items (Flat List) */}
-                {MAIN_ITEMS.map((item, index) => (
-                    <div key={item.href}>
-                        <Link href={getScopedHref(item.href)} className="block">
-                            <div
-                                className={`flex items-center gap-4 px-3 py-2.5 rounded-xl transition-all duration-200 relative overflow-hidden group/item ${pathname === item.href
-                                    ? 'bg-white/10 text-white'
-                                    : item.glow
-                                        ? 'bg-gradient-to-r from-fuchsia-900/20 to-purple-900/10 border border-fuchsia-500/20 text-white'
-                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                    }`}
-                            >
-                                {pathname === item.href && (
-                                    <motion.div
-                                        layoutId="activeTabStudio"
-                                        className="absolute left-0 top-1 bottom-1 w-1 bg-indigo-500 rounded-r-full"
-                                    />
-                                )}
-                                <item.icon className={`w-5 h-5 shrink-0 transition-colors ${pathname === item.href ? 'text-indigo-400' : (item.color || 'text-gray-500')} ${item.glow ? 'text-fuchsia-400 drop-shadow-[0_0_8px_rgba(232,121,249,0.5)]' : ''}`} />
-                                <span className={`text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap ${item.glow ? 'text-fuchsia-100' : ''}`}>
-                                    {item.name}
-                                </span>
-                            </div>
-                        </Link>
-                        
-                        {/* INYECCIÓN DE STRATEGIA DEBAJO DE ZONA CREATIVA (índice 2) */}
-                        {index === 2 && ACCORDION_GROUPS.filter(g => g.id === 'strategy').map(renderAccordionGroup)}
-                    </div>
-                ))}
+                    <div className="my-2 border-t border-white/5" />
 
-                <div className="my-2 border-t border-white/5" />
-
-                {/* 2. Other Accordion Groups */}
-                {ACCORDION_GROUPS.filter(g => g.id !== 'strategy').map(renderAccordionGroup)}
-
+                    {/* 2. Other Accordion Groups */}
+                    {ACCORDION_GROUPS.filter(g => g.id !== 'strategy').map(renderAccordionGroup)}
+                </div>
             </nav>
 
             {/* System Footer (Fixed) - Premium User Profile Dropdown */}
