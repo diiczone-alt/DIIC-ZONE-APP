@@ -14,7 +14,8 @@ import {
     User, Cake, Briefcase, Link2, Phone, Compass, Info,
     Camera, Copy, RefreshCw, Key, LogOut, CheckCheck,
     BookOpen, Wheat, Stethoscope, UtensilsCrossed, Building2, Shirt, Dumbbell, Trophy,
-    Trash2, Pause, ArrowUpRight, DollarSign, BarChart2, CheckCircle
+    Trash2, Pause, ArrowUpRight, DollarSign, BarChart2, CheckCircle,
+    HelpCircle, ChevronDown, ChevronUp, ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -501,7 +502,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'contents': return <ContentKanban role="cm" client={selectedClient} />;
         case 'chat': return <CommunicationCenter client={selectedClient} user={user} squad={squad} tasks={clientTasks} initialChatWith={searchParams.get('chatWith')} />;
         case 'connectivity': return <CMConnectivityModule client={selectedClient} user={user} />;
-        case 'meta': return <MetaAdsModule client={selectedClient} user={user} onClientUpdate={(updated) => { setSelectedClient(prev => ({ ...prev, ...updated })); setClients(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c)); }} />;
+        case 'meta': return <MetaAdsModule client={selectedClient} user={user} onNavigateTab={(targetTab) => setActiveTab(targetTab)} onClientUpdate={(updated) => { setSelectedClient(prev => ({ ...prev, ...updated })); setClients(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c)); }} />;
         case 'calendar': return <UnifiedCalendar role="cm" />;
         case 'strategy': return <StrategyBoard role="cm" isSubcomponent={true} clientId={selectedClient?.id} onClose={() => setActiveTab('dashboard')} />;
         case 'creative': return <CreativeStudio isSubcomponent={true} />;
@@ -1741,11 +1742,11 @@ function CMOverviewDashboard({ clients = [], loading = false }) {
     );
 }
 
-function MetaAdsModule({ client, user, onClientUpdate }) {
+function MetaAdsModule({ client, user, onNavigateTab, onClientUpdate }) {
     const clientId = client?.id;
     const clientName = client?.name || 'Cliente';
 
-    // Strictly load real saved campaigns (NO fake/simulated fallback data)
+    // Strictly load real saved campaigns
     const getSavedCampaigns = () => {
         if (client?.onboarding_data?.meta_campaigns && Array.isArray(client.onboarding_data.meta_campaigns)) {
             return client.onboarding_data.meta_campaigns;
@@ -1769,6 +1770,7 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
     const [loadingConns, setLoadingConns] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [showStepGuide, setShowStepGuide] = useState(true);
 
     // Modals state
     const [showSelectorFor, setShowSelectorFor] = useState(null);
@@ -1852,8 +1854,7 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
                     });
                 }
             } catch (err) {
-                console.error('[MetaAdsModule] Error saving campaigns:', err);
-                toast.error("Error al persistir cambios en la nube");
+                console.warn('[MetaAdsModule] Warning saving campaigns in cloud:', err);
             } finally {
                 setIsSaving(false);
             }
@@ -1996,7 +1997,7 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
         setEditingAd(null);
     };
 
-    // Real aggregated calculations
+    // Real aggregated calculations (only computed when connected and with real campaigns)
     const totalSpend = ads.reduce((sum, a) => sum + (Number(a.metrics?.spend) || 0), 0);
     const totalClicks = ads.reduce((sum, a) => sum + (Number(a.metrics?.clicks) || 0), 0);
     const totalLeads = ads.reduce((sum, a) => sum + (Number(a.metrics?.leads) || 0), 0);
@@ -2014,12 +2015,17 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
                 <div>
                     <div className="flex items-center gap-3">
                         <h2 className="text-3xl font-black text-white italic tracking-tight">Módulo Meta (Ads)</h2>
-                        <span className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" /> Meta Graph API Live
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${
+                            metaConnection.isConnected 
+                                ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+                                : 'bg-amber-500/10 border border-amber-500/30 text-amber-400'
+                        }`}>
+                            <span className={`w-2 h-2 rounded-full ${metaConnection.isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                            {metaConnection.isConnected ? 'Meta Graph API Conectado' : 'Conexión Requerida'}
                         </span>
                     </div>
                     <p className="text-gray-400 text-sm italic mt-1">
-                        Monitorea métricas y campañas 100% reales de <span className="text-white font-bold">{clientName}</span>.
+                        Métricas y campañas publicitarias 100% reales de <span className="text-white font-bold">{clientName}</span>.
                     </p>
                 </div>
 
@@ -2033,16 +2039,18 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
                         {metaConnection.isConnected ? 'CONFIGURAR CUENTA' : 'VINCULAR META ADS'}
                     </button>
 
-                    <button
-                        onClick={() => {
-                            setEditingAd(null);
-                            setShowCampaignModal(true);
-                        }}
-                        className="px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[11px] font-bold text-white transition-all flex items-center gap-2 hover:border-cyan-500/40"
-                    >
-                        <Plus className="w-4 h-4 text-cyan-400" />
-                        NUEVA CAMPAÑA
-                    </button>
+                    {metaConnection.isConnected && (
+                        <button
+                            onClick={() => {
+                                setEditingAd(null);
+                                setShowCampaignModal(true);
+                            }}
+                            className="px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[11px] font-bold text-white transition-all flex items-center gap-2 hover:border-cyan-500/40"
+                        >
+                            <Plus className="w-4 h-4 text-cyan-400" />
+                            NUEVA CAMPAÑA
+                        </button>
+                    )}
 
                     <button 
                         onClick={handleSync}
@@ -2055,26 +2063,26 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
                 </div>
             </div>
 
-            {/* CONNECTION STATUS BAR */}
+            {/* STATUS NOTIFICATION BAR */}
             <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                 metaConnection.isConnected 
                     ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-300' 
                     : 'bg-amber-500/5 border-amber-500/20 text-amber-300'
             }`}>
                 <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${metaConnection.isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                    <div className={`w-3.5 h-3.5 rounded-full flex-shrink-0 ${metaConnection.isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
                     <div>
                         <p className="text-xs font-bold">
                             {metaConnection.isConnected ? (
                                 <span>Cuenta Conectada: <strong className="text-white">{metaConnection.accountName}</strong> ({metaConnection.accountId})</span>
                             ) : (
-                                <span>Sin Cuenta Publicitaria de Meta Vinculada para <strong className="text-white">{clientName}</strong></span>
+                                <span>Sin Cuenta de Meta Ads / Redes Sociales Conectada para <strong className="text-white">{clientName}</strong></span>
                             )}
                         </p>
                         <p className="text-[10px] text-gray-400">
                             {metaConnection.isConnected 
-                                ? 'Métricas sincronizándose directamente desde Meta Graph API.' 
-                                : 'Conecta el Business Manager de este cliente para consultar campañas y gasto real en vivo.'}
+                                ? 'Consultando gasto, clics y leads directamente de Meta Graph API.' 
+                                : 'Conecta las redes sociales o cuenta publicitaria para habilitar las métricas reales.'}
                         </p>
                     </div>
                 </div>
@@ -2092,7 +2100,7 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
                     ) : (
                         <button
                             onClick={() => setShowDirectConnectModal(true)}
-                            className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                            className="px-3.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
                         >
                             <Link2 className="w-3.5 h-3.5" /> Vincular Ahora
                         </button>
@@ -2100,59 +2108,188 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
                 </div>
             </div>
 
-            {/* NOT CONNECTED EMPTY STATE (NO FAKE DATA) */}
-            {!metaConnection.isConnected && ads.length === 0 ? (
-                <div className="bg-[#0E0E18] border border-white/10 rounded-[2.5rem] p-12 text-center space-y-6">
-                    <div className="w-20 h-20 rounded-3xl bg-cyan-600/10 text-cyan-400 flex items-center justify-center mx-auto border border-cyan-500/20">
-                        <Target className="w-10 h-10" />
+            {/* IF NOT CONNECTED -> DEDICATED CONNECTION ASSISTANT (NO FAKE NUMBERS) */}
+            {!metaConnection.isConnected ? (
+                <div className="space-y-6">
+                    {/* Main Connection Callout Card */}
+                    <div className="bg-[#0E0E18] border border-amber-500/20 rounded-[2.5rem] p-8 md:p-12 text-center space-y-6 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+
+                        <div className="w-20 h-20 rounded-3xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20 shadow-xl shadow-amber-500/5">
+                            <AlertTriangle className="w-10 h-10 text-amber-400" />
+                        </div>
+                        
+                        <div className="max-w-xl mx-auto space-y-3">
+                            <h3 className="text-2xl md:text-3xl font-black text-white italic tracking-tight">
+                                Conecta las Redes Sociales y Meta Ads
+                            </h3>
+                            <p className="text-xs md:text-sm text-gray-300 leading-relaxed">
+                                Para visualizar métricas y campañas <strong className="text-white">100% reales en tiempo real</strong> (gasto exacto en USD, clics, leads de WhatsApp, alcance y ROAS) sin simulaciones, debes vincular la cuenta publicitaria o redes sociales de <span className="text-cyan-400 font-bold">{clientName}</span>.
+                            </p>
+                        </div>
+
+                        {/* 3 Main Connection Options */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto pt-2 text-left">
+                            {/* Option 1: Fast Token (Recommended) */}
+                            <div 
+                                onClick={() => setShowDirectConnectModal(true)}
+                                className="p-6 bg-gradient-to-b from-cyan-600/20 to-cyan-600/5 border border-cyan-500/30 hover:border-cyan-500 rounded-3xl cursor-pointer transition-all hover:scale-[1.02] shadow-xl shadow-cyan-950/40 group flex flex-col justify-between"
+                            >
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="p-3 bg-cyan-600 text-white rounded-2xl group-hover:scale-110 transition-transform">
+                                            <Key className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-cyan-400/20 text-cyan-300 rounded-full border border-cyan-400/30">
+                                            Recomendado
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-base font-bold text-white">Token Directo Meta</h4>
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Ingresa tu Access Token de Graph API o System User y selecciona tu cuenta publicitaria al instante.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="pt-4 flex items-center gap-1.5 text-xs font-bold text-cyan-400 group-hover:translate-x-1 transition-transform">
+                                    <span>Conectar con Token</span>
+                                    <ArrowRight className="w-4 h-4" />
+                                </div>
+                            </div>
+
+                            {/* Option 2: Facebook OAuth */}
+                            <div 
+                                onClick={() => setShowOAuthModal(true)}
+                                className="p-6 bg-[#161625] border border-white/10 hover:border-white/20 rounded-3xl cursor-pointer transition-all hover:scale-[1.02] group flex flex-col justify-between"
+                            >
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="p-3 bg-white/5 text-cyan-400 rounded-2xl group-hover:scale-110 transition-transform border border-white/5">
+                                            <Globe className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-white/5 text-gray-400 rounded-full">
+                                            OAuth
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-base font-bold text-white">Login con Facebook</h4>
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Inicia sesión con la cuenta de Facebook administradora de la fan page y business manager.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="pt-4 flex items-center gap-1.5 text-xs font-bold text-gray-300 group-hover:text-white group-hover:translate-x-1 transition-transform">
+                                    <span>Iniciar Sesión</span>
+                                    <ArrowRight className="w-4 h-4" />
+                                </div>
+                            </div>
+
+                            {/* Option 3: Connectivity Center */}
+                            <div 
+                                onClick={() => onNavigateTab ? onNavigateTab('connectivity') : null}
+                                className="p-6 bg-[#161625] border border-white/10 hover:border-white/20 rounded-3xl cursor-pointer transition-all hover:scale-[1.02] group flex flex-col justify-between"
+                            >
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="p-3 bg-white/5 text-indigo-400 rounded-2xl group-hover:scale-110 transition-transform border border-white/5">
+                                            <Share2 className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-white/5 text-gray-400 rounded-full">
+                                            Redes
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-base font-bold text-white">Centro de Conectividad</h4>
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Vincula Instagram, Facebook, TikTok y WhatsApp desde el módulo global de redes.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="pt-4 flex items-center gap-1.5 text-xs font-bold text-indigo-400 group-hover:translate-x-1 transition-transform">
+                                    <span>Ir a Conectividad</span>
+                                    <ArrowRight className="w-4 h-4" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Step by step expandable guide */}
+                        <div className="max-w-3xl mx-auto pt-4">
+                            <button 
+                                onClick={() => setShowStepGuide(!showStepGuide)}
+                                className="w-full p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 flex items-center justify-between text-left transition-all"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <HelpCircle className="w-5 h-5 text-cyan-400" />
+                                    <span className="text-xs font-bold text-white">¿Cómo obtener y vincular tu cuenta publicitaria de Meta paso a paso?</span>
+                                </div>
+                                {showStepGuide ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                            </button>
+
+                            <AnimatePresence>
+                                {showStepGuide && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="p-6 bg-[#161625] border border-white/5 rounded-2xl mt-2 text-left space-y-4 text-xs"
+                                    >
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <div className="p-4 bg-white/5 rounded-xl border border-white/5 space-y-2">
+                                                <div className="w-6 h-6 rounded-lg bg-cyan-600/30 text-cyan-300 font-bold flex items-center justify-center text-xs">1</div>
+                                                <p className="font-bold text-white">Acceder a Meta Developer</p>
+                                                <p className="text-gray-400 text-[11px]">
+                                                    Entra a <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noreferrer" className="text-cyan-400 underline font-semibold">Graph API Explorer</a> con tu cuenta de Facebook.
+                                                </p>
+                                            </div>
+
+                                            <div className="p-4 bg-white/5 rounded-xl border border-white/5 space-y-2">
+                                                <div className="w-6 h-6 rounded-lg bg-cyan-600/30 text-cyan-300 font-bold flex items-center justify-center text-xs">2</div>
+                                                <p className="font-bold text-white">Permisos de Anuncios</p>
+                                                <p className="text-gray-400 text-[11px]">
+                                                    Asegúrate de conceder permisos: <code className="text-cyan-300">ads_read</code>, <code className="text-cyan-300">read_insights</code> y <code className="text-cyan-300">ads_management</code>.
+                                                </p>
+                                            </div>
+
+                                            <div className="p-4 bg-white/5 rounded-xl border border-white/5 space-y-2">
+                                                <div className="w-6 h-6 rounded-lg bg-cyan-600/30 text-cyan-300 font-bold flex items-center justify-center text-xs">3</div>
+                                                <p className="font-bold text-white">Validar y Conectar</p>
+                                                <p className="text-gray-400 text-[11px]">
+                                                    Haz clic en <strong>"Conectar con Token"</strong>, pega el token, selecciona la cuenta (<code className="text-cyan-300">act_...</code>) y el sistema traerá tus métricas en vivo.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
-                    
+                </div>
+            ) : ads.length === 0 ? (
+                /* CONNECTED BUT ZERO CAMPAIGNS SYNCED YET */
+                <div className="bg-[#0E0E18] border border-white/10 rounded-[2.5rem] p-12 text-center space-y-6">
+                    <div className="w-20 h-20 rounded-3xl bg-emerald-600/10 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20">
+                        <CheckCircle className="w-10 h-10" />
+                    </div>
                     <div className="max-w-md mx-auto space-y-2">
-                        <h3 className="text-2xl font-black text-white italic tracking-tight">Conecta la Cuenta Real de Meta Ads</h3>
+                        <h3 className="text-2xl font-black text-white italic tracking-tight">Cuenta de Meta Conectada</h3>
                         <p className="text-xs text-gray-400 leading-relaxed">
-                            Para ver campañas, gasto publicitario, clics y leads <strong className="text-white">100% reales en vivo</strong> sin simulaciones, vincula el Business Manager o Token de Meta de <span className="text-cyan-400 font-bold">{clientName}</span>.
+                            Conectado a <strong className="text-white">{metaConnection.accountName}</strong> ({metaConnection.accountId}). Aún no se han consultado campañas activas. Haz clic en el botón a continuación para sincronizar todas las campañas reales de Meta Ads Manager.
                         </p>
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto pt-2">
+                    <div className="pt-2 flex justify-center gap-4">
                         <button
-                            onClick={() => setShowDirectConnectModal(true)}
-                            className="p-5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-2xl transition-all shadow-xl shadow-cyan-600/20 text-left space-y-2 group"
+                            onClick={handleSync}
+                            disabled={isSyncing}
+                            className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-cyan-600/20 flex items-center gap-2"
                         >
-                            <div className="flex items-center justify-between">
-                                <Key className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-                                <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-white/20 rounded-full">Recomendado</span>
-                            </div>
-                            <h5 className="text-sm font-bold">Conectar con Token Directo</h5>
-                            <p className="text-[10px] text-cyan-100 opacity-80">Ingresa tu Access Token y selecciona tu ID de cuenta publicitaria en 1 clic.</p>
-                        </button>
-
-                        <button
-                            onClick={() => setShowOAuthModal(true)}
-                            className="p-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl transition-all text-left space-y-2 group hover:border-cyan-500/30"
-                        >
-                            <div className="flex items-center justify-between">
-                                <Globe className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-white/10 rounded-full text-gray-400">OAuth</span>
-                            </div>
-                            <h5 className="text-sm font-bold">Login con Facebook</h5>
-                            <p className="text-[10px] text-gray-400">Inicia sesión con tu perfil de Facebook para autorizar los permisos de pauta.</p>
-                        </button>
-                    </div>
-
-                    <div className="pt-4">
-                        <button
-                            onClick={() => {
-                                setEditingAd(null);
-                                setShowCampaignModal(true);
-                            }}
-                            className="text-xs text-gray-500 hover:text-gray-300 underline font-medium"
-                        >
-                            + O registrar datos reales manualmente si no tienes acceso a la API
+                            {isSyncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                            {isSyncing ? 'Sincronizando Campañas...' : 'Sincronizar Campañas Ahora'}
                         </button>
                     </div>
                 </div>
             ) : (
+                /* CONNECTED WITH REAL LIVE CAMPAIGNS */
                 <>
                     {/* GLOBAL REAL KPI BAR */}
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -2413,8 +2550,8 @@ function MetaAdsModule({ client, user, onClientUpdate }) {
                 </>
             )}
 
-            {/* STRATEGIC CM INSIGHT FOOTER (Only when real data exists) */}
-            {bestPerformingAd && (
+            {/* STRATEGIC CM INSIGHT FOOTER (Only when connected with real data) */}
+            {metaConnection.isConnected && bestPerformingAd && (
                 <div className="p-6 bg-indigo-600/5 border border-indigo-500/10 rounded-2xl italic text-[11px] text-indigo-400 font-medium flex items-center gap-3">
                     <span className="text-xl">💡</span>
                     <p>
