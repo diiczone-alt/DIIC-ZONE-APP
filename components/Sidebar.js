@@ -62,17 +62,17 @@ export default function Sidebar() {
 
     return (
         <aside className="w-20 lg:w-64 glass border-r border-white/5 flex flex-col justify-between hidden md:flex z-50 h-screen sticky top-0">
-            <div>
+            <div className="flex-1 flex flex-col">
                 <div
                     onClick={handleLogoClick}
-                    className="h-20 flex items-center justify-center border-b border-white/5 mx-4 cursor-pointer hover:opacity-80 transition-all select-none group"
+                    className="h-20 flex items-center justify-center border-b border-white/5 mx-4 cursor-pointer hover:opacity-80 transition-all select-none group shrink-0"
                 >
                     <h1 className="font-display font-bold text-2xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary glow-text group-hover:scale-105 transition-transform">
                         DIIC
                     </h1>
                 </div>
 
-                <nav className="mt-8 flex flex-col gap-2 px-4">
+                <nav className="my-auto flex flex-col gap-2 px-4 py-4 overflow-y-auto custom-scrollbar">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href;
                         return (
