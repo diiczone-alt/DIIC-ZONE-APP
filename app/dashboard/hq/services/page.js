@@ -4215,6 +4215,89 @@ function SportsDossier({ selectedSport = 'basketball', onSelectSport }) {
                 </div>
             </div>
 
+            {/* ⭐ EL MEJOR PLAN: FRANQUICIA ÉLITE & BASKET PRO 360° */}
+            <div className="bg-gradient-to-br from-amber-500/20 via-[#16122c] to-purple-950/40 border-2 border-amber-400 p-8 sm:p-14 rounded-[3.5rem] shadow-[0_30px_100px_rgba(245,158,11,0.25)] space-y-10 relative overflow-hidden">
+                <div className="absolute -right-16 -top-16 w-64 h-64 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 relative z-10 border-b border-white/10 pb-8">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[10px] font-black uppercase tracking-[0.3em] px-4 py-1.5 rounded-full shadow-lg">
+                            👑 EL MEJOR PLAN RECOMENDADO · MÁXIMO IMPACTO & FACTURACIÓN
+                        </div>
+                        <h3 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight italic">
+                            NIVEL MAESTRO: <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-500">FRANQUICIA ÉLITE & PRO 360°</span>
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-300 font-medium max-w-2xl leading-relaxed">
+                            Diseñado para coliseos llenos, transmisión televisiva, sponsors de alto calibre y monetización total de taquilla, formativas y merchandising oficial.
+                        </p>
+                    </div>
+
+                    <div className="bg-black/60 border border-amber-400/40 p-6 rounded-3xl text-center flex-shrink-0 backdrop-blur-xl">
+                        <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block">Inversión Mensual Integral</span>
+                        <div className="flex items-baseline justify-center gap-1 my-1">
+                            <span className="text-5xl font-black text-white font-mono">$1,800</span>
+                            <span className="text-xs font-bold text-gray-400">USD / mes</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-bold block bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 mt-2">
+                            ✓ ROI Proyectado: +300% a +800%
+                        </span>
+                    </div>
+                </div>
+
+                {/* 10 Key Flagship Deliverables Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
+                    {[
+                        { icon: '🎥', title: 'Cobertura Cinematográfica en Cancha', desc: 'Grabación a 120fps en cámara lenta, tomas a ras de suelo y audio de duela/impacto.' },
+                        { icon: '⚡', title: 'Highlights en Tiempo Real (< 2h)', desc: 'Reels dinámicos de volcadas, triples y jugadas clave publicados la misma noche.' },
+                        { icon: '🎟️', title: 'Bot WhatsApp de Venta de Entradas 24/7', desc: 'Emisión automática de boletos con código QR y validación digital en puerta sin filas.' },
+                        { icon: '🤝', title: 'Dossier de Patrocinios High-Ticket', desc: 'Propuesta comercial corporativa con métricas de audiencia para captar $2,000–$10,000+ USD.' },
+                        { icon: '🎙️', title: 'Micro-Serie "Inside the Locker Room"', desc: 'Acceso a vestuarios, charlas técnicas del DT y micro-documental de los atletas.' },
+                        { icon: '📺', title: 'Streaming Multicámara en Vivo', desc: 'Transmisión con 3 cámaras, gráficos de marcador en pantalla, repeticiones y comentaristas.' },
+                        { icon: '👕', title: 'Tienda Digital de Merchandising', desc: 'Catálogo automatizado para venta de camisetas, gorras y accesorios oficiales del club.' },
+                        { icon: '🎓', title: 'Embudo de Cantera & Formativas', desc: 'Campañas de captación continua de nuevos alumnos para ingresos recurrentes de academia.' },
+                        { icon: '📊', title: 'Crew Audiovisual Dedicado Completo', desc: '2 Camarógrafos + 1 Fotógrafo + 1 Editor en tiempo real asignados a todos los partidos.' }
+                    ].map((item, idx) => (
+                        <div key={idx} className="p-5 rounded-2xl bg-black/40 border border-white/10 hover:border-amber-400/40 transition-all flex gap-4 items-start backdrop-blur-md">
+                            <span className="text-2xl flex-shrink-0">{item.icon}</span>
+                            <div>
+                                <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">{item.title}</h4>
+                                <p className="text-[11px] text-gray-400 leading-relaxed font-medium">{item.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-6 pt-4 border-t border-white/10 relative z-10">
+                    <div className="flex items-center gap-4 text-xs text-gray-300 font-medium">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_#10b981]" />
+                        <span>Cupo Exclusivo: Máximo 2 clubes / franquicias por ciudad para garantizar exclusividad de cobertura.</span>
+                    </div>
+
+                    <button
+                        onClick={() => {
+                            const maestroService = {
+                                id: 'scale',
+                                category: 'plan',
+                                level: 'NIVEL MAESTRO',
+                                name: 'NIVEL MAESTRO: FRANQUICIA ÉLITE & BASKET PRO 360°',
+                                price: '1800',
+                                narrative: 'Dominio total mediático, comercial y deportivo para el club.',
+                                deliverables: { videos: 30, posts: 36 },
+                                enfoque: 'Franquicia Pro 360°, Streaming en Vivo & Monopolio Deportivo',
+                                filmmaker: 'Crew audiovisual dedicado completo'
+                            };
+                            if (window.scrollTo) {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                        }}
+                        className="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 text-black font-black uppercase text-xs tracking-widest shadow-xl hover:shadow-amber-500/30 hover:scale-105 transition-all cursor-pointer whitespace-nowrap"
+                    >
+                        🚀 Seleccionar Nivel Maestro
+                    </button>
+                </div>
+            </div>
+
             {/* 3. Los 3 Pilares Maestros de DIIC ZONE */}
             <div className="space-y-6">
                 <div className="text-center max-w-2xl mx-auto space-y-2">
