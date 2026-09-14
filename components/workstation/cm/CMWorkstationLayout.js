@@ -233,6 +233,33 @@ export default function CMWorkstationLayout() {
         setLoadingNotifications(false);
     };
 
+    const handleMarkAsRead = async (id) => {
+        try {
+            await supabase
+                .from('notifications')
+                .update({ read: true, status: 'read' })
+                .eq('id', id);
+            
+            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true, status: 'read' } : n));
+        } catch (err) {
+            console.error('Error marking notification as read:', err);
+        }
+    };
+
+    const handleMarkAllAsRead = async () => {
+        if (!user?.id) return;
+        try {
+            await supabase
+                .from('notifications')
+                .update({ read: true, status: 'read' })
+                .eq('user_id', user.id);
+            
+            setNotifications(prev => prev.map(n => ({ ...n, read: true, status: 'read' })));
+        } catch (err) {
+            console.error('Error marking all notifications as read:', err);
+        }
+    };
+
     useEffect(() => {
         if (activeTab === 'tasks') fetchAllTasks();
         if (activeTab === 'notifications') fetchNotifications();
@@ -262,10 +289,14 @@ export default function CMWorkstationLayout() {
         user.role === 'CM' || 
         user.role === 'ADMIN' || 
         user.role === 'ESTRATEGA' || 
+        user.role === 'CREATOR' ||
+        user.role === 'CREATIVE' ||
         (user.role || '').toLowerCase().includes('community') || 
         (user.role || '').toLowerCase().includes('estratega') ||
         (user.role || '').toLowerCase().includes('admin') ||
-        (user.role || '').toLowerCase().includes('lead')
+        (user.role || '').toLowerCase().includes('lead') ||
+        (user.role || '').toLowerCase().includes('creator') ||
+        (user.role || '').toLowerCase().includes('creative')
     );
 
     if (!loading && user && !isCMOrAdmin) {
@@ -372,6 +403,7 @@ export default function CMWorkstationLayout() {
                         <NotificationCenter 
                             notifications={notifications} 
                             onMarkAsRead={handleMarkAsRead} 
+                            onMarkAllAsRead={handleMarkAllAsRead}
                             onViewAll={() => setActiveTab('notifications')}
                         />
                         <button 
@@ -464,9 +496,10 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
 }
 
 function CMDashboard({ client, user, tasks = [] }) {
+    const clientId = client?.id || 'default';
     const [checklist, setChecklist] = useState(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem(`cm_checklist_${client.id}`);
+            const saved = localStorage.getItem(`cm_checklist_${clientId}`);
             return saved ? JSON.parse(saved) : [
                 { id: 1, label: "Revisar material recibido (videos/fotos)", completed: false },
                 { id: 2, label: "Enviar instrucciones a editores", completed: true },
@@ -479,8 +512,10 @@ function CMDashboard({ client, user, tasks = [] }) {
     });
 
     useEffect(() => {
-        localStorage.setItem(`cm_checklist_${client.id}`, JSON.stringify(checklist));
-    }, [checklist, client.id]);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(`cm_checklist_${clientId}`, JSON.stringify(checklist));
+        }
+    }, [checklist, clientId]);
 
     const toggleCheckItem = (id) => {
         setChecklist(prev => prev.map(item => 
