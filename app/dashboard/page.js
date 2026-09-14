@@ -1723,14 +1723,7 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen text-white font-sans selection:bg-indigo-500/30 overflow-x-hidden bg-transparent">
-      
-      {/* ─── Floating Brand Identity ─── */}
-      <div className="fixed top-8 left-8 z-[100] flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center font-black italic text-xl shadow-2xl">D</div>
-          <span className="text-xl font-black tracking-tight text-white hidden md:block italic uppercase drop-shadow-lg">DIIC <span className="text-gray-500">ZONE</span></span>
-      </div>
-
-      <div className="p-6 md:p-10 pt-24 md:pt-32 space-y-12">
+      <div className="space-y-10">
       
       {isStaff ? (
         <section className="relative overflow-hidden rounded-[3rem] border border-white/5 bg-gradient-to-br from-[#0A0A1F] to-[#050510] shadow-2xl">
