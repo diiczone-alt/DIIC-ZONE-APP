@@ -2324,149 +2324,304 @@ function DashboardContent() {
 
       case 'social':
         const isMetaConnected = !!clientData?.onboarding_data?.social?.facebook_connected || !!clientData?.onboarding_data?.social?.completed;
+        const metaHandle = clientData?.onboarding_data?.social?.instagram || clientData?.onboarding_data?.social?.meta_page || clientData?.name || 'Dr. Oscar Cujilema';
+        
         return (
           <div className="space-y-6">
-            {/* Meta API Integration Card */}
-            <div className="p-5 rounded-2xl bg-indigo-500/[0.03] border border-indigo-500/10 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                  <Facebook className="w-4 h-4 fill-indigo-400/20" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-white uppercase tracking-wider">Conectar API Oficial de Meta</h4>
-                  <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-widest">Instagram Professional & Facebook Ads</p>
-                </div>
+            {/* Header / Quick Link to Full Connectivity Hub */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-white/10 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black text-white uppercase tracking-wider">Ecosistema Multicanal</p>
+                <p className="text-[10px] text-gray-400 font-medium">Vincula APIs oficiales y perfiles de marca</p>
               </div>
-              <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
-                Conéctate mediante el portal seguro de Meta para habilitar la importación en tiempo real de métricas, leads y control de campañas de publicidad.
-              </p>
+              <button 
+                type="button"
+                onClick={() => router.push('/dashboard/connectivity')}
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5"
+              >
+                <span>Ver Hub</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
 
-              {isMetaConnected ? (
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            {/* Official APIs Connect Grid */}
+            <div className="space-y-3">
+              <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block ml-1">
+                Conexiones Oficiales API
+              </span>
+
+              {/* 1. Meta (Facebook & Instagram) Card */}
+              <div className="p-4 rounded-2xl bg-[#101026] border border-white/10 space-y-3 hover:border-[#1877F2]/40 transition-all">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/20 flex items-center justify-center text-[#1877F2]">
+                      <Facebook className="w-5 h-5 fill-current" />
+                    </div>
                     <div>
-                      <span className="text-xs font-black text-emerald-400 uppercase tracking-wider block">Meta Oficial Conectado</span>
-                      <span className="text-[10px] text-gray-400 font-semibold">{clientData?.onboarding_data?.social?.meta_page || clientData?.name || 'Página y Cuenta de Instagram Activas'}</span>
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-xs font-bold text-white">Meta Ecosystem</h4>
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-400 font-bold">IG & FB</span>
+                      </div>
+                      <p className="text-[10px] text-gray-400">Instagram Professional & Facebook Pages</p>
+                    </div>
+                  </div>
+                  {isMetaConnected && (
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-bold uppercase tracking-wider">
+                      Activo
+                    </span>
+                  )}
+                </div>
+
+                {isMetaConnected ? (
+                  <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 truncate">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="text-[11px] font-bold text-gray-300 truncate">{metaHandle}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setDrawerLoading(true);
+                        const updatedSocial = { ...(clientData?.onboarding_data?.social || {}), facebook_connected: false, completed: false };
+                        const updatedOnboardingData = { ...(clientData?.onboarding_data || {}), social: updatedSocial };
+                        await supabase.from('clients').update({ onboarding_data: updatedOnboardingData }).eq('id', clientData.id);
+                        setClientData(prev => ({ ...prev, onboarding_data: updatedOnboardingData }));
+                        setDrawerLoading(false);
+                        toast.success("Cuenta de Meta desvinculada.");
+                      }}
+                      className="text-[9px] font-bold text-red-400 hover:text-red-300 uppercase px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 shrink-0"
+                    >
+                      Desvincular
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        toast.loading('Iniciando conexión con Meta...', { id: 'meta-connect' });
+                        if (clientData?.id) {
+                          localStorage.setItem('diic_waiting_client_id', clientData.id);
+                        }
+                        localStorage.setItem('diic_waiting_provider', 'facebook');
+                        localStorage.setItem('diic_waiting_social', 'facebook');
+                        const { socialService } = await import('@/services/socialService');
+                        await socialService.connect('facebook');
+                      } catch (err) {
+                        toast.error('Error al conectar Meta: ' + err.message, { id: 'meta-connect' });
+                      }
+                    }}
+                    className="w-full py-2.5 bg-[#1877F2] hover:bg-[#1877F2]/90 text-white font-bold text-[11px] uppercase tracking-wider rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg shadow-[#1877F2]/20"
+                  >
+                    <Facebook className="w-3.5 h-3.5 fill-white" />
+                    <span>Conectar Meta (FB & Instagram)</span>
+                  </button>
+                )}
+              </div>
+
+              {/* 2. TikTok & YouTube Row */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* TikTok Card */}
+                <div className="p-3.5 rounded-2xl bg-[#101026] border border-white/10 space-y-2 hover:border-[#00F2EA]/40 transition-all">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-[#00F2EA]/10 border border-[#00F2EA]/20 flex items-center justify-center text-[#00F2EA]">
+                      <Video className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-white leading-tight">TikTok</p>
+                      <p className="text-[8px] text-gray-500">Ads & Bio</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={async () => {
-                      setDrawerLoading(true);
-                      const updatedSocial = { ...(clientData?.onboarding_data?.social || {}), facebook_connected: false, completed: false };
-                      const updatedOnboardingData = { ...(clientData?.onboarding_data || {}), social: updatedSocial };
-                      await supabase.from('clients').update({ onboarding_data: updatedOnboardingData }).eq('id', clientData.id);
-                      setClientData(prev => ({ ...prev, onboarding_data: updatedOnboardingData }));
-                      setDrawerLoading(false);
-                      toast.success("Cuenta de Meta desvinculada.");
+                      try {
+                        toast.loading('Iniciando portal de TikTok...', { id: 'tt-connect' });
+                        const { socialService } = await import('@/services/socialService');
+                        await socialService.connect('tiktok');
+                      } catch (err) {
+                        toast.error('Error TikTok: ' + err.message, { id: 'tt-connect' });
+                      }
                     }}
-                    className="text-[9px] font-bold text-red-400 hover:text-red-300 uppercase px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 shrink-0"
+                    className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-[9px] uppercase tracking-wider rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1.5"
                   >
-                    Desvincular
+                    <Video className="w-3 h-3 text-[#00F2EA]" />
+                    <span>Vincular</span>
                   </button>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      toast.loading('Iniciando conexión con Meta...', { id: 'meta-connect' });
-                      if (clientData?.id) {
-                        localStorage.setItem('diic_waiting_client_id', clientData.id);
+
+                {/* YouTube & Google Card */}
+                <div className="p-3.5 rounded-2xl bg-[#101026] border border-white/10 space-y-2 hover:border-[#EA4335]/40 transition-all">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-[#EA4335]/10 border border-[#EA4335]/20 flex items-center justify-center text-[#EA4335]">
+                      <Youtube className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-white leading-tight">YouTube</p>
+                      <p className="text-[8px] text-gray-500">Canal & Shorts</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        toast.loading('Iniciando Google & YouTube...', { id: 'yt-connect' });
+                        const { socialService } = await import('@/services/socialService');
+                        await socialService.connect('google');
+                      } catch (err) {
+                        toast.error('Error YouTube: ' + err.message, { id: 'yt-connect' });
                       }
-                      localStorage.setItem('diic_waiting_provider', 'facebook');
-                      localStorage.setItem('diic_waiting_social', 'facebook');
-                      const { socialService } = await import('@/services/socialService');
-                      await socialService.connect('facebook');
-                    } catch (err) {
-                      toast.error('Error al conectar Meta: ' + err.message, { id: 'meta-connect' });
-                    }
-                  }}
-                  className="w-full py-3.5 bg-[#1877F2] hover:bg-[#1877F2]/90 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-[#1877F2]/20"
-                >
-                  <Facebook className="w-4 h-4 fill-white text-transparent" />
-                  <span>Vincular Cuenta de Meta</span>
-                </button>
-              )}
+                    }}
+                    className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-[9px] uppercase tracking-wider rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                  >
+                    <Youtube className="w-3 h-3 text-[#EA4335]" />
+                    <span>Vincular</span>
+                  </button>
+                </div>
+              </div>
             </div>
             
-            <div className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-white/5"></div>
-              <span className="flex-shrink mx-4 text-[9px] font-black text-gray-600 uppercase tracking-widest">O Enlaces Manuales</span>
-              <div className="flex-grow border-t border-white/5"></div>
+            {/* Divider */}
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-white/10"></div>
+              <span className="flex-shrink mx-3 text-[9px] font-black text-gray-500 uppercase tracking-widest">
+                Perfiles & Enlaces Directos
+              </span>
+              <div className="flex-grow border-t border-white/10"></div>
             </div>
 
-            <div className="space-y-4">
+            {/* Inputs with Official Logos */}
+            <div className="space-y-3.5">
+              {/* Instagram */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Instagram</label>
-                <input 
-                  placeholder="https://instagram.com/tu_marca"
-                  value={socialForm.instagram}
-                  onChange={(e) => setSocialForm({...socialForm, instagram: e.target.value})}
-                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
-                />
+                <label className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Instagram className="w-3.5 h-3.5 text-pink-500" />
+                  <span>Instagram</span>
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 w-6 h-6 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-400">
+                    <Instagram className="w-3.5 h-3.5" />
+                  </div>
+                  <input 
+                    placeholder="https://instagram.com/tu_marca o @usuario"
+                    value={socialForm.instagram}
+                    onChange={(e) => setSocialForm({...socialForm, instagram: e.target.value})}
+                    className="w-full bg-[#111126] border border-white/10 rounded-xl pl-12 pr-3 py-3 text-xs text-white focus:outline-none focus:border-pink-500 transition-colors"
+                  />
+                </div>
               </div>
+
+              {/* Facebook */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Facebook</label>
-                <input 
-                  placeholder="https://facebook.com/tu_marca"
-                  value={socialForm.facebook}
-                  onChange={(e) => setSocialForm({...socialForm, facebook: e.target.value})}
-                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
-                />
+                <label className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
+                  <span>Facebook</span>
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 w-6 h-6 rounded-lg bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2]">
+                    <Facebook className="w-3.5 h-3.5" />
+                  </div>
+                  <input 
+                    placeholder="https://facebook.com/tu_pagina"
+                    value={socialForm.facebook}
+                    onChange={(e) => setSocialForm({...socialForm, facebook: e.target.value})}
+                    className="w-full bg-[#111126] border border-white/10 rounded-xl pl-12 pr-3 py-3 text-xs text-white focus:outline-none focus:border-[#1877F2] transition-colors"
+                  />
+                </div>
               </div>
+
+              {/* TikTok */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">TikTok</label>
-                <input 
-                  placeholder="https://tiktok.com/@tu_marca"
-                  value={socialForm.tiktok}
-                  onChange={(e) => setSocialForm({...socialForm, tiktok: e.target.value})}
-                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
-                />
+                <label className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Video className="w-3.5 h-3.5 text-[#00F2EA]" />
+                  <span>TikTok</span>
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 w-6 h-6 rounded-lg bg-[#00F2EA]/10 flex items-center justify-center text-[#00F2EA]">
+                    <Video className="w-3.5 h-3.5" />
+                  </div>
+                  <input 
+                    placeholder="https://tiktok.com/@tu_marca"
+                    value={socialForm.tiktok}
+                    onChange={(e) => setSocialForm({...socialForm, tiktok: e.target.value})}
+                    className="w-full bg-[#111126] border border-white/10 rounded-xl pl-12 pr-3 py-3 text-xs text-white focus:outline-none focus:border-[#00F2EA] transition-colors"
+                  />
+                </div>
               </div>
+
+              {/* WhatsApp Business */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">LinkedIn</label>
-                <input 
-                  placeholder="https://linkedin.com/company/tu_marca"
-                  value={socialForm.linkedin}
-                  onChange={(e) => setSocialForm({...socialForm, linkedin: e.target.value})}
-                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
-                />
+                <label className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-[#25D366]" />
+                  <span>WhatsApp Business / Medical</span>
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 w-6 h-6 rounded-lg bg-[#25D366]/10 flex items-center justify-center text-[#25D366]">
+                    <Zap className="w-3.5 h-3.5" />
+                  </div>
+                  <input 
+                    placeholder="Ej: +593987654321"
+                    value={socialForm.whatsapp}
+                    onChange={(e) => setSocialForm({...socialForm, whatsapp: e.target.value})}
+                    className="w-full bg-[#111126] border border-white/10 rounded-xl pl-12 pr-3 py-3 text-xs text-white focus:outline-none focus:border-[#25D366] transition-colors"
+                  />
+                </div>
               </div>
+
+              {/* YouTube */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">WhatsApp Business</label>
-                <input 
-                  placeholder="Ej: +593987654321"
-                  value={socialForm.whatsapp}
-                  onChange={(e) => setSocialForm({...socialForm, whatsapp: e.target.value})}
-                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
-                />
+                <label className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Youtube className="w-3.5 h-3.5 text-[#EA4335]" />
+                  <span>YouTube</span>
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 w-6 h-6 rounded-lg bg-[#EA4335]/10 flex items-center justify-center text-[#EA4335]">
+                    <Youtube className="w-3.5 h-3.5" />
+                  </div>
+                  <input 
+                    placeholder="https://youtube.com/@tu_canal"
+                    value={socialForm.youtube}
+                    onChange={(e) => setSocialForm({...socialForm, youtube: e.target.value})}
+                    className="w-full bg-[#111126] border border-white/10 rounded-xl pl-12 pr-3 py-3 text-xs text-white focus:outline-none focus:border-[#EA4335] transition-colors"
+                  />
+                </div>
               </div>
+
+              {/* LinkedIn */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">YouTube</label>
-                <input 
-                  placeholder="https://youtube.com/@tu_marca"
-                  value={socialForm.youtube}
-                  onChange={(e) => setSocialForm({...socialForm, youtube: e.target.value})}
-                  className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
-                />
+                <label className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Linkedin className="w-3.5 h-3.5 text-[#0A66C2]" />
+                  <span>LinkedIn Professional</span>
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 w-6 h-6 rounded-lg bg-[#0A66C2]/10 flex items-center justify-center text-[#0A66C2]">
+                    <Linkedin className="w-3.5 h-3.5" />
+                  </div>
+                  <input 
+                    placeholder="https://linkedin.com/company/tu_marca"
+                    value={socialForm.linkedin}
+                    onChange={(e) => setSocialForm({...socialForm, linkedin: e.target.value})}
+                    className="w-full bg-[#111126] border border-white/10 rounded-xl pl-12 pr-3 py-3 text-xs text-white focus:outline-none focus:border-[#0A66C2] transition-colors"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="sticky bottom-0 bg-[#0A0A1F] pt-4 pb-2 mt-6 border-t border-white/5 z-10">
+            {/* Bottom Sticky Save Button */}
+            <div className="sticky bottom-0 bg-[#0A0A1F] pt-4 pb-2 mt-6 border-t border-white/10 z-10">
               <button
                 onClick={() => handleSaveModule('social', {
                   social: {
                     ...socialForm,
-                    facebook_connected: !!socialForm.facebook || !!socialForm.instagram || true,
+                    facebook_connected: !!socialForm.facebook || !!socialForm.instagram || isMetaConnected,
                     completed: true
                   }
                 })}
                 disabled={drawerLoading}
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-indigo-600/20"
+                className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
               >
-                {drawerLoading ? 'Guardando...' : 'Guardar y Confirmar Canales'}
+                <Check className="w-4 h-4" />
+                <span>{drawerLoading ? 'Guardando...' : 'Guardar y Confirmar Canales'}</span>
               </button>
             </div>
           </div>
