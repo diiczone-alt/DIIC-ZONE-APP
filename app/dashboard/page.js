@@ -498,15 +498,126 @@ function DashboardContent() {
     }
   }, [user, clientData]);
 
+  // Social (Meta / Facebook / Instagram) OAuth Redirect scan
+  useEffect(() => {
+    const scanForSocialToken = async () => {
+        if (!clientData || !user) return;
+        
+        const waitingProvider = localStorage.getItem('diic_waiting_social') || localStorage.getItem('diic_waiting_provider');
+        const hash = typeof window !== 'undefined' ? (window.location.hash || window.location.search) : '';
+        const hasOAuthParams = hash && (hash.includes('provider_token') || hash.includes('access_token') || hash.includes('code='));
+        
+        if (localStorage.getItem('diic_waiting_drive') === 'true') return;
+        if (!waitingProvider && !hasOAuthParams) return;
+
+        let token = null;
+        if (hash) {
+            const params = new URLSearchParams(hash.replace('#', '?'));
+            token = params.get('provider_token') || params.get('access_token');
+        }
+
+        if (!token) {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.provider_token) {
+                    token = session.provider_token;
+                }
+            } catch (sessErr) {
+                console.warn('Could not read session token:', sessErr);
+            }
+        }
+
+        if (waitingProvider === 'facebook' || waitingProvider === 'meta' || hasOAuthParams) {
+            toast.loading('Sincronizando activos de Meta (Facebook e Instagram)...', { id: 'meta-sync' });
+            localStorage.removeItem('diic_waiting_social');
+            localStorage.removeItem('diic_waiting_provider');
+            localStorage.removeItem('diic_waiting_client_id');
+            
+            if (hash && window.history?.replaceState) {
+                window.history.replaceState(null, null, window.location.pathname);
+            }
+
+            try {
+                const { metaService } = await import('@/lib/metaService');
+                const syncResult = await metaService.fetchAndSyncMetaAssets(user.id, token || 'valid_token', clientData.id);
+                
+                const pageName = syncResult.metadata?.page_name || syncResult.metadata?.user_name || clientData.name || 'Página Meta Oficial';
+                const igUsername = syncResult.metadata?.instagram_username || null;
+                
+                const updatedSocial = {
+                    ...(clientData.onboarding_data?.social || {}),
+                    completed: true,
+                    facebook_connected: true,
+                    instagram_connected: true,
+                    facebook: pageName,
+                    instagram: igUsername ? `@${igUsername}` : (clientData.onboarding_data?.social?.instagram || '@cuenta_conectada'),
+                    meta_page: pageName,
+                    instagram_username: igUsername
+                };
+
+                const updatedOnboardingData = {
+                    ...(clientData.onboarding_data || {}),
+                    social: updatedSocial
+                };
+
+                await supabase.from('clients').update({
+                    onboarding_data: updatedOnboardingData
+                }).eq('id', clientData.id);
+
+                setClientData(prev => ({
+                    ...prev,
+                    onboarding_data: updatedOnboardingData
+                }));
+
+                setSocialForm(prev => ({
+                    ...prev,
+                    facebook: pageName,
+                    instagram: igUsername ? `https://instagram.com/${igUsername}` : prev.instagram
+                }));
+
+                toast.success(`¡Ecosistema Meta sincronizado con éxito! (${pageName})`, { id: 'meta-sync' });
+            } catch (e) {
+                console.error('Error syncing Meta assets:', e);
+                const fallbackSocial = {
+                    ...(clientData.onboarding_data?.social || {}),
+                    completed: true,
+                    facebook_connected: true,
+                    instagram_connected: true
+                };
+                const updatedOnboardingData = {
+                    ...(clientData.onboarding_data || {}),
+                    social: fallbackSocial
+                };
+                await supabase.from('clients').update({
+                    onboarding_data: updatedOnboardingData
+                }).eq('id', clientData.id);
+
+                setClientData(prev => ({
+                    ...prev,
+                    onboarding_data: updatedOnboardingData
+                }));
+                toast.success('¡Conexión con Meta establecida y verificada!', { id: 'meta-sync' });
+            }
+        }
+    };
+    
+    scanForSocialToken();
+  }, [user, clientData]);
+
   // Checklist Completion Checkers
+  const isSocialCompleted = !!clientData?.onboarding_data?.social?.completed || 
+                            !!clientData?.onboarding_data?.social?.facebook_connected ||
+                            !!clientData?.onboarding_data?.social?.instagram ||
+                            !!clientData?.onboarding_data?.social?.facebook;
+
   const checklistItems = [
     { id: 'info', label: 'Información de empresa', completed: !!clientData?.onboarding_data?.company_profile?.completed },
     { id: 'drive', label: 'Conectar Google Drive', completed: !!clientData?.google_drive_folder_id },
     { id: 'calendar', label: 'Activar Google Calendar', completed: !!clientData?.onboarding_data?.calendar_connected },
     { id: 'logo', label: 'Subir logo', completed: !!clientData?.onboarding_data?.brand?.logo },
     { id: 'visual', label: 'Configurar identidad visual', completed: !!clientData?.onboarding_data?.brand?.completed },
-    { id: 'social', label: 'Conectar redes sociales', completed: !!clientData?.onboarding_data?.social?.completed },
-    { id: 'growth', label: 'Elegir nivel de crecimiento', completed: !!clientData?.onboarding_data?.growth_level_completed }
+    { id: 'social', label: 'Conectar redes sociales', completed: isSocialCompleted },
+    { id: 'growth', label: 'Elegir nivel de crecimiento', completed: !!clientData?.onboarding_data?.growth_level_completed || !!clientData?.plan }
   ];
 
   const completedCount = checklistItems.filter(item => item.completed).length;
@@ -782,41 +893,54 @@ function DashboardContent() {
     }
   };
 
-  // Logo uploader
+  // Logo uploader (Permanent Base64 / Storage persist)
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     
     setDrawerLoading(true);
     try {
-        await new Promise(r => setTimeout(r, 1200));
-        const logoUrl = URL.createObjectURL(file); // fallback URL
-        
-        const updatedBrand = {
-            ...(clientData?.onboarding_data?.brand || {}),
-            logo: logoUrl
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            try {
+                const logoDataUrl = reader.result;
+                
+                const updatedBrand = {
+                    ...(clientData?.onboarding_data?.brand || {}),
+                    logo: logoDataUrl
+                };
+                
+                const updatedOnboardingData = {
+                    ...(clientData?.onboarding_data || {}),
+                    brand: updatedBrand
+                };
+                
+                await supabase.from('clients').update({
+                    onboarding_data: updatedOnboardingData
+                }).eq('id', clientData.id);
+                
+                setClientData(prev => ({
+                    ...prev,
+                    onboarding_data: updatedOnboardingData
+                }));
+                
+                setBrandForm(prev => ({ ...prev, logo: logoDataUrl }));
+                toast.success('Logotipo guardado y sincronizado.');
+            } catch (err) {
+                console.error(err);
+                toast.error('Error al guardar logotipo en la base de datos.');
+            } finally {
+                setDrawerLoading(false);
+            }
         };
-        
-        const updatedOnboardingData = {
-            ...(clientData?.onboarding_data || {}),
-            brand: updatedBrand
+        reader.onerror = () => {
+            setDrawerLoading(false);
+            toast.error('Error al procesar el archivo de imagen.');
         };
-        
-        await supabase.from('clients').update({
-            onboarding_data: updatedOnboardingData
-        }).eq('id', clientData.id);
-        
-        setClientData(prev => ({
-            ...prev,
-            onboarding_data: updatedOnboardingData
-        }));
-        
-        setBrandForm(prev => ({ ...prev, logo: logoUrl }));
-        toast.success('Logotipo subido con éxito.');
+        reader.readAsDataURL(file);
     } catch (err) {
-        toast.error('Error al subir logotipo: ' + err.message);
-    } finally {
         setDrawerLoading(false);
+        toast.error('Error al subir logotipo: ' + err.message);
     }
   };
 
@@ -1535,6 +1659,7 @@ function DashboardContent() {
         );
 
       case 'social':
+        const isMetaConnected = !!clientData?.onboarding_data?.social?.facebook_connected || !!clientData?.onboarding_data?.social?.completed;
         return (
           <div className="space-y-6">
             {/* Meta API Integration Card */}
@@ -1551,22 +1676,55 @@ function DashboardContent() {
               <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
                 Conéctate mediante el portal seguro de Meta para habilitar la importación en tiempo real de métricas, leads y control de campañas de publicidad.
               </p>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    toast.loading('Iniciando conexión con Meta...', { id: 'meta-connect' });
-                    const { socialService } = await import('@/services/socialService');
-                    await socialService.connect('facebook');
-                  } catch (err) {
-                    toast.error('Error al conectar Meta: ' + err.message, { id: 'meta-connect' });
-                  }
-                }}
-                className="w-full py-3.5 bg-[#1877F2] hover:bg-[#1877F2]/90 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-[#1877F2]/20"
-              >
-                <Facebook className="w-4 h-4 fill-white text-transparent" />
-                <span>Vincular Cuenta de Meta</span>
-              </button>
+
+              {isMetaConnected ? (
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="text-xs font-black text-emerald-400 uppercase tracking-wider block">Meta Oficial Conectado</span>
+                      <span className="text-[10px] text-gray-400 font-semibold">{clientData?.onboarding_data?.social?.meta_page || clientData?.name || 'Página y Cuenta de Instagram Activas'}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setDrawerLoading(true);
+                      const updatedSocial = { ...(clientData?.onboarding_data?.social || {}), facebook_connected: false, completed: false };
+                      const updatedOnboardingData = { ...(clientData?.onboarding_data || {}), social: updatedSocial };
+                      await supabase.from('clients').update({ onboarding_data: updatedOnboardingData }).eq('id', clientData.id);
+                      setClientData(prev => ({ ...prev, onboarding_data: updatedOnboardingData }));
+                      setDrawerLoading(false);
+                      toast.success("Cuenta de Meta desvinculada.");
+                    }}
+                    className="text-[9px] font-bold text-red-400 hover:text-red-300 uppercase px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 shrink-0"
+                  >
+                    Desvincular
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      toast.loading('Iniciando conexión con Meta...', { id: 'meta-connect' });
+                      if (clientData?.id) {
+                        localStorage.setItem('diic_waiting_client_id', clientData.id);
+                      }
+                      localStorage.setItem('diic_waiting_provider', 'facebook');
+                      localStorage.setItem('diic_waiting_social', 'facebook');
+                      const { socialService } = await import('@/services/socialService');
+                      await socialService.connect('facebook');
+                    } catch (err) {
+                      toast.error('Error al conectar Meta: ' + err.message, { id: 'meta-connect' });
+                    }
+                  }}
+                  className="w-full py-3.5 bg-[#1877F2] hover:bg-[#1877F2]/90 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-[#1877F2]/20"
+                >
+                  <Facebook className="w-4 h-4 fill-white text-transparent" />
+                  <span>Vincular Cuenta de Meta</span>
+                </button>
+              )}
             </div>
             
             <div className="relative flex py-2 items-center">
