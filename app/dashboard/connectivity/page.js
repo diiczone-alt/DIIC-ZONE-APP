@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Instagram, Facebook, Youtube, Twitter, 
@@ -22,7 +22,7 @@ import { supabase } from '@/lib/supabase';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-export default function ConnectivityPage() {
+function ConnectivityContent() {
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -918,3 +918,16 @@ export default function ConnectivityPage() {
         </main>
     );
 }
+
+export default function ConnectivityPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#07090e] flex items-center justify-center text-white text-xs font-mono">
+                Cargando conectividad...
+            </div>
+        }>
+            <ConnectivityContent />
+        </Suspense>
+    );
+}
+
