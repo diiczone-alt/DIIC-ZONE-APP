@@ -900,11 +900,7 @@ function DashboardContent() {
         }
         
         if (moduleId === 'logo' || moduleId === 'visual') {
-            if (data.brand?.logo) updates.logo_url = data.brand.logo;
-            if (data.brand?.primaryColor) updates.primary_color = data.brand.primaryColor;
-            if (data.brand?.secondaryColor) updates.secondary_color = data.brand.secondaryColor;
-            if (data.brand?.accentColor) updates.accent_color = data.brand.accentColor;
-            if (data.brand?.typography) updates.typography = data.brand.typography;
+            // Brand details (logo, colors, typography) are preserved inside onboarding_data.brand
         }
 
         if (moduleId === 'growth') {
@@ -924,7 +920,13 @@ function DashboardContent() {
         
         // Sync with profiles table to keep both sides completely mirrored
         try {
-            await agencyService.syncClientProfile(clientData.id, updates);
+            await agencyService.syncClientProfile(clientData.id, {
+                ...updates,
+                primary_color: data.brand?.primaryColor,
+                secondary_color: data.brand?.secondaryColor,
+                accent_color: data.brand?.accentColor,
+                logo_url: data.brand?.logo
+            });
         } catch (syncErr) {
             console.error('⚠️ [Sync] Failed to mirror updates to profile:', syncErr);
         }
@@ -1149,24 +1151,25 @@ function DashboardContent() {
                 };
                 
                 const updates = {
-                    logo_url: logoDataUrl,
-                    primary_color: primColor || brandForm.primaryColor || '#6366f1',
-                    secondary_color: secColor || brandForm.secondaryColor || '#ec4899',
-                    accent_color: accColor || brandForm.accentColor || '#10b981',
                     onboarding_data: updatedOnboardingData
                 };
                 
                 await supabase.from('clients').update(updates).eq('id', clientData.id);
 
                 try {
-                    await agencyService.syncClientProfile(clientData.id, updates);
+                    await agencyService.syncClientProfile(clientData.id, {
+                        ...updates,
+                        primary_color: updatedBrand.primaryColor,
+                        secondary_color: updatedBrand.secondaryColor,
+                        accent_color: updatedBrand.accentColor,
+                        logo_url: logoDataUrl
+                    });
                 } catch (syncErr) {
                     console.warn('Sync profile warning:', syncErr);
                 }
                 
                 setClientData(prev => ({
                     ...prev,
-                    ...updates,
                     onboarding_data: updatedOnboardingData
                 }));
                 
