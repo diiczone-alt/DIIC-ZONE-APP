@@ -560,15 +560,27 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
             try {
                 const client = await agencyService.getClientById(currentClientId);
                 if (client) {
+                    const strategic = client.onboarding_data?.strategic || client.metadata?.strategic || {};
+                    const social = client.onboarding_data?.social || {};
+                    const cleanBrandName = (strategic.brandName || client.name || client.brandName || user?.user_metadata?.brand || '')
+                        .replace(/[-_\s]+workspace\s*$/i, '')
+                        .trim();
+
                     setProfile(prev => ({
                         ...prev,
                         ...client,
-                        brandName: client.name || client.brandName || prev.brandName || '',
+                        brandName: cleanBrandName,
                         goals: client.goals || client.onboarding_data?.goals || prev.goals || [],
-                        // Map strategic data from onboarding_data (or fallback to metadata for legacy)
-                        ...(client.onboarding_data?.strategic || client.metadata?.strategic || {})
+                        ...strategic,
+                        brandName: cleanBrandName,
+                        websiteUrl: strategic.websiteUrl || (social.instagram ? (social.instagram.startsWith('http') ? social.instagram : `https://instagram.com/${social.instagram.replace(/^@/, '')}`) : prev.websiteUrl),
+                        instagramUrl: strategic.instagramUrl || (social.instagram ? (social.instagram.startsWith('http') ? social.instagram : `https://instagram.com/${social.instagram.replace(/^@/, '')}`) : prev.instagramUrl),
+                        facebookUrl: strategic.facebookUrl || (social.facebook ? (social.facebook.startsWith('http') ? social.facebook : `https://facebook.com/${social.facebook}`) : prev.facebookUrl),
+                        tiktokUrl: strategic.tiktokUrl || (social.tiktok ? (social.tiktok.startsWith('http') ? social.tiktok : `https://tiktok.com/@${social.tiktok.replace(/^@/, '')}`) : prev.tiktokUrl),
+                        youtubeUrl: strategic.youtubeUrl || social.youtube || prev.youtubeUrl,
+                        linkedinUrl: strategic.linkedinUrl || social.linkedin || prev.linkedinUrl
                     }));
-                    if (client.onboarding_data?.strategic?.websiteUrl || client.websiteUrl || client.brandName) {
+                    if (strategic.websiteUrl || client.websiteUrl || strategic.whatItDoes || cleanBrandName) {
                         setIsPreviewMode(true);
                     }
                 }
