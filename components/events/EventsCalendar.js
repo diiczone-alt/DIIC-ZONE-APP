@@ -10,18 +10,25 @@ import {
     CheckCircle2, Clock, Smartphone, Camera, Star, Users, 
     ChevronDown, CheckSquare, ExternalLink, X, FileText, 
     Mic, MicOff, MonitorUp, PhoneOff, Paperclip, MessageCircle, 
-    Check, Sparkles, User, Tag, Layers, CheckCircle
+    Check, Sparkles, User, Tag, Layers, CheckCircle, Trash2, Copy
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-// Real clients database reference
-const REAL_CLIENTS = [
+// Base real clients database reference
+const BASE_REAL_CLIENTS = [
     {
         id: 'C-OSCAR--562',
         name: 'Dr. Oscar Cujilema',
         type: 'Médico / Urología',
         plan: 'Presencia Digital',
         deliverables: { reels: 5, shoots: 2, designs: 8, stories: 20, meetings: 4 }
+    },
+    {
+        id: 'C-SEBAS-709',
+        name: 'Sebas (Vito\'s Pizza)',
+        type: 'Gastronomía',
+        plan: 'Crecimiento',
+        deliverables: { reels: 16, shoots: 6, designs: 12, stories: 30, meetings: 4 }
     },
     {
         id: 'C-REYS',
@@ -36,13 +43,6 @@ const REAL_CLIENTS = [
         type: 'Hospital / Salud',
         plan: 'Crecimiento',
         deliverables: { reels: 16, shoots: 6, designs: 12, stories: 30, meetings: 8 }
-    },
-    {
-        id: 'C-SEBAS-709',
-        name: 'Sebas (Vito\'s Pizza)',
-        type: 'Gastronomía',
-        plan: 'Crecimiento',
-        deliverables: { reels: 16, shoots: 6, designs: 12, stories: 30, meetings: 4 }
     },
     {
         id: 'C-SAE',
@@ -60,10 +60,24 @@ const REAL_CLIENTS = [
     }
 ];
 
-export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
+const TIME_OPTIONS = [
+    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', 
+    '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', 
+    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', 
+    '17:00', '17:30', '18:00', '18:30', '19:00', '20:00'
+];
+
+export default function EventsCalendar({ 
+    clientId = null, 
+    client = null, 
+    clients = [], 
+    squad = [], 
+    user = null, 
+    role = "cm" 
+} = {}) {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const clientParam = clientId || searchParams?.get('client');
+    const clientParam = clientId || client?.id || searchParams?.get('client');
 
     const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 14)); // Sept 14, 2026 as active week
     const [selectedDate, setSelectedDate] = useState(new Date(2026, 8, 14));
@@ -76,45 +90,85 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
     const [activeFilter, setActiveFilter] = useState('all');
     const [isMyCalendarsOpen, setIsMyCalendarsOpen] = useState(true);
 
+    // Merge real clients
+    const clientsList = useMemo(() => {
+        if (clients && clients.length > 0) {
+            const map = new Map();
+            clients.forEach(c => map.set(c.id || c.name, {
+                id: c.id || c.name,
+                name: c.name,
+                type: c.niche || c.type || 'Cliente Activo',
+                plan: c.plan || 'Plan Estratégico',
+                deliverables: c.deliverables || { reels: 12, shoots: 4, designs: 8, stories: 30, meetings: 4 }
+            }));
+            BASE_REAL_CLIENTS.forEach(c => {
+                if (!map.has(c.id) && !map.has(c.name)) map.set(c.id, c);
+            });
+            return Array.from(map.values());
+        }
+        return BASE_REAL_CLIENTS;
+    }, [clients]);
+
     // Active Client
-    const [activeClientId, setActiveClientId] = useState(clientParam || 'C-OSCAR--562');
-    const [clientsList, setClientsList] = useState(REAL_CLIENTS);
+    const [activeClientId, setActiveClientId] = useState(() => {
+        return clientParam || (client?.id) || 'C-SEBAS-709';
+    });
+
+    useEffect(() => {
+        if (client?.id && client.id !== activeClientId) {
+            setActiveClientId(client.id);
+        }
+    }, [client]);
+
+    // Real Squad / Creative Team
+    const realSquad = useMemo(() => {
+        if (squad && squad.length > 0) {
+            return squad.map(m => ({
+                id: m.id,
+                name: m.name,
+                role: m.role || 'Equipo Creativo',
+                avatar: (m.name || 'U').split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase(),
+                phone: m.phone,
+                email: m.email
+            }));
+        }
+        return [
+            { id: 'sq-1', name: 'Anthony', role: 'Diseñador Gráfico & UI', avatar: 'A' },
+            { id: 'sq-2', name: 'Fausto', role: 'Editor de Video & Reels', avatar: 'F' },
+            { id: 'sq-3', name: 'Carlos Filmmaker', role: 'Filmmaker & Producción', avatar: 'C' },
+            { id: 'sq-4', name: user?.full_name || 'Leslie (CM)', role: 'Lead Estratega & CM', avatar: (user?.full_name || 'L').charAt(0) }
+        ];
+    }, [squad, user]);
 
     // Side Panels
     const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [isTasksOpen, setIsTasksOpen] = useState(false);
     const [isTeamOpen, setIsTeamOpen] = useState(false);
     const [isMeetPanelOpen, setIsMeetPanelOpen] = useState(false);
-    const [chattingWith, setChattingWith] = useState(null);
-    const [chatMessages, setChatMessages] = useState([]);
-    const [currentChatMessage, setCurrentChatMessage] = useState("");
-    const [isRecordingNote, setIsRecordingNote] = useState(false);
-    const [recordedAudioUrl, setRecordedAudioUrl] = useState(null);
     const [noteText, setNoteText] = useState("");
-    const [noteImage, setNoteImage] = useState(null);
-    const [notesList, setNotesList] = useState([
-        { id: 1, title: "Nota Estratégica #1", content: "Planificación de contenido médico y copys de campaña.", type: 'text', date: 'Hoy' },
-        { id: 2, title: "Nota Estratégica #2", content: "Revisión de guiones de video y tomas B-Roll en consultorio.", type: 'text', date: 'Ayer' }
-    ]);
-    
-    const [isAITasking, setIsAITasking] = useState(false);
-    const [isAddingTeam, setIsAddingTeam] = useState(false);
-    const [teamCode, setTeamCode] = useState("");
-    const [isProcessingAI, setIsProcessingAI] = useState(false);
-    const [currentTranscript, setCurrentTranscript] = useState("");
-    
-    const recognitionRef = useRef(null);
-    const transcriptRef = useRef("");
-    const mediaRecorderRef = useRef(null);
-    const audioChunksRef = useRef([]);
-    const imageInputRef = useRef(null);
+    const [notesList, setNotesList] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('cm_calendar_notes');
+            if (saved) try { return JSON.parse(saved); } catch (e) { }
+        }
+        return [
+            { id: 1, title: "Nota Estratégica #1", content: "Planificación de contenido médico y copys de campaña.", date: 'Hoy' },
+            { id: 2, title: "Nota Estratégica #2", content: "Revisión de guiones de video y tomas B-Roll en consultorio.", date: 'Ayer' }
+        ];
+    });
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('cm_calendar_notes', JSON.stringify(notesList));
+        }
+    }, [notesList]);
 
     // Meet States
     const [isMeetOpen, setIsMeetOpen] = useState(false);
     const [meetState, setMeetState] = useState('lobby');
     const [meetTasks, setMeetTasks] = useState([
-        { id: 1, text: "Planificación agendada para el viernes", completed: true },
-        { id: 2, text: "Preparar la Guía de Estilos de la marca", completed: false },
+        { id: 1, text: "Planificación agendada para la semana", completed: true },
+        { id: 2, text: "Preparar Guía de Estilos y Hooks de la marca", completed: false },
         { id: 3, text: "Compartir feedback de diseño con equipo Creativo", completed: false }
     ]);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -175,189 +229,143 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
 
     // Active client object
     const activeClient = useMemo(() => {
-        return clientsList.find(c => c.id === activeClientId) || clientsList[0];
+        return clientsList.find(c => c.id === activeClientId) || clientsList[0] || { name: 'Cliente Activo', id: activeClientId };
     }, [activeClientId, clientsList]);
 
-    // Generator for Real Deliverables and Events based on the active client
-    const [events, setEvents] = useState([]);
-
-    // Fetch real tasks/events or generate client calendar deliverables
-    useEffect(() => {
-        const loadRealCalendar = async () => {
-            try {
-                const { data: dbTasks } = await supabase.from('tasks').select('*');
-                
-                // Base scheduled events for the active client (e.g. Dr. Oscar Cujilema in Sept 2026)
-                const clientEvents = [
-                    { 
-                        id: 101, 
-                        title: `Onboarding & Estrategia (${activeClient.name})`, 
-                        timeStr: '08:00 - 08:50',
-                        dayIndex: 0, // Mon 14
-                        dateDay: 14,
-                        startHour: 8,
-                        duration: 0.83,
-                        type: 'meeting',
-                        team: [1, 2],
-                        meetLink: 'meet.google.com/xkz-pwer-mmn',
-                        tags: ['Estrategia', 'Kickoff'],
-                        completed: true
-                    },
-                    { 
-                        id: 102, 
-                        title: `Reel #1: Procedimiento & Valoración (${activeClient.name})`, 
-                        timeStr: '08:30 - 10:30',
-                        dayIndex: 1, // Tue 15
-                        dateDay: 15,
-                        startHour: 8.5,
-                        duration: 2,
-                        type: 'videos',
-                        team: [3, 4],
-                        tags: ['Reel', 'Video 4K'],
-                        completed: false
-                    },
-                    { 
-                        id: 103, 
-                        title: 'Historia Interactiva: Preguntas y Respuestas', 
-                        timeStr: '09:00 - 10:00',
-                        dayIndex: 2, // Wed 16
-                        dateDay: 16,
-                        startHour: 9,
-                        duration: 1,
-                        type: 'historias',
-                        team: [1],
-                        tags: ['Q&A', 'Engagement'],
-                        completed: false
-                    },
-                    { 
-                        id: 104, 
-                        title: 'Revisión de Identidad & Diseños Carrusel', 
-                        timeStr: '10:30 - 12:15',
-                        dayIndex: 2, // Wed 16
-                        dateDay: 16,
-                        startHour: 10.5,
-                        duration: 1.75,
-                        type: 'posts',
-                        team: [1, 5],
-                        meetLink: 'meet.google.com/des-rev-art',
-                        tags: ['Diseño', 'Carrusel'],
-                        completed: false
-                    },
-                    { 
-                        id: 105, 
-                        title: `Rodaje Presencial B-Roll (${activeClient.name})`, 
-                        timeStr: '08:00 - 10:30',
-                        dayIndex: 3, // Thu 17
-                        dateDay: 17,
-                        startHour: 8,
-                        duration: 2.5,
-                        type: 'videos',
-                        team: [2, 3, 6],
-                        tags: ['Filmmaker', 'Shooting'],
-                        completed: false
-                    },
-                    { 
-                        id: 106, 
-                        title: 'Día Internacional de la Salud & Concientización', 
-                        timeStr: '09:00 - 10:00',
-                        dayIndex: 4, // Fri 18
-                        dateDay: 18,
-                        startHour: 9,
-                        duration: 1,
-                        type: 'fechas',
-                        team: [1, 2],
-                        tags: ['Efeméride', 'Hito'],
-                        completed: false
-                    },
-                    { 
-                        id: 107, 
-                        title: 'Post Educativo: Mitos y Verdades Clínicas', 
-                        timeStr: '10:00 - 11:30',
-                        dayIndex: 4, // Fri 18
-                        dateDay: 18,
-                        startHour: 10,
-                        duration: 1.5,
-                        type: 'posts',
-                        team: [4, 5],
-                        tags: ['Feed Post', 'Educación'],
-                        completed: false
-                    },
-                    { 
-                        id: 108, 
-                        title: 'Sesión de Seguimiento de Métricas & Leads', 
-                        timeStr: '13:00 - 14:00',
-                        dayIndex: 1, // Tue 15
-                        dateDay: 15,
-                        startHour: 13,
-                        duration: 1,
-                        type: 'meeting',
-                        team: [1, 3],
-                        tags: ['Métricas', 'Leads'],
-                        completed: false
-                    },
-                    { 
-                        id: 109, 
-                        title: 'Lanzamiento de Campaña Ads & WhatsApp', 
-                        timeStr: '14:00 - 15:30',
-                        dayIndex: 3, // Thu 17
-                        dateDay: 17,
-                        startHour: 14,
-                        duration: 1.5,
-                        type: 'meeting',
-                        team: [5, 6],
-                        tags: ['Meta Ads', 'WhatsApp'],
-                        completed: false
-                    },
-                    { 
-                        id: 110, 
-                        title: 'Historia Detrás de Cámara (Shooting)', 
-                        timeStr: '13:00 - 14:30',
-                        dayIndex: 6, // Sun 20
-                        dateDay: 20,
-                        startHour: 13,
-                        duration: 1.5,
-                        type: 'historias',
-                        team: [2, 4],
-                        tags: ['Backstage', 'Stories'],
-                        completed: false
-                    }
-                ];
-
-                // Append any extra DB tasks matching the client
-                if (dbTasks && dbTasks.length > 0) {
-                    dbTasks.forEach((t, idx) => {
-                        if (t.client_id === activeClient.id || t.client === activeClient.name || !t.client) {
-                            const taskType = t.assigned_role === 'FILMMAKER' || (t.title && t.title.toLowerCase().includes('rodaje')) 
-                                ? 'videos' 
-                                : (t.title && t.title.toLowerCase().includes('diseño')) 
-                                    ? 'posts' 
-                                    : 'meeting';
-                            
-                            clientEvents.push({
-                                id: 200 + idx,
-                                title: t.title || 'Tarea Programada',
-                                timeStr: t.duration || '11:00 - 12:00',
-                                dayIndex: (idx % 7),
-                                dateDay: 14 + (idx % 7),
-                                startHour: 11 + (idx % 4),
-                                duration: 1,
-                                type: taskType,
-                                team: [1, 2],
-                                tags: ['Supabase DB'],
-                                completed: t.status === 'done'
-                            });
-                        }
-                    });
-                }
-
-                setEvents(clientEvents);
-            } catch (err) {
-                console.error('Error loading calendar events:', err);
+    // Events State with LocalStorage Persistence & Real DB tasks
+    const [events, setEvents] = useState(() => {
+        const storageKey = `cm_calendar_events_${activeClientId}`;
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+                try { return JSON.parse(saved); } catch (e) { }
             }
-        };
+        }
+        return [
+            { 
+                id: 101, 
+                title: 'Onboarding & Estrategia', 
+                timeStr: '08:00 - 08:50',
+                startTime: '08:00',
+                endTime: '08:50',
+                dayIndex: 0, // Mon 14
+                dateDay: 14,
+                startHour: 8,
+                duration: 0.83,
+                type: 'meeting',
+                clientId: activeClientId,
+                clientName: activeClient.name,
+                team: ['sq-1', 'sq-4'],
+                meetLink: 'meet.google.com/xkz-pwer-mmn',
+                tags: ['Estrategia', 'Kickoff'],
+                notes: 'Revisión inicial del plan de crecimiento y accesos a redes.',
+                completed: true
+            },
+            { 
+                id: 102, 
+                title: 'Real #1: Procedimiento & Valoración', 
+                timeStr: '08:30 - 10:30',
+                startTime: '08:30',
+                endTime: '10:30',
+                dayIndex: 1, // Tue 15
+                dateDay: 15,
+                startHour: 8.5,
+                duration: 2,
+                type: 'videos',
+                clientId: activeClientId,
+                clientName: activeClient.name,
+                team: ['sq-2', 'sq-3'],
+                meetLink: 'meet.google.com/reel-prod-diic',
+                tags: ['Reel', 'Video 4K'],
+                notes: 'Grabación de hook en vertical 9:16 y tomas de apoyo B-Roll.',
+                completed: false
+            },
+            { 
+                id: 103, 
+                title: 'Historia Interactiva: Preguntas y Respuestas', 
+                timeStr: '08:00 - 10:00',
+                startTime: '08:00',
+                endTime: '10:00',
+                dayIndex: 2, // Wed 16
+                dateDay: 16,
+                startHour: 8,
+                duration: 2,
+                type: 'historias',
+                clientId: activeClientId,
+                clientName: activeClient.name,
+                team: ['sq-1', 'sq-2', 'sq-3', 'sq-4'],
+                meetLink: 'www.google.com/meet/220xdp',
+                tags: ['Q&A', 'Engagement'],
+                notes: 'Sticker de preguntas en Instagram Stories para captar dudas frecuentes de clientes.',
+                completed: false
+            },
+            { 
+                id: 104, 
+                title: 'Revisión de Identidad & Diseños Carrusel', 
+                timeStr: '10:30 - 12:15',
+                startTime: '10:30',
+                endTime: '12:15',
+                dayIndex: 2, // Wed 16
+                dateDay: 16,
+                startHour: 10.5,
+                duration: 1.75,
+                type: 'posts',
+                clientId: activeClientId,
+                clientName: activeClient.name,
+                team: ['sq-1', 'sq-4'],
+                meetLink: 'meet.google.com/des-rev-art',
+                tags: ['Diseño', 'Carrusel'],
+                notes: 'Validación de paleta de colores y tipografía con el diseñador.',
+                completed: false
+            },
+            { 
+                id: 105, 
+                title: 'Rodaje Presencial B-Roll', 
+                timeStr: '08:00 - 10:30',
+                startTime: '08:00',
+                endTime: '10:30',
+                dayIndex: 3, // Thu 17
+                dateDay: 17,
+                startHour: 8,
+                duration: 2.5,
+                type: 'videos',
+                clientId: activeClientId,
+                clientName: activeClient.name,
+                team: ['sq-2', 'sq-3'],
+                meetLink: '',
+                tags: ['Filmmaker', 'Shooting'],
+                notes: 'Equipo de luces y cámara listos en locación.',
+                completed: false
+            },
+            { 
+                id: 106, 
+                title: 'Post Educativo: Mitos y Verdades', 
+                timeStr: '10:00 - 11:30',
+                startTime: '10:00',
+                endTime: '11:30',
+                dayIndex: 4, // Fri 18
+                dateDay: 18,
+                startHour: 10,
+                duration: 1.5,
+                type: 'posts',
+                clientId: activeClientId,
+                clientName: activeClient.name,
+                team: ['sq-1'],
+                meetLink: '',
+                tags: ['Feed Post', 'Educación'],
+                notes: 'Post educativo carrusel 5 slides.',
+                completed: false
+            }
+        ];
+    });
 
-        loadRealCalendar();
-    }, [activeClient]);
+    // Save events to local storage whenever they change
+    useEffect(() => {
+        const storageKey = `cm_calendar_events_${activeClientId}`;
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(storageKey, JSON.stringify(events));
+        }
+    }, [events, activeClientId]);
 
     // Handle URL searchParam synchronization
     useEffect(() => {
@@ -366,7 +374,7 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
         }
     }, [clientParam]);
 
-    const formatMonthStr = (date) => date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(/^\w/, (c) => c.toUpperCase());
+    const formatMonthStr = (date) => date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(/^w/, (c) => c.toUpperCase());
     const currentMonthStr = formatMonthStr(currentDate);
 
     const handlePrevMonth = () => {
@@ -384,7 +392,7 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
     };
 
     const handleGoToToday = () => {
-        const today = new Date(2026, 8, 14); // Set to active calendar date
+        const today = new Date(2026, 8, 14);
         setCurrentDate(today);
         setSelectedDate(today);
     };
@@ -415,17 +423,19 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
 
     // Filtered Events
     const filteredEvents = useMemo(() => {
-        return activeFilter === 'all' 
-            ? events 
-            : events.filter(e => e.type === activeFilter);
-    }, [events, activeFilter]);
+        return events.filter(e => {
+            const matchesSearch = !searchQuery || e.title.toLowerCase().includes(searchQuery.toLowerCase()) || (e.notes && e.notes.toLowerCase().includes(searchQuery.toLowerCase()));
+            if (!matchesSearch) return false;
+            if (activeFilter === 'all') return true;
+            return e.type === activeFilter;
+        });
+    }, [events, activeFilter, searchQuery]);
 
-    // Real Upcoming Events for Today / Selected Date
+    // Upcoming Events for Today / Selected Date
     const upcomingEventsForDay = useMemo(() => {
         const dayNum = selectedDate.getDate();
         const matches = events.filter(e => e.dateDay === dayNum);
         if (matches.length > 0) return matches;
-        // Fallback to top 4 events of the week
         return events.slice(0, 4);
     }, [events, selectedDate]);
 
@@ -471,31 +481,100 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
         setTimeout(() => {
             setIsSyncing(false);
             toast.success(`¡Calendario de ${activeClient.name} sincronizado con éxito!`, { id: 'gcal-sync' });
-        }, 1200);
+        }, 1000);
+    };
+
+    // ─── Direct Event Editing Handlers ───
+    const parseHourFromString = (str) => {
+        if (!str) return 8;
+        const [h, m] = str.split(':').map(Number);
+        return (h || 8) + (m ? m / 60 : 0);
+    };
+
+    const handleUpdateEventField = (eventId, field, value) => {
+        setEvents(prev => prev.map(ev => {
+            if (ev.id !== eventId) return ev;
+            
+            const updated = { ...ev, [field]: value };
+            
+            // Recalculate duration & startHour if time changed
+            if (field === 'startTime' || field === 'endTime') {
+                const sTime = field === 'startTime' ? value : (ev.startTime || ev.timeStr?.split('-')[0]?.trim() || '08:00');
+                const eTime = field === 'endTime' ? value : (ev.endTime || ev.timeStr?.split('-')[1]?.trim() || '10:00');
+                const startH = parseHourFromString(sTime);
+                const endH = parseHourFromString(eTime);
+                const dur = Math.max(endH - startH, 0.5);
+                
+                updated.startTime = sTime;
+                updated.endTime = eTime;
+                updated.startHour = startH;
+                updated.duration = dur;
+                updated.timeStr = `${sTime} - ${eTime}`;
+            }
+
+            if (field === 'dayIndex') {
+                const dayIdx = parseInt(value);
+                updated.dayIndex = dayIdx;
+                updated.dateDay = weekDays[dayIdx % 7]?.num || (14 + dayIdx);
+            }
+
+            return updated;
+        }));
+    };
+
+    const handleToggleTeamMember = (eventId, memberId) => {
+        setEvents(prev => prev.map(ev => {
+            if (ev.id !== eventId) return ev;
+            const currentTeam = Array.isArray(ev.team) ? ev.team : [];
+            const newTeam = currentTeam.includes(memberId)
+                ? currentTeam.filter(id => id !== memberId)
+                : [...currentTeam, memberId];
+            return { ...ev, team: newTeam };
+        }));
+        toast.info("Equipo actualizado en el evento");
+    };
+
+    const handleDeleteEvent = (eventId) => {
+        setEvents(prev => prev.filter(ev => ev.id !== eventId));
+        setSelectedEventId(null);
+        toast.success("Evento eliminado del calendario");
     };
 
     // Quick New Event Form States
     const [newEventTitle, setNewEventTitle] = useState('');
-    const [newEventTime, setNewEventTime] = useState('10:00 - 11:00');
-    const [newEventDate, setNewEventDate] = useState('2026-09-14');
+    const [newEventStart, setNewEventStart] = useState('10:00');
+    const [newEventEnd, setNewEventEnd] = useState('11:30');
+    const [newEventDayIdx, setNewEventDayIdx] = useState(1);
     const [newEventType, setNewEventType] = useState('videos');
+    const [newEventLink, setNewEventLink] = useState('meet.google.com/diic-live');
+    const [newEventTeam, setNewEventTeam] = useState(['sq-1']);
 
     const handleSaveNewEvent = () => {
         if (!newEventTitle.trim()) {
             toast.error("Ingresa un título para el evento");
             return;
         }
+        const startH = parseHourFromString(newEventStart);
+        const endH = parseHourFromString(newEventEnd);
+        const dur = Math.max(endH - startH, 0.5);
+
         const createdEv = {
             id: Date.now(),
             title: newEventTitle,
-            timeStr: newEventTime,
-            dayIndex: 1,
-            dateDay: 15,
-            startHour: 10,
-            duration: 1,
+            timeStr: `${newEventStart} - ${newEventEnd}`,
+            startTime: newEventStart,
+            endTime: newEventEnd,
+            dayIndex: newEventDayIdx,
+            dateDay: weekDays[newEventDayIdx % 7]?.num || 15,
+            startHour: startH,
+            duration: dur,
             type: newEventType,
-            team: [1],
+            clientId: activeClientId,
+            clientName: activeClient.name,
+            team: newEventTeam,
+            meetLink: newEventLink,
             tags: ['Nuevo'],
+            notes: '',
             completed: false
         };
         setEvents(prev => [createdEv, ...prev]);
@@ -504,10 +583,17 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
         toast.success("Evento agendado exitosamente");
     };
 
+    // Selected Event
+    const selectedEvent = useMemo(() => {
+        return events.find(e => e.id === selectedEventId) || null;
+    }, [events, selectedEventId]);
+
+    const [isSelectingTeam, setIsSelectingTeam] = useState(false);
+
     return (
         <div className="h-full flex flex-col bg-[#0d0e12] text-white p-6 font-sans select-none overflow-hidden relative">
             
-            {/* Top Bar matching Calmendar / Modern Tablet UI */}
+            {/* Top Bar */}
             <header className="flex items-center justify-between pb-6 relative z-30">
                 {/* Brand & Left Header */}
                 <div className="flex items-center gap-6">
@@ -603,7 +689,7 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
             {/* Main Content Layout (Sidebar + Calendar + Quick Tools) */}
             <div className="flex-1 flex gap-5 overflow-hidden">
                 
-                {/* --- LEFT SIDEBAR (Calmendar Style) --- */}
+                {/* --- LEFT SIDEBAR --- */}
                 <aside className="w-[300px] shrink-0 flex flex-col gap-4 overflow-y-auto no-scrollbar pr-1 pb-8">
                     
                     {/* Mini Calendar Widget */}
@@ -660,7 +746,7 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                         </div>
                     </div>
 
-                    {/* Upcoming Events Today Widget (Real Data) */}
+                    {/* Upcoming Events Today Widget */}
                     <div className="bg-[#161720] border border-white/[0.06] p-5 rounded-[26px] shadow-lg flex flex-col">
                         <div className="flex items-center justify-between mb-3">
                             <span className="font-bold text-sm text-white">Upcoming events today</span>
@@ -669,7 +755,6 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
 
                         <div className="space-y-3 mt-1">
                             {upcomingEventsForDay.map((ev) => {
-                                const style = EVENT_STYLES[ev.type] || EVENT_STYLES.meeting;
                                 return (
                                     <div 
                                         key={ev.id} 
@@ -697,7 +782,7 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                         </div>
                     </div>
 
-                    {/* Time Breakdown Widget (Real Data Calculation) */}
+                    {/* Time Breakdown Widget */}
                     <div className="bg-[#161720] border border-white/[0.06] p-5 rounded-[26px] shadow-lg flex flex-col">
                         <div className="flex items-center justify-between mb-3">
                             <span className="font-bold text-sm text-white">Time breakdown</span>
@@ -719,7 +804,7 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                         </div>
                     </div>
 
-                    {/* My Calendars Accordion with Real Clients */}
+                    {/* My Calendars Accordion */}
                     <div className="bg-[#161720] border border-white/[0.06] p-4 rounded-[22px] flex flex-col gap-3">
                         <div 
                             onClick={() => setIsMyCalendarsOpen(!isMyCalendarsOpen)}
@@ -781,7 +866,7 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                         </div>
                     </div>
 
-                    {/* === WEEK VIEW (Calmendar Tablet Style) === */}
+                    {/* === WEEK VIEW === */}
                     {viewMode === 'Week' && (
                         <div className="flex-1 flex flex-col overflow-hidden">
                             {/* 7-Day Pill Strip Header */}
@@ -844,7 +929,10 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                             >
                                                 {/* Add button placeholder on hover */}
                                                 <button 
-                                                    onClick={() => setIsScheduling(true)}
+                                                    onClick={() => {
+                                                        setNewEventDayIdx(dayIndex);
+                                                        setIsScheduling(true);
+                                                    }}
                                                     className="absolute top-28 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center opacity-0 group-hover/col:opacity-100 transition-opacity border border-white/10"
                                                     title="Agendar en este día"
                                                 >
@@ -861,6 +949,8 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                             const heightPixels = Math.max(event.duration * 95 - 6, 50);
                                             const isSelected = selectedEventId === event.id;
                                             const style = EVENT_STYLES[event.type] || EVENT_STYLES.meeting;
+
+                                            const assignedSquad = (event.team || []).map(id => realSquad.find(m => m.id === id)).filter(Boolean);
 
                                             return (
                                                 <div 
@@ -891,108 +981,253 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                                         </div>
 
                                                         {/* Team Avatars */}
-                                                        {event.team && event.team.length > 0 && event.duration >= 1 && (
+                                                        {assignedSquad.length > 0 && event.duration >= 0.8 && (
                                                             <div className="flex -space-x-1.5 mt-2 pointer-events-none">
-                                                                {event.team.map((t) => (
-                                                                    <img 
-                                                                        key={t} 
-                                                                        src={`https://i.pravatar.cc/100?u=${t + 10}`} 
-                                                                        alt="avatar" 
-                                                                        className="w-5 h-5 rounded-full border border-black/30 object-cover"
-                                                                    />
+                                                                {assignedSquad.map((m) => (
+                                                                    <div 
+                                                                        key={m.id} 
+                                                                        className="w-5 h-5 rounded-full bg-black/40 border border-white/40 text-[9px] font-bold text-white flex items-center justify-center shadow-sm"
+                                                                        title={`${m.name} (${m.role})`}
+                                                                    >
+                                                                        {m.avatar}
+                                                                    </div>
                                                                 ))}
                                                             </div>
                                                         )}
                                                     </div>
 
-                                                    {/* Floating Calmendar Event Details Card */}
+                                                    {/* ═════════════════════════════════════════════════════════════════ */}
+                                                    {/* FLOATING EDITABLE EVENT CARD (Pop-up with all editable fields)   */}
+                                                    {/* ═════════════════════════════════════════════════════════════════ */}
                                                     <AnimatePresence>
                                                         {isSelected && (
                                                             <motion.div
                                                                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                                                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                                                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                                className="absolute z-50 w-[300px] bg-white text-gray-900 rounded-3xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.6)] border border-gray-100 pointer-events-auto"
+                                                                className="absolute z-50 w-[320px] bg-white text-gray-900 rounded-3xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.6)] border border-gray-100 pointer-events-auto"
                                                                 style={{ 
                                                                     top: `${Math.min(topOffset, 220)}px`, 
                                                                     left: event.dayIndex > 3 ? 'auto' : '102%',
                                                                     right: event.dayIndex > 3 ? '102%' : 'auto'
                                                                 }}
                                                             >
-                                                                {/* Title & Edit Icon */}
-                                                                <div className="flex items-center justify-between mb-4">
-                                                                    <h3 className="font-bold text-base text-gray-900 leading-tight">
-                                                                        {event.title}
-                                                                    </h3>
+                                                                {/* 1. Header: Editable Title & Close */}
+                                                                <div className="flex items-start justify-between gap-2 mb-3">
+                                                                    <input 
+                                                                        type="text"
+                                                                        value={event.title}
+                                                                        onChange={(e) => handleUpdateEventField(event.id, 'title', e.target.value)}
+                                                                        className="font-bold text-sm text-gray-900 leading-tight w-full bg-gray-50 border border-gray-200 focus:border-indigo-500 rounded-xl px-2.5 py-1.5 focus:outline-none transition-all"
+                                                                        placeholder="Título del evento..."
+                                                                    />
                                                                     <button 
                                                                         onClick={(e) => { e.stopPropagation(); setSelectedEventId(null); }}
-                                                                        className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-700 transition-colors"
+                                                                        className="p-1.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-700 transition-colors shrink-0"
+                                                                        title="Cerrar"
                                                                     >
-                                                                        <Edit2 className="w-4 h-4" />
+                                                                        <X className="w-4 h-4" />
                                                                     </button>
                                                                 </div>
 
-                                                                <div className="space-y-3">
-                                                                    {/* Date Row */}
-                                                                    <div className="flex items-center gap-2.5 text-xs font-semibold text-gray-700">
-                                                                        <CalendarIcon className="w-4 h-4 text-gray-400 shrink-0" />
-                                                                        <span>{weekDays[event.dayIndex % 7]?.name || 'Miércoles'}, {event.dateDay || '16'} {currentMonthStr}</span>
+                                                                <div className="space-y-2.5">
+                                                                    {/* 2. Date / Day Selector */}
+                                                                    <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
+                                                                        <CalendarIcon className="w-4 h-4 text-indigo-500 shrink-0" />
+                                                                        <select
+                                                                            value={event.dayIndex % 7}
+                                                                            onChange={(e) => handleUpdateEventField(event.id, 'dayIndex', e.target.value)}
+                                                                            className="bg-gray-100 border border-gray-200 text-gray-800 text-xs rounded-xl px-2.5 py-1.5 font-semibold focus:outline-none w-full cursor-pointer"
+                                                                        >
+                                                                            {weekDays.map((wd, idx) => (
+                                                                                <option key={idx} value={idx}>
+                                                                                    {wd.name}, {wd.num} de {currentMonthStr}
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
                                                                     </div>
 
-                                                                    {/* Time Pickers Row */}
+                                                                    {/* 3. Time Pickers (Start - End) */}
                                                                     <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
-                                                                        <div className="flex items-center justify-between bg-gray-100 px-3 py-1.5 rounded-xl flex-1 cursor-pointer">
-                                                                            <span>{event.timeStr.split('-')[0]?.trim() || '11:00'}</span>
-                                                                            <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                                                                        <div className="flex items-center bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-xl flex-1">
+                                                                            <select 
+                                                                                value={event.startTime || event.timeStr?.split('-')[0]?.trim() || '08:00'}
+                                                                                onChange={(e) => handleUpdateEventField(event.id, 'startTime', e.target.value)}
+                                                                                className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none w-full cursor-pointer"
+                                                                            >
+                                                                                {TIME_OPTIONS.map(t => (
+                                                                                    <option key={`st-${t}`} value={t}>{t}</option>
+                                                                                ))}
+                                                                            </select>
                                                                         </div>
                                                                         <span className="text-gray-400 font-bold">-</span>
-                                                                        <div className="flex items-center justify-between bg-gray-100 px-3 py-1.5 rounded-xl flex-1 cursor-pointer">
-                                                                            <span>{event.timeStr.split('-')[1]?.trim() || '12:00'}</span>
-                                                                            <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                                                                        <div className="flex items-center bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-xl flex-1">
+                                                                            <select 
+                                                                                value={event.endTime || event.timeStr?.split('-')[1]?.trim() || '10:00'}
+                                                                                onChange={(e) => handleUpdateEventField(event.id, 'endTime', e.target.value)}
+                                                                                className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none w-full cursor-pointer"
+                                                                            >
+                                                                                {TIME_OPTIONS.map(t => (
+                                                                                    <option key={`et-${t}`} value={t}>{t}</option>
+                                                                                ))}
+                                                                            </select>
                                                                         </div>
                                                                     </div>
 
-                                                                    {/* Meeting Link Row */}
-                                                                    <div className="flex items-center gap-2.5 text-xs text-gray-600 bg-gray-50 p-2.5 rounded-2xl border border-gray-100">
-                                                                        <Video className="w-4 h-4 text-gray-400 shrink-0" />
-                                                                        <span className="truncate flex-1 font-mono text-[11px] text-gray-700">
-                                                                            {event.meetLink || 'www.google.com/meet/230xdp'}
-                                                                        </span>
-                                                                    </div>
-
-                                                                    {/* Tag Pills */}
-                                                                    <div className="flex flex-wrap gap-1.5 pt-1">
-                                                                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">{event.type}</span>
-                                                                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">{activeClient.name}</span>
-                                                                    </div>
-
-                                                                    {/* Assigned Avatars Row */}
-                                                                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                                                                        <div className="flex -space-x-2">
-                                                                            {[1, 2, 3, 4].map(av => (
-                                                                                <img 
-                                                                                    key={av} 
-                                                                                    src={`https://i.pravatar.cc/100?u=${av + 30}`} 
-                                                                                    alt="avatar" 
-                                                                                    className="w-6 h-6 rounded-full border-2 border-white object-cover shadow-sm"
-                                                                                />
-                                                                            ))}
-                                                                            <div className="w-6 h-6 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-600">
-                                                                                +5
+                                                                    {/* 4. Meeting Link / URL Input */}
+                                                                    <div className="flex items-center gap-1.5 bg-gray-50 p-1.5 rounded-2xl border border-gray-200">
+                                                                        <Video className="w-4 h-4 text-indigo-500 shrink-0 ml-1" />
+                                                                        <input 
+                                                                            type="text"
+                                                                            value={event.meetLink || ''}
+                                                                            onChange={(e) => handleUpdateEventField(event.id, 'meetLink', e.target.value)}
+                                                                            placeholder="www.google.com/meet/..."
+                                                                            className="w-full bg-transparent text-[11px] text-gray-800 font-mono focus:outline-none px-1"
+                                                                        />
+                                                                        {event.meetLink && (
+                                                                            <div className="flex items-center gap-0.5">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        const link = event.meetLink.startsWith('http') ? event.meetLink : `https://${event.meetLink}`;
+                                                                                        window.open(link, '_blank');
+                                                                                    }}
+                                                                                    className="p-1 hover:bg-gray-200 rounded-lg text-indigo-600 transition-colors"
+                                                                                    title="Abrir enlace de reunión"
+                                                                                >
+                                                                                    <ExternalLink className="w-3.5 h-3.5" />
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        navigator.clipboard.writeText(event.meetLink);
+                                                                                        toast.success("Enlace copiado al portapapeles");
+                                                                                    }}
+                                                                                    className="p-1 hover:bg-gray-200 rounded-lg text-gray-500 transition-colors"
+                                                                                    title="Copiar enlace"
+                                                                                >
+                                                                                    <Copy className="w-3.5 h-3.5" />
+                                                                                </button>
                                                                             </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* 5. Category & Client Dropdowns */}
+                                                                    <div className="grid grid-cols-2 gap-2 pt-1">
+                                                                        <div>
+                                                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Tipo</label>
+                                                                            <select 
+                                                                                value={event.type}
+                                                                                onChange={(e) => handleUpdateEventField(event.id, 'type', e.target.value)}
+                                                                                className="w-full bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-bold rounded-xl px-2 py-1 focus:outline-none cursor-pointer capitalize"
+                                                                            >
+                                                                                {Object.keys(EVENT_STYLES).map(k => (
+                                                                                    <option key={k} value={k}>{EVENT_STYLES[k].label}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                        </div>
+
+                                                                        <div>
+                                                                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Cliente</label>
+                                                                            <select 
+                                                                                value={event.clientId || activeClientId}
+                                                                                onChange={(e) => {
+                                                                                    const foundC = clientsList.find(c => c.id === e.target.value);
+                                                                                    handleUpdateEventField(event.id, 'clientId', e.target.value);
+                                                                                    if (foundC) handleUpdateEventField(event.id, 'clientName', foundC.name);
+                                                                                }}
+                                                                                className="w-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold rounded-xl px-2 py-1 focus:outline-none cursor-pointer truncate"
+                                                                            >
+                                                                                {clientsList.map(c => (
+                                                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                                                ))}
+                                                                            </select>
                                                                         </div>
                                                                     </div>
 
-                                                                    {/* Add note button */}
-                                                                    <button 
-                                                                        onClick={() => {
-                                                                            toast.success("Nota adjuntada al evento");
-                                                                            setSelectedEventId(null);
-                                                                        }}
-                                                                        className="w-full bg-black hover:bg-gray-800 text-white text-xs font-bold py-2.5 rounded-full mt-2 transition-all"
-                                                                    >
-                                                                        Add note
-                                                                    </button>
+                                                                    {/* 6. Real Assigned Squad Section */}
+                                                                    <div className="pt-2 border-t border-gray-100">
+                                                                        <div className="flex items-center justify-between mb-1.5">
+                                                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Equipo Asignado</span>
+                                                                            <button 
+                                                                                type="button"
+                                                                                onClick={() => setIsSelectingTeam(!isSelectingTeam)}
+                                                                                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800"
+                                                                            >
+                                                                                {isSelectingTeam ? 'Listo' : '+ Asignar'}
+                                                                            </button>
+                                                                        </div>
+
+                                                                        {/* Team Avatars Bar */}
+                                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                                            {assignedSquad.map(m => (
+                                                                                <div 
+                                                                                    key={m.id}
+                                                                                    onClick={() => handleToggleTeamMember(event.id, m.id)}
+                                                                                    className="flex items-center gap-1 bg-gray-100 hover:bg-red-50 hover:text-red-600 border border-gray-200 px-2 py-0.5 rounded-full text-[10px] font-bold text-gray-700 cursor-pointer transition-colors group"
+                                                                                    title="Haz clic para desasignar"
+                                                                                >
+                                                                                    <span>{m.name}</span>
+                                                                                    <X className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100" />
+                                                                                </div>
+                                                                            ))}
+                                                                            {assignedSquad.length === 0 && (
+                                                                                <span className="text-[10px] text-gray-400 italic">Sin miembros asignados</span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* Dropdown to assign more squad members */}
+                                                                        {isSelectingTeam && (
+                                                                            <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded-xl space-y-1">
+                                                                                {realSquad.map(m => {
+                                                                                    const isAssigned = (event.team || []).includes(m.id);
+                                                                                    return (
+                                                                                        <div 
+                                                                                            key={m.id}
+                                                                                            onClick={() => handleToggleTeamMember(event.id, m.id)}
+                                                                                            className={`flex items-center justify-between p-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
+                                                                                                isAssigned ? 'bg-indigo-100 text-indigo-900 font-bold' : 'hover:bg-gray-100 text-gray-700'
+                                                                                            }`}
+                                                                                        >
+                                                                                            <span>{m.name} <span className="text-[9px] text-gray-500 font-normal">({m.role})</span></span>
+                                                                                            {isAssigned && <Check className="w-3.5 h-3.5 text-indigo-600" />}
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* 7. Editable Notes field */}
+                                                                    <div className="pt-2 border-t border-gray-100">
+                                                                        <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Notas / Acuerdos</label>
+                                                                        <textarea 
+                                                                            value={event.notes || ''}
+                                                                            onChange={(e) => handleUpdateEventField(event.id, 'notes', e.target.value)}
+                                                                            placeholder="Añadir notas estratégicas sobre este entregable..."
+                                                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-500 resize-none h-14"
+                                                                        />
+                                                                    </div>
+
+                                                                    {/* 8. Action Buttons (Save Note / Delete) */}
+                                                                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                toast.success("¡Cambios guardados con éxito!");
+                                                                                setSelectedEventId(null);
+                                                                            }}
+                                                                            className="flex-1 bg-black hover:bg-gray-800 text-white text-xs font-bold py-2 rounded-full transition-all shadow-md"
+                                                                        >
+                                                                            Guardar Cambios
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => handleDeleteEvent(event.id)}
+                                                                            className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-colors"
+                                                                            title="Eliminar evento"
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                             </motion.div>
                                                         )}
@@ -1090,8 +1325,14 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                                 <h4 className="text-sm font-bold">{ev.title}</h4>
                                                 <p className="text-xs text-white/80 mt-1">{ev.timeStr}</p>
                                             </div>
-                                            <button onClick={() => setSelectedEventId(ev.id)} className="bg-black/20 hover:bg-black/40 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-colors">
-                                                Ver detalles
+                                            <button 
+                                                onClick={() => {
+                                                    setSelectedEventId(ev.id);
+                                                    setViewMode('Week');
+                                                }} 
+                                                className="bg-black/20 hover:bg-black/40 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-colors"
+                                            >
+                                                Editar / Ver detalles
                                             </button>
                                         </div>
                                     );
@@ -1103,8 +1344,6 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                 </main>
 
                 {/* --- RIGHT APPS DOCK & SLIDEOUT PANELS --- */}
-                
-                {/* Expandable Slide-out Panel */}
                 <AnimatePresence>
                     {(isNotesOpen || isTasksOpen || isTeamOpen || isMeetPanelOpen) && (
                         <motion.div
@@ -1120,7 +1359,7 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                     <>
                                         <div className="p-5 flex items-center justify-between border-b border-white/5">
                                             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                                <FileText className="w-4 h-4 text-blue-400" /> Notas
+                                                <FileText className="w-4 h-4 text-blue-400" /> Notas Estratégicas
                                             </h3>
                                             <button onClick={() => setIsNotesOpen(false)} className="p-1 text-gray-400 hover:text-white rounded-lg hover:bg-white/10">
                                                 <X className="w-4 h-4" />
@@ -1132,7 +1371,7 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                                     value={noteText}
                                                     onChange={(e) => setNoteText(e.target.value)}
                                                     className="w-full bg-transparent text-white text-xs focus:outline-none resize-none h-16 placeholder:text-gray-500" 
-                                                    placeholder="Escribe una nota rápida..."
+                                                    placeholder="Escribe una nota rápida para este cliente..."
                                                 />
                                                 <div className="flex items-center justify-end border-t border-white/5 pt-2">
                                                     <button onClick={() => {
@@ -1160,12 +1399,12 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                     </>
                                 )}
 
-                                {/* Tasks & Voice AI Assistant */}
+                                {/* Tasks & DIIC IA */}
                                 {isTasksOpen && (
                                     <>
                                         <div className="p-5 flex items-center justify-between border-b border-white/5">
                                             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                                <CheckSquare className="w-4 h-4 text-amber-400" /> Tareas & DIIC IA
+                                                <CheckSquare className="w-4 h-4 text-amber-400" /> Tareas de {activeClient.name}
                                             </h3>
                                             <button onClick={() => setIsTasksOpen(false)} className="p-1 text-gray-400 hover:text-white rounded-lg hover:bg-white/10">
                                                 <X className="w-4 h-4" />
@@ -1173,7 +1412,6 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                         </div>
                                         <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-4">
                                             <div className="space-y-2">
-                                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Pendientes de {activeClient.name}</h4>
                                                 {upcomingEventsForDay.map(task => (
                                                     <div key={task.id} className="flex items-start gap-2.5 bg-[#101117] border border-white/[0.04] rounded-xl p-3">
                                                         <button 
@@ -1197,26 +1435,24 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                     <div className="flex flex-col h-full overflow-hidden">
                                         <div className="p-5 flex items-center justify-between border-b border-white/5">
                                             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                                <Users className="w-4 h-4 text-indigo-400" /> Zona Creativa
+                                                <Users className="w-4 h-4 text-indigo-400" /> Equipo Creativo Real
                                             </h3>
                                             <button onClick={() => setIsTeamOpen(false)} className="p-1 text-gray-400 hover:text-white rounded-lg hover:bg-white/10">
                                                 <X className="w-4 h-4" />
                                             </button>
                                         </div>
-                                        <div className="p-6 flex-1 flex flex-col items-center justify-center text-center space-y-4">
-                                            <div className="w-20 h-20 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 overflow-hidden flex items-center justify-center">
-                                                <img src="https://i.pravatar.cc/150?u=Leslie" className="w-full h-full object-cover" alt="Leslie" />
-                                            </div>
-                                            <div>
-                                                <h4 className="text-base font-bold text-white">Leslie</h4>
-                                                <p className="text-xs text-gray-400">Head of Production & CM</p>
-                                            </div>
-                                            <button 
-                                                onClick={() => toast.success("Chat iniciado con Leslie")}
-                                                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition-all"
-                                            >
-                                                Chat con Leslie
-                                            </button>
+                                        <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3">
+                                            {realSquad.map(m => (
+                                                <div key={m.id} className="p-3 bg-[#101117] border border-white/5 rounded-2xl flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white font-bold text-xs shadow-md">
+                                                        {m.avatar}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-xs font-bold text-white truncate">{m.name}</h4>
+                                                        <p className="text-[10px] text-cyan-400 truncate uppercase tracking-wider">{m.role}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
@@ -1226,23 +1462,22 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                     <>
                                         <div className="p-5 flex items-center justify-between border-b border-white/5">
                                             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                                <Video className="w-4 h-4 text-indigo-400" /> DIIC Meet
+                                                <Video className="w-4 h-4 text-indigo-400" /> Videollamadas
                                             </h3>
                                             <button onClick={() => setIsMeetPanelOpen(false)} className="p-1 text-gray-400 hover:text-white rounded-lg hover:bg-white/10">
                                                 <X className="w-4 h-4" />
                                             </button>
                                         </div>
                                         <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3 text-center">
-                                            <p className="text-xs text-gray-400">Inicia o programa videollamadas con tu equipo.</p>
+                                            <p className="text-xs text-gray-400">Inicia una sala de videollamada para coordinación con {activeClient.name}.</p>
                                             <button 
                                                 onClick={() => {
-                                                    setIsMeetPanelOpen(false);
-                                                    setMeetState('in-call');
-                                                    setIsMeetOpen(true);
+                                                    window.open('https://meet.google.com/new', '_blank');
+                                                    toast.success("Sala de Meet abierta");
                                                 }}
                                                 className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2"
                                             >
-                                                <Video className="w-4 h-4" /> Iniciar Reunión Instantánea
+                                                <Video className="w-4 h-4" /> Iniciar Google Meet
                                             </button>
                                         </div>
                                     </>
@@ -1315,7 +1550,7 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                         <motion.div 
                             initial={{ scale: 0.95, opacity: 0 }} 
                             animate={{ scale: 1, opacity: 1 }} 
-                            exit={{ scale: 0.95, opacity: 0 }}
+                            exit={{ scale: 0.95, opacity: 0 }} 
                             className="bg-[#181924] border border-white/10 rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden"
                         >
                             <div className="p-6 border-b border-white/5 flex items-center justify-between">
@@ -1344,23 +1579,35 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">Fecha</label>
-                                        <input 
-                                            type="date" 
-                                            value={newEventDate}
-                                            onChange={(e) => setNewEventDate(e.target.value)}
-                                            className="w-full bg-[#101117] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs font-semibold focus:outline-none" 
-                                        />
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">Día de la semana</label>
+                                        <select 
+                                            value={newEventDayIdx}
+                                            onChange={(e) => setNewEventDayIdx(parseInt(e.target.value))}
+                                            className="w-full bg-[#101117] border border-white/10 rounded-xl px-3 py-2.5 text-white text-xs font-semibold focus:outline-none"
+                                        >
+                                            {weekDays.map((wd, idx) => (
+                                                <option key={idx} value={idx}>{wd.name}, {wd.num} de {currentMonthStr}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">Horario</label>
-                                        <input 
-                                            type="text" 
-                                            value={newEventTime}
-                                            onChange={(e) => setNewEventTime(e.target.value)}
-                                            placeholder="10:00 - 11:30"
-                                            className="w-full bg-[#101117] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs font-semibold focus:outline-none" 
-                                        />
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">Horario (Inicio - Fin)</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <select 
+                                                value={newEventStart}
+                                                onChange={(e) => setNewEventStart(e.target.value)}
+                                                className="bg-[#101117] border border-white/10 rounded-xl px-2 py-2 text-white text-xs font-semibold"
+                                            >
+                                                {TIME_OPTIONS.map(t => <option key={`nst-${t}`} value={t}>{t}</option>)}
+                                            </select>
+                                            <select 
+                                                value={newEventEnd}
+                                                onChange={(e) => setNewEventEnd(e.target.value)}
+                                                className="bg-[#101117] border border-white/10 rounded-xl px-2 py-2 text-white text-xs font-semibold"
+                                            >
+                                                {TIME_OPTIONS.map(t => <option key={`net-${t}`} value={t}>{t}</option>)}
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1384,6 +1631,17 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                         ))}
                                     </div>
                                 </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">Enlace de Videollamada</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="meet.google.com/..." 
+                                        value={newEventLink}
+                                        onChange={(e) => setNewEventLink(e.target.value)}
+                                        className="w-full bg-[#101117] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs font-semibold focus:outline-none focus:border-white/30" 
+                                    />
+                                </div>
                             </div>
 
                             <div className="p-5 bg-black/20 border-t border-white/5 flex gap-3 justify-end">
@@ -1394,66 +1652,9 @@ export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
                                     onClick={handleSaveNewEvent} 
                                     className="px-5 py-2 text-xs font-bold bg-white text-black rounded-full hover:bg-gray-200 transition-all shadow-md"
                                 >
-                                    Guardar
+                                    Guardar Evento
                                 </button>
                             </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* --- DIIC MEET MODAL --- */}
-            <AnimatePresence>
-                {isMeetOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4">
-                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#181924] border border-white/10 rounded-[32px] w-full max-w-4xl h-[80vh] min-h-[580px] flex flex-col shadow-2xl overflow-hidden relative">
-                            {meetState === 'in-call' && (
-                                <div className="flex-1 bg-black/60 relative overflow-hidden flex p-4 gap-4 rounded-[32px]">
-                                    <div className="w-1/3 flex flex-col gap-4">
-                                        <div className="grid grid-cols-2 gap-3 h-36 shrink-0">
-                                            <div className="bg-[#12131b] rounded-2xl overflow-hidden relative border border-white/10">
-                                                <img src="https://i.pravatar.cc/300?u=q" className="w-full h-full object-cover opacity-80" alt="participant" />
-                                                <span className="absolute bottom-2 left-2 text-[10px] font-bold text-white">{activeClient.name}</span>
-                                            </div>
-                                            <div className="bg-[#12131b] rounded-2xl overflow-hidden relative border border-white/10">
-                                                <img src="https://i.pravatar.cc/300?u=a" className="w-full h-full object-cover opacity-80" alt="participant" />
-                                                <span className="absolute bottom-2 left-2 text-[10px] font-bold text-white">Leslie (CM)</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex-1 bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/10 p-4 flex flex-col overflow-hidden">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">Tareas de la Sesión</span>
-                                                <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">{meetTasks.filter(t => t.completed).length}/{meetTasks.length}</span>
-                                            </div>
-                                            <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                                                {meetTasks.map(task => (
-                                                    <div key={task.id} className="flex items-start gap-2">
-                                                        <button onClick={() => setMeetTasks(tasks => tasks.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t))} className={`w-3.5 h-3.5 rounded mt-0.5 shrink-0 flex items-center justify-center ${task.completed ? 'bg-emerald-500 text-white' : 'border border-gray-600'}`}>
-                                                            {task.completed && <Check className="w-2.5 h-2.5" />}
-                                                        </button>
-                                                        <span className={`text-[11px] ${task.completed ? 'text-gray-500 line-through' : 'text-gray-300'}`}>{task.text}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="w-2/3 flex flex-col gap-4">
-                                        <div className="flex-1 bg-[#12131b] rounded-3xl overflow-hidden relative border border-white/10 group">
-                                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1200&auto=format&fit=crop" className="w-full h-full object-cover opacity-90" alt="main video" />
-                                            
-                                            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/70 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-2xl">
-                                                <button className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center"><Mic className="w-4 h-4 text-white" /></button>
-                                                <button className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center"><Video className="w-4 h-4 text-white" /></button>
-                                                <button className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center"><MonitorUp className="w-4 h-4 text-white" /></button>
-                                                <button onClick={() => { setIsMeetOpen(false); toast.success("Llamada finalizada"); }} className="w-12 h-9 rounded-xl bg-red-500 hover:bg-red-600 flex items-center justify-center"><PhoneOff className="w-4 h-4 text-white" /></button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
                         </motion.div>
                     </motion.div>
                 )}
