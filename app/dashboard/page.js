@@ -212,14 +212,22 @@ function StatCard({ title, value, delta, icon: Icon, color, chartData }) {
           <span className="text-4xl font-black text-white italic tracking-tighter block group-hover:scale-110 origin-left transition-transform duration-500">
             {value}
           </span>
-          <div className="flex items-center gap-2">
-             <div className="bg-emerald-500/10 p-1 rounded-md">
-                <TrendingUp className="w-3 h-3 text-emerald-400" />
-             </div>
-             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                <span className="text-emerald-400">{delta}</span> vs. prev
-             </span>
-          </div>
+              {delta.includes('vs.') || delta.startsWith('+') || delta.startsWith('-') ? (
+                <div className="flex items-center gap-2">
+                   <div className="bg-emerald-500/10 p-1 rounded-md">
+                      <TrendingUp className="w-3 h-3 text-emerald-400" />
+                   </div>
+                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                      <span className="text-emerald-400">{delta}</span> vs. prev
+                   </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                      {delta}
+                   </span>
+                </div>
+              )}
         </div>
         
         <div className="w-28 h-14 relative group-hover:scale-110 transition-transform duration-500">
@@ -413,6 +421,7 @@ function DashboardContent() {
         const { data: insights, error: insightsErr } = await supabase
             .from('insights_daily')
             .select('*')
+            .eq('user_id', user.id)
             .gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
         
         if (insights) setAdInsights(insights);
