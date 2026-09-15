@@ -39,7 +39,7 @@ export const metadata = {
     description: "Centraliza tu estrategia, producción y métricas con inteligencia artificial.",
   },
   other: {
-    'tiktok-developers-site-verification': 'jo2GQaFAftpBLsMcjSMgfZX3YDEYGFIA'
+    'tiktok-developers-site-verification': 'jo2GQaFAftpBLsMcjSMgfZX3YDEYGFlA'
   },
   appleWebApp: {
     capable: true,
