@@ -693,12 +693,16 @@ function DashboardContent() {
                             !!clientData?.onboarding_data?.social?.instagram ||
                             !!clientData?.onboarding_data?.social?.facebook;
 
+  const isBrandIdentityCompleted = !!clientData?.onboarding_data?.brand?.completed || 
+                                  !!clientData?.onboarding_data?.strategic?.completed ||
+                                  (!!clientData?.onboarding_data?.strategic?.whatItDoes && clientData?.onboarding_data?.strategic?.whatItDoes !== 'Información no indexada');
+
   const checklistItems = [
     { id: 'info', label: 'Información de empresa', completed: !!clientData?.onboarding_data?.company_profile?.completed },
     { id: 'drive', label: 'Conectar Google Drive', completed: !!clientData?.google_drive_folder_id },
     { id: 'calendar', label: 'Activar Google Calendar', completed: !!clientData?.onboarding_data?.calendar_connected },
     { id: 'logo', label: 'Subir logo', completed: !!clientData?.onboarding_data?.brand?.logo },
-    { id: 'visual', label: 'Configurar identidad visual', completed: !!clientData?.onboarding_data?.brand?.completed },
+    { id: 'visual', label: 'Identidad de la marca', completed: isBrandIdentityCompleted },
     { id: 'social', label: 'Conectar redes sociales', completed: isSocialCompleted },
     { id: 'growth', label: 'Elegir nivel de crecimiento', completed: !!clientData?.onboarding_data?.growth_level_completed || !!clientData?.plan }
   ];
@@ -1315,7 +1319,7 @@ function DashboardContent() {
       case 'drive': return 'Google Drive';
       case 'calendar': return 'Google Calendar';
       case 'logo': return 'Logotipo de Marca';
-      case 'visual': return 'Identidad Visual';
+      case 'visual': return 'Identidad de la Marca y Estrategia';
       case 'social': return 'Canales Digitales';
       case 'growth': return 'Nivel de Crecimiento';
       default: return '';
@@ -1328,7 +1332,7 @@ function DashboardContent() {
       case 'drive': return 'Conecta tu almacenamiento en la nube';
       case 'calendar': return 'Sincroniza tus agendas de trabajo';
       case 'logo': return 'Sube el logo oficial de tu negocio';
-      case 'visual': return 'Configura colores y tipografía oficial';
+      case 'visual': return 'Configura identidad visual, colores y perfil estratégico con IA';
       case 'social': return 'Conecta tus perfiles de redes sociales';
       case 'growth': return 'Selecciona tu nivel de crecimiento digital';
       default: return '';
@@ -1959,6 +1963,28 @@ function DashboardContent() {
       case 'visual':
         return (
           <div className="space-y-6 pb-4">
+            {/* Acceso Directo al Módulo Estratégico con IA */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-pink-500/15 border border-indigo-500/30 flex flex-col gap-3">
+              <div className="flex items-center gap-2.5 text-indigo-400">
+                <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span className="text-xs font-black uppercase tracking-wider text-white">Ecosistema Estratégico e IA</span>
+              </div>
+              <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                Investiga y audita en tiempo real los activos de tu marca, diagnóstico de nicho y propuesta de valor con Inteligencia Artificial.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveDrawer(null);
+                  router.push(`/dashboard/strategy${clientData?.id ? `?client=${clientData.id}` : ''}`);
+                }}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 active:scale-95"
+              >
+                <span>Ir a Búsqueda y Perfil Estratégico</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             {/* 1. Logotipo de Marca */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">

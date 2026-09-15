@@ -684,8 +684,13 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                 name: targetProfile.brandName,
                 onboarding_data: {
                     ...safeOnboardingData,
+                    brand: {
+                        ...(safeOnboardingData.brand || {}),
+                        completed: true
+                    },
                     strategic: { 
                         ...strategicData, 
+                        completed: true,
                         websiteUrl: targetProfile.websiteUrl || '', 
                         instagramUrl: targetProfile.instagramUrl || '',
                         facebookUrl: targetProfile.facebookUrl || '',
