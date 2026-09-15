@@ -85,6 +85,8 @@ export default function UnifiedMessagingCenter({
         }
     }, [messages]);
 
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
     const handleSend = async () => {
         if (!inputValue.trim() || !activeChat || !user) return;
         
@@ -93,11 +95,41 @@ export default function UnifiedMessagingCenter({
 
         try {
             await messagingService.sendMessage(activeChat.id, user.id, content);
-            
-            // If it's a chat with IA (optional future expansion), trigger response here
         } catch (err) {
             console.error("Send Error:", err);
             toast.error("Error al enviar", { description: "Verifica tu conexión." });
+        }
+    };
+
+    const handleGenerateAISuggestion = async () => {
+        setIsGeneratingAI(true);
+        try {
+            const lastMsg = messages.length > 0 ? messages[messages.length - 1].content : '';
+            const res = await fetch('/api/ai/suggest-response', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lead: {
+                        full_name: clientContext?.name || user?.user_metadata?.full_name || 'Prospecto',
+                        industry: clientContext?.industry || 'General',
+                        source: 'DIIC Unified Hub'
+                    },
+                    context: clientContext || { name: user?.user_metadata?.brand || 'DIIC Brand' },
+                    lastMessage: lastMsg
+                })
+            });
+            const data = await res.json();
+            if (data.text) {
+                setInputValue(data.text);
+                toast.success('¡Respuesta sugerida por IA cargada!');
+            } else {
+                setInputValue('¡Hola! Con gusto te comparto los detalles para agendar tu consulta o proyecto con nuestro equipo.');
+            }
+        } catch (e) {
+            console.error('AI suggestion error:', e);
+            setInputValue('¡Hola! Estamos a tu disposición para ayudarte a impulsar tu marca.');
+        } finally {
+            setIsGeneratingAI(false);
         }
     };
 
@@ -233,7 +265,15 @@ export default function UnifiedMessagingCenter({
                                 </button>
                             </div>
                             <div className="mt-4 flex items-center justify-between">
-                                <div className="flex gap-2">
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={handleGenerateAISuggestion}
+                                        disabled={isGeneratingAI}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 transition-all text-[9px] font-black uppercase tracking-wider disabled:opacity-50"
+                                    >
+                                        <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                                        <span>{isGeneratingAI ? 'Generando...' : 'Sugerir Respuesta IA'}</span>
+                                    </button>
                                     <button className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-all">
                                         <Paperclip className="w-4 h-4" />
                                     </button>
@@ -243,7 +283,7 @@ export default function UnifiedMessagingCenter({
                                 </div>
                                 <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
                                     <Activity className="w-3 h-3 text-cyan-400 animate-pulse" />
-                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">DIIC Hub Encrypted</span>
+                                    <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest">DIIC Hub AI</span>
                                 </div>
                             </div>
                         </div>

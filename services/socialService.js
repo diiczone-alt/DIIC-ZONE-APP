@@ -18,8 +18,8 @@ export const socialService = {
         if (provider === 'google') {
             options.scopes = 'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.file';
         } else if (provider === 'facebook') {
-            // Permisos completos para lectura/gestión de Páginas, Anuncios (Ads), Instagram e Insights
-            options.scopes = 'public_profile,email,pages_show_list,pages_read_engagement,pages_read_user_content,pages_manage_posts,read_insights,ads_read,ads_management,business_management,instagram_basic,instagram_manage_insights,instagram_content_publish';
+            // Permisos estándar para lectura de Páginas, Anuncios (Ads), Instagram e Insights
+            options.scopes = 'public_profile,email,pages_show_list,pages_read_engagement,read_insights,instagram_basic,instagram_manage_insights';
         } else if (provider === 'tiktok') {
             const clientKey = 'sbawcgte68gzlgcfeo';
             const targetPath = redirectPath || window.location.pathname;
