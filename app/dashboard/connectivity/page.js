@@ -6,7 +6,8 @@ import {
     Instagram, Facebook, Youtube, Twitter, 
     Linkedin, Video, Link as LinkIcon, 
     CheckCircle2, RefreshCw, ShieldCheck, Zap,
-    MessageSquare, Send, User, Bot as BotIcon, X, Search
+    MessageSquare, Send, User, Bot as BotIcon, X, Search,
+    Calendar, ChevronDown, Check, Sparkles, TrendingUp, Eye, DollarSign, ArrowRight
 } from 'lucide-react';
 import IntegrationModal from '@/components/connectivity/IntegrationModal';
 import AccountAnalyticsModal from '@/components/connectivity/AccountAnalyticsModal';
@@ -19,7 +20,6 @@ import { aiService } from '@/lib/aiService';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronDown, Check, Sparkles, TrendingUp, Eye, DollarSign, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ConnectivityPage() {
