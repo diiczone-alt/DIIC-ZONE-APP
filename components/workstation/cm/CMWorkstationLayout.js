@@ -15,7 +15,7 @@ import {
     Camera, Copy, RefreshCw, Key, LogOut, CheckCheck,
     BookOpen, Wheat, Stethoscope, UtensilsCrossed, Building2, Shirt, Dumbbell, Trophy,
     Trash2, Pause, ArrowUpRight, DollarSign, BarChart2, CheckCircle,
-    HelpCircle, ChevronDown, ChevronUp, ArrowRight
+    HelpCircle, ChevronDown, ChevronUp, ArrowRight, Facebook
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
