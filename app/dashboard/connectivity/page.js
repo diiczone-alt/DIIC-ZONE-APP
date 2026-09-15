@@ -53,130 +53,134 @@ export default function ConnectivityPage() {
     const [isLearning, setIsLearning] = useState(false);
     const [aiBrainData, setAiBrainData] = useState(null);
 
+    const [metaMetadata, setMetaMetadata] = useState(null);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const loadInitialData = async () => {
+        if (!user) return;
+        try {
+            // 1. OAuth Callback Handling
+            const waitingProvider = localStorage.getItem('diic_waiting_provider');
+            const waitingClientId = localStorage.getItem('diic_waiting_client_id');
+            let token = localStorage.getItem('diic_facebook_token') || null;
+
+            const hash = window.location.hash || window.location.search;
+            if (hash && (hash.includes('provider_token') || hash.includes('access_token'))) {
+                const params = new URLSearchParams(hash.replace('#', '?'));
+                token = params.get('provider_token') || params.get('access_token');
+            }
+
+            if (!token) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.provider_token) {
+                    token = session.provider_token;
+                }
+            }
+
+            const effectiveClientId = clientId || waitingClientId || user?.client_id || user?.user_metadata?.client_id || null;
+
+            if (token && (waitingProvider === 'facebook' || waitingProvider === 'meta' || hash.includes('facebook') || hash.includes('provider_token'))) {
+                toast.loading('Sincronizando activos de Meta (Páginas e Instagram)...', { id: 'meta-sync' });
+                
+                const syncResult = await metaService.fetchAndSyncMetaAssets(user.id, token, effectiveClientId);
+                
+                if (syncResult.success) {
+                    const pageName = syncResult.metadata?.page_name || syncResult.metadata?.user_name || 'Meta';
+                    toast.success(`Ecosistema Meta sincronizado: ${pageName}`, { id: 'meta-sync' });
+                    setMetaMetadata(syncResult.metadata);
+                } else {
+                    toast.success('Conexión con Meta establecida', { id: 'meta-sync' });
+                }
+
+                localStorage.removeItem('diic_waiting_provider');
+                localStorage.removeItem('diic_waiting_client_id');
+                
+                const newUrl = window.location.pathname + (effectiveClientId ? `?client=${effectiveClientId}` : '');
+                window.history.replaceState(null, null, newUrl);
+            }
+
+            // 2. Load Clients for selector
+            const { data: clientData } = await supabase.from('clients').select('*');
+            setClients(clientData || []);
+
+            // 3. Identify Active Client
+            const selected = clientData?.find(c => c.id === effectiveClientId) || 
+                             (user?.role === 'CLIENT' ? { id: user?.id, name: user?.full_name || 'Doctor/a' } : null);
+            setActiveClient(selected || null);
+
+            // 4. Load Real Connections from brand_connections & social_connections
+            let currentConnections = {
+                instagram: 'PENDING',
+                facebook: 'PENDING',
+                tiktok: 'PENDING',
+                youtube: 'PENDING',
+                twitter: 'PENDING',
+                linkedin: 'PENDING',
+                whatsapp: 'PENDING',
+                google: 'PENDING'
+            };
+
+            // Query by user_id OR client_id
+            let brandQuery = supabase.from('brand_connections').select('*');
+            if (effectiveClientId && effectiveClientId !== user.id) {
+                brandQuery = brandQuery.or(`client_id.eq.${effectiveClientId},user_id.eq.${user.id}`);
+            } else {
+                brandQuery = brandQuery.eq('user_id', user.id);
+            }
+            const { data: brandConns } = await brandQuery;
+
+            if (brandConns && brandConns.length > 0) {
+                brandConns.forEach(conn => {
+                    const isLive = conn.status === 'ACTIVE' || conn.status === 'CONNECTED';
+                    const statusVal = isLive ? 'CONNECTED' : conn.status;
+                    
+                    if (conn.provider === 'facebook' || conn.provider === 'meta') {
+                        currentConnections.facebook = statusVal;
+                        currentConnections.instagram = statusVal;
+                        if (conn.metadata) {
+                            setMetaMetadata(conn.metadata);
+                        }
+                    } else if (conn.provider) {
+                        currentConnections[conn.provider] = statusVal;
+                    }
+                });
+            }
+
+            // Also check social_connections
+            const { data: socialConns } = await supabase.from('social_connections').select('*').eq('user_id', user.id);
+            if (socialConns && socialConns.length > 0) {
+                socialConns.forEach(conn => {
+                    const isLive = conn.access_token ? true : false;
+                    const statusVal = isLive ? 'CONNECTED' : 'PENDING';
+                    if (conn.platform === 'facebook' || conn.platform === 'meta') {
+                        currentConnections.facebook = statusVal;
+                        currentConnections.instagram = statusVal;
+                        if (conn.metadata && !metaMetadata) {
+                            setMetaMetadata(conn.metadata);
+                        }
+                    } else if (conn.platform) {
+                        currentConnections[conn.platform] = statusVal;
+                    }
+                });
+            }
+
+            setConnections(currentConnections);
+
+            // 5. Load real chats
+            let chatQuery = supabase.from('chats').select('*');
+            if (effectiveClientId) {
+                chatQuery = chatQuery.eq('client_id', effectiveClientId);
+            }
+            const { data: chatData } = await chatQuery.order('created_at', { ascending: false });
+            setChats(chatData || []);
+
+        } catch (err) {
+            console.error("[Connectivity] Sync failed:", err);
+        }
+    };
+
     useEffect(() => {
         if (!user) return;
-        
-        const loadInitialData = async () => {
-            try {
-                // OAuth Callback Handling
-                const waitingProvider = localStorage.getItem('diic_waiting_provider');
-                const waitingClientId = localStorage.getItem('diic_waiting_client_id');
-                let token = null;
-
-                const hash = window.location.hash || window.location.search;
-                if (hash && hash.includes('provider_token')) {
-                    const params = new URLSearchParams(hash.replace('#', '?'));
-                    token = params.get('provider_token');
-                }
-
-                if (!token) {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session && session.provider_token) {
-                        const sessionProvider = session.user?.app_metadata?.provider;
-                        if (sessionProvider === waitingProvider) {
-                            token = session.provider_token;
-                        }
-                    }
-                }
-
-                if (waitingProvider && token) {
-                    toast.loading(`Sincronizando conexión real con ${waitingProvider === 'facebook' ? 'Meta' : waitingProvider}...`);
-                    let externalId = `real_${waitingProvider}_id`;
-                    let metadata = {};
-
-                    if (waitingProvider === 'facebook') {
-                        try {
-                            const fbResponse = await fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${token}`);
-                            const fbData = await fbResponse.json();
-                            if (fbData && fbData.id) {
-                                externalId = fbData.id;
-                                metadata = { name: fbData.name, email: fbData.email };
-                            }
-                        } catch (e) {
-                            console.warn('[Connectivity] Failed to fetch Facebook profile:', e);
-                        }
-                    }
-
-                    const targetClientId = waitingClientId || clientId || null;
-
-                    // 1. Upsert to brand_connections
-                    await supabase
-                        .from('brand_connections')
-                        .upsert({
-                            user_id: user.id,
-                            client_id: targetClientId,
-                            provider: waitingProvider,
-                            provider_id: externalId,
-                            access_token: token,
-                            expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-                            status: 'ACTIVE',
-                            updated_at: new Date().toISOString(),
-                            metadata: metadata
-                        }, { onConflict: 'user_id,provider' });
-
-                    // 2. Upsert to social_connections
-                    await supabase
-                        .from('social_connections')
-                        .upsert({
-                            user_id: user.id,
-                            client_id: targetClientId,
-                            platform: waitingProvider,
-                            external_id: externalId,
-                            access_token: token,
-                            expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-                            updated_at: new Date().toISOString(),
-                            metadata: metadata
-                        }, { onConflict: 'user_id,platform' });
-
-                    const displayName = metadata.name || (waitingProvider === 'facebook' ? 'Meta' : waitingProvider);
-                    toast.success(`Conexión real con ${displayName} establecida.`);
-                    
-                    localStorage.removeItem('diic_waiting_provider');
-                    localStorage.removeItem('diic_waiting_client_id');
-                    
-                    const newUrl = window.location.pathname + (targetClientId ? `?client=${targetClientId}` : '');
-                    window.history.replaceState(null, null, newUrl);
-                }
-
-                // 1. Load Clients for selector
-                const { data: clientData } = await supabase.from('clients').select('*');
-                setClients(clientData || []);
-
-                // 2. Identify Active Client
-                const selected = clientData?.find(c => c.id === clientId);
-                setActiveClient(selected || null);
-
-                // 3. Load Real Connections from brand_connections
-                let currentConnections = { ...connections };
-                if (clientId) {
-                    const { data: brandConns } = await supabase
-                        .from('brand_connections')
-                        .select('provider, status')
-                        .eq('client_id', clientId);
-                    
-                    brandConns?.forEach(conn => {
-                        if (conn.provider === 'facebook') {
-                            currentConnections.facebook = conn.status;
-                            currentConnections.instagram = conn.status;
-                        } else {
-                            currentConnections[conn.provider] = conn.status;
-                        }
-                    });
-                }
-                setConnections(currentConnections);
-
-                // 4. Load real chats filtered by client if applicable
-                let chatQuery = supabase.from('chats').select('*');
-                if (clientId) {
-                    chatQuery = chatQuery.eq('client_id', clientId);
-                }
-                const { data: chatData } = await chatQuery.order('created_at', { ascending: false });
-                setChats(chatData || []);
-
-            } catch (err) {
-                console.error("[Connectivity] Sync failed:", err);
-            }
-        };
         loadInitialData();
     }, [user, clientId]);
 
@@ -223,7 +227,9 @@ export default function ConnectivityPage() {
             name: 'Instagram Professional', 
             icon: Instagram, 
             status: connections.instagram, 
-            handle: activeClient?.onboarding_data?.instagram || '@usuario', 
+            handle: metaMetadata?.instagram_username 
+                ? `@${metaMetadata.instagram_username}` 
+                : (activeClient?.onboarding_data?.instagram || (connections.instagram === 'CONNECTED' ? (metaMetadata?.page_name ? `@${metaMetadata.page_name.toLowerCase().replace(/\s+/g, '')}` : '@cuenta_conectada') : '@usuario')), 
             color: '#E1306C', 
             provider: 'facebook' 
         },
@@ -232,14 +238,14 @@ export default function ConnectivityPage() {
             name: 'Facebook Business', 
             icon: Facebook, 
             status: connections.facebook, 
-            handle: activeClient?.name || 'Marca Desconocida', 
+            handle: metaMetadata?.page_name || metaMetadata?.user_name || activeClient?.name || (connections.facebook === 'CONNECTED' ? 'Página Conectada' : 'Marca Desconocida'), 
             color: '#1877F2', 
             provider: 'facebook' 
         },
         { 
             id: 'tiktok', 
             name: 'TikTok Ads & Bio', 
-            icon: MessageSquare, // Using MessageSquare as placeholder if Music etc not there
+            icon: MessageSquare,
             status: connections.tiktok, 
             handle: activeClient?.onboarding_data?.tiktok || 'No Vinculado', 
             color: '#00F2EA', 
@@ -282,23 +288,36 @@ export default function ConnectivityPage() {
         setIsModalOpen(true);
     };
 
+    const handleForceSync = async () => {
+        setIsRefreshing(true);
+        try {
+            await toast.promise(
+                loadInitialData(),
+                {
+                    loading: 'Consultando estado y validando tokens en Graph API...',
+                    success: 'Sincronización completada con éxito',
+                    error: 'Error al sincronizar'
+                }
+            );
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
     return (
         <main className="min-h-screen bg-[#050510] text-white p-8 md:p-16 space-y-12">
             <IntegrationModal 
                 isOpen={isModalOpen}
                 onClose={() => {
                     setIsModalOpen(false);
-                    if (typeof window !== 'undefined') {
-                        window.location.reload();
-                    }
+                    loadInitialData();
                 }}
                 platform={selectedPlatform}
                 clientName={activeClient?.name || 'tu marca'}
                 clientId={clientId}
                 onSuccess={() => {
-                    if (typeof window !== 'undefined') {
-                        window.location.reload();
-                    }
+                    setIsModalOpen(false);
+                    loadInitialData();
                 }}
             />
 
@@ -313,7 +332,7 @@ export default function ConnectivityPage() {
                         <div className="px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
                             <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest leading-none">
-                                Centro de Mando: {activeClient?.name || 'Cliente Conectado'}
+                                Centro de Mando: {activeClient?.name || (user?.full_name ? user.full_name : 'Cliente Conectado')}
                             </span>
                         </div>
                     </div>
@@ -327,19 +346,11 @@ export default function ConnectivityPage() {
                         <MessageSquare className="w-4 h-4" /> Centro de Mensajes
                     </button>
                     <button 
-                        onClick={() => {
-                            toast.promise(
-                                new Promise(resolve => setTimeout(resolve, 2500)),
-                                {
-                                    loading: 'Validando Tokens y conectando al Graph API...',
-                                    success: 'Sincronización de Ecosistema Exitosa',
-                                    error: 'Error de Sincronización'
-                                }
-                            );
-                        }}
-                        className="bg-white/5 border border-white/10 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-white/10 active:scale-95 transition-all flex items-center gap-3"
+                        onClick={handleForceSync}
+                        disabled={isRefreshing}
+                        className="bg-white/5 border border-white/10 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-white/10 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
                     >
-                        <RefreshCw className="w-4 h-4" /> Forzar Sinc.
+                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} /> Forzar Sinc.
                     </button>
                 </div>
             </div>

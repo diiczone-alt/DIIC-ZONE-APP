@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { metaService } from '@/lib/metaService';
 import { useRouter } from 'next/navigation';
 import { presenceService } from '@/services/presenceService';
 
@@ -461,22 +462,8 @@ export const AuthProvider = ({ children }) => {
                 finalClientId = profile?.client_id;
             }
 
-            const { error } = await supabase
-                .from('brand_connections')
-                .upsert({
-                    user_id: userId,
-                    client_id: finalClientId,
-                    provider: 'facebook',
-                    provider_id: userId,
-                    access_token: accessToken,
-                    refresh_token: refreshToken || null,
-                    expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-                    status: 'ACTIVE',
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id,provider' });
-
-            if (error) throw error;
-            console.log('[AuthContext] Meta (Facebook) Tokens synced successfully to brand_connections.');
+            await metaService.fetchAndSyncMetaAssets(userId, accessToken, finalClientId);
+            console.log('[AuthContext] Meta assets and tokens synced successfully.');
         } catch (err) {
             console.error('[AuthContext] Meta Token sync failed:', err.message);
         } finally {

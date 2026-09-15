@@ -71,6 +71,15 @@ export default function IntegrationModal({
             const finalClientId = clientId || profile?.client_id || null;
             const targetProvider = platform === 'facebook' || platform === 'meta' ? 'facebook' : platform;
 
+            const metadataObj = {
+                page_name: clientName && clientName !== 'tu marca' ? clientName : 'Nova Estética Clínica',
+                name: clientName && clientName !== 'tu marca' ? clientName : 'Nova Estética Clínica',
+                instagram_username: clientName && clientName !== 'tu marca' 
+                    ? clientName.toLowerCase().replace(/[^a-z0-9_.]/g, '') 
+                    : 'novaestetica.ec',
+                email: 'contacto@diiczone.com'
+            };
+
             // Upsert in brand_connections
             const { error: err1 } = await supabase
                 .from('brand_connections')
@@ -83,7 +92,7 @@ export default function IntegrationModal({
                     expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
                     status: 'ACTIVE',
                     updated_at: new Date().toISOString(),
-                    metadata: { name: 'Nova Estética Clínica', email: 'contacto@novaestetica.com' }
+                    metadata: metadataObj
                 }, { onConflict: 'user_id,provider' });
 
             if (err1) throw err1;
@@ -99,7 +108,7 @@ export default function IntegrationModal({
                     access_token: 'sandbox_token',
                     expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
                     updated_at: new Date().toISOString(),
-                    metadata: { name: 'Nova Estética Clínica', email: 'contacto@novaestetica.com' }
+                    metadata: metadataObj
                 }, { onConflict: 'user_id,platform' });
 
             if (err2) throw err2;
