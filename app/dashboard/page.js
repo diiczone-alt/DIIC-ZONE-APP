@@ -14,7 +14,7 @@ import {
   ChevronRight, TrendingUp, PieChart, Video, 
   Palette, FileText, ArrowRight, Settings, LogOut, User, Shield,
   Globe, UserPlus, Target, Fingerprint, Building2, Briefcase, Sparkles, MapPin, 
-  Upload, HelpCircle, Facebook, Type, RefreshCw, Sliders, Check, Copy, Layers, Eye, Trash2
+  Upload, HelpCircle, Facebook, Instagram, Youtube, Twitter, Linkedin, ExternalLink, Zap, Lock, ShieldCheck, Type, RefreshCw, Sliders, Check, Copy, Layers, Eye, Trash2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
