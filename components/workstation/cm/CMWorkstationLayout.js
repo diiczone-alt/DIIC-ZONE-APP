@@ -33,6 +33,7 @@ import { presenceService } from '@/services/presenceService';
 import NewProjectWizard from '../../projects/NewProjectWizard';
 import CMGuidePlaybook from './CMGuidePlaybook';
 import CMConnectivityModule from './CMConnectivityModule';
+import CMCommunicationCenter from './CMCommunicationCenter';
 import IntegrationModal from '@/components/connectivity/IntegrationModal';
 
 export default function CMWorkstationLayout() {
@@ -285,6 +286,7 @@ export default function CMWorkstationLayout() {
     ] : [
         { id: 'dashboard_cm', label: 'Dashboard CM', icon: LayoutDashboard },
         { id: 'clients', label: 'Empresas', icon: Users },
+        { id: 'chat', label: 'Centro de Comunicación', icon: MessageSquare },
         { id: 'guide', label: 'Guía & Playbooks', icon: BookOpen },
         { id: 'profile', label: 'Mi Perfil & Nichos', icon: User },
     ];
@@ -481,6 +483,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
 
         if (tab === 'notifications') return <NotificationsView notifications={notifications || []} loading={loadingNotifications} onMarkAsRead={handleMarkAsRead} />;
         if (tab === 'profile') return <CMProfileView user={user} onProfileUpdate={onProfileUpdate} />;
+        if (tab === 'chat') return <CMCommunicationCenter client={null} clients={clients || []} user={user} squad={squad} tasks={globalTasks || []} onSelectClient={(c) => { setSelectedClient(c); }} initialChatWith={searchParams?.get('chatWith')} />;
         
         return (
             <CMSettingsClients 
@@ -500,7 +503,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'dashboard': return <CMDashboard client={selectedClient} user={user} tasks={clientTasks} />;
         case 'projects': return <CMProjects client={selectedClient} tasks={clientTasks} loading={loadingTasks} squad={squad} />;
         case 'contents': return <ContentKanban role="cm" client={selectedClient} />;
-        case 'chat': return <CommunicationCenter client={selectedClient} user={user} squad={squad} tasks={clientTasks} initialChatWith={searchParams.get('chatWith')} />;
+        case 'chat': return <CMCommunicationCenter client={selectedClient} clients={clients || []} user={user} squad={squad} tasks={clientTasks} onSelectClient={(c) => setSelectedClient(c)} initialChatWith={searchParams?.get('chatWith')} />;
         case 'connectivity': return <CMConnectivityModule client={selectedClient} user={user} />;
         case 'meta': return <MetaAdsModule client={selectedClient} user={user} onNavigateTab={(targetTab) => setActiveTab(targetTab)} onClientUpdate={(updated) => { setSelectedClient(prev => ({ ...prev, ...updated })); setClients(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c)); }} />;
         case 'calendar': return <UnifiedCalendar role="cm" clientId={selectedClient?.id} />;
