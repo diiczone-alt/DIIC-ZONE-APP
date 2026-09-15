@@ -65,10 +65,10 @@ function TikTokCallbackContent() {
                 setStatus('success');
                 toast.success(`TikTok (${result.display_name}) conectado correctamente`);
                 
-                // Redirigir de vuelta al onboarding después de un breve delay
+                // Redirigir de vuelta a conectividad o al panel
                 setTimeout(() => {
-                    router.push('/onboarding?status=social_connected');
-                }, 2000);
+                    router.push('/dashboard/connectivity?status=tiktok_connected');
+                }, 1500);
 
             } catch (err) {
                 console.error('Callback error:', err);

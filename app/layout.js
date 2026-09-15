@@ -9,9 +9,35 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata = {
-  title: "DIIC ZONE | Dashboard",
-  description: "Plataforma de Producción Creativa",
+  metadataBase: new URL('https://diiczone.com'),
+  title: {
+    default: "DIIC ZONE | Dashboard",
+    template: "%s | DIIC ZONE",
+  },
+  description: "Plataforma de Producción Creativa. Centraliza tu estrategia, producción y métricas con inteligencia artificial.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: '/icon-192', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icon-192', sizes: '192x192', type: 'image/png' },
+    ],
+  },
+  openGraph: {
+    title: "DIIC ZONE | Plataforma de Producción Creativa",
+    description: "Centraliza tu estrategia, producción y métricas con inteligencia artificial.",
+    url: "https://diiczone.com",
+    siteName: "DIIC ZONE",
+    locale: "es_ES",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DIIC ZONE | Plataforma de Producción Creativa",
+    description: "Centraliza tu estrategia, producción y métricas con inteligencia artificial.",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

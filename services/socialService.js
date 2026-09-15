@@ -21,11 +21,9 @@ export const socialService = {
             // Permisos estándar para lectura de Páginas, Anuncios (Ads), Instagram e Insights
             options.scopes = 'public_profile,email,pages_show_list,pages_read_engagement,read_insights,instagram_basic,instagram_manage_insights';
         } else if (provider === 'tiktok') {
-            const clientKey = 'sbawcgte68gzlgcfeo';
+            const clientKey = 'awdkr5njbpbmfwbd';
             const targetPath = redirectPath || window.location.pathname;
-            const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback/tiktok?next=' + targetPath);
-            // Nota: Para TikTok Ads se requiere una App de tipo "Marketing" en su portal.
-            // Por ahora mantenemos los básicos y agregamos ads.read si la app lo permite.
+            const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback/tiktok');
             const scope = 'user.info.basic,video.list'; 
             const state = Math.random().toString(36).substring(7);
             
