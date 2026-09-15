@@ -38,6 +38,9 @@ export const metadata = {
     title: "DIIC ZONE | Plataforma de Producción Creativa",
     description: "Centraliza tu estrategia, producción y métricas con inteligencia artificial.",
   },
+  other: {
+    'tiktok-developers-site-verification': 'jo2GQaFAftpBLsMcjSMgfZX3YDEYGFIA'
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
