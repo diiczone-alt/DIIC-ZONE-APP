@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, ShieldCheck, Instagram, Facebook, Youtube, Video, Twitter, Linkedin,
-    Zap, Lock, CheckCircle2, RefreshCw, 
-    ArrowRight, AlertCircle, ExternalLink, Cpu 
+    Lock, CheckCircle2, RefreshCw, ArrowRight 
 } from 'lucide-react';
 import { socialService } from '@/services/socialService';
 import { supabase } from '@/lib/supabase';
@@ -37,90 +36,12 @@ export default function IntegrationModal({
             }
             localStorage.setItem('diic_waiting_provider', platform === 'facebook' || platform === 'meta' ? 'facebook' : platform);
 
-            toast.info(`Iniciando handshake seguro con API de ${platform}...`);
-            
-            // Simulación de pasos de seguridad tipo app real (1.5 segundos extra antes de oauth/sandbox)
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            toast.success("Verificación de origen completa. Abriendo portal oficial...");
+            toast.info(`Iniciando conexión segura con ${platform === 'facebook' || platform === 'meta' ? 'Meta' : platform}...`);
             await socialService.connect(platform);
         } catch (err) {
             console.error("Error al conectar:", err);
-            toast.error(`Error de negociación con servidor de ${platform}`);
+            toast.error(`Error al iniciar conexión con ${platform}`);
             setStep('CHOICE');
-            setLoading(false);
-        }
-    };
-
-    const handleConnectSandbox = async () => {
-        setLoading(true);
-        setStep('CONNECTING');
-        try {
-            toast.info("Configurando conexión en entorno de pruebas (Sandbox)...");
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("Sesión no válida");
-
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('client_id')
-                .eq('id', user.id)
-                .maybeSingle();
-
-            const finalClientId = clientId || profile?.client_id || null;
-            const targetProvider = platform === 'facebook' || platform === 'meta' ? 'facebook' : platform;
-
-            const metadataObj = {
-                page_name: clientName && clientName !== 'tu marca' ? clientName : 'Nova Estética Clínica',
-                name: clientName && clientName !== 'tu marca' ? clientName : 'Nova Estética Clínica',
-                instagram_username: clientName && clientName !== 'tu marca' 
-                    ? clientName.toLowerCase().replace(/[^a-z0-9_.]/g, '') 
-                    : 'novaestetica.ec',
-                email: 'contacto@diiczone.com'
-            };
-
-            // Upsert in brand_connections
-            const { error: err1 } = await supabase
-                .from('brand_connections')
-                .upsert({
-                    user_id: user.id,
-                    client_id: finalClientId,
-                    provider: targetProvider,
-                    provider_id: `sandbox_${platform}_id`,
-                    access_token: 'sandbox_token',
-                    expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-                    status: 'ACTIVE',
-                    updated_at: new Date().toISOString(),
-                    metadata: metadataObj
-                }, { onConflict: 'user_id,provider' });
-
-            if (err1) throw err1;
-
-            // Upsert in social_connections
-            const { error: err2 } = await supabase
-                .from('social_connections')
-                .upsert({
-                    user_id: user.id,
-                    client_id: finalClientId,
-                    platform: targetProvider,
-                    external_id: `sandbox_${platform}_id`,
-                    access_token: 'sandbox_token',
-                    expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-                    updated_at: new Date().toISOString(),
-                    metadata: metadataObj
-                }, { onConflict: 'user_id,platform' });
-
-            if (err2) throw err2;
-
-            toast.success(`Simulador de ${platform} conectado con éxito.`);
-            setStep('SUCCESS');
-            if (onSuccess) onSuccess();
-        } catch (err) {
-            console.error("Error connecting sandbox:", err);
-            toast.error(`Error al conectar simulador: ${err.message || err}`);
-            setStep('CHOICE');
-        } finally {
             setLoading(false);
         }
     };

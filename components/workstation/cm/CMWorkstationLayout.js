@@ -2015,12 +2015,12 @@ function MetaAdsModule({ client, user, onNavigateTab, onClientUpdate }) {
 
                 <div className="flex flex-wrap items-center gap-3">
                     <button
-                        onClick={() => setShowDirectConnectModal(true)}
-                        className="px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[11px] font-bold text-gray-300 hover:text-white transition-all flex items-center gap-2"
-                        title="Configurar Token y Cuenta de Meta Ads"
+                        onClick={() => setShowOAuthModal(true)}
+                        className="px-5 py-3 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 rounded-2xl text-[11px] font-bold text-[#1877F2] hover:text-white transition-all flex items-center gap-2"
+                        title="Conectar con Facebook & Meta Ads"
                     >
-                        <Settings className="w-4 h-4 text-cyan-400" />
-                        {metaConnection.isConnected ? 'CONFIGURAR CUENTA' : 'VINCULAR META ADS'}
+                        <Facebook className="w-4 h-4 text-[#1877F2]" />
+                        {metaConnection.isConnected ? 'CONFIGURAR CUENTA' : 'CONECTAR FACEBOOK'}
                     </button>
 
                     {metaConnection.isConnected && (
@@ -2083,169 +2083,90 @@ function MetaAdsModule({ client, user, onNavigateTab, onClientUpdate }) {
                         </a>
                     ) : (
                         <button
-                            onClick={() => setShowDirectConnectModal(true)}
-                            className="px-3.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                            onClick={() => setShowOAuthModal(true)}
+                            className="px-4 py-1.5 bg-[#1877F2] hover:bg-[#1877F2]/90 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-lg shadow-[#1877F2]/20"
                         >
-                            <Link2 className="w-3.5 h-3.5" /> Vincular Ahora
+                            <Facebook className="w-3.5 h-3.5" /> Iniciar Sesión con Facebook
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* IF NOT CONNECTED -> DEDICATED CONNECTION ASSISTANT (NO FAKE NUMBERS) */}
+            {/* IF NOT CONNECTED -> ULTRA-SIMPLE 1-CLICK CONNECTION INTERFACE */}
             {!metaConnection.isConnected ? (
                 <div className="space-y-6">
-                    {/* Main Connection Callout Card */}
-                    <div className="bg-[#0E0E18] border border-amber-500/20 rounded-[2.5rem] p-8 md:p-12 text-center space-y-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+                    <div className="bg-[#0E0E18] border border-white/10 rounded-[2.5rem] p-8 md:p-14 text-center space-y-8 relative overflow-hidden shadow-2xl">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-[#1877F2]/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-                        <div className="w-20 h-20 rounded-3xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20 shadow-xl shadow-amber-500/5">
-                            <AlertTriangle className="w-10 h-10 text-amber-400" />
+                        <div className="w-20 h-20 rounded-3xl bg-[#1877F2]/10 text-[#1877F2] flex items-center justify-center mx-auto border border-[#1877F2]/20 shadow-xl shadow-[#1877F2]/10">
+                            <Facebook className="w-10 h-10 text-[#1877F2]" />
                         </div>
                         
-                        <div className="max-w-xl mx-auto space-y-3">
+                        <div className="max-w-lg mx-auto space-y-3">
                             <h3 className="text-2xl md:text-3xl font-black text-white italic tracking-tight">
-                                Conecta las Redes Sociales y Meta Ads
+                                Conecta Meta Ads & Redes Sociales
                             </h3>
-                            <p className="text-xs md:text-sm text-gray-300 leading-relaxed">
-                                Para visualizar métricas y campañas <strong className="text-white">100% reales en tiempo real</strong> (gasto exacto en USD, clics, leads de WhatsApp, alcance y ROAS) sin simulaciones, debes vincular la cuenta publicitaria o redes sociales de <span className="text-cyan-400 font-bold">{clientName}</span>.
+                            <p className="text-xs md:text-sm text-gray-400 leading-relaxed">
+                                Para visualizar métricas y campañas <strong className="text-white">100% reales</strong> (gasto exacto, clics, leads de WhatsApp y alcance) de <span className="text-cyan-400 font-bold">{clientName}</span>, solo debes iniciar sesión con Facebook.
                             </p>
                         </div>
 
-                        {/* 3 Main Connection Options */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto pt-2 text-left">
-                            {/* Option 1: Fast Token (Recommended) */}
-                            <div 
-                                onClick={() => setShowDirectConnectModal(true)}
-                                className="p-6 bg-gradient-to-b from-cyan-600/20 to-cyan-600/5 border border-cyan-500/30 hover:border-cyan-500 rounded-3xl cursor-pointer transition-all hover:scale-[1.02] shadow-xl shadow-cyan-950/40 group flex flex-col justify-between"
-                            >
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="p-3 bg-cyan-600 text-white rounded-2xl group-hover:scale-110 transition-transform">
-                                            <Key className="w-5 h-5" />
-                                        </div>
-                                        <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-cyan-400/20 text-cyan-300 rounded-full border border-cyan-400/30">
-                                            Recomendado
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-base font-bold text-white">Token Directo Meta</h4>
-                                        <p className="text-xs text-gray-400 mt-1">
-                                            Ingresa tu Access Token de Graph API o System User y selecciona tu cuenta publicitaria al instante.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="pt-4 flex items-center gap-1.5 text-xs font-bold text-cyan-400 group-hover:translate-x-1 transition-transform">
-                                    <span>Conectar con Token</span>
-                                    <ArrowRight className="w-4 h-4" />
-                                </div>
-                            </div>
-
-                            {/* Option 2: Facebook OAuth */}
+                        {/* 2 Simple Connection Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-2xl mx-auto text-left">
+                            {/* Option 1: 1-Click Facebook OAuth Login */}
                             <div 
                                 onClick={() => setShowOAuthModal(true)}
-                                className="p-6 bg-[#161625] border border-white/10 hover:border-white/20 rounded-3xl cursor-pointer transition-all hover:scale-[1.02] group flex flex-col justify-between"
+                                className="p-7 bg-gradient-to-b from-[#1877F2]/20 to-[#1877F2]/5 border border-[#1877F2]/40 hover:border-[#1877F2] rounded-3xl cursor-pointer transition-all hover:scale-[1.02] shadow-xl shadow-[#1877F2]/10 group flex flex-col justify-between space-y-4"
                             >
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <div className="p-3 bg-white/5 text-cyan-400 rounded-2xl group-hover:scale-110 transition-transform border border-white/5">
-                                            <Globe className="w-5 h-5" />
+                                        <div className="p-3.5 bg-[#1877F2] text-white rounded-2xl group-hover:scale-110 transition-transform shadow-lg shadow-[#1877F2]/30">
+                                            <Facebook className="w-6 h-6" />
                                         </div>
-                                        <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-white/5 text-gray-400 rounded-full">
-                                            OAuth
+                                        <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-[#1877F2]/20 text-[#1877F2] rounded-full border border-[#1877F2]/30">
+                                            1 Clic
                                         </span>
                                     </div>
                                     <div>
-                                        <h4 className="text-base font-bold text-white">Login con Facebook</h4>
-                                        <p className="text-xs text-gray-400 mt-1">
-                                            Inicia sesión con la cuenta de Facebook administradora de la fan page y business manager.
+                                        <h4 className="text-lg font-black text-white">Login con Facebook</h4>
+                                        <p className="text-xs text-gray-300 mt-1 leading-relaxed">
+                                            Inicia sesión con la cuenta de Facebook que administra las páginas y anuncios de la marca.
                                         </p>
                                     </div>
                                 </div>
-                                <div className="pt-4 flex items-center gap-1.5 text-xs font-bold text-gray-300 group-hover:text-white group-hover:translate-x-1 transition-transform">
-                                    <span>Iniciar Sesión</span>
-                                    <ArrowRight className="w-4 h-4" />
-                                </div>
+                                <button className="w-full py-3.5 bg-[#1877F2] hover:bg-[#1877F2]/90 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#1877F2]/25">
+                                    <Facebook className="w-4 h-4" />
+                                    <span>Iniciar Sesión Ahora</span>
+                                </button>
                             </div>
 
-                            {/* Option 3: Connectivity Center */}
+                            {/* Option 2: Connectivity Center */}
                             <div 
                                 onClick={() => onNavigateTab ? onNavigateTab('connectivity') : null}
-                                className="p-6 bg-[#161625] border border-white/10 hover:border-white/20 rounded-3xl cursor-pointer transition-all hover:scale-[1.02] group flex flex-col justify-between"
+                                className="p-7 bg-[#161625] border border-white/10 hover:border-white/20 rounded-3xl cursor-pointer transition-all hover:scale-[1.02] group flex flex-col justify-between space-y-4"
                             >
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <div className="p-3 bg-white/5 text-indigo-400 rounded-2xl group-hover:scale-110 transition-transform border border-white/5">
-                                            <Share2 className="w-5 h-5" />
+                                        <div className="p-3.5 bg-white/5 text-indigo-400 rounded-2xl group-hover:scale-110 transition-transform border border-white/5">
+                                            <Share2 className="w-6 h-6" />
                                         </div>
-                                        <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-white/5 text-gray-400 rounded-full">
-                                            Redes
+                                        <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-white/5 text-gray-400 rounded-full">
+                                            Todas las Redes
                                         </span>
                                     </div>
                                     <div>
-                                        <h4 className="text-base font-bold text-white">Centro de Conectividad</h4>
-                                        <p className="text-xs text-gray-400 mt-1">
-                                            Vincula Instagram, Facebook, TikTok y WhatsApp desde el módulo global de redes.
+                                        <h4 className="text-lg font-black text-white">Centro de Conectividad</h4>
+                                        <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                                            Vincula y administra Instagram, TikTok, WhatsApp y Google desde el panel central.
                                         </p>
                                     </div>
                                 </div>
-                                <div className="pt-4 flex items-center gap-1.5 text-xs font-bold text-indigo-400 group-hover:translate-x-1 transition-transform">
-                                    <span>Ir a Conectividad</span>
-                                    <ArrowRight className="w-4 h-4" />
-                                </div>
+                                <button className="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2">
+                                    <Share2 className="w-4 h-4 text-indigo-400" />
+                                    <span>Ir a Conectividad & Redes</span>
+                                </button>
                             </div>
-                        </div>
-
-                        {/* Step by step expandable guide */}
-                        <div className="max-w-3xl mx-auto pt-4">
-                            <button 
-                                onClick={() => setShowStepGuide(!showStepGuide)}
-                                className="w-full p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 flex items-center justify-between text-left transition-all"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <HelpCircle className="w-5 h-5 text-cyan-400" />
-                                    <span className="text-xs font-bold text-white">¿Cómo obtener y vincular tu cuenta publicitaria de Meta paso a paso?</span>
-                                </div>
-                                {showStepGuide ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                            </button>
-
-                            <AnimatePresence>
-                                {showStepGuide && (
-                                    <motion.div 
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="p-6 bg-[#161625] border border-white/5 rounded-2xl mt-2 text-left space-y-4 text-xs"
-                                    >
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                            <div className="p-4 bg-white/5 rounded-xl border border-white/5 space-y-2">
-                                                <div className="w-6 h-6 rounded-lg bg-cyan-600/30 text-cyan-300 font-bold flex items-center justify-center text-xs">1</div>
-                                                <p className="font-bold text-white">Acceder a Meta Developer</p>
-                                                <p className="text-gray-400 text-[11px]">
-                                                    Entra a <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noreferrer" className="text-cyan-400 underline font-semibold">Graph API Explorer</a> con tu cuenta de Facebook.
-                                                </p>
-                                            </div>
-
-                                            <div className="p-4 bg-white/5 rounded-xl border border-white/5 space-y-2">
-                                                <div className="w-6 h-6 rounded-lg bg-cyan-600/30 text-cyan-300 font-bold flex items-center justify-center text-xs">2</div>
-                                                <p className="font-bold text-white">Permisos de Anuncios</p>
-                                                <p className="text-gray-400 text-[11px]">
-                                                    Asegúrate de conceder permisos: <code className="text-cyan-300">ads_read</code>, <code className="text-cyan-300">read_insights</code> y <code className="text-cyan-300">ads_management</code>.
-                                                </p>
-                                            </div>
-
-                                            <div className="p-4 bg-white/5 rounded-xl border border-white/5 space-y-2">
-                                                <div className="w-6 h-6 rounded-lg bg-cyan-600/30 text-cyan-300 font-bold flex items-center justify-center text-xs">3</div>
-                                                <p className="font-bold text-white">Validar y Conectar</p>
-                                                <p className="text-gray-400 text-[11px]">
-                                                    Haz clic en <strong>"Conectar con Token"</strong>, pega el token, selecciona la cuenta (<code className="text-cyan-300">act_...</code>) y el sistema traerá tus métricas en vivo.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
                         </div>
                     </div>
                 </div>
