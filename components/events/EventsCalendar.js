@@ -60,10 +60,10 @@ const REAL_CLIENTS = [
     }
 ];
 
-export default function EventsCalendar() {
+export default function EventsCalendar({ clientId = null, role = "cm" } = {}) {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const clientParam = searchParams?.get('client');
+    const clientParam = clientId || searchParams?.get('client');
 
     const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 14)); // Sept 14, 2026 as active week
     const [selectedDate, setSelectedDate] = useState(new Date(2026, 8, 14));

@@ -503,7 +503,7 @@ function renderContent(tab, selectedClient, setSelectedClient, setActiveTab, cli
         case 'chat': return <CommunicationCenter client={selectedClient} user={user} squad={squad} tasks={clientTasks} initialChatWith={searchParams.get('chatWith')} />;
         case 'connectivity': return <CMConnectivityModule client={selectedClient} user={user} />;
         case 'meta': return <MetaAdsModule client={selectedClient} user={user} onNavigateTab={(targetTab) => setActiveTab(targetTab)} onClientUpdate={(updated) => { setSelectedClient(prev => ({ ...prev, ...updated })); setClients(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c)); }} />;
-        case 'calendar': return <UnifiedCalendar role="cm" />;
+        case 'calendar': return <UnifiedCalendar role="cm" clientId={selectedClient?.id} />;
         case 'strategy': return <StrategyBoard role="cm" isSubcomponent={true} clientId={selectedClient?.id} onClose={() => setActiveTab('dashboard')} />;
         case 'creative': return <CreativeStudio isSubcomponent={true} />;
         case 'team': return <TeamView client={selectedClient} tasks={clientTasks} squad={squad} />;
