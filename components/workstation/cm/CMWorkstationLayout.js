@@ -773,84 +773,68 @@ function ActivityItem({ text, time }) {
     );
 }
 
-function CreativeCoordination() {
+function CreativeCoordination({ client, tasks = [], squad = [] }) {
+    const safeTasks = Array.isArray(tasks) ? tasks : [];
+    const clientName = client?.name || 'Cliente';
+
+    // Group tasks by role/assignee if any exist
+    const editorTasks = safeTasks.filter(t => (t.role || '').toLowerCase().includes('editor') || (t.type || '').toLowerCase().includes('video'));
+    const designerTasks = safeTasks.filter(t => (t.role || '').toLowerCase().includes('diseñ') || (t.type || '').toLowerCase().includes('design') || (t.type || '').toLowerCase().includes('image'));
+    const filmmakerTasks = safeTasks.filter(t => (t.role || '').toLowerCase().includes('film') || (t.type || '').toLowerCase().includes('shoot') || (t.type || '').toLowerCase().includes('foto'));
+
+    const hasAnyCoordination = editorTasks.length > 0 || designerTasks.length > 0 || filmmakerTasks.length > 0;
+
     return (
         <div className="space-y-12">
             <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Instrucciones & Coordinación</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <RoleTaskCard
-                        role="Editor de Video"
-                        staff="Andrés Vera"
-                        tasks={["Ajustar color en Reel #4", "Subtitulado dinámico", "Exportar 9:16"]}
-                        color="border-purple-500/30"
-                    />
-                    <RoleTaskCard
-                        role="Diseñador"
-                        staff="Mateo G."
-                        tasks={["Portada para YouTube", "Grillas de Instagram", "Assets para Stories"]}
-                        color="border-cyan-500/30"
-                    />
-                    <RoleTaskCard
-                        role="Filmmaker"
-                        staff="Kevin R."
-                        tasks={["Sesión Clínica RM", "B-Roll Restaurante", "Entrevista Fundadora"]}
-                        color="border-orange-500/30"
-                    />
-                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">Instrucciones & Coordinación Creativa</h3>
+                {hasAnyCoordination ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <RoleTaskCard
+                            role="Editor de Video"
+                            staff={squad.find(s => (s.role || '').toLowerCase().includes('editor'))?.name || client?.editor || 'Asignado'}
+                            tasks={editorTasks.length > 0 ? editorTasks.map(t => t.title || t.name) : ["Sin tareas pendientes"]}
+                            color="border-purple-500/30"
+                        />
+                        <RoleTaskCard
+                            role="Diseñador"
+                            staff={squad.find(s => (s.role || '').toLowerCase().includes('diseñ'))?.name || 'Asignado'}
+                            tasks={designerTasks.length > 0 ? designerTasks.map(t => t.title || t.name) : ["Sin tareas pendientes"]}
+                            color="border-cyan-500/30"
+                        />
+                        <RoleTaskCard
+                            role="Filmmaker"
+                            staff={squad.find(s => (s.role || '').toLowerCase().includes('film'))?.name || client?.filmmaker || 'Asignado'}
+                            tasks={filmmakerTasks.length > 0 ? filmmakerTasks.map(t => t.title || t.name) : ["Sin tareas pendientes"]}
+                            color="border-orange-500/30"
+                        />
+                    </div>
+                ) : (
+                    <div className="p-6 bg-[#0E0E18] border border-white/5 rounded-3xl text-center space-y-2">
+                        <p className="text-xs text-gray-400 font-medium">
+                            No hay instrucciones de producción o edición pendientes para <strong className="text-white">{clientName}</strong>.
+                        </p>
+                        <p className="text-[10px] text-gray-500">
+                            Las asignaciones que crees en el Kanban de contenidos aparecerán aquí automáticamente para el equipo creativo.
+                        </p>
+                    </div>
+                )}
             </div>
 
             <div>
                 <div className="flex justify-between items-end mb-6">
                     <div>
                         <h3 className="text-xl font-bold text-white mb-1">Centro de Tickets (Visión Creativo)</h3>
-                        <p className="text-xs text-gray-500 italic">Mensajes filtrados antes de llegar al workstation creativo.</p>
+                        <p className="text-xs text-gray-500 italic">Mensajes y solicitudes del cliente filtrados por el estratega.</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {[
-                        { client: 'Clínica Dental', ctx: 'Edición de video', msg: '¿Podemos cambiar la música del reel #4?', priority: 'Urgente', staff: 'Andrés V.' },
-                        { client: 'Inmobiliaria City', ctx: 'Diseño', msg: 'Favor usar el nuevo logo en la portada.', priority: 'Normal', staff: 'Mateo G.' },
-                    ].map((ticket, i) => (
-                        <div key={i} className="bg-[#0E0E18] border border-white/5 rounded-3xl p-6 flex gap-6 hover:border-cyan-500/30 transition-all group">
-                            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-cyan-400 shrink-0">
-                                <MessageSquare className="w-6 h-6" />
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div>
-                                        <h4 className="text-white font-bold text-sm">{ticket.client}</h4>
-                                        <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">{ticket.ctx}</p>
-                                    </div>
-                                    <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${ticket.priority === 'Urgente' ? 'bg-red-500/10 text-red-500' : 'bg-white/5 text-gray-400'}`}>
-                                        {ticket.priority}
-                                    </span>
-                                </div>
-                                <p className="text-xs text-gray-400 mb-4 bg-white/[0.02] p-3 rounded-xl border border-white/5 italic">"{ticket.msg}"</p>
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); alert('Abriendo chat de respuesta rápida...'); }}
-                                        className="flex-1 py-2 bg-cyan-600 rounded-lg text-[10px] font-bold text-white hover:bg-cyan-500"
-                                    >
-                                        RESPONDER
-                                    </button>
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); alert('Convirtiendo ticket en tarea para el equipo...'); }}
-                                        className="flex-1 py-2 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold text-gray-400 hover:text-white"
-                                    >
-                                        CONVERTIR EN TAREA
-                                    </button>
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); alert('Escalando ticket como alerta estratégica por posible riesgo...'); }}
-                                        className="p-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 hover:text-orange-400 transition-colors"
-                                    >
-                                        <AlertTriangle className="w-3.5 h-3.5" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                <div className="p-8 bg-[#0E0E18] border border-white/5 rounded-3xl text-center space-y-2">
+                    <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto opacity-70" />
+                    <h4 className="text-sm font-bold text-white">Bandeja de Tickets al Día</h4>
+                    <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                        No hay solicitudes ni cambios de última hora pendientes de resolver para este cliente.
+                    </p>
                 </div>
             </div>
         </div>
@@ -894,8 +878,7 @@ function CommunicationCenter({ client, user, squad, tasks = [], initialChatWith 
     const [activeChat, setActiveChat] = useState(initialMember ? { id: initialMember.id, type: 'team', name: initialMember.name } : { id: 'ia', type: 'ia', name: 'Asistente IA' });
     const [inputValue, setInputValue] = useState('');
     const [messages, setMessages] = useState([
-        { id: 1, chatId: 'ia', text: '¡Hola Leslie! Soy tu Estratega IA. Estoy listo para optimizar tu flujo de trabajo de hoy.', sender: 'ai', time: '10:00 AM' },
-        { id: 2, chatId: 'general', text: 'Equipo, ¿cómo vamos con los reels de Clínica Dental?', sender: 'me', time: '10:05 AM' },
+        { id: 1, chatId: 'ia', text: `¡Hola ${user?.full_name?.split(' ')[0] || 'Estratega'}! Soy tu Asistente IA. Estoy listo para optimizar tu flujo de trabajo de hoy.`, sender: 'ai', time: '10:00 AM' },
     ]);
 
     const [isTyping, setIsTyping] = useState(false);
@@ -1672,7 +1655,7 @@ function TeamView({ client, tasks, squad }) {
                 </div>
             </div>
 
-            <CreativeCoordination />
+            <CreativeCoordination client={client} tasks={tasks} squad={squad} />
         </div>
     );
 }
@@ -1680,14 +1663,19 @@ function TeamView({ client, tasks, squad }) {
 function CMOverviewDashboard({ clients = [], loading = false }) {
     const { user } = useAuth();
     const safeClients = Array.isArray(clients) ? clients.filter(Boolean) : [];
+    
+    const totalProjects = safeClients.reduce((acc, c) => acc + (c?.projects || 0), 0);
+    const totalCampaigns = safeClients.reduce((acc, c) => acc + (Array.isArray(c?.onboarding_data?.meta_campaigns) ? c.onboarding_data.meta_campaigns.length : 0), 0);
+    const activeClientsCount = safeClients.filter(c => {
+        const s = (c?.status || '').toLowerCase();
+        return s === 'active' || s === 'trial' || s === 'onboarding_completed' || s === 'activo';
+    }).length;
+
     const stats = [
-        { label: 'Contenidos Activos', value: safeClients.reduce((acc, c) => acc + (c?.projects || 0), 0).toString(), icon: FileText, color: 'text-cyan-400' },
-        { label: 'Campañas en Curso', value: '3', icon: Share2, color: 'text-purple-400' },
-        { label: 'Marcas Activas', value: safeClients.filter(c => {
-            const s = (c?.status || '').toLowerCase();
-            return s === 'active' || s === 'trial' || s === 'onboarding_completed' || s === 'activo';
-        }).length.toString(), icon: ShieldCheck, color: 'text-emerald-400' },
-        { label: 'Alertas de Hoy', value: '2', icon: AlertTriangle, color: 'text-red-400' },
+        { label: 'Contenidos Activos', value: totalProjects.toString(), icon: FileText, color: 'text-cyan-400' },
+        { label: 'Campañas en Curso', value: totalCampaigns.toString(), icon: Share2, color: 'text-purple-400' },
+        { label: 'Marcas Activas', value: activeClientsCount.toString(), icon: ShieldCheck, color: 'text-emerald-400' },
+        { label: 'Alertas de Hoy', value: '0', icon: AlertTriangle, color: 'text-red-400' },
     ];
 
     if (loading && safeClients.length === 0) return <div className="h-full flex items-center justify-center text-cyan-400 italic font-bold">Sincronizando con Admin HQ...</div>;
@@ -1715,26 +1703,22 @@ function CMOverviewDashboard({ clients = [], loading = false }) {
                 ))}
             </div>
 
-            <div className="bg-red-500/5 border border-red-500/10 rounded-[2.5rem] p-8">
+            <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8">
                 <div className="flex items-center gap-3 mb-6">
-                    <AlertTriangle className="w-5 h-5 text-red-500" />
-                    <h3 className="text-lg font-bold text-white">Alertas Prioritarias</h3>
+                    <ShieldCheck className="w-5 h-5 text-cyan-400" />
+                    <h3 className="text-lg font-bold text-white">Estado de Cuentas & Alertas</h3>
                 </div>
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 group hover:border-red-500/30 transition-all">
+                    <div className="flex items-center justify-between p-4 bg-[#0E0E18] rounded-2xl border border-white/5">
                         <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 font-bold text-xs italic">AD</div>
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold text-xs">
+                                <CheckCircle className="w-5 h-5" />
+                            </div>
                             <div>
-                                <p className="text-sm font-bold text-white">Anuncio Pausado: Clínica Dental RM</p>
-                                <p className="text-[10px] text-gray-500 italic">Motivo: Presupuesto agotado en campaña "Limpieza 50%"</p>
+                                <p className="text-sm font-bold text-white">Todo al día</p>
+                                <p className="text-[10px] text-gray-400 italic">No hay alertas críticas pendientes en tus marcas activas.</p>
                             </div>
                         </div>
-                        <button 
-                            onClick={() => alert('Abriendo panel de resolución de anuncios...')}
-                            className="px-4 py-2 bg-red-500/10 text-red-500 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
-                        >
-                            Gestionar
-                        </button>
                     </div>
                 </div>
             </div>
