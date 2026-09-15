@@ -14,7 +14,7 @@ import {
   ChevronRight, TrendingUp, PieChart, Video, 
   Palette, FileText, ArrowRight, Settings, LogOut, User, Shield,
   Globe, UserPlus, Target, Fingerprint, Building2, Briefcase, Sparkles, MapPin, 
-  Upload, HelpCircle, Facebook
+  Upload, HelpCircle, Facebook, Type, RefreshCw, Sliders, Check, Copy, Layers, Eye, Trash2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -29,6 +29,7 @@ import UnifiedMessagingCenter from '../../components/shared/Messaging/UnifiedMes
 import { driveService } from '@/services/driveService';
 import { toast } from 'sonner';
 import { agencyService } from '@/services/agencyService';
+import { extractDominantColors } from '@/lib/colorUtils';
 
 // Fallback City Centers for Ecuador
 const CITY_COORDS = {
@@ -316,7 +317,15 @@ function DashboardContent() {
   });
 
   const [brandForm, setBrandForm] = useState({
-    logo: '', primaryColor: '#6366f1', secondaryColor: '#ec4899', typography: 'Inter', brand_manual: ''
+    logo: '', 
+    primaryColor: '#6366f1', 
+    secondaryColor: '#ec4899', 
+    accentColor: '#10b981',
+    palette: ['#6366f1', '#ec4899', '#10b981'],
+    typography: 'Inter', 
+    typography_custom: '',
+    typography_filename: '',
+    brand_manual: ''
   });
 
   const [socialForm, setSocialForm] = useState({
@@ -325,6 +334,7 @@ function DashboardContent() {
 
   const logoInputRef = useRef(null);
   const manualInputRef = useRef(null);
+  const fontInputRef = useRef(null);
 
   // Handle role-based redirection as soon as user is loaded
   useEffect(() => {
@@ -381,11 +391,21 @@ function DashboardContent() {
                   coords: cp.coords || client.coords || null
                 });
 
+                const dominantColors = brand.palette || [
+                  brand.primaryColor || client.primary_color || '#6366f1',
+                  brand.secondaryColor || client.secondary_color || '#ec4899',
+                  brand.accentColor || client.accent_color || '#10b981'
+                ];
+
                 setBrandForm({
-                  logo: brand.logo || '',
-                  primaryColor: brand.primaryColor || '#6366f1',
-                  secondaryColor: brand.secondaryColor || '#ec4899',
-                  typography: brand.typography || 'Inter',
+                  logo: brand.logo || client.logo_url || '',
+                  primaryColor: brand.primaryColor || client.primary_color || dominantColors[0] || '#6366f1',
+                  secondaryColor: brand.secondaryColor || client.secondary_color || dominantColors[1] || '#ec4899',
+                  accentColor: brand.accentColor || client.accent_color || dominantColors[2] || '#10b981',
+                  palette: dominantColors,
+                  typography: brand.typography || client.typography || 'Inter',
+                  typography_custom: brand.typography_custom || '',
+                  typography_filename: brand.typography_filename || '',
                   brand_manual: brand.brand_manual || ''
                 });
 
@@ -462,6 +482,26 @@ function DashboardContent() {
   useEffect(() => {
     fetchData();
   }, [user, searchParams]);
+
+  // Inject custom brand font dynamically into browser document if present
+  useEffect(() => {
+    if (brandForm.typography && brandForm.typography_custom) {
+      const fontStyleId = `custom-font-${brandForm.typography}`;
+      let styleEl = document.getElementById(fontStyleId);
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = fontStyleId;
+        document.head.appendChild(styleEl);
+      }
+      styleEl.innerHTML = `
+        @font-face {
+          font-family: '${brandForm.typography}';
+          src: url('${brandForm.typography_custom}') format('truetype');
+          font-display: swap;
+        }
+      `;
+    }
+  }, [brandForm.typography, brandForm.typography_custom]);
 
   // Google OAuth Redirect scan for Drive Connection
   useEffect(() => {
@@ -859,6 +899,14 @@ function DashboardContent() {
             }
         }
         
+        if (moduleId === 'logo' || moduleId === 'visual') {
+            if (data.brand?.logo) updates.logo_url = data.brand.logo;
+            if (data.brand?.primaryColor) updates.primary_color = data.brand.primaryColor;
+            if (data.brand?.secondaryColor) updates.secondary_color = data.brand.secondaryColor;
+            if (data.brand?.accentColor) updates.accent_color = data.brand.accentColor;
+            if (data.brand?.typography) updates.typography = data.brand.typography;
+        }
+
         if (moduleId === 'growth') {
             if (data.growth_level?.plan) updates.plan = data.growth_level.plan;
             if (data.growth_level?.price) updates.price = data.growth_level.price;
@@ -1070,7 +1118,7 @@ function DashboardContent() {
     }
   };
 
-  // Logo uploader (Permanent Base64 / Storage persist)
+  // Logo uploader with intelligent 3-color palette extraction
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1082,9 +1130,17 @@ function DashboardContent() {
             try {
                 const logoDataUrl = reader.result;
                 
+                // Intelligently extract dominant colors from logo
+                const extractedColors = await extractDominantColors(logoDataUrl, 3);
+                const [primColor, secColor, accColor] = extractedColors;
+                
                 const updatedBrand = {
                     ...(clientData?.onboarding_data?.brand || {}),
-                    logo: logoDataUrl
+                    logo: logoDataUrl,
+                    primaryColor: primColor || brandForm.primaryColor || '#6366f1',
+                    secondaryColor: secColor || brandForm.secondaryColor || '#ec4899',
+                    accentColor: accColor || brandForm.accentColor || '#10b981',
+                    palette: extractedColors
                 };
                 
                 const updatedOnboardingData = {
@@ -1092,17 +1148,38 @@ function DashboardContent() {
                     brand: updatedBrand
                 };
                 
-                await supabase.from('clients').update({
+                const updates = {
+                    logo_url: logoDataUrl,
+                    primary_color: primColor || brandForm.primaryColor || '#6366f1',
+                    secondary_color: secColor || brandForm.secondaryColor || '#ec4899',
+                    accent_color: accColor || brandForm.accentColor || '#10b981',
                     onboarding_data: updatedOnboardingData
-                }).eq('id', clientData.id);
+                };
+                
+                await supabase.from('clients').update(updates).eq('id', clientData.id);
+
+                try {
+                    await agencyService.syncClientProfile(clientData.id, updates);
+                } catch (syncErr) {
+                    console.warn('Sync profile warning:', syncErr);
+                }
                 
                 setClientData(prev => ({
                     ...prev,
+                    ...updates,
                     onboarding_data: updatedOnboardingData
                 }));
                 
-                setBrandForm(prev => ({ ...prev, logo: logoDataUrl }));
-                toast.success('Logotipo guardado y sincronizado.');
+                setBrandForm(prev => ({ 
+                    ...prev, 
+                    logo: logoDataUrl,
+                    primaryColor: primColor || prev.primaryColor,
+                    secondaryColor: secColor || prev.secondaryColor,
+                    accentColor: accColor || prev.accentColor,
+                    palette: extractedColors
+                }));
+                
+                toast.success('¡Logotipo procesado! Paleta de 3 colores identificada automáticamente.');
             } catch (err) {
                 console.error(err);
                 toast.error('Error al guardar logotipo en la base de datos.');
@@ -1121,6 +1198,96 @@ function DashboardContent() {
     }
   };
 
+  // Re-scan dominant colors from existing logo
+  const handleRescanColors = async () => {
+    if (!brandForm.logo) {
+      toast.error('Primero debes subir un logotipo.');
+      return;
+    }
+    setDrawerLoading(true);
+    try {
+      const extractedColors = await extractDominantColors(brandForm.logo, 3);
+      const [primColor, secColor, accColor] = extractedColors;
+      
+      setBrandForm(prev => ({
+        ...prev,
+        primaryColor: primColor,
+        secondaryColor: secColor,
+        accentColor: accColor,
+        palette: extractedColors
+      }));
+      toast.success('¡Paleta de 3 colores recalculada con éxito por la IA!');
+    } catch (e) {
+      toast.error('Error al analizar colores: ' + e.message);
+    } finally {
+      setDrawerLoading(false);
+    }
+  };
+
+  // Font file uploader (.TTF, .OTF, .WOFF, .WOFF2)
+  const handleFontUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validExtensions = ['.ttf', '.otf', '.woff', '.woff2'];
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!validExtensions.includes(ext)) {
+      toast.error('Formato no soportado. Sube archivos .TTF, .OTF, .WOFF o .WOFF2');
+      return;
+    }
+
+    setDrawerLoading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const fontDataUrl = reader.result;
+          const cleanFontName = file.name
+            .replace(/\.[^/.]+$/, '')
+            .replace(/[^a-zA-Z0-9_-]/g, '_');
+
+          // Inject custom font into document dynamically
+          const fontStyleId = `custom-font-${cleanFontName}`;
+          let styleEl = document.getElementById(fontStyleId);
+          if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = fontStyleId;
+            document.head.appendChild(styleEl);
+          }
+          styleEl.innerHTML = `
+            @font-face {
+              font-family: '${cleanFontName}';
+              src: url('${fontDataUrl}') format('truetype');
+              font-display: swap;
+            }
+          `;
+
+          setBrandForm(prev => ({
+            ...prev,
+            typography: cleanFontName,
+            typography_custom: fontDataUrl,
+            typography_filename: file.name
+          }));
+
+          toast.success(`¡Tipografía "${file.name}" cargada y aplicada con éxito!`);
+        } catch (err) {
+          console.error(err);
+          toast.error('Error al procesar la tipografía.');
+        } finally {
+          setDrawerLoading(false);
+        }
+      };
+      reader.onerror = () => {
+        setDrawerLoading(false);
+        toast.error('Error al leer el archivo de tipografía.');
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setDrawerLoading(false);
+      toast.error('Error al subir tipografía: ' + err.message);
+    }
+  };
+
   // Brand manual uploader
   const handleManualUpload = async (e) => {
     const file = e.target.files[0];
@@ -1129,8 +1296,6 @@ function DashboardContent() {
     setDrawerLoading(true);
     try {
         await new Promise(r => setTimeout(r, 1500));
-        const fileUrl = URL.createObjectURL(file);
-        
         setBrandForm(prev => ({ ...prev, brand_manual: file.name }));
         toast.success('Manual de marca cargado.');
     } catch (err) {
@@ -1788,110 +1953,336 @@ function DashboardContent() {
         );
 
       case 'logo':
-        return (
-          <div className="space-y-6">
-            <div className="p-6 bg-[#111126] border border-white/5 rounded-2xl text-center space-y-4 relative">
-              {brandForm.logo ? (
-                <div className="relative w-32 h-32 mx-auto rounded-xl overflow-hidden border border-white/10 flex items-center justify-center bg-black/40">
-                  <img src={brandForm.logo} alt="Logo" className="max-w-full max-h-full object-contain" />
-                  <button 
-                    onClick={() => setBrandForm(prev => ({ ...prev, logo: '' }))}
-                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md text-[8px] font-black"
-                  >
-                    ELIMINAR
-                  </button>
-                </div>
-              ) : (
-                <div 
-                  onClick={() => logoInputRef.current?.click()}
-                  className="w-32 h-32 mx-auto rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center text-gray-500 hover:border-indigo-500 cursor-pointer transition-colors"
-                >
-                  <Upload className="w-8 h-8 mb-2" />
-                  <span className="text-[10px] font-black uppercase">Subir Logo</span>
-                </div>
-              )}
-              <input 
-                type="file" 
-                ref={logoInputRef} 
-                className="hidden" 
-                accept="image/*"
-                onChange={handleLogoUpload}
-              />
-              <p className="text-[10px] text-gray-500">Formato PNG transparente recomendado.</p>
-            </div>
-
-            <div className="sticky bottom-0 bg-[#0A0A1F] pt-4 pb-2 mt-6 border-t border-white/5 z-10">
-              <button
-                onClick={() => handleSaveModule('logo', {
-                  brand: {
-                    ...(clientData?.onboarding_data?.brand || {}),
-                    logo: brandForm.logo
-                  }
-                })}
-                disabled={drawerLoading || !brandForm.logo}
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50"
-              >
-                {drawerLoading ? 'Guardando...' : 'Confirmar Logotipo'}
-              </button>
-            </div>
-          </div>
-        );
-
       case 'visual':
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Color Principal</label>
-                <div className="flex gap-2 items-center bg-[#111126] border border-white/5 rounded-xl p-3">
-                  <input 
-                    type="color" 
-                    value={brandForm.primaryColor}
-                    onChange={(e) => setBrandForm({...brandForm, primaryColor: e.target.value})}
-                    className="w-8 h-8 border-none bg-transparent cursor-pointer rounded"
-                  />
-                  <span className="text-xs font-bold text-white uppercase">{brandForm.primaryColor}</span>
+          <div className="space-y-6 pb-4">
+            {/* 1. Logotipo de Marca */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Palette className="w-3.5 h-3.5 text-indigo-400" />
+                  Logotipo Oficial
+                </label>
+                {brandForm.logo && (
+                  <span className="text-[9px] font-black text-emerald-400 uppercase px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                    Cargado
+                  </span>
+                )}
+              </div>
+
+              <div className="p-5 bg-[#111126] border border-white/5 rounded-2xl text-center space-y-4 relative">
+                {brandForm.logo ? (
+                  <div className="space-y-3">
+                    <div 
+                      className="relative w-full max-w-[200px] h-28 mx-auto rounded-xl overflow-hidden border border-white/10 flex items-center justify-center p-3 shadow-inner"
+                      style={{
+                        backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 0)',
+                        backgroundSize: '12px 12px',
+                        backgroundColor: 'rgba(5, 5, 15, 0.7)'
+                      }}
+                    >
+                      <img src={brandForm.logo} alt="Logo" className="max-w-full max-h-full object-contain filter drop-shadow-md" />
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => logoInputRef.current?.click()}
+                        className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 uppercase px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 transition-all hover:bg-indigo-500/20"
+                      >
+                        Cambiar Logo
+                      </button>
+                      <button 
+                        onClick={() => setBrandForm(prev => ({ ...prev, logo: '' }))}
+                        className="text-[10px] font-bold text-red-400 hover:text-red-300 uppercase px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 transition-all hover:bg-red-500/20"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => logoInputRef.current?.click()}
+                    className="w-full py-8 rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center text-gray-500 hover:border-indigo-500 hover:text-indigo-400 cursor-pointer transition-all group bg-black/20"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+                      <Upload className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs font-black uppercase text-gray-300 group-hover:text-white">Subir Logotipo</span>
+                    <span className="text-[10px] text-gray-500 mt-1">PNG transparente, SVG o JPG</span>
+                  </div>
+                )}
+                <input 
+                  type="file" 
+                  ref={logoInputRef} 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                />
+              </div>
+            </div>
+
+            {/* 2. Paleta Inteligente de los 3 Colores Principales */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  Paleta Inteligente de Colores (Top 3)
+                </label>
+                {brandForm.logo && (
+                  <button
+                    onClick={handleRescanColors}
+                    disabled={drawerLoading}
+                    className="text-[9px] font-bold text-indigo-400 hover:text-indigo-300 uppercase flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 transition-all"
+                    title="Volver a extraer los 3 colores principales del logo"
+                  >
+                    <RefreshCw className="w-2.5 h-2.5" />
+                    Re-escanear
+                  </button>
+                )}
+              </div>
+
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                El algoritmo inteligente analiza tu logotipo y extrae automáticamente los 3 colores principales de tu identidad visual:
+              </p>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                {/* Color 1: Primario */}
+                <div className="p-3 bg-[#111126] border border-white/5 rounded-xl space-y-2 relative group hover:border-indigo-500/40 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">1. Primario</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-8 h-8 rounded-lg shadow-md border border-white/10 shrink-0 cursor-pointer relative overflow-hidden group-hover:scale-105 transition-transform"
+                      style={{ backgroundColor: brandForm.primaryColor }}
+                      onClick={() => document.getElementById('primary-color-picker')?.click()}
+                    >
+                      <input 
+                        id="primary-color-picker"
+                        type="color" 
+                        value={brandForm.primaryColor}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBrandForm(prev => ({
+                            ...prev, 
+                            primaryColor: val,
+                            palette: [val, prev.secondaryColor, prev.accentColor]
+                          }));
+                        }}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[11px] font-black text-white uppercase block truncate">{brandForm.primaryColor}</span>
+                      <span className="text-[8px] text-gray-500 font-semibold uppercase block">Dominante</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Color 2: Secundario */}
+                <div className="p-3 bg-[#111126] border border-white/5 rounded-xl space-y-2 relative group hover:border-indigo-500/40 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">2. Secundario</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-8 h-8 rounded-lg shadow-md border border-white/10 shrink-0 cursor-pointer relative overflow-hidden group-hover:scale-105 transition-transform"
+                      style={{ backgroundColor: brandForm.secondaryColor }}
+                      onClick={() => document.getElementById('secondary-color-picker')?.click()}
+                    >
+                      <input 
+                        id="secondary-color-picker"
+                        type="color" 
+                        value={brandForm.secondaryColor}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBrandForm(prev => ({
+                            ...prev, 
+                            secondaryColor: val,
+                            palette: [prev.primaryColor, val, prev.accentColor]
+                          }));
+                        }}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[11px] font-black text-white uppercase block truncate">{brandForm.secondaryColor}</span>
+                      <span className="text-[8px] text-gray-500 font-semibold uppercase block">Contraste</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Color 3: Acento */}
+                <div className="p-3 bg-[#111126] border border-white/5 rounded-xl space-y-2 relative group hover:border-indigo-500/40 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">3. Acento</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-8 h-8 rounded-lg shadow-md border border-white/10 shrink-0 cursor-pointer relative overflow-hidden group-hover:scale-105 transition-transform"
+                      style={{ backgroundColor: brandForm.accentColor }}
+                      onClick={() => document.getElementById('accent-color-picker')?.click()}
+                    >
+                      <input 
+                        id="accent-color-picker"
+                        type="color" 
+                        value={brandForm.accentColor}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBrandForm(prev => ({
+                            ...prev, 
+                            accentColor: val,
+                            palette: [prev.primaryColor, prev.secondaryColor, val]
+                          }));
+                        }}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[11px] font-black text-white uppercase block truncate">{brandForm.accentColor}</span>
+                      <span className="text-[8px] text-gray-500 font-semibold uppercase block">Detalles</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Color Secundario</label>
-                <div className="flex gap-2 items-center bg-[#111126] border border-white/5 rounded-xl p-3">
-                  <input 
-                    type="color" 
-                    value={brandForm.secondaryColor}
-                    onChange={(e) => setBrandForm({...brandForm, secondaryColor: e.target.value})}
-                    className="w-8 h-8 border-none bg-transparent cursor-pointer rounded"
-                  />
-                  <span className="text-xs font-bold text-white uppercase">{brandForm.secondaryColor}</span>
+
+              {/* Barra Armónica de Marca */}
+              <div className="p-3 bg-[#111126]/60 border border-white/5 rounded-xl space-y-2">
+                <div className="flex justify-between items-center text-[9px] font-black uppercase text-gray-400">
+                  <span>Armonía Visual de Marca</span>
+                  <span className="text-indigo-400">Paleta 3 Colores</span>
+                </div>
+                <div className="h-3 rounded-lg overflow-hidden flex shadow-inner border border-white/10">
+                  <div className="flex-1 transition-all duration-300" style={{ backgroundColor: brandForm.primaryColor }} title="Primario" />
+                  <div className="flex-1 transition-all duration-300" style={{ backgroundColor: brandForm.secondaryColor }} title="Secundario" />
+                  <div className="flex-1 transition-all duration-300" style={{ backgroundColor: brandForm.accentColor }} title="Acento" />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Tipografía Principal</label>
-              <select 
-                value={brandForm.typography}
-                onChange={(e) => setBrandForm({...brandForm, typography: e.target.value})}
-                className="w-full bg-[#111126] border border-white/5 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
-              >
-                <option value="Inter">Inter</option>
-                <option value="Outfit">Outfit</option>
-                <option value="Roboto">Roboto</option>
-                <option value="Montserrat">Montserrat</option>
-                <option value="Playfair Display">Playfair Display</option>
-              </select>
+            {/* 3. Tipografía de la Marca & Carga de Archivo */}
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Type className="w-3.5 h-3.5 text-indigo-400" />
+                  Cargar Tipografía de la Marca
+                </label>
+                {brandForm.typography_custom && (
+                  <span className="text-[9px] font-black text-emerald-400 uppercase px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                    Fuente Personalizada
+                  </span>
+                )}
+              </div>
+
+              {/* Botón / Zona de Subida de Tipografía */}
+              <div className="p-4 bg-[#111126] border border-white/5 rounded-2xl space-y-3">
+                {brandForm.typography_custom ? (
+                  <div className="flex items-center justify-between p-3 bg-black/40 border border-indigo-500/20 rounded-xl gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                        <Type className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white truncate">
+                          {brandForm.typography_filename || brandForm.typography}
+                        </p>
+                        <p className="text-[9px] text-emerald-400 font-semibold">Fuente personalizada cargada y aplicada</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => fontInputRef.current?.click()}
+                        className="text-[9px] font-bold text-indigo-400 hover:text-indigo-300 uppercase px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 transition-all"
+                      >
+                        Cambiar
+                      </button>
+                      <button
+                        onClick={() => setBrandForm(prev => ({ ...prev, typography_custom: '', typography_filename: '', typography: 'Inter' }))}
+                        className="text-[9px] font-bold text-red-400 hover:text-red-300 uppercase px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-all"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => fontInputRef.current?.click()}
+                    className="border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-indigo-500 cursor-pointer transition-all group bg-black/20"
+                  >
+                    <Upload className="w-6 h-6 text-gray-500 mx-auto mb-1.5 group-hover:text-indigo-400 group-hover:scale-110 transition-all" />
+                    <span className="text-xs text-gray-300 font-bold block group-hover:text-white">
+                      Subir archivo de fuente (.TTF, .OTF, .WOFF, .WOFF2)
+                    </span>
+                    <span className="text-[10px] text-gray-500 block mt-0.5">
+                      Carga la tipografía corporativa de tu marca
+                    </span>
+                  </div>
+                )}
+                <input 
+                  type="file" 
+                  ref={fontInputRef} 
+                  className="hidden" 
+                  accept=".ttf,.otf,.woff,.woff2"
+                  onChange={handleFontUpload}
+                />
+
+                {/* Selector rápido alternativo de tipografías */}
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">O selecciona una tipografía predefinida:</span>
+                  <select 
+                    value={brandForm.typography}
+                    onChange={(e) => setBrandForm({...brandForm, typography: e.target.value})}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="Inter">Inter (Moderna & Corporativa)</option>
+                    <option value="Outfit">Outfit (Tecnológica & Futurista)</option>
+                    <option value="Montserrat">Montserrat (Geométrica & Elegante)</option>
+                    <option value="Poppins">Poppins (Amigable & Dinámica)</option>
+                    <option value="Playfair Display">Playfair Display (Premium & Editorial)</option>
+                    <option value="Space Grotesk">Space Grotesk (Innovación & Brutalista)</option>
+                    <option value="Plus Jakarta Sans">Plus Jakarta Sans (SaaS & Alta Gama)</option>
+                    <option value="Roboto">Roboto (Clásica & Limpia)</option>
+                    {brandForm.typography_custom && (
+                      <option value={brandForm.typography}>⭐ {brandForm.typography} (Fuente subida)</option>
+                    )}
+                  </select>
+                </div>
+
+                {/* Previsualización en Vivo de la Tipografía */}
+                <div 
+                  className="p-3.5 bg-black/60 border border-white/10 rounded-xl space-y-1.5"
+                  style={{ fontFamily: brandForm.typography }}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-black uppercase tracking-wider text-indigo-400">
+                      Vista previa en vivo · {brandForm.typography}
+                    </span>
+                  </div>
+                  <p className="text-sm font-black text-white leading-tight">
+                    {clientData?.name || 'Tu Marca'} · Ecosistema Digital Oficial
+                  </p>
+                  <p className="text-xs text-gray-300 font-medium">
+                    ABCDEFGHIJKLMNOPQRSTUVWXYZ · abcdefghijklmnopqrstuvwxyz · 0123456789
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    Diseño de alto impacto con identidad visual coherente en pauta publicitaria y páginas web.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Manual de Marca (PDF/Doc)</label>
+            {/* 4. Manual de Marca (Opcional) */}
+            <div className="space-y-2 pt-1">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-gray-400" />
+                Manual de Marca (PDF / Guía de Estilo Opcional)
+              </label>
               <div 
                 onClick={() => manualInputRef.current?.click()}
-                className="border-2 border-dashed border-white/10 rounded-xl p-6 text-center hover:border-indigo-500 cursor-pointer transition-colors"
+                className="border-2 border-dashed border-white/10 rounded-xl p-4 text-center hover:border-indigo-500 cursor-pointer transition-colors bg-[#111126]/50"
               >
-                <Upload className="w-6 h-6 text-gray-500 mx-auto mb-2" />
-                <span className="text-xs text-gray-400 font-bold">
-                  {brandForm.brand_manual || 'Haz clic para subir tu manual de marca'}
+                <Upload className="w-5 h-5 text-gray-500 mx-auto mb-1" />
+                <span className="text-xs text-gray-300 font-bold block">
+                  {brandForm.brand_manual || 'Haz clic para subir tu manual o guía de marca (.pdf, .doc)'}
                 </span>
               </div>
               <input 
@@ -1903,22 +2294,29 @@ function DashboardContent() {
               />
             </div>
 
+            {/* Botón de Confirmación Sticky */}
             <div className="sticky bottom-0 bg-[#0A0A1F] pt-4 pb-2 mt-6 border-t border-white/5 z-10">
               <button
-                onClick={() => handleSaveModule('visual', {
+                onClick={() => handleSaveModule('logo', {
                   brand: {
                     ...(clientData?.onboarding_data?.brand || {}),
+                    logo: brandForm.logo,
                     primaryColor: brandForm.primaryColor,
                     secondaryColor: brandForm.secondaryColor,
+                    accentColor: brandForm.accentColor,
+                    palette: brandForm.palette || [brandForm.primaryColor, brandForm.secondaryColor, brandForm.accentColor],
                     typography: brandForm.typography,
+                    typography_custom: brandForm.typography_custom,
+                    typography_filename: brandForm.typography_filename,
                     brand_manual: brandForm.brand_manual,
                     completed: true
                   }
                 })}
-                disabled={drawerLoading}
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                disabled={drawerLoading || !brandForm.logo}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
               >
-                {drawerLoading ? 'Guardando...' : 'Confirmar Identidad Visual'}
+                <Check className="w-4 h-4" />
+                {drawerLoading ? 'Guardando...' : 'Confirmar Logotipo e Identidad Visual'}
               </button>
             </div>
           </div>
