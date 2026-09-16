@@ -8,6 +8,10 @@ import { agencyService } from '@/services/agencyService';
 import { aiService } from '@/services/aiService';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import SavedResearchesModal from '@/components/strategy/SavedResearchesModal';
+import SavedResearchesManager from '@/components/strategy/SavedResearchesManager';
+import StrategicBrainChat from '@/components/strategy/StrategicBrainChat';
+import { generateResearchPdf } from '@/components/strategy/ResearchPdfExporter';
 
 // Helper to decode HTML entities from titles
 const decodeEntities = (text) => {
@@ -461,6 +465,17 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
     }, [propClientId, user?.client_id]);
 
     // Basic state for the profile
+    // Saved researches & folders state
+    const [savedResearches, setSavedResearches] = useState([]);
+    const [researchFolders, setResearchFolders] = useState([
+        { id: 'f_nicho', name: 'Nicho & Pacientes', color: 'indigo' },
+        { id: 'f_competencia', name: 'Competencia', color: 'fuchsia' },
+        { id: 'f_objeciones', name: 'Objeciones & Fricción', color: 'amber' }
+    ]);
+    const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+    const [capa1ActiveTab, setCapa1ActiveTab] = useState('search'); // 'search' | 'saved'
+    const [capa2ActiveTab, setCapa2ActiveTab] = useState('profile'); // 'profile' | 'brain' | 'saved_sources'
+
     const [profile, setProfile] = useState({
         brandName: (user?.user_metadata?.brand || '').replace(/[-_\s]+workspace\s*$/i, '').trim(),
         leadership: '',
@@ -585,6 +600,21 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                 if (client) {
                     const strategic = client.onboarding_data?.strategic || client.metadata?.strategic || {};
                     const social = client.onboarding_data?.social || {};
+                    // Load saved researches and folders
+                    const rawResearches = client.onboarding_data?.saved_researches || [];
+                    const rawFolders = client.onboarding_data?.research_folders || [];
+                    if (Array.isArray(rawResearches) && rawResearches.length > 0) {
+                        setSavedResearches(rawResearches);
+                    } else if (typeof window !== 'undefined') {
+                        try {
+                            const localRes = localStorage.getItem('diic_saved_researches_' + currentClientId);
+                            if (localRes) setSavedResearches(JSON.parse(localRes));
+                        } catch(e) {}
+                    }
+                    if (Array.isArray(rawFolders) && rawFolders.length > 0) {
+                        setResearchFolders(rawFolders);
+                    }
+
                     const cleanBrandName = (strategic.brandName || client.name || client.brandName || user?.user_metadata?.brand || '')
                         .replace(/[-_\s]+workspace\s*$/i, '')
                         .trim();
@@ -619,6 +649,115 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
         };
         loadClient();
     }, [user?.id, activeClientId]);
+
+    const handleSaveNewResearch = (newResearch) => {
+        const updated = [newResearch, ...savedResearches];
+        setSavedResearches(updated);
+        if (typeof window !== 'undefined' && activeClientId) {
+            try {
+                localStorage.setItem('diic_saved_researches_' + activeClientId, JSON.stringify(updated));
+            } catch(e) {}
+        }
+        saveResearchesToClient(updated, researchFolders);
+    };
+
+    const handleDeleteResearch = (resId) => {
+        const updated = savedResearches.filter(r => r.id !== resId);
+        setSavedResearches(updated);
+        if (typeof window !== 'undefined' && activeClientId) {
+            try {
+                localStorage.setItem('diic_saved_researches_' + activeClientId, JSON.stringify(updated));
+            } catch(e) {}
+        }
+        saveResearchesToClient(updated, researchFolders);
+    };
+
+    const handleCreateFolder = (newFolder) => {
+        const updated = [...researchFolders, newFolder];
+        setResearchFolders(updated);
+        saveResearchesToClient(savedResearches, updated);
+    };
+
+    const handleDeleteFolder = (folderId) => {
+        const updatedFolders = researchFolders.filter(f => f.id !== folderId);
+        const updatedResearches = savedResearches.map(r => 
+            (r.folderId === folderId || r.folder_id === folderId) ? { ...r, folderId: 'general', folder_id: 'general' } : r
+        );
+        setResearchFolders(updatedFolders);
+        setSavedResearches(updatedResearches);
+        saveResearchesToClient(updatedResearches, updatedFolders);
+    };
+
+    const saveResearchesToClient = async (researchesToSave, foldersToSave) => {
+        if (!activeClientId) return;
+        try {
+            const client = await agencyService.getClientById(activeClientId);
+            const safeOnboarding = client?.onboarding_data ? JSON.parse(JSON.stringify(client.onboarding_data)) : {};
+            await agencyService.updateClient(activeClientId, {
+                onboarding_data: {
+                    ...safeOnboarding,
+                    saved_researches: researchesToSave,
+                    research_folders: foldersToSave
+                }
+            });
+        } catch (err) {
+            console.error('Error auto-syncing researches:', err);
+        }
+    };
+
+    const handleLoadResearchIntoProfile = (research) => {
+        if (!research) return;
+        const d = research.data || {};
+        const updatedProfile = {
+            ...profile,
+            whatItDoes: d.whatItDoes || profile.whatItDoes || (typeof d === 'string' ? d.substring(0, 300) : ''),
+            whatItOffers: d.whatItOffers || profile.whatItOffers,
+            targetAudience: d.targetAudience || profile.targetAudience,
+            problemSolved: d.problemSolved || profile.problemSolved || (Array.isArray(d.frictionPoints) ? d.frictionPoints.map(f => typeof f === 'object' ? f.pain || f.title : f).join(', ') : profile.problemSolved),
+            valueProp: d.valueProp || profile.valueProp,
+            tone: d.tone || profile.tone,
+            mainGoal: d.mainGoal || profile.mainGoal
+        };
+        setProfile(updatedProfile);
+        handleConfirm(updatedProfile);
+        toast.success('Datos de "' + research.title + '" transferidos al Perfil Estratégico.');
+    };
+
+    const handleConsolidateResearchesWithAI = async (selectedItems) => {
+        const toastId = toast.loading('Consolidando investigaciones con Inteligencia Estratégica...');
+        try {
+            const res = await fetch('/api/ai/strategy/brain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'consolidate_profile',
+                    clientName: profile.brandName || user?.user_metadata?.brand || 'Dr. Oscar Cujilema',
+                    researches: selectedItems
+                })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Error al consolidar');
+
+            const c = data.consolidatedProfile || {};
+            const updatedProfile = {
+                ...profile,
+                brandName: c.brandName || profile.brandName,
+                whatItDoes: c.whatItDoes || profile.whatItDoes,
+                whatItOffers: c.whatItOffers || profile.whatItOffers,
+                targetAudience: c.targetAudience || profile.targetAudience,
+                problemSolved: c.problemSolved || profile.problemSolved,
+                valueProp: c.valueProp || profile.valueProp,
+                tone: c.tone || profile.tone,
+                mainGoal: c.mainGoal || profile.mainGoal,
+                marketContext: c.executiveSummary || profile.marketContext
+            };
+            setProfile(updatedProfile);
+            await handleConfirm(updatedProfile);
+            toast.success('¡Perfil Estratégico 360° consolidado y guardado!', { id: toastId });
+        } catch (err) {
+            toast.error('Error al consolidar con IA: ' + err.message, { id: toastId });
+        }
+    };
 
     const handleChange = (field, value) => {
         setProfile(prev => ({ ...prev, [field]: value }));
@@ -1631,7 +1770,59 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
             ) : (
                 <>
                 {/* MEGA MODO IA: SEARCH ENGINE */}
-            <div className="bg-gradient-to-br from-[#0A0A12] to-[#11111E] border border-indigo-500/20 rounded-[40px] p-8 md:p-16 mb-12 relative overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.05)] text-center flex flex-col items-center justify-center min-h-[400px]">
+            {/* CAPA 1 SUB-TABS */}
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-8 p-2 bg-black/40 border border-white/10 rounded-2xl backdrop-blur-xl">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setCapa1ActiveTab('search')}
+                        className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                            capa1ActiveTab === 'search'
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        <Search className="w-4 h-4" />
+                        <span>Búsqueda & Auditoría Omnicanal</span>
+                    </button>
+
+                    <button
+                        onClick={() => setCapa1ActiveTab('saved')}
+                        className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                            capa1ActiveTab === 'saved'
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                    >
+                        <Folder className="w-4 h-4 text-indigo-400" />
+                        <span>Investigaciones & Carpetas ({savedResearches.length})</span>
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsSaveModalOpen(true)}
+                        className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all"
+                    >
+                        <Bookmark className="w-4 h-4" />
+                        <span>Guardar Investigación Actual</span>
+                    </button>
+                </div>
+            </div>
+
+            {capa1ActiveTab === 'saved' ? (
+                <SavedResearchesManager
+                    researches={savedResearches}
+                    folders={researchFolders}
+                    onDeleteResearch={handleDeleteResearch}
+                    onCreateFolder={handleCreateFolder}
+                    onDeleteFolder={handleDeleteFolder}
+                    onLoadIntoProfile={handleLoadResearchIntoProfile}
+                    onConsolidateWithAI={handleConsolidateResearchesWithAI}
+                    clientName={profile.brandName || 'Dr. Oscar Cujilema'}
+                />
+            ) : (
+                <>
+                <div className="bg-gradient-to-br from-[#0A0A12] to-[#11111E] border border-indigo-500/20 rounded-[40px] p-8 md:p-16 mb-12 relative overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.05)] text-center flex flex-col items-center justify-center min-h-[400px]">
                 <div className="absolute top-0 right-0 p-8 opacity-10 blur-xl pointer-events-none">
                     <Globe className="w-96 h-96 text-indigo-500" />
                 </div>
@@ -2998,6 +3189,29 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            </>
+            )}
+            {/* Modal para Guardar Investigación */}
+            <SavedResearchesModal
+                isOpen={isSaveModalOpen}
+                onClose={() => setIsSaveModalOpen(false)}
+                onSave={handleSaveNewResearch}
+                currentSearchQuery={profile.websiteUrl || profile.brandName || ''}
+                currentData={{
+                    brandName: profile.brandName,
+                    whatItDoes: profile.whatItDoes,
+                    whatItOffers: profile.whatItOffers,
+                    targetAudience: profile.targetAudience,
+                    problemSolved: profile.problemSolved,
+                    valueProp: profile.valueProp,
+                    tone: profile.tone,
+                    frictionPoints: (profile.problemSolved ? profile.problemSolved.split('.').filter(Boolean) : []),
+                    summary: profile.whatItDoes || profile.valueProp || 'Investigación estratégica de marca'
+                }}
+                folders={researchFolders}
+                onCreateFolder={handleCreateFolder}
+            />
 
             {/* Recording Formats Modal */}
             <RecordingFormatsModal 
