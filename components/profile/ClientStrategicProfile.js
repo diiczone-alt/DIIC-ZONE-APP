@@ -1091,34 +1091,64 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
     };
 
     const handleQuickInsight = async (mode, title) => {
-        if (!profile.websiteUrl && !profile.instagramUrl) {
-            toast.error("Por favor ingresa una URL web primero");
+        const primaryUrl = profile.websiteUrl || profile.instagramUrl || profile.facebookUrl || profile.tiktokUrl || profile.youtubeUrl || profile.linkedinUrl;
+        if (!primaryUrl) {
+            toast.error("Por favor ingresa un enlace web o perfil social primero");
             return;
         }
         
         setActiveInsightBtn(mode);
-        
-        if (mode !== 'competitors') {
-            setInsightModalOpen(true);
-            setInsightData({ title, content: '', loading: true });
-        } else {
-            toast.loading("Rastreando mercado competidor...", { id: 'comp-toast' });
-        }
+        setInsightModalOpen(true);
+        setInsightData({ title, content: '', mode, loading: true, rawData: null, savedResearch: null });
 
         try {
-            const url = profile.websiteUrl || profile.instagramUrl;
-            const res = await aiService.generateQuickInsight(url, profile.brandName, mode);
+            const res = await aiService.generateQuickInsight(primaryUrl, profile.brandName, mode);
             
+            const folderMap = {
+                competitors: 'f_competencia',
+                friction: 'f_objeciones',
+                traffic: 'f_nicho',
+                social_audit: 'f_nicho',
+                improvement_plan: 'general'
+            };
+            const categoryMap = {
+                competitors: 'Análisis de Competencia',
+                friction: 'Puntos de Fricción & Objeciones',
+                traffic: 'Auditoría de Tráfico B2B',
+                social_audit: 'Auditoría de Redes Sociales',
+                improvement_plan: 'Plan de Mejora Estratégico'
+            };
+            const tagMap = {
+                competitors: ['Competencia', 'Mercado', 'Benchmarking'],
+                friction: ['Fricción', 'Objeciones', 'Dolores', 'CRO'],
+                traffic: ['Tráfico', 'Captación', 'Funnels', 'B2B'],
+                social_audit: ['RedesSociales', 'Instagram', 'Facebook', 'Engagement'],
+                improvement_plan: ['Estrategia', 'PlanDeMejora', 'Crecimiento']
+            };
+
+            let formattedContent = '';
+            let researchData = null;
+
             if (mode === 'competitors') {
-                if (res.competitors) {
-                    const updatedProfile = { ...profile, competitors: res.competitors };
-                    setProfile(updatedProfile);
-                    toast.success("Competidores inyectados. Guardando...", { id: 'comp-toast' });
-                    handleConfirm(updatedProfile);
-                }
+                const compList = res.competitors || [];
+                const updatedProfile = { ...profile, competitors: compList };
+                setProfile(updatedProfile);
+                handleConfirm(updatedProfile);
+
+                formattedContent = `**COMPETIDORES DIRECTOS IDENTIFICADOS (${compList.length}):**\n\n` +
+                    compList.map((c, i) => `* **${c.name || 'Competidor ' + (i+1)}:** ${c.url ? `[${c.url}](${c.url})` : ''} ${c.location ? `(${c.location})` : ''} - ${c.strengthsWeaknesses || ''}`).join('\n');
+
+                researchData = {
+                    summary: `Mapeo estratégico de ${compList.length} competidores directos en el mercado.`,
+                    competitors: compList
+                };
             } else {
-                setInsightData({ title, content: res.insight, loading: false });
-                // PERSISTENCIA: Guardamos el reporte en el estado del perfil
+                formattedContent = res.insight || 'No se recibieron datos de la investigación.';
+                researchData = {
+                    summary: typeof res.insight === 'string' ? res.insight.substring(0, 300) : title,
+                    insight: res.insight
+                };
+
                 const updatedProfile = {
                     ...profile,
                     insights: {
@@ -1129,13 +1159,35 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                 setProfile(updatedProfile);
                 handleConfirm(updatedProfile);
             }
+
+            // AUTO-SAVE TO BRAND RESEARCH REPOSITORY
+            const newQuickResearch = {
+                id: `res_${mode}_${Date.now()}`,
+                title: `${title} - ${profile.brandName || 'Marca'}`,
+                category: categoryMap[mode] || 'Auditoría Estratégica',
+                folderId: folderMap[mode] || 'general',
+                tags: tagMap[mode] || ['Estrategia'],
+                createdAt: new Date().toISOString(),
+                data: researchData,
+                summary: typeof formattedContent === 'string' ? formattedContent.substring(0, 300) : title
+            };
+
+            handleSaveNewResearch(newQuickResearch);
+            setInsightData({ 
+                title, 
+                content: formattedContent, 
+                mode, 
+                loading: false, 
+                rawData: researchData,
+                savedResearch: newQuickResearch 
+            });
+
+            toast.success(`✓ "${title}" guardado en el Repositorio de Marca`);
+
         } catch (error) {
             console.error("Quick Insight Error:", error);
-            if (mode !== 'competitors') {
-                setInsightData({ title, content: 'Ocurrió un error en la infiltración. Por favor intenta de nuevo.', loading: false });
-            } else {
-                toast.error("Fallo al detectar competidores", { id: 'comp-toast' });
-            }
+            setInsightData({ title, content: 'Ocurrió un error en la infiltración: ' + (error.message || 'Error de red'), mode, loading: false });
+            toast.error("Fallo al ejecutar la investigación estratégica");
         } finally {
             setActiveInsightBtn(null);
         }
