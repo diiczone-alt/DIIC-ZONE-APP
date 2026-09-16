@@ -1938,7 +1938,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                         profile={profile}
                         savedResearches={savedResearches}
                         researchFolders={researchFolders}
-                        clientData={clientData}
+                        clientData={null}
                         onUpdateProfile={(updated) => setProfile(prev => ({ ...prev, ...updated }))}
                     />
 

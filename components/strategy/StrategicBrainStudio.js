@@ -20,12 +20,21 @@ export default function StrategicBrainStudio({
     onUpdateProfile = () => {},
     theme = 'dark'
 }) {
+    const safeProfile = profile || {};
+    const safeResearches = Array.isArray(savedResearches) ? savedResearches : [];
+
     // 1. SOURCES STATE
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedSourceIds, setSelectedSourceIds] = useState(['profile_core', 'social_ig', 'social_fb']);
+    const [selectedSourceIds, setSelectedSourceIds] = useState(['profile_core']);
 
     // 2. CHAT STATE
-    const clientName = profile.brandName || profile.leadership || clientData?.name || 'Dr. Oscar Cujilema';
+    const clientName = (
+        safeProfile.brandName || 
+        safeProfile.leadership || 
+        clientData?.name || 
+        'Dr. Oscar Cujilema'
+    ).replace(/[-_\s]+workspace\s*$/i, '').trim();
+
     const [messages, setMessages] = useState([
         {
             id: 'welcome',
@@ -48,7 +57,7 @@ export default function StrategicBrainStudio({
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isChatting]);
 
-    // Build Sources List dynamically
+    // Build Sources List dynamically with 100% defensive checks
     const allSources = useMemo(() => {
         const list = [
             {
@@ -57,73 +66,86 @@ export default function StrategicBrainStudio({
                 type: 'profile',
                 icon: ShieldCheck,
                 badge: 'Identidad 360°',
-                desc: profile.whatItDoes || 'Especialista en Traumatología y Cirugía Artroscópica',
+                desc: typeof safeProfile.whatItDoes === 'string' && safeProfile.whatItDoes ? safeProfile.whatItDoes : 'Especialista en Traumatología y Cirugía Artroscópica',
                 tags: ['Traumatología', 'Artroscopia', 'Rodilla & Hombro']
             }
         ];
 
-        if (profile.instagramUrl) {
+        if (safeProfile.instagramUrl) {
             list.push({
                 id: 'social_ig',
                 title: 'Instagram Auditado',
                 type: 'social',
                 icon: Instagram,
                 badge: 'Red Social',
-                desc: profile.instagramUrl,
+                desc: String(safeProfile.instagramUrl),
                 tags: ['Reels', 'Casos Clínicos', 'Testimonios']
             });
         }
 
-        if (profile.facebookUrl) {
+        if (safeProfile.facebookUrl) {
             list.push({
                 id: 'social_fb',
                 title: 'Facebook Page',
                 type: 'social',
                 icon: Facebook,
                 badge: 'Red Social',
-                desc: profile.facebookUrl,
+                desc: String(safeProfile.facebookUrl),
                 tags: ['Comunidad', 'Pacientes Locales']
             });
         }
 
-        if (profile.websiteUrl || profile.website) {
+        if (safeProfile.websiteUrl || safeProfile.website) {
             list.push({
                 id: 'social_web',
                 title: 'Sitio Web Oficial',
                 type: 'web',
                 icon: Globe,
                 badge: 'Activo Web',
-                desc: profile.websiteUrl || profile.website,
+                desc: String(safeProfile.websiteUrl || safeProfile.website),
                 tags: ['Servicios', 'Ubicación', 'Citas']
             });
         }
 
-        // Add saved researches
-        if (Array.isArray(savedResearches)) {
-            savedResearches.forEach((res, idx) => {
-                list.push({
-                    id: `res_${res.id || idx}`,
-                    title: res.query || res.title || `Investigación #${idx + 1}`,
-                    type: 'research',
-                    icon: BookOpen,
-                    badge: res.folderName || 'Mercado',
-                    desc: res.summary || (res.content ? res.content.substring(0, 90) + '...' : 'Análisis estratégico guardado.'),
-                    tags: ['Nicho', 'Competencia', 'Palabras Clave']
-                });
+        // Add saved researches safely
+        safeResearches.forEach((res, idx) => {
+            if (!res) return;
+            const queryText = (typeof res.query === 'string' && res.query) 
+                ? res.query 
+                : (typeof res.title === 'string' && res.title ? res.title : `Investigación #${idx + 1}`);
+                
+            let descText = 'Análisis estratégico guardado.';
+            if (typeof res.summary === 'string' && res.summary) {
+                descText = res.summary;
+            } else if (typeof res.content === 'string' && res.content) {
+                descText = res.content.substring(0, 90) + '...';
+            } else if (res.overview && typeof res.overview === 'string') {
+                descText = res.overview;
+            }
+
+            list.push({
+                id: `res_${res.id || idx}`,
+                title: queryText,
+                type: 'research',
+                icon: BookOpen,
+                badge: res.folderName || 'Mercado',
+                desc: descText,
+                tags: ['Nicho', 'Competencia', 'Palabras Clave']
             });
-        }
+        });
 
         return list;
-    }, [profile, savedResearches, clientName]);
+    }, [safeProfile, safeResearches, clientName]);
 
     // Filtered sources
     const filteredSources = useMemo(() => {
-        if (!searchQuery.trim()) return allSources;
+        if (!Array.isArray(allSources)) return [];
+        if (!searchQuery || !searchQuery.trim()) return allSources;
         const q = searchQuery.toLowerCase();
         return allSources.filter(s => 
-            s.title.toLowerCase().includes(q) || 
-            s.desc.toLowerCase().includes(q) ||
-            s.tags?.some(t => t.toLowerCase().includes(q))
+            (s.title && String(s.title).toLowerCase().includes(q)) || 
+            (s.desc && String(s.desc).toLowerCase().includes(q)) ||
+            (Array.isArray(s.tags) && s.tags.some(t => typeof t === 'string' && t.toLowerCase().includes(q)))
         );
     }, [allSources, searchQuery]);
 
@@ -146,7 +168,7 @@ export default function StrategicBrainStudio({
     // Handle Send Message
     const handleSendMessage = async (customQuery) => {
         const text = customQuery || input;
-        if (!text.trim() || isChatting) return;
+        if (!text || !text.trim() || isChatting) return;
 
         const userMsg = {
             id: `msg_${Date.now()}`,
@@ -170,8 +192,8 @@ export default function StrategicBrainStudio({
                     message: text.trim(),
                     history: messages.slice(-6),
                     clientName,
-                    profile,
-                    researches: savedResearches,
+                    profile: safeProfile,
+                    researches: safeResearches,
                     activeSources: activeSourcesData
                 })
             });
@@ -184,7 +206,7 @@ export default function StrategicBrainStudio({
             const aiMsg = {
                 id: `msg_ai_${Date.now()}`,
                 sender: 'ai',
-                text: data.reply,
+                text: typeof data.reply === 'string' ? data.reply : JSON.stringify(data.reply),
                 sourcesUsed: activeSourcesData.length,
                 createdAt: new Date().toISOString()
             };
@@ -208,6 +230,7 @@ export default function StrategicBrainStudio({
     };
 
     const handleCopy = (id, text) => {
+        if (!text) return;
         navigator.clipboard.writeText(text);
         setCopiedId(id);
         toast.success('Copiado al portapapeles');
@@ -279,7 +302,7 @@ export default function StrategicBrainStudio({
     return (
         <div className="w-full space-y-4">
             {/* NOTEBOOKLM 3-COLUMN STUDIO CONTAINER */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 bg-[#080914]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] p-4 md:p-6 shadow-2xl relative overflow-hidden min-h-[640px]">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 bg-[#080914]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] p-4 md:p-6 shadow-2xl relative overflow-hidden min-h-[600px]">
                 {/* Ambient glow */}
                 <div className="absolute top-0 right-1/3 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none -z-10" />
                 <div className="absolute bottom-0 left-1/3 w-96 h-96 bg-fuchsia-500/10 rounded-full blur-[120px] pointer-events-none -z-10" />
@@ -307,7 +330,7 @@ export default function StrategicBrainStudio({
                         />
                     </div>
 
-                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar max-h-[460px]">
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar max-h-[440px]">
                         {filteredSources.map((source) => {
                             const isSelected = selectedSourceIds.includes(source.id);
                             const Icon = source.icon;
@@ -348,7 +371,7 @@ export default function StrategicBrainStudio({
                     </div>
 
                     <button 
-                        onClick={() => toast.info("Para agregar más fuentes, utiliza el escáner de 'Estudio de Mercado' o agrega investigaciones al Repositorio.")}
+                        onClick={() => toast.info("Para vincular más fuentes, utiliza el escáner de 'Estudio de Mercado' o agrega investigaciones.")}
                         className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-300 hover:text-white text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95"
                     >
                         <Plus size={13} />
@@ -378,9 +401,10 @@ export default function StrategicBrainStudio({
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar max-h-[380px] min-h-[320px]">
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar max-h-[360px] min-h-[300px]">
                         {messages.map((msg) => {
                             const isUser = msg.sender === 'user';
+                            const msgText = String(msg.text || '');
                             return (
                                 <div 
                                     key={msg.id}
@@ -392,16 +416,16 @@ export default function StrategicBrainStudio({
                                             : 'bg-[#0E0E1A] border border-white/10 text-gray-200 rounded-bl-none shadow-md'
                                     }`}>
                                         <div className="whitespace-pre-wrap">
-                                            {msg.text.split('**').map((part, i) => (
+                                            {msgText.split('**').map((part, i) => (
                                                 i % 2 === 1 ? <strong key={i} className="font-bold text-white">{part}</strong> : part
                                             ))}
                                         </div>
 
                                         {!isUser && (
                                             <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[9px] text-gray-500">
-                                                <span>DIIC Brain • {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                <span>DIIC Brain • {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                                                 <button
-                                                    onClick={() => handleCopy(msg.id, msg.text)}
+                                                    onClick={() => handleCopy(msg.id, msgText)}
                                                     className="text-gray-400 hover:text-white transition-colors flex items-center gap-1"
                                                 >
                                                     {copiedId === msg.id ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
@@ -505,7 +529,7 @@ export default function StrategicBrainStudio({
 
                     {/* TOOL 1: MAPA MENTAL INTERACTIVO */}
                     {activeStudioTool === 'mindmap' && (
-                        <div className="flex-1 flex flex-col space-y-3 overflow-y-auto custom-scrollbar max-h-[500px]">
+                        <div className="flex-1 flex flex-col space-y-3 overflow-y-auto custom-scrollbar max-h-[480px]">
                             <div className="p-3 bg-gradient-to-r from-indigo-950/80 via-purple-950/80 to-fuchsia-950/80 border border-indigo-500/30 rounded-2xl text-center shadow-lg relative overflow-hidden">
                                 <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-[8px] font-black text-indigo-300 uppercase tracking-widest inline-block mb-1">
                                     Nodo Central • Marca Médica
@@ -567,7 +591,7 @@ export default function StrategicBrainStudio({
 
                     {/* TOOL 2: ROADMAP DE CRECIMIENTO */}
                     {activeStudioTool === 'roadmap' && (
-                        <div className="flex-1 flex flex-col space-y-3 overflow-y-auto custom-scrollbar max-h-[500px] text-left">
+                        <div className="flex-1 flex flex-col space-y-3 overflow-y-auto custom-scrollbar max-h-[480px] text-left">
                             <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
                                 <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Fase Actual del Negocio</span>
                                 <h4 className="text-xs font-black text-white uppercase italic">Nivel 2: Autoridad & Captación Cualificada</h4>
@@ -598,7 +622,7 @@ export default function StrategicBrainStudio({
 
                     {/* TOOL 3: DOSSIER EJECUTIVO */}
                     {activeStudioTool === 'dossier' && (
-                        <div className="flex-1 flex flex-col space-y-3 overflow-y-auto custom-scrollbar max-h-[500px] text-left">
+                        <div className="flex-1 flex flex-col space-y-3 overflow-y-auto custom-scrollbar max-h-[480px] text-left">
                             <div className="p-3 bg-white/[0.02] border border-white/5 rounded-2xl space-y-2">
                                 <h4 className="text-xs font-black text-white uppercase italic">Resumen Estratégico Ejecutivo</h4>
                                 <p className="text-[10px] text-gray-300 font-medium leading-relaxed">
