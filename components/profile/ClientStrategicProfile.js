@@ -1391,13 +1391,13 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                         <div className="flex flex-col items-center mb-5 z-10 text-center">
                             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase tracking-wider mb-2.5">
                                 <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                                <span>Terminal de Diagnóstico & Huella Digital</span>
+                                <span>Estudio de Mercado & Huella Digital</span>
                             </div>
                             <h3 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tight">
-                                Auditoría Omnicanal & <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Ecosistema Digital</span>
+                                Estudio de Mercado & <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Auditoría IA</span>
                             </h3>
                             <p className="text-gray-400 text-xs font-medium mt-1 max-w-lg">
-                                Escanea sitios web, perfiles sociales y competidores para extraer insights estratégicos en tiempo real con DIIC IA.
+                                Investigación de nicho, análisis de competidores y auditoría omnicanal con inteligencia estratégica en tiempo real.
                             </p>
                         </div>
 

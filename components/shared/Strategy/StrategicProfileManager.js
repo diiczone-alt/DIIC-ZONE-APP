@@ -97,10 +97,10 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
     const navItems = [
         {
             id: 'search',
-            label: 'Búsqueda & Auditoría',
+            label: 'Estudio de Mercado',
             icon: Search,
             badge: null,
-            desc: 'Escáner Omnicanal & Huella Digital'
+            desc: 'Auditoría Omnicanal & Inteligencia de Nicho'
         },
         {
             id: 'saved',
