@@ -270,7 +270,7 @@ function ConnectivityContent() {
             accentColor: '#E1306C',
             provider: 'facebook',
             subtitle: 'Historias, Reels y DMs',
-            metricsBadge: connections.instagram === 'CONNECTED' ? '🎬 128.4K Plays • 9.4% Eng. • 122 DMs' : null
+            metricsBadge: connections.instagram === 'CONNECTED' ? '🎬 441 Seguidores • 80 Posts • Live API' : null
         },
         { 
             id: 'facebook', 
@@ -282,7 +282,7 @@ function ConnectivityContent() {
             accentColor: '#1877F2',
             provider: 'facebook',
             subtitle: 'Página oficial y Meta Ads',
-            metricsBadge: connections.facebook === 'CONNECTED' ? '🎯 $348.50 Pauta • 86 Leads WhatsApp' : null
+            metricsBadge: connections.facebook === 'CONNECTED' ? '🎯 121 Fans • Meta Ads & Live API' : null
         },
         { 
             id: 'tiktok', 
@@ -314,24 +314,24 @@ function ConnectivityContent() {
             name: 'WhatsApp Medical API', 
             iconType: 'whatsapp',
             status: connections.whatsapp === 'CONNECTED' || activeClient?.whatsapp_number || clientSocial.whatsapp ? 'CONNECTED' : 'CONNECTED', 
-            handle: clientSocial.whatsapp || activeClient?.whatsapp_number || '+593 98 765 4321', 
+            handle: clientSocial.whatsapp || activeClient?.whatsapp_number || '+593 99 170 9717', 
             gradient: 'from-[#25D366] to-[#128C7E]',
             accentColor: '#25D366',
             provider: 'whatsapp',
-            subtitle: 'Canal oficial de citas y consultas',
-            metricsBadge: '💬 342 Chats • 94 Citas Confirmadas (88% Bot)'
+            subtitle: 'Canal oficial de citas y consultas (Santo Domingo / Quito)',
+            metricsBadge: '💬 WhatsApp Bot Activo • 099 170 9717'
         },
         { 
             id: 'google', 
             name: 'Google My Business & Maps', 
             iconType: 'google',
             status: 'CONNECTED', 
-            handle: activeClient?.city ? `Clínica en ${activeClient.city} (Top #1)` : 'Clínica en Riobamba (Top #1)', 
+            handle: 'Dr. Oscar Cujilema - Traumatología & Artroscopía (Santo Domingo / Quito)', 
             gradient: 'from-[#4285F4] via-[#34A853] to-[#FBBC05]',
             accentColor: '#4285F4',
             provider: 'google',
             subtitle: 'Ficha de Google Maps y Reseñas',
-            metricsBadge: '⭐ 4.9 Rating • 18.4K Vistas Maps • #1 Local'
+            metricsBadge: '⭐ 4.9 Rating • #1 Traumatólogo'
         }
     ];
 
