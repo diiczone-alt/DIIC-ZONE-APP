@@ -1823,530 +1823,413 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             ) : (
                 <>
                 {/* MEGA MODO IA: SEARCH ENGINE */}
-            {/* CAPA 1 SUB-TABS */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-8 p-2 bg-black/40 border border-white/10 rounded-2xl backdrop-blur-xl">
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setCapa1ActiveTab('search')}
-                        className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-                            capa1ActiveTab === 'search'
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
-                        }`}
-                    >
-                        <Search className="w-4 h-4" />
-                        <span>Búsqueda & Auditoría Omnicanal</span>
-                    </button>
-
-                    <button
-                        onClick={() => setCapa1ActiveTab('saved')}
-                        className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-                            capa1ActiveTab === 'saved'
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
-                        }`}
-                    >
-                        <Folder className="w-4 h-4 text-indigo-400" />
-                        <span>Investigaciones & Carpetas ({savedResearches.length})</span>
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setIsSaveModalOpen(true)}
-                        className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all"
-                    >
-                        <Bookmark className="w-4 h-4" />
-                        <span>Guardar Investigación Actual</span>
-                    </button>
-                </div>
-            </div>
-
             {capa1ActiveTab === 'saved' ? (
-                <SavedResearchesManager
-                    researches={savedResearches}
-                    folders={researchFolders}
-                    onDeleteResearch={handleDeleteResearch}
-                    onCreateFolder={handleCreateFolder}
-                    onDeleteFolder={handleDeleteFolder}
-                    onLoadIntoProfile={handleLoadResearchIntoProfile}
-                    onConsolidateWithAI={handleConsolidateResearchesWithAI}
-                    clientName={profile.brandName || 'Dr. Oscar Cujilema'}
-                />
-            ) : (
-                <>
-                <div className="bg-gradient-to-br from-[#0A0A12] to-[#11111E] border border-indigo-500/20 rounded-[40px] p-8 md:p-16 mb-12 relative overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.05)] text-center flex flex-col items-center justify-center min-h-[400px]">
-                <div className="absolute top-0 right-0 p-8 opacity-10 blur-xl pointer-events-none">
-                    <Globe className="w-96 h-96 text-indigo-500" />
+                <div className="space-y-6">
+                    <SavedResearchesManager
+                        researches={savedResearches}
+                        folders={researchFolders}
+                        onDeleteResearch={handleDeleteResearch}
+                        onCreateFolder={handleCreateFolder}
+                        onDeleteFolder={handleDeleteFolder}
+                        onLoadIntoProfile={handleLoadResearchIntoProfile}
+                        onConsolidateWithAI={handleConsolidateResearchesWithAI}
+                        clientName={profile.brandName || 'Dr. Oscar Cujilema'}
+                    />
                 </div>
-                
-                <h3 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-4 z-10 flex items-center justify-center gap-4">
-                    <Sparkles className="w-10 h-10 text-indigo-400 animate-pulse" />
-                    Hola, {user?.user_metadata?.first_name || 'Estratega'}
-                </h3>
-                <p className="text-gray-400 text-sm md:text-base font-bold uppercase tracking-[0.2em] mb-10 z-10">
-                    ¿Qué empresa, marca o ecosistema digital deseas analizar hoy?
-                </p>
+            ) : (
+                <div className="space-y-8">
+                    {/* LUXURY CYBERPUNK HUD SEARCH TERMINAL */}
+                    <div className="bg-[#080914]/90 backdrop-blur-2xl border border-indigo-500/20 rounded-[36px] p-6 md:p-10 relative overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.06)] text-center flex flex-col items-center justify-center">
+                        {/* Ambient Neon Highlights */}
+                        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none -z-10" />
+                        <div className="absolute bottom-0 left-0 w-80 h-80 bg-fuchsia-500/10 rounded-full blur-[100px] pointer-events-none -z-10" />
 
-                <div className="w-full max-w-3xl relative z-10">
-                    <div className="relative group">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-[2rem] blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-                        <div className="relative bg-[#0A0A12] border border-white/10 rounded-[2rem] p-3 md:p-4 flex items-center gap-4 shadow-2xl">
-                            <Bot className="w-6 h-6 md:w-8 md:h-8 text-indigo-400 ml-2 md:ml-4 shrink-0" />
-                            <div className="flex-1 flex flex-col">
-                                <span className="text-[8px] font-black text-indigo-500 uppercase tracking-widest mb-0.5 ml-1">Escanear Activo Digital</span>
-                                <input 
-                                    type="text" 
-                                    placeholder="Pega el enlace web (Ej: tupaginaweb.com) o perfil social..."
-                                    value={profile.websiteUrl || ''}
-                                    onChange={(e) => {
-                                       const val = e.target.value;
-                                       handleChange('websiteUrl', val);
-                                    }}
-                                    className="bg-transparent border-none text-white text-base md:text-xl focus:outline-none flex-1 font-medium placeholder:text-gray-600"
-                                />
+                        {/* HUD Header */}
+                        <div className="flex flex-col items-center mb-6 z-10">
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-3">
+                                <Sparkles className="w-3.5 h-3.5 animate-pulse text-indigo-400" />
+                                <span>Terminal de Diagnóstico & Huella Digital</span>
                             </div>
-                            {(() => {
-                                const activeScanChannels = [];
-                                if (profile.websiteUrl) activeScanChannels.push('WEB');
-                                if (isValidSocialUrl(profile.facebookUrl)) activeScanChannels.push('FB');
-                                if (isValidSocialUrl(profile.instagramUrl)) activeScanChannels.push('IG');
-                                if (isValidSocialUrl(profile.tiktokUrl)) activeScanChannels.push('TK');
-                                if (isValidSocialUrl(profile.youtubeUrl)) activeScanChannels.push('YT');
-                                if (isValidSocialUrl(profile.linkedinUrl)) activeScanChannels.push('IN');
-                                const buttonLabel = isSimulatingScrape 
-                                    ? 'INVESTIGANDO...' 
-                                    : (activeScanChannels.length > 1 
-                                        ? `INVESTIGAR (${activeScanChannels.join(' + ')})` 
-                                        : 'REPORTE IA');
-
-                                return (
-                                    <button 
-                                        onClick={handleSimulateSync}
-                                        disabled={!(profile.websiteUrl || profile.instagramUrl || profile.facebookUrl || profile.tiktokUrl || profile.youtubeUrl || profile.linkedinUrl)}
-                                        className={`px-4 py-3 md:px-8 font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 ${
-                                            hasUnsyncedUrl 
-                                            ? 'bg-indigo-600 text-white shadow-[0_0_30px_rgba(79,70,229,0.5)] animate-pulse' 
-                                            : 'bg-white text-black hover:bg-indigo-50 shadow-xl'
-                                        } disabled:opacity-50 disabled:bg-gray-800 disabled:text-gray-500 group relative overflow-hidden`}
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        {isSimulatingScrape ? <Activity className="w-5 h-5 animate-pulse text-white" /> : <Command className="w-5 h-5" />}
-                                        <span className="relative z-10">{buttonLabel}</span>
-                                    </button>
-                                );
-                            })()}
+                            <h3 className="text-2xl md:text-4xl font-black text-white uppercase italic tracking-tight">
+                                Auditoría Omnicanal & <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Ecosistema Digital</span>
+                            </h3>
+                            <p className="text-gray-400 text-xs md:text-sm font-medium mt-1.5 max-w-xl">
+                                Escanea sitios web, perfiles sociales y competidores para extraer insights estratégicos en tiempo real con DIIC IA.
+                            </p>
                         </div>
-                    </div>
 
-                    {/* Social Network Selector Row */}
-                    <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
-                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mr-1">Canales Digitales:</span>
-                        
-                        {/* Facebook Button */}
-                        <button
-                            type="button"
-                            onClick={() => toggleSocialInput('facebook')}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                                profile.facebookUrl 
-                                    ? 'bg-blue-600/20 border-blue-500/50 text-blue-400 shadow-[0_0_15px_rgba(37,99,235,0.2)]' 
-                                    : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
-                            } border`}
-                            title="Agregar Facebook"
-                        >
-                            <Facebook size={16} />
-                        </button>
+                        {/* Search & Channel Command Bar */}
+                        <div className="w-full max-w-3xl relative z-10">
+                            <div className="relative group">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 rounded-[26px] blur-md opacity-30 group-hover:opacity-70 transition duration-700"></div>
+                                <div className="relative bg-[#0A0A14] border border-white/10 rounded-[24px] p-2.5 md:p-3.5 flex items-center gap-3 shadow-2xl">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 ml-1 shrink-0">
+                                        <Bot className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1 flex flex-col text-left">
+                                        <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-0.5">Activo Digital / Enlace a Auditar</span>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Pega el enlace web (ej. tumarca.com) o perfil social..."
+                                            value={profile.websiteUrl || ''}
+                                            onChange={(e) => handleChange('websiteUrl', e.target.value)}
+                                            className="bg-transparent border-none text-white text-sm md:text-base focus:outline-none flex-1 font-medium placeholder:text-gray-600"
+                                        />
+                                    </div>
 
-                        {/* Instagram Button */}
-                        <button
-                            type="button"
-                            onClick={() => toggleSocialInput('instagram')}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                                profile.instagramUrl 
-                                    ? 'bg-pink-600/20 border-pink-500/50 text-pink-400 shadow-[0_0_15px_rgba(219,39,119,0.2)]' 
-                                    : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
-                            } border`}
-                            title="Agregar Instagram"
-                        >
-                            <Instagram size={16} />
-                        </button>
+                                    {(() => {
+                                        const activeScanChannels = [];
+                                        if (profile.websiteUrl) activeScanChannels.push('WEB');
+                                        if (isValidSocialUrl(profile.facebookUrl)) activeScanChannels.push('FB');
+                                        if (isValidSocialUrl(profile.instagramUrl)) activeScanChannels.push('IG');
+                                        if (isValidSocialUrl(profile.tiktokUrl)) activeScanChannels.push('TK');
+                                        if (isValidSocialUrl(profile.youtubeUrl)) activeScanChannels.push('YT');
+                                        if (isValidSocialUrl(profile.linkedinUrl)) activeScanChannels.push('IN');
+                                        const buttonLabel = isSimulatingScrape 
+                                            ? 'AUDITANDO...' 
+                                            : (activeScanChannels.length > 1 
+                                                ? `ESCANEAR (${activeScanChannels.join(' + ')})` 
+                                                : 'AUDITAR CON IA');
 
-                        {/* TikTok Button */}
-                        <button
-                            type="button"
-                            onClick={() => toggleSocialInput('tiktok')}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                                profile.tiktokUrl 
-                                    ? 'bg-teal-600/20 border-teal-500/50 text-teal-400 shadow-[0_0_15px_rgba(13,148,136,0.2)]' 
-                                    : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
-                            } border`}
-                            title="Agregar TikTok"
-                        >
-                            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.95-1.72-.1.08-.21.17-.3.26v9.71c-.04 2.44-1.42 4.77-3.69 5.75-2.28.98-5.06.72-7.06-.66-2-1.38-2.92-3.9-2.31-6.28.61-2.38 2.84-4.06 5.3-4.02.16 0 .32.01.48.03v4.02c-.83-.22-1.73-.05-2.42.44-.7.49-1.1 1.35-1.07 2.22.03.87.52 1.69 1.28 2.1 1.05.57 2.44.42 3.32-.4.4-.38.62-.93.61-1.49V.02z"/>
-                            </svg>
-                        </button>
+                                        return (
+                                            <button 
+                                                onClick={handleSimulateSync}
+                                                disabled={!(profile.websiteUrl || profile.instagramUrl || profile.facebookUrl || profile.tiktokUrl || profile.youtubeUrl || profile.linkedinUrl)}
+                                                className={`px-5 py-3 md:px-7 font-black text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 ${
+                                                    hasUnsyncedUrl 
+                                                    ? 'bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white shadow-[0_0_25px_rgba(99,102,241,0.5)] animate-pulse' 
+                                                    : 'bg-white text-black hover:bg-indigo-50 shadow-xl'
+                                                } disabled:opacity-40 disabled:bg-gray-800 disabled:text-gray-500 group relative overflow-hidden active:scale-95`}
+                                            >
+                                                {isSimulatingScrape ? <Activity className="w-4 h-4 animate-pulse text-white" /> : <Command className="w-4 h-4" />}
+                                                <span className="relative z-10">{buttonLabel}</span>
+                                            </button>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
 
-                        {/* Expandable + Button */}
-                        <div className="relative">
-                            <button
-                                type="button"
-                                onClick={() => setShowMoreSocials(!showMoreSocials)}
-                                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                                    showMoreSocials || profile.youtubeUrl || profile.linkedinUrl
-                                        ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
-                                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
-                                } border`}
-                                title="Más Redes Sociales"
-                            >
-                                <Plus size={16} />
-                            </button>
-                            
-                            <AnimatePresence>
-                                {showMoreSocials && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                        className="absolute z-30 bottom-12 left-1/2 -translate-x-1/2 bg-[#0F0F1A] border border-white/10 rounded-2xl p-2 flex gap-2 shadow-2xl min-w-[200px]"
+                            {/* Digital Footprint Channel Badges */}
+                            <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mr-1">Canales Digitales:</span>
+                                
+                                {/* Facebook */}
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSocialInput('facebook')}
+                                    className={`px-3 py-1.5 rounded-xl flex items-center gap-2 transition-all text-[10px] font-black uppercase tracking-wider ${
+                                        profile.facebookUrl 
+                                            ? 'bg-blue-600/20 border-blue-500/50 text-blue-400 shadow-[0_0_12px_rgba(37,99,235,0.2)]' 
+                                            : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                                    } border`}
+                                >
+                                    <Facebook size={12} />
+                                    <span>Facebook</span>
+                                    {profile.facebookUrl && <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />}
+                                </button>
+
+                                {/* Instagram */}
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSocialInput('instagram')}
+                                    className={`px-3 py-1.5 rounded-xl flex items-center gap-2 transition-all text-[10px] font-black uppercase tracking-wider ${
+                                        profile.instagramUrl 
+                                            ? 'bg-pink-600/20 border-pink-500/50 text-pink-400 shadow-[0_0_12px_rgba(219,39,119,0.2)]' 
+                                            : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                                    } border`}
+                                >
+                                    <Instagram size={12} />
+                                    <span>Instagram</span>
+                                    {profile.instagramUrl && <span className="w-1.5 h-1.5 rounded-full bg-pink-400" />}
+                                </button>
+
+                                {/* TikTok */}
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSocialInput('tiktok')}
+                                    className={`px-3 py-1.5 rounded-xl flex items-center gap-2 transition-all text-[10px] font-black uppercase tracking-wider ${
+                                        profile.tiktokUrl 
+                                            ? 'bg-teal-600/20 border-teal-500/50 text-teal-400 shadow-[0_0_12px_rgba(13,148,136,0.2)]' 
+                                            : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                                    } border`}
+                                >
+                                    <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                                        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.95-1.72-.1.08-.21.17-.3.26v9.71c-.04 2.44-1.42 4.77-3.69 5.75-2.28.98-5.06.72-7.06-.66-2-1.38-2.92-3.9-2.31-6.28.61-2.38 2.84-4.06 5.3-4.02.16 0 .32.01.48.03v4.02c-.83-.22-1.73-.05-2.42.44-.7.49-1.1 1.35-1.07 2.22.03.87.52 1.69 1.28 2.1 1.05.57 2.44.42 3.32-.4.4-.38.62-.93.61-1.49V.02z"/>
+                                    </svg>
+                                    <span>TikTok</span>
+                                    {profile.tiktokUrl && <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />}
+                                </button>
+
+                                {/* Más Redes Dropdown */}
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowMoreSocials(!showMoreSocials)}
+                                        className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all text-[10px] font-black uppercase tracking-wider ${
+                                            showMoreSocials || profile.youtubeUrl || profile.linkedinUrl
+                                                ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-400' 
+                                                : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                                        } border`}
                                     >
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                toggleSocialInput('youtube');
-                                                setShowMoreSocials(false);
-                                            }}
-                                            className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all flex-1 justify-center ${
-                                                profile.youtubeUrl 
-                                                    ? 'bg-red-600/20 text-red-400 border border-red-500/30' 
-                                                    : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
-                                            }`}
-                                        >
-                                            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                                                <path d="M23.498 6.163c-.272-.98-1.04-1.755-2.02-2.027C19.7 3.5 12 3.5 12 3.5s-7.7 0-9.478.436c-.98.272-1.748 1.047-2.02 2.027C0 7.9 0 12 0 12s0 4.1.522 5.837c.272.98 1.04 1.755 2.02 2.027C4.3 20.5 12 20.5 12 20.5s7.7 0 9.478-.436c.98-.272 1.748-1.047 2.02-2.027C24 16.1 24 12 24 12s0-4.1-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                                            </svg>
-                                            YouTube
-                                        </button>
-                                        
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                toggleSocialInput('linkedin');
-                                                setShowMoreSocials(false);
-                                            }}
-                                            className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all flex-1 justify-center ${
-                                                profile.linkedinUrl 
-                                                    ? 'bg-sky-600/20 text-sky-400 border border-sky-500/30' 
-                                                    : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
-                                            }`}
-                                        >
-                                            <Linkedin size={14} />
-                                            LinkedIn
-                                        </button>
+                                        <Plus size={12} />
+                                        <span>Más</span>
+                                    </button>
+                                    
+                                    <AnimatePresence>
+                                        {showMoreSocials && (
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                                                className="absolute z-30 top-10 left-1/2 -translate-x-1/2 bg-[#0F0F1A] border border-white/10 rounded-2xl p-2 flex gap-2 shadow-2xl min-w-[220px]"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        toggleSocialInput('youtube');
+                                                        setShowMoreSocials(false);
+                                                    }}
+                                                    className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all flex-1 justify-center ${
+                                                        profile.youtubeUrl 
+                                                            ? 'bg-red-600/20 text-red-400 border border-red-500/30' 
+                                                            : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                                                    }`}
+                                                >
+                                                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                                                        <path d="M23.498 6.163c-.272-.98-1.04-1.755-2.02-2.027C19.7 3.5 12 3.5 12 3.5s-7.7 0-9.478.436c-.98.272-1.748 1.047-2.02 2.027C0 7.9 0 12 0 12s0 4.1.522 5.837c.272.98 1.04 1.755 2.02 2.027C4.3 20.5 12 20.5 12 20.5s7.7 0 9.478-.436c.98-.272 1.748-1.047 2.02-2.027C24 16.1 24 12 24 12s0-4.1-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                                    </svg>
+                                                    YouTube
+                                                </button>
+                                                
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        toggleSocialInput('linkedin');
+                                                        setShowMoreSocials(false);
+                                                    }}
+                                                    className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all flex-1 justify-center ${
+                                                        profile.linkedinUrl 
+                                                            ? 'bg-sky-600/20 text-sky-400 border border-sky-500/30' 
+                                                            : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                                                    }`}
+                                                >
+                                                    <Linkedin size={13} />
+                                                    LinkedIn
+                                                </button>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </div>
+
+                            {/* Active Social Inputs Row */}
+                            <AnimatePresence>
+                                {Object.keys(visibleSocials).some(key => visibleSocials[key]) && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="mt-4 space-y-2.5 w-full text-left overflow-hidden pt-2 border-t border-white/5"
+                                    >
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                            {/* Facebook input */}
+                                            {visibleSocials.facebook && (
+                                                <div className="flex items-center bg-black/40 border border-blue-500/30 rounded-xl px-3 py-2 gap-2">
+                                                    <Facebook size={14} className="text-blue-400 shrink-0" />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="URL de Facebook..."
+                                                        value={profile.facebookUrl || ''}
+                                                        onChange={(e) => handleChange('facebookUrl', e.target.value)}
+                                                        className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
+                                                    />
+                                                    <button type="button" onClick={() => { handleChange('facebookUrl', ''); toggleSocialInput('facebook'); }} className="text-gray-600 hover:text-rose-400">
+                                                        <X size={13} />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Instagram input */}
+                                            {visibleSocials.instagram && (
+                                                <div className="flex items-center bg-black/40 border border-pink-500/30 rounded-xl px-3 py-2 gap-2">
+                                                    <Instagram size={14} className="text-pink-400 shrink-0" />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="URL o @usuario de Instagram..."
+                                                        value={profile.instagramUrl || ''}
+                                                        onChange={(e) => handleChange('instagramUrl', e.target.value)}
+                                                        className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
+                                                    />
+                                                    <button type="button" onClick={() => { handleChange('instagramUrl', ''); toggleSocialInput('instagram'); }} className="text-gray-600 hover:text-rose-400">
+                                                        <X size={13} />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* TikTok input */}
+                                            {visibleSocials.tiktok && (
+                                                <div className="flex items-center bg-black/40 border border-teal-500/30 rounded-xl px-3 py-2 gap-2">
+                                                    <span className="text-[10px] font-black text-teal-400">TK</span>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="URL o @usuario de TikTok..."
+                                                        value={profile.tiktokUrl || ''}
+                                                        onChange={(e) => handleChange('tiktokUrl', e.target.value)}
+                                                        className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
+                                                    />
+                                                    <button type="button" onClick={() => { handleChange('tiktokUrl', ''); toggleSocialInput('tiktok'); }} className="text-gray-600 hover:text-rose-400">
+                                                        <X size={13} />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* YouTube input */}
+                                            {visibleSocials.youtube && (
+                                                <div className="flex items-center bg-black/40 border border-red-500/30 rounded-xl px-3 py-2 gap-2">
+                                                    <span className="text-[10px] font-black text-red-400">YT</span>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="URL de canal YouTube..."
+                                                        value={profile.youtubeUrl || ''}
+                                                        onChange={(e) => handleChange('youtubeUrl', e.target.value)}
+                                                        className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
+                                                    />
+                                                    <button type="button" onClick={() => { handleChange('youtubeUrl', ''); toggleSocialInput('youtube'); }} className="text-gray-600 hover:text-rose-400">
+                                                        <X size={13} />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* LinkedIn input */}
+                                            {visibleSocials.linkedin && (
+                                                <div className="flex items-center bg-black/40 border border-sky-500/30 rounded-xl px-3 py-2 gap-2">
+                                                    <Linkedin size={14} className="text-sky-400 shrink-0" />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="URL de empresa LinkedIn..."
+                                                        value={profile.linkedinUrl || ''}
+                                                        onChange={(e) => handleChange('linkedinUrl', e.target.value)}
+                                                        className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
+                                                    />
+                                                    <button type="button" onClick={() => { handleChange('linkedinUrl', ''); toggleSocialInput('linkedin'); }} className="text-gray-600 hover:text-rose-400">
+                                                        <X size={13} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
                         </div>
-                    </div>
 
-                    {/* Social Inputs list */}
-                    <AnimatePresence>
-                        {Object.keys(visibleSocials).some(key => visibleSocials[key]) && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="mt-6 space-y-3 w-full text-left overflow-hidden"
-                            >
-                                <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1 pl-1 flex items-center gap-1.5">
-                                    <Network size={12} className="text-indigo-400" /> Huella Digital Adicional
-                                </div>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {/* Facebook */}
-                                    {visibleSocials.facebook && (
-                                        <motion.div 
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
-                                                profile.facebookUrl 
-                                                    ? (isValidSocialUrl(profile.facebookUrl)
-                                                        ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
-                                                        : 'border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.06)]')
-                                                    : 'border-blue-500/20'
-                                            }`}
-                                        >
-                                            <Facebook size={16} className="text-blue-500 shrink-0" />
-                                            <input
-                                                type="text"
-                                                placeholder="Enlace de Facebook..."
-                                                value={profile.facebookUrl || ''}
-                                                onChange={(e) => handleChange('facebookUrl', e.target.value)}
-                                                className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
-                                            />
-                                            {profile.facebookUrl && (
-                                                isValidSocialUrl(profile.facebookUrl) ? (
-                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1">
-                                                        <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 shrink-0 flex items-center gap-1 animate-pulse">
-                                                        <ShieldAlert size={10} className="text-rose-400" /> ENLACE INVÁLIDO
-                                                    </span>
-                                                )
-                                            )}
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    handleChange('facebookUrl', '');
-                                                    toggleSocialInput('facebook');
-                                                }}
-                                                className="text-gray-600 hover:text-rose-400 p-1"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        </motion.div>
-                                    )}
+                        {/* 5 EXECUTIVE QUICK-DIAGNOSTIC TILES */}
+                        <div className="w-full mt-8 pt-6 border-t border-white/5 z-10">
+                            <div className="flex items-center justify-between mb-4 px-1">
+                                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-400 flex items-center gap-2">
+                                    <Zap className="w-3.5 h-3.5 text-indigo-400" />
+                                    Auditorías Rápidas de Alto Impacto
+                                </span>
+                                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest hidden sm:inline">
+                                    Autoguardado en Repositorio
+                                </span>
+                            </div>
 
-                                    {/* Instagram */}
-                                    {visibleSocials.instagram && (
-                                        <motion.div 
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
-                                                profile.instagramUrl 
-                                                    ? (isValidSocialUrl(profile.instagramUrl)
-                                                        ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
-                                                        : 'border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.06)]')
-                                                    : 'border-pink-500/20'
-                                            }`}
-                                        >
-                                            <Instagram size={16} className="text-pink-500 shrink-0" />
-                                            <input
-                                                type="text"
-                                                placeholder="Enlace de Instagram..."
-                                                value={profile.instagramUrl || ''}
-                                                onChange={(e) => handleChange('instagramUrl', e.target.value)}
-                                                className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
-                                            />
-                                            {profile.instagramUrl && (
-                                                isValidSocialUrl(profile.instagramUrl) ? (
-                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1">
-                                                        <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 shrink-0 flex items-center gap-1 animate-pulse">
-                                                        <ShieldAlert size={10} className="text-rose-400" /> ENLACE INVÁLIDO
-                                                    </span>
-                                                )
-                                            )}
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    handleChange('instagramUrl', '');
-                                                    toggleSocialInput('instagram');
-                                                }}
-                                                className="text-gray-600 hover:text-rose-400 p-1"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        </motion.div>
-                                    )}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                                {/* 1. Competidores */}
+                                <button 
+                                    disabled={activeInsightBtn === 'competitors'}
+                                    onClick={() => handleQuickInsight('competitors', 'Competidores')}
+                                    type="button"
+                                    className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
+                                        activeInsightBtn === 'competitors'
+                                            ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.3)]'
+                                            : 'bg-[#0E0E1A]/80 border-white/5 hover:border-indigo-500/40 hover:bg-indigo-500/5'
+                                    }`}
+                                >
+                                    <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2.5 group-hover:scale-110 transition-transform">
+                                        {activeInsightBtn === 'competitors' ? <Activity size={16} className="animate-spin text-indigo-400" /> : <Globe size={16} />}
+                                    </div>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Competidores</h4>
+                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Mapeo directo y ventajas de mercado</p>
+                                </button>
 
-                                    {/* TikTok */}
-                                    {visibleSocials.tiktok && (
-                                        <motion.div 
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
-                                                profile.tiktokUrl 
-                                                    ? (isValidSocialUrl(profile.tiktokUrl)
-                                                        ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
-                                                        : 'border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.06)]')
-                                                    : 'border-teal-500/20'
-                                            }`}
-                                        >
-                                            <svg className="w-4 h-4 fill-current text-teal-500 shrink-0" viewBox="0 0 24 24">
-                                                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.95-1.72-.1.08-.21.17-.3.26v9.71c-.04 2.44-1.42 4.77-3.69 5.75-2.28.98-5.06.72-7.06-.66-2-1.38-2.92-3.9-2.31-6.28.61-2.38 2.84-4.06 5.3-4.02.16 0 .32.01.48.03v4.02c-.83-.22-1.73-.05-2.42.44-.7.49-1.1 1.35-1.07 2.22.03.87.52 1.69 1.28 2.1 1.05.57 2.44.42 3.32-.4.4-.38.62-.93.61-1.49V.02z"/>
-                                            </svg>
-                                            <input
-                                                type="text"
-                                                placeholder="Enlace de TikTok..."
-                                                value={profile.tiktokUrl || ''}
-                                                onChange={(e) => handleChange('tiktokUrl', e.target.value)}
-                                                className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
-                                            />
-                                            {profile.tiktokUrl && (
-                                                isValidSocialUrl(profile.tiktokUrl) ? (
-                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1">
-                                                        <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 shrink-0 flex items-center gap-1 animate-pulse">
-                                                        <ShieldAlert size={10} className="text-rose-400" /> ENLACE INVÁLIDO
-                                                    </span>
-                                                )
-                                            )}
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    handleChange('tiktokUrl', '');
-                                                    toggleSocialInput('tiktok');
-                                                }}
-                                                className="text-gray-600 hover:text-rose-400 p-1"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        </motion.div>
-                                    )}
+                                {/* 2. Fricción CRO */}
+                                <button 
+                                    disabled={activeInsightBtn === 'friction'}
+                                    onClick={() => handleQuickInsight('friction', 'Puntos de Fricción CRO')}
+                                    type="button"
+                                    className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
+                                        activeInsightBtn === 'friction'
+                                            ? 'bg-pink-600/20 border-pink-500 shadow-[0_0_20px_rgba(219,39,119,0.3)]'
+                                            : 'bg-[#0E0E1A]/80 border-white/5 hover:border-pink-500/40 hover:bg-pink-500/5'
+                                    }`}
+                                >
+                                    <div className="w-9 h-9 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 mb-2.5 group-hover:scale-110 transition-transform">
+                                        {activeInsightBtn === 'friction' ? <Activity size={16} className="animate-spin text-pink-400" /> : <TargetIcon size={16} />}
+                                    </div>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Fricción CRO</h4>
+                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Detección de fugas en la conversión</p>
+                                </button>
 
-                                    {/* YouTube */}
-                                    {visibleSocials.youtube && (
-                                        <motion.div 
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
-                                                profile.youtubeUrl 
-                                                    ? (isValidSocialUrl(profile.youtubeUrl)
-                                                        ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
-                                                        : 'border-red-500/20')
-                                                    : 'border-red-500/20'
-                                            }`}
-                                        >
-                                            <svg className="w-4 h-4 fill-current text-red-500 shrink-0" viewBox="0 0 24 24">
-                                                <path d="M23.498 6.163c-.272-.98-1.04-1.755-2.02-2.027C19.7 3.5 12 3.5 12 3.5s-7.7 0-9.478.436c-.98.272-1.748 1.047-2.02 2.027C0 7.9 0 12 0 12s0 4.1.522 5.837c.272.98 1.04 1.755 2.02 2.027C4.3 20.5 12 20.5 12 20.5s7.7 0 9.478-.436c.98-.272 1.748-1.047 2.02-2.027C24 16.1 24 12 24 12s0-4.1-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                                            </svg>
-                                            <input
-                                                type="text"
-                                                placeholder="Enlace de YouTube..."
-                                                value={profile.youtubeUrl || ''}
-                                                onChange={(e) => handleChange('youtubeUrl', e.target.value)}
-                                                className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
-                                            />
-                                            {profile.youtubeUrl && (
-                                                isValidSocialUrl(profile.youtubeUrl) ? (
-                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1">
-                                                        <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 shrink-0 flex items-center gap-1 animate-pulse">
-                                                        <ShieldAlert size={10} className="text-rose-400" /> ENLACE INVÁLIDO
-                                                    </span>
-                                                )
-                                            )}
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    handleChange('youtubeUrl', '');
-                                                    toggleSocialInput('youtube');
-                                                }}
-                                                className="text-gray-600 hover:text-rose-400 p-1"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        </motion.div>
-                                    )}
+                                {/* 3. Tráfico B2B */}
+                                <button 
+                                    disabled={activeInsightBtn === 'traffic'}
+                                    onClick={() => handleQuickInsight('traffic', 'Rutas de Tráfico B2B')}
+                                    type="button"
+                                    className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
+                                        activeInsightBtn === 'traffic'
+                                            ? 'bg-emerald-600/20 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
+                                            : 'bg-[#0E0E1A]/80 border-white/5 hover:border-emerald-500/40 hover:bg-emerald-500/5'
+                                    }`}
+                                >
+                                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-2.5 group-hover:scale-110 transition-transform">
+                                        {activeInsightBtn === 'traffic' ? <Activity size={16} className="animate-spin text-emerald-400" /> : <Activity size={16} />}
+                                    </div>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Tráfico B2B</h4>
+                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Rutas y procedencia de prospectos</p>
+                                </button>
 
-                                    {/* LinkedIn */}
-                                    {visibleSocials.linkedin && (
-                                        <motion.div 
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            className={`relative flex items-center bg-[#07070F]/60 border rounded-2xl p-3 gap-3 transition-all ${
-                                                profile.linkedinUrl 
-                                                    ? (isValidSocialUrl(profile.linkedinUrl)
-                                                        ? 'border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.06)]' 
-                                                        : 'border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.06)]')
-                                                    : 'border-sky-500/20'
-                                            }`}
-                                        >
-                                            <Linkedin size={16} className="text-sky-500 shrink-0" />
-                                            <input
-                                                type="text"
-                                                placeholder="Enlace de LinkedIn..."
-                                                value={profile.linkedinUrl || ''}
-                                                onChange={(e) => handleChange('linkedinUrl', e.target.value)}
-                                                className="bg-transparent border-none text-white text-xs focus:outline-none flex-1 font-medium placeholder:text-gray-600"
-                                            />
-                                            {profile.linkedinUrl && (
-                                                isValidSocialUrl(profile.linkedinUrl) ? (
-                                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 flex items-center gap-1">
-                                                        <CheckCircle2 size={10} className="text-emerald-400" /> DETECTADO
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 shrink-0 flex items-center gap-1 animate-pulse">
-                                                        <ShieldAlert size={10} className="text-rose-400" /> ENLACE INVÁLIDO
-                                                    </span>
-                                                )
-                                            )}
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    handleChange('linkedinUrl', '');
-                                                    toggleSocialInput('linkedin');
-                                                }}
-                                                className="text-gray-600 hover:text-rose-400 p-1"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        </motion.div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                {/* 4. Auditoría Redes */}
+                                <button 
+                                    disabled={activeInsightBtn === 'social_audit'}
+                                    onClick={() => handleQuickInsight('social_audit', 'Auditoría de Redes Sociales')}
+                                    type="button"
+                                    className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
+                                        activeInsightBtn === 'social_audit'
+                                            ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.3)]'
+                                            : 'bg-[#0E0E1A]/80 border-white/5 hover:border-indigo-500/40 hover:bg-indigo-500/5'
+                                    }`}
+                                >
+                                    <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2.5 group-hover:scale-110 transition-transform">
+                                        {activeInsightBtn === 'social_audit' ? <Activity size={16} className="animate-spin text-indigo-400" /> : <Bot size={16} />}
+                                    </div>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Auditoría Redes</h4>
+                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Alcance, engagement y huella digital</p>
+                                </button>
 
-                    {/* Quick actions chips - REINSTATED BY USER REQUEST */}
-                    <div className="flex flex-wrap justify-center gap-3 mt-8">
-                        <button 
-                            disabled={activeInsightBtn === 'competitors'}
-                            onClick={() => handleQuickInsight('competitors', 'Competidores')}
-                            className="px-5 py-2.5 rounded-full border border-white/10 bg-white/5 text-gray-300 text-xs font-black hover:bg-white/10 hover:border-indigo-500/50 transition-all uppercase tracking-[0.15em] flex items-center gap-2 disabled:opacity-50"
-                        >
-                           {activeInsightBtn === 'competitors' ? <Activity size={14} className="text-indigo-400 animate-pulse" /> : <Globe size={14} className="text-gray-400" />}
-                           {activeInsightBtn === 'competitors' ? 'Extrayendo...' : 'Analizar Competidores'}
-                        </button>
-                        <button 
-                            disabled={activeInsightBtn === 'friction'}
-                            onClick={() => handleQuickInsight('friction', 'Puntos de Fricción CRO')}
-                            className="px-5 py-2.5 rounded-full border border-white/10 bg-white/5 text-gray-300 text-xs font-black hover:bg-white/10 hover:border-pink-500/50 transition-all uppercase tracking-[0.15em] flex items-center gap-2 disabled:opacity-50"
-                        >
-                           {activeInsightBtn === 'friction' ? <Activity size={14} className="text-pink-400 animate-pulse" /> : <TargetIcon size={14} className="text-gray-400" />}
-                           Detectar Puntos de Fricción
-                        </button>
-                        <button 
-                            disabled={activeInsightBtn === 'traffic'}
-                            onClick={() => handleQuickInsight('traffic', 'Rutas de Tráfico B2B')}
-                            className="px-5 py-2.5 rounded-full border border-white/10 bg-white/5 text-gray-300 text-xs font-black hover:bg-white/10 hover:border-emerald-500/50 transition-all uppercase tracking-[0.15em] flex items-center gap-2 disabled:opacity-50"
-                        >
-                           {activeInsightBtn === 'traffic' ? <Activity size={14} className="text-emerald-400 animate-pulse" /> : <Activity size={14} className="text-gray-400" />}
-                           Auditoría de Tráfico B2B
-                        </button>
-                        <button 
-                            disabled={activeInsightBtn === 'social_audit'}
-                            onClick={() => handleQuickInsight('social_audit', 'Auditoría de Redes Sociales')}
-                            className="px-5 py-2.5 rounded-full border border-white/10 bg-white/5 text-gray-300 text-xs font-black hover:bg-white/10 hover:border-indigo-500/50 transition-all uppercase tracking-[0.15em] flex items-center gap-2 disabled:opacity-50"
-                        >
-                           {activeInsightBtn === 'social_audit' ? <Activity size={14} className="text-indigo-400 animate-pulse" /> : <Bot size={14} className="text-gray-400" />}
-                           {activeInsightBtn === 'social_audit' ? 'Investigando...' : 'Auditoría de Redes'}
-                        </button>
-                        <button 
-                            disabled={activeInsightBtn === 'improvement_plan'}
-                            onClick={() => handleQuickInsight('improvement_plan', 'Plan de Mejora Estratégico')}
-                            className="px-5 py-2.5 rounded-full border border-white/10 bg-white/5 text-gray-300 text-xs font-black hover:bg-white/10 hover:border-amber-500/50 transition-all uppercase tracking-[0.15em] flex items-center gap-2 disabled:opacity-50"
-                        >
-                           {activeInsightBtn === 'improvement_plan' ? <Activity size={14} className="text-amber-400 animate-pulse" /> : <Wand2 size={14} className="text-gray-400" />}
-                           {activeInsightBtn === 'improvement_plan' ? 'Diseñando...' : 'Plan de Mejora'}
-                        </button>
+                                {/* 5. Plan de Mejora */}
+                                <button 
+                                    disabled={activeInsightBtn === 'improvement_plan'}
+                                    onClick={() => handleQuickInsight('improvement_plan', 'Plan de Mejora Estratégico')}
+                                    type="button"
+                                    className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
+                                        activeInsightBtn === 'improvement_plan'
+                                            ? 'bg-amber-600/20 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
+                                            : 'bg-[#0E0E1A]/80 border-white/5 hover:border-amber-500/40 hover:bg-amber-500/5'
+                                    }`}
+                                >
+                                    <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-2.5 group-hover:scale-110 transition-transform">
+                                        {activeInsightBtn === 'improvement_plan' ? <Activity size={16} className="animate-spin text-amber-400" /> : <Wand2 size={16} />}
+                                    </div>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Plan de Mejora</h4>
+                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Hoja de ruta táctica a 30 días</p>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-
+            )}
+            
             {/* Inline Research Chat - Activated once a URL is typed */}
             <AnimatePresence>
             {profile.websiteUrl && (
@@ -3237,14 +3120,207 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         Los cambios se guardan automáticamente en tu perfil estratégico local.
                                     </p>
                                 </div>
+                                        { label: 'Propuesta de Valor', field: 'valueProp', icon: TargetIcon },
+                                        { label: 'Mercado', field: 'marketContext', icon: Globe },
+                                        { label: 'Tono', field: 'tone', icon: Heart },
+                                        { label: 'Meta Principal', field: 'mainGoal', icon: Target },
+                                    ].map((item, idx) => (
+                                        <div key={idx} className="space-y-3 p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
+                                            <div className="flex items-center gap-3 opacity-50">
+                                                <item.icon size={16} className="text-indigo-400" />
+                                                <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{item.label}</span>
+                                            </div>
+                                            <p className="text-sm text-gray-200 font-medium leading-relaxed italic">
+                                                {selectedSnapshotForPreview?.data?.[item.field] || 'Dato no registrado en esta versión.'}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="pt-12 border-t border-white/5 text-center opacity-30">
+                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.5em]">DIIC ZONE • ECOSISTEMA ESTRATÉGICO SEGURO</p>
+                                </div>
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            </>
-            )}
+            {/* STRATEGIC INSIGHT MODAL */}
+            <AnimatePresence>
+                {insightModalOpen && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm print-modal-container"
+                        onClick={() => setInsightModalOpen(false)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="w-full max-w-2xl bg-[#0A0A0F] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl relative print-modal-content"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="absolute top-0 right-0 p-8 opacity-5">
+                                <Bot className="w-64 h-64 text-indigo-500" />
+                            </div>
+                            
+                            <div className="p-8 md:p-10 relative z-10 max-h-[85vh] flex flex-col print-modal-body">
+                                <div className="flex justify-between items-center mb-8 shrink-0">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                            {insightData.loading ? <Activity className="w-7 h-7 animate-pulse" /> : <Bot className="w-7 h-7" />}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-none">{insightData.title}</h3>
+                                            <p className="text-[10px] text-indigo-500/70 font-black uppercase tracking-[0.3em] mt-1">Intelligence Report v2.5</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setInsightModalOpen(false)}
+                                        className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center gap-2 text-gray-400 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest print:hidden"
+                                    >
+                                        <span>Entendido</span>
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                                    {insightData.loading ? (
+                                        <div className="py-20 text-center space-y-6">
+                                            <div className="relative w-20 h-20 mx-auto">
+                                                <div className="absolute inset-0 border-4 border-indigo-500/20 rounded-full" />
+                                                <div className="absolute inset-0 border-4 border-t-indigo-500 rounded-full animate-spin" />
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <Zap className="w-8 h-8 text-indigo-400 animate-pulse" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-lg font-black uppercase tracking-widest text-white italic">Investigando profundamente...</p>
+                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-2">Midiendo rutas de mercado y fricción UX</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                                <div className="relative z-10 p-2 md:p-4">
+                                                    <StrategicReportViewer content={insightData.content} />
+                                                </div>
+                                            
+                                            <div className="flex items-center gap-3 px-4 py-3 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
+                                                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                                                <p className="text-[10px] text-emerald-400/70 font-black uppercase tracking-widest">Datos verificados con Grounding IA en tiempo real</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {!insightData.loading && (
+                                    <div className="mt-8 pt-6 border-t border-white/5 shrink-0">
+                                        <div className="flex gap-4">
+                                            <button 
+                                                onClick={() => setTimeout(() => window.print(), 200)}
+                                                className="flex-1 py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-2 print:hidden"
+                                            >
+                                                <FileUp size={18} /> Exportar PDF
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    toast.success("Investigación asegurada en tu base de datos");
+                                                    setInsightModalOpen(false);
+                                                }}
+                                                className="flex-2 w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 print:hidden"
+                                            >
+                                                <Database size={18} /> Guardar
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* DEEP DIVE EXPANSION MODAL */}
+            <AnimatePresence>
+                {expandedField && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                        onClick={() => setExpandedField(null)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0, y: 50 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 50 }}
+                            className="w-full max-w-4xl bg-[#0A0A0F] border border-white/10 rounded-[40px] overflow-hidden shadow-2xl relative"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="p-8 md:p-12">
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-inner">
+                                            <expandedField.icon className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">{expandedField.label}</h3>
+                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] flex items-center gap-2">
+                                                <Activity size={10} className="text-indigo-500" /> Modo Profundidad Estratégica
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setExpandedField(null)}
+                                        className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all outline-none"
+                                    >
+                                        <Trash2 className="w-6 h-6 rotate-45" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="relative group">
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-3xl blur opacity-10 group-focus-within:opacity-30 transition duration-500"></div>
+                                        <textarea 
+                                            value={profile[expandedField.field] || ''}
+                                            onChange={(e) => handleChange(expandedField.field, e.target.value)}
+                                            className="w-full min-h-[350px] bg-[#0F0F1A] border border-white/10 rounded-3xl p-8 text-xl text-gray-300 font-medium leading-relaxed focus:outline-none focus:border-indigo-500/50 transition-all custom-scrollbar"
+                                            placeholder="Desarrolla aquí la idea profunda..."
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                                        <button 
+                                            onClick={() => handleFieldAIAction(expandedField.field, 'refine')}
+                                            disabled={isFieldLoading}
+                                            className="flex-1 py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-indigo-600/20 disabled:opacity-50 group"
+                                        >
+                                            {isFieldLoading ? <Activity className="w-5 h-5 animate-pulse" /> : <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />} 
+                                            Investigar en la Web
+                                        </button>
+                                        <button 
+                                            onClick={() => handleFieldAIAction(expandedField.field, 'persuade')}
+                                            disabled={isFieldLoading || !profile[expandedField.field]}
+                                            className="flex-1 py-5 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 group"
+                                        >
+                                            <Sparkles className="w-5 h-5 text-emerald-400 group-hover:animate-pulse" />
+                                            Optimizar Copy Estratégico
+                                        </button>
+                                    </div>
+                                    
+                                    <p className="text-[10px] text-gray-600 text-center font-bold uppercase tracking-widest pt-4">
+                                        Los cambios se guardan automáticamente en tu perfil estratégico local.
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Modal para Guardar Investigación */}
             <SavedResearchesModal
                 isOpen={isSaveModalOpen}
