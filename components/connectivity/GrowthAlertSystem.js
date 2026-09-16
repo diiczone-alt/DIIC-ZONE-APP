@@ -25,10 +25,10 @@ const ICON_MAP = {
     Activity, ShieldAlert, Rocket, Target, Orbit, Lightbulb, CheckCircle2
 };
 
-export default function GrowthAlertSystem() {
+export default function GrowthAlertSystem({ clientId: propClientId, clientData: propClientData }) {
     const router = useRouter();
     const { user } = useAuth();
-    const clientId = user?.client_id || 1;
+    const effectiveClientId = propClientId || user?.client_id || user?.id;
     const [alerts, setAlerts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -37,24 +37,55 @@ export default function GrowthAlertSystem() {
             try {
                 setIsLoading(true);
                 // 1. Get client strategic context
-                const client = await agencyService.getClientById(clientId);
-                let context = { name: "Cliente Generico" };
+                let client = propClientData;
+                if (!client && effectiveClientId) {
+                    client = await agencyService.getClientById(effectiveClientId);
+                    if (!client) {
+                        const { data } = await supabase.from('clients').select('*').eq('id', effectiveClientId).maybeSingle();
+                        client = data;
+                    }
+                }
+
+                const brandName = (client?.name || user?.user_metadata?.brand || user?.user_metadata?.full_name || 'Estratega')
+                    .replace(/[-_\s]+workspace\s*$/i, '')
+                    .trim();
+
+                let context = { 
+                    name: brandName,
+                    maturity_level: client?.growth_level || client?.metadata?.maturity_level || 1 
+                };
                 
                 if (client?.metadata?.strategic) {
-                    context = { ...client.metadata.strategic, maturity_level: client.metadata.maturity_level };
+                    context = { ...context, ...client.metadata.strategic };
                 }
 
                 // 1.5 Get linked business accounts to provide real data validation
                 let linkedAccounts = [];
+                
+                // Check onboarding_data social flags
+                const obSocial = client?.onboarding_data?.social;
+                if (obSocial?.facebook_connected || obSocial?.completed || obSocial?.instagram || obSocial?.facebook) {
+                    linkedAccounts.push('facebook');
+                }
+                if (obSocial?.tiktok) linkedAccounts.push('tiktok');
+                if (obSocial?.youtube) linkedAccounts.push('youtube');
+                if (client?.google_drive_folder_id) linkedAccounts.push('google_drive');
+
                 try {
-                    const { data: brandConns } = await supabase
-                        .from('brand_connections')
-                        .select('provider, status')
-                        .eq('client_id', clientId)
-                        .eq('status', 'connected');
-                        
-                    if (brandConns) {
-                        linkedAccounts = brandConns.map(c => c.provider);
+                    if (effectiveClientId) {
+                        const { data: brandConns } = await supabase
+                            .from('brand_connections')
+                            .select('provider, status')
+                            .eq('client_id', effectiveClientId)
+                            .eq('status', 'connected');
+                            
+                        if (brandConns) {
+                            brandConns.forEach(c => {
+                                if (!linkedAccounts.includes(c.provider)) {
+                                    linkedAccounts.push(c.provider);
+                                }
+                            });
+                        }
                     }
                 } catch (e) {
                     console.log("[GrowthAlert] Could not fetch brand_connections:", e);
@@ -72,7 +103,7 @@ export default function GrowthAlertSystem() {
         };
 
         fetchAlerts();
-    }, [clientId]);
+    }, [effectiveClientId, propClientData, user]);
 
     const removeAlert = (id) => {
         setAlerts(prev => prev.filter(a => a.id !== id));
@@ -215,7 +246,7 @@ export default function GrowthAlertSystem() {
                                 </motion.div>
                             )}
 
-                            {(alert.type === 'smart_risk' || alert.type === 'smart_opportunity') && (
+                            {(alert.type === 'smart_risk' || alert.type === 'smart_opportunity') && !!alert.strategy && (
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}

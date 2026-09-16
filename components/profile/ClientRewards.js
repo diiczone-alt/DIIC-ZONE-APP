@@ -21,11 +21,19 @@ export default function ClientRewards({ clientId: propClientId }) {
         const fetchRewards = async () => {
             try {
                 setIsLoading(true);
-                const client = await agencyService.getClientById(clientId);
-                let context = { name: "Cliente Generico" };
+                let client = null;
+                try {
+                    client = await agencyService.getClientById(clientId);
+                } catch(e) {
+                    console.warn("Client fetch fallback in rewards:", e);
+                }
+                const brandName = (client?.name || user?.user_metadata?.brand || user?.user_metadata?.full_name || 'Mi Marca')
+                    .replace(/[-_\s]+workspace\s*$/i, '')
+                    .trim();
+                let context = { name: brandName, maturity_level: client?.growth_level || 1 };
                 
                 if (client?.metadata?.strategic) {
-                    context = { ...client.metadata.strategic, maturity_level: client.metadata.maturity_level };
+                    context = { ...context, ...client.metadata.strategic };
                 }
 
                 const aiRewards = await aiService.generateDynamicRewards(context);

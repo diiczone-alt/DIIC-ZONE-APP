@@ -10,12 +10,15 @@ import {
     ChevronRight, Info, TrendingUp,
     LayoutGrid, Video, Globe, Lock,
     Camera, Palette, Type, CheckCircle,
-    Gift, Stethoscope, Utensils
+    Gift, Stethoscope, Utensils, Check, Calendar, Folder, ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import GrowthAlertSystem from '../connectivity/GrowthAlertSystem';
 import { agencyService } from '@/services/agencyService';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { getChecklistItems, calculateActivationProgress, deriveMetasStatus } from '@/lib/clientProgress';
 import { toast } from 'sonner';
 
 const NICHE_LEVELS = {
@@ -655,37 +658,53 @@ const NICHE_LEVELS = {
 
 export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
     const router = useRouter();
+    const { user } = useAuth();
     const [isMounted, setIsMounted] = useState(false);
     const [level, setLevel] = useState(initialLevel);
     const [activeLevel, setActiveLevel] = useState(initialLevel);
     const [clientNiche, setClientNiche] = useState('general');
     const [clientName, setClientName] = useState('Cliente');
+    const [clientData, setClientData] = useState(null);
+    const [completedMetas, setCompletedMetas] = useState({});
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    // Checkbox states for demo simulation
-    const [completedMetas, setCompletedMetas] = useState({
-        // L1
-        'logo': true, 'colors': true, 'bio': true, 'photo': true, 'socials': true, 'posts6': true,
-        // L2
-        'calendar': true, 'posts12': true, 'reels2': false, 'profile': true, 'message': false,
-    });
-
     useEffect(() => {
         const loadClientData = async () => {
-            if (!clientId) return;
-            const client = await agencyService.getClientById(clientId);
+            const targetId = clientId || user?.client_id || user?.id;
+            if (!targetId) return;
+
+            let client = null;
+            try {
+                client = await agencyService.getClientById(targetId);
+            } catch (err) {
+                console.warn("[ClientLevelSystem] agencyService fetch fallback:", err);
+            }
+
+            if (!client) {
+                const { data } = await supabase.from('clients').select('*').eq('id', targetId).maybeSingle();
+                client = data;
+            }
+            if (!client && user?.id) {
+                const { data } = await supabase.from('clients').select('*').eq('user_id', user.id).maybeSingle();
+                client = data;
+            }
+
             if (client) {
+                setClientData(client);
                 const numericLevel = client.growth_level || 1;
                 setLevel(numericLevel);
                 setActiveLevel(numericLevel);
-                setClientName(client.name || 'Cliente');
+                const cleanName = (client.name || user?.user_metadata?.brand || user?.user_metadata?.full_name || 'Estratega')
+                    .replace(/[-_\s]+workspace\s*$/i, '')
+                    .trim();
+                setClientName(cleanName);
 
                 // Determine Niche
                 const cleanNiche = (str) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                const rawIndustry = cleanNiche(client.industry);
+                const rawIndustry = cleanNiche(client.industry || client.specialty);
                 let determinedNiche = 'general';
                 if (rawIndustry.includes('medico') || rawIndustry.includes('health') || rawIndustry.includes('doctor') || rawIndustry.includes('salud') || rawIndustry.includes('urologia')) {
                     determinedNiche = 'medical';
@@ -695,24 +714,61 @@ export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
                     determinedNiche = 'realestate';
                 }
                 setClientNiche(determinedNiche);
-                
-                if (client.onboarding_data?.completedMetas) {
-                    setCompletedMetas(client.onboarding_data.completedMetas);
-                }
+
+                const currentMetas = (NICHE_LEVELS[determinedNiche] || NICHE_LEVELS.general)[numericLevel - 1]?.metas || [];
+                const derived = deriveMetasStatus(client, currentMetas);
+                setCompletedMetas(derived);
             }
         };
+
         loadClientData();
-    }, [clientId]);
+    }, [clientId, user]);
+
+    // Recalculate metas whenever active level changes
+    useEffect(() => {
+        if (clientData) {
+            const activeLevelMetas = (NICHE_LEVELS[clientNiche] || NICHE_LEVELS.general)[activeLevel - 1]?.metas || [];
+            const derived = deriveMetasStatus(clientData, activeLevelMetas);
+            setCompletedMetas(derived);
+        }
+    }, [activeLevel, clientNiche, clientData]);
+
+    const handleToggleMeta = async (metaId) => {
+        const nextState = !completedMetas[metaId];
+        const newCompleted = { ...completedMetas, [metaId]: nextState };
+        setCompletedMetas(newCompleted);
+
+        if (clientData?.id) {
+            const updatedCompletedMetas = {
+                ...(clientData.onboarding_data?.completedMetas || {}),
+                [metaId]: nextState
+            };
+            const updatedOnboarding = {
+                ...(clientData.onboarding_data || {}),
+                completedMetas: updatedCompletedMetas
+            };
+            setClientData(prev => ({ ...prev, onboarding_data: updatedOnboarding }));
+            try {
+                await supabase.from('clients').update({ onboarding_data: updatedOnboarding }).eq('id', clientData.id);
+                toast.success(nextState ? "¡Meta marcada como completada!" : "Meta actualizada.");
+            } catch (err) {
+                console.error("Error updating meta in Supabase:", err);
+            }
+        }
+    };
 
     const levels = NICHE_LEVELS[clientNiche] || NICHE_LEVELS.general;
+    const currentLevelData = levels[activeLevel - 1] || levels[0];
+    const userActualLevelData = levels[level - 1] || levels[0];
 
-    const currentLevelData = levels[activeLevel - 1];
-    const userActualLevelData = levels[level - 1];
+    // Checklist & Activation Progress
+    const checklistItems = getChecklistItems(clientData);
+    const activationProgress = calculateActivationProgress(checklistItems);
 
     // Progress calculation for CURRENT USER level
-    const userLevelMetas = userActualLevelData.metas;
+    const userLevelMetas = userActualLevelData.metas || [];
     const completedCount = userLevelMetas.filter(m => completedMetas[m.id]).length;
-    const progress = Math.round((completedCount / userLevelMetas.length) * 100);
+    const progress = userLevelMetas.length > 0 ? Math.round((completedCount / userLevelMetas.length) * 100) : 0;
 
     const getCoachFeedback = () => {
         const namePart = clientName.split(' ')[0];
@@ -730,9 +786,125 @@ export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
     if (!isMounted) return null;
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 text-left pb-16">
+        <div className="space-y-10 animate-in fade-in duration-500 text-left pb-16">
             {/* SMART ALERTS SECTION */}
-            <GrowthAlertSystem />
+            <GrowthAlertSystem clientId={clientId} clientData={clientData} />
+
+            {/* ─── CENTRO DE ACTIVACIÓN DEL ECOSISTEMA (Todo lo cumplido y en curso) ─── */}
+            <section className="relative p-8 md:p-10 rounded-[3rem] bg-gradient-to-br from-[#0D0D24] via-[#090918] to-[#050510] border border-indigo-500/25 overflow-hidden shadow-2xl group">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 blur-[130px] pointer-events-none -z-10" />
+                <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/5 blur-[100px] pointer-events-none -z-10" />
+                
+                <div className="flex flex-col lg:flex-row justify-between gap-10 items-start relative z-10">
+                    <div className="space-y-5 max-w-md">
+                        <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full w-fit">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Ecosistema Activo</span>
+                        </div>
+                        
+                        <div>
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Centro de Activación</h2>
+                            <p className="text-xs text-gray-400 leading-relaxed font-semibold mt-1">
+                                Supervisa el estado de los 7 pilares de tu entorno de trabajo corporativo y los activos sincronizados con DIIC ZONE.
+                            </p>
+                        </div>
+
+                        <div className="bg-[#060610]/80 border border-white/5 p-4 rounded-2xl flex items-center justify-between gap-6 max-w-sm backdrop-blur-md">
+                            <div>
+                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-wider">Hitos Cumplidos</p>
+                                <p className="text-xs font-black text-emerald-400">
+                                    {checklistItems.filter(i => i.completed).length} de {checklistItems.length} Completados
+                                </p>
+                            </div>
+                            <div className="h-8 w-[1px] bg-white/10" />
+                            <div>
+                                <p className="text-[8px] font-black text-gray-500 uppercase tracking-wider">Nivel / Plan</p>
+                                <p className="text-xs font-black text-indigo-400">{clientData?.plan || 'Presencia Digital'}</p>
+                            </div>
+                        </div>
+
+                        <div className="pt-2">
+                            <button
+                                onClick={() => router.push('/dashboard')}
+                                className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
+                            >
+                                <span>Abrir Configuración en Dashboard</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 w-full space-y-6">
+                        <div className="flex justify-between items-end">
+                            <div>
+                                <h3 className="text-sm font-black text-white uppercase tracking-widest italic">Avance Global del Ecosistema</h3>
+                                <p className="text-xs text-gray-500">Completitud de activos, conexiones y herramientas</p>
+                            </div>
+                            <div className="flex items-end gap-0.5 font-mono">
+                                <span className="text-4xl font-black text-white leading-none">{activationProgress}</span>
+                                <span className="text-indigo-400 text-sm font-black">%</span>
+                            </div>
+                        </div>
+
+                        <div className="h-2 bg-white/5 rounded-full overflow-hidden relative border border-white/5 shadow-inner">
+                            <motion.div 
+                                className="h-full bg-gradient-to-r from-indigo-600 via-indigo-400 to-emerald-400"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${activationProgress}%` }}
+                                transition={{ duration: 1, ease: "easeOut" }}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            {checklistItems.map((item) => (
+                                <div
+                                    key={item.id}
+                                    onClick={() => {
+                                        if (item.id === 'drive' && clientData?.google_drive_folder_id) {
+                                            window.open(`https://drive.google.com/drive/folders/${clientData.google_drive_folder_id}`, '_blank');
+                                        } else {
+                                            router.push('/dashboard');
+                                        }
+                                    }}
+                                    className={`flex items-center justify-between p-4 rounded-2xl border text-left transition-all duration-300 cursor-pointer ${
+                                        item.completed
+                                            ? 'bg-emerald-500/[0.04] border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/[0.08]'
+                                            : 'bg-white/[0.02] border-white/5 hover:border-white/15 hover:bg-white/[0.04]'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className={`w-7 h-7 rounded-xl flex items-center justify-center border shrink-0 transition-transform ${
+                                            item.completed ? 'bg-emerald-500 border-emerald-400 text-black shadow-[0_0_10px_rgba(52,211,153,0.3)]' : 'border-white/10 bg-white/5 text-gray-500'
+                                        }`}>
+                                            {item.completed ? <Check className="w-4 h-4 stroke-[3]" /> : <Circle className="w-3.5 h-3.5" />}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className={`text-xs font-black uppercase tracking-tight truncate ${item.completed ? 'text-white' : 'text-gray-400'}`}>
+                                                {item.label}
+                                            </h4>
+                                            <p className="text-[9px] text-gray-500 font-bold truncate">
+                                                {item.description}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="shrink-0 ml-2">
+                                        {item.completed ? (
+                                            <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-400 uppercase tracking-wider">
+                                                Cumplido
+                                            </span>
+                                        ) : (
+                                            <span className="px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[8px] font-black text-gray-400 uppercase tracking-wider group-hover:text-white">
+                                                Completar &gt;
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             {/* LEVEL HEADER - STRATEGIC OVERVIEW */}
             <AnimatePresence mode="wait">
@@ -865,36 +1037,53 @@ export default function ClientLevelSystem({ initialLevel = 1, clientId }) {
 
                     {/* METAS CHECKLIST (Only show for active level) */}
                     <div className="mt-12 pt-10 border-t border-white/5">
-                        <div className="flex justify-between items-center mb-10">
+                        <div className="flex justify-between items-center mb-8">
                             <div className="space-y-1">
                                 <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
                                     <Flag className="w-6 h-6 text-emerald-400" /> Metas de Desarrollo
                                 </h3>
                                 <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest ml-9">Requisitos para certificación Nivel {activeLevel}</p>
                             </div>
+                            <span className="text-[10px] font-black text-emerald-400 uppercase bg-emerald-500/10 px-3.5 py-1.5 rounded-full border border-emerald-500/20">
+                                {currentLevelData.metas.filter(m => completedMetas[m.id]).length} / {currentLevelData.metas.length} Cumplidas
+                            </span>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {currentLevelData.metas.map((meta, i) => (
-                                <div
-                                    key={meta.id}
-                                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 group ${completedMetas[meta.id] ? 'bg-emerald-500/5 border-emerald-500/20 shadow-emerald-500/5' : 'bg-white/5 border-white/5'}`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-xl transition-colors ${completedMetas[meta.id] ? 'bg-emerald-500 text-white' : 'bg-white/10 text-gray-600'}`}>
-                                            {completedMetas[meta.id] ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                            {currentLevelData.metas.map((meta) => {
+                                const isCompleted = !!completedMetas[meta.id];
+                                return (
+                                    <div
+                                        key={meta.id}
+                                        onClick={() => handleToggleMeta(meta.id)}
+                                        className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 cursor-pointer group ${
+                                            isCompleted ? 'bg-emerald-500/5 border-emerald-500/20 shadow-emerald-500/5 hover:border-emerald-500/40' : 'bg-white/5 border-white/5 hover:border-white/15'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className={`p-2 rounded-xl transition-all group-hover:scale-105 ${
+                                                isCompleted ? 'bg-emerald-500 text-black shadow-md' : 'bg-white/10 text-gray-600'
+                                            }`}>
+                                                {isCompleted ? <CheckCircle className="w-4 h-4 text-white fill-emerald-500" /> : <Circle className="w-4 h-4" />}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h4 className={`text-[11px] font-black uppercase tracking-tight truncate ${isCompleted ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                                                    {meta.label}
+                                                </h4>
+                                                <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">
+                                                    {meta.service}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className={`text-[11px] font-black uppercase tracking-tight ${completedMetas[meta.id] ? 'text-white' : 'text-gray-400'}`}>
-                                                {meta.label}
-                                            </h4>
-                                            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">
-                                                {meta.service}
-                                            </p>
-                                        </div>
+
+                                        <span className={`text-[8px] font-black uppercase px-2.5 py-1 rounded-full border shrink-0 ml-2 ${
+                                            isCompleted ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-white/5 border-white/5 text-gray-500'
+                                        }`}>
+                                            {isCompleted ? 'Cumplido' : 'Pendiente'}
+                                        </span>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

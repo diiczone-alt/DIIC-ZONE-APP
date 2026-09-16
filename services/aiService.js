@@ -138,7 +138,8 @@ export const aiService = {
      */
     generateDynamicAlerts: async (clientContext, linkedAccounts = []) => {
         const level = clientContext?.maturity_level || 1;
-        const brand = clientContext?.name || clientContext?.brandName || 'tu marca';
+        const rawBrand = clientContext?.name || clientContext?.brandName || 'tu marca';
+        const brand = rawBrand.replace(/[-_\s]+workspace\s*$/i, '').trim() || 'tu marca';
         
         // Si no hay redes sociales conectadas, la prioridad número 1 es conectarlas
         if (!linkedAccounts || linkedAccounts.length === 0) {
@@ -149,6 +150,7 @@ export const aiService = {
                     severity: "critical",
                     title: "CEGUERA ESTRATÉGICA DETECTADA",
                     msg: `No podemos auditar el tráfico ni el rendimiento real de ${brand}. Necesitamos que conectes tus redes sociales (Facebook, Instagram, TikTok) para recopilar métricas reales.`,
+                    strategy: "Conectar tus canales oficiales permitirá al equipo de DIIC ZONE y al motor de IA calibrar la pauta, proteger tu alcance y automatizar la captación de prospectos.",
                     action: "CONECTAR REDES AHORA",
                     service: "Integración de Ecosistema",
                     iconName: "ShieldAlert",
@@ -160,7 +162,7 @@ export const aiService = {
                     type: "recommendation_insight",
                     severity: "info",
                     title: "Preparación de Escuadrón",
-                    msg: "Tu equipo creativo está en 'Standby'. Una vez conectes tus redes, el motor de IA analizará tu audiencia y enviará el plan de acción a tu Escuadrón.",
+                    msg: `Tu equipo creativo está en 'Standby'. Una vez conectes tus redes, el motor de IA analizará la audiencia de ${brand} y enviará el plan de acción a tu Escuadrón.`,
                     action: "Ver Equipo",
                     service: "Gestión de Equipo",
                     iconName: "Users",
@@ -176,7 +178,8 @@ export const aiService = {
                 type: "smart_opportunity",
                 severity: "success",
                 title: "Oportunidad de Conversión",
-                msg: `El motor IA analizó las redes conectadas de ${brand}. Detectamos potencial para aumentar ventas un 20% reactivando interacciones recientes.`,
+                msg: `El motor IA analizó las redes conectadas de ${brand}. Detectamos potencial para aumentar conversiones un 20% reactivando interacciones recientes.`,
+                strategy: "Implementa un embudo de retargeting en historias y mensajes directos para convertir conversaciones en citas o ventas confirmadas.",
                 action: "Activar Campaña",
                 service: "Email/WhatsApp Marketing",
                 iconName: "Sparkles",
@@ -187,9 +190,10 @@ export const aiService = {
                 type: "smart_risk",
                 severity: "warning",
                 title: "Fuga de Tráfico",
-                msg: "El 40% de los visitantes en móvil no encuentran rápidamente cómo contactarte. Sugerimos un botón flotante de WhatsApp.",
-                action: "Revisar Web",
-                service: "Desarrollo Web",
+                msg: "El 40% de los visitantes en móvil no encuentran rápidamente cómo contactarte. Sugerimos un enlace directo de WhatsApp optimizado.",
+                strategy: "Coloca un botón de contacto visible en el primer scroll de tu biografía y perfiles para reducir la fricción de conversión.",
+                action: "Revisar Canales",
+                service: "Desarrollo Web & Perfiles",
                 iconName: "AlertTriangle",
                 color: "yellow"
             },
@@ -198,15 +202,15 @@ export const aiService = {
                 type: "recommendation_insight",
                 severity: "info",
                 title: "Tendencia en tu Nicho",
-                msg: "Los videos cortos educativos están generando más leads calificados esta semana.",
+                msg: "Los videos cortos educativos y testimoniales están generando más leads calificados esta semana.",
                 action: "Ver Tendencia",
                 service: "Producción de Reels",
                 iconName: "TrendingDown",
                 color: "indigo",
                 recommendation_data: {
                     focus: "Generación de Leads",
-                    insight: "Los usuarios buscan resolver dudas rápidas antes de comprar.",
-                    suggestions: ["Graba 3 FAQs de tus clientes", "Sube 1 video diario por 3 días"],
+                    insight: "Los usuarios buscan resolver dudas rápidas antes de comprar o agendar.",
+                    suggestions: ["Graba 3 respuestas a preguntas frecuentes de clientes", "Sube 1 video corto de valor diario"],
                     bestTime: "6:00 PM",
                     confidence: 88
                 }

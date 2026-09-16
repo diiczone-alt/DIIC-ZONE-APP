@@ -30,6 +30,7 @@ import { driveService } from '@/services/driveService';
 import { toast } from 'sonner';
 import { agencyService } from '@/services/agencyService';
 import { extractDominantColors } from '@/lib/colorUtils';
+import { getChecklistItems, calculateActivationProgress } from '@/lib/clientProgress';
 
 // Fallback City Centers for Ecuador
 const CITY_COORDS = {
@@ -687,28 +688,9 @@ function DashboardContent() {
     scanForSocialToken();
   }, [user, clientData]);
 
-  // Checklist Completion Checkers
-  const isSocialCompleted = !!clientData?.onboarding_data?.social?.completed || 
-                            !!clientData?.onboarding_data?.social?.facebook_connected ||
-                            !!clientData?.onboarding_data?.social?.instagram ||
-                            !!clientData?.onboarding_data?.social?.facebook;
-
-  const isBrandIdentityCompleted = !!clientData?.onboarding_data?.brand?.completed || 
-                                  !!clientData?.onboarding_data?.strategic?.completed ||
-                                  (!!clientData?.onboarding_data?.strategic?.whatItDoes && clientData?.onboarding_data?.strategic?.whatItDoes !== 'Información no indexada');
-
-  const checklistItems = [
-    { id: 'info', label: 'Información de empresa', completed: !!clientData?.onboarding_data?.company_profile?.completed },
-    { id: 'drive', label: 'Conectar Google Drive', completed: !!clientData?.google_drive_folder_id },
-    { id: 'calendar', label: 'Activar Google Calendar', completed: !!clientData?.onboarding_data?.calendar_connected },
-    { id: 'logo', label: 'Subir logo', completed: !!clientData?.onboarding_data?.brand?.logo },
-    { id: 'visual', label: 'Identidad de la marca', completed: isBrandIdentityCompleted },
-    { id: 'social', label: 'Conectar redes sociales', completed: isSocialCompleted },
-    { id: 'growth', label: 'Elegir nivel de crecimiento', completed: !!clientData?.onboarding_data?.growth_level_completed || !!clientData?.plan }
-  ];
-
-  const completedCount = checklistItems.filter(item => item.completed).length;
-  const activationProgress = 20 + Math.round((completedCount / 7) * 80);
+  // Checklist Completion Checkers (Unified Progress Engine)
+  const checklistItems = getChecklistItems(clientData);
+  const activationProgress = calculateActivationProgress(checklistItems);
 
   // Remaining days calculation
   const getRemainingDays = () => {
@@ -2821,10 +2803,20 @@ function DashboardContent() {
                   </div>
 
                   <div className="flex-1 w-full space-y-6">
-                      <div className="flex justify-between items-end">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
                           <div>
-                              <h3 className="text-sm font-black text-white uppercase tracking-widest italic">Centro de Activación</h3>
-                              <p className="text-xs text-gray-500">Completa tu entorno de trabajo corporativo</p>
+                              <div className="flex items-center gap-3">
+                                  <h3 className="text-sm font-black text-white uppercase tracking-widest italic">Centro de Activación</h3>
+                                  <button
+                                      type="button"
+                                      onClick={() => router.push(clientData?.id ? `/dashboard/profile?client=${clientData.id}&tab=progress` : '/dashboard/profile?tab=progress')}
+                                      className="px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-[8px] font-black text-indigo-400 uppercase tracking-wider transition-all flex items-center gap-1"
+                                  >
+                                      <span>Ver en Mi Progreso</span>
+                                      <ChevronRight className="w-2.5 h-2.5" />
+                                  </button>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5">Completa tu entorno de trabajo corporativo</p>
                           </div>
                           <div className="flex items-end gap-0.5 font-mono">
                               <span className="text-3xl font-black text-white leading-none">{activationProgress}</span>
