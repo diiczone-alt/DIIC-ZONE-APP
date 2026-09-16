@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Network, Tag, Target, Users, Search, Target as TargetIcon, Zap, Heart, Link as LinkIcon, Globe, Image as ImageIcon, CheckCircle2, ShieldAlert, Crosshair, Plus, Trash2, ShieldCheck, Activity, Bot, Sparkles, Database, Command, Maximize2, Wand2, Edit3, Paperclip, Mic, FileUp, Facebook, Instagram, Linkedin, Camera, Smartphone, Monitor, Layout, Layers, Video, X, MapPin, FolderOpen, Bookmark, Folder, FolderPlus, Printer, ArrowUpRight } from 'lucide-react';
+import { Brain, Network, Tag, Target, Users, Search, Target as TargetIcon, Zap, Heart, Link as LinkIcon, Globe, Image as ImageIcon, CheckCircle2, ShieldAlert, Crosshair, Plus, Trash2, ShieldCheck, Activity, Bot, Sparkles, Database, Command, Maximize2, Wand2, Edit3, Paperclip, Mic, FileUp, Facebook, Instagram, Linkedin, Camera, Smartphone, Monitor, Layout, Layers, Video, X, MapPin, FolderOpen, Bookmark, Folder, FolderPlus, Printer, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
@@ -12,6 +12,7 @@ import SavedResearchesModal from '@/components/strategy/SavedResearchesModal';
 import SavedResearchesManager from '@/components/strategy/SavedResearchesManager';
 import StrategicBrainChat from '@/components/strategy/StrategicBrainChat';
 import StrategicBrainStudio from '@/components/strategy/StrategicBrainStudio';
+import StrategicMindMapModal from '@/components/strategy/StrategicMindMapModal';
 import { generateResearchPdf } from '@/components/strategy/ResearchPdfExporter';
 
 // Helper to decode HTML entities from titles
@@ -474,6 +475,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
         { id: 'f_objeciones', name: 'Objeciones & Fricción', color: 'amber' }
     ]);
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+    const [isMindMapModalOpen, setIsMindMapModalOpen] = useState(false);
     const [capa1ActiveTab, setCapa1ActiveTab] = useState('search'); // 'search' | 'saved'
     const [capa2ActiveTab, setCapa2ActiveTab] = useState('profile'); // 'profile' | 'brain' | 'saved_sources'
 
@@ -1933,38 +1935,34 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             {/* 3. PERFIL ESTRATÉGICO 360° TAB */}
             {activeTab === 'profile' && (
                 <div className="space-y-8 animate-in fade-in duration-300">
-                    {/* 3-COLUMN STRATEGIC BRAIN STUDIO (NOTEBOOKLM STYLE) */}
-                    <StrategicBrainStudio 
-                        profile={profile}
-                        savedResearches={savedResearches}
-                        researchFolders={researchFolders}
-                        clientData={null}
-                        onUpdateProfile={(updated) => setProfile(prev => ({ ...prev, ...updated }))}
-                    />
-
-                    {/* Ficha Nuclear de Identidad 360° (Sección Inferior / Resumen Maestro) */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-[#080914]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-xl">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-400">
-                                <TargetIcon className="w-5 h-5" />
+                    {/* Ficha Nuclear de Identidad 360° (Barra Ejecutiva Superior) */}
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-4 p-4 md:p-5 bg-[#080914]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-xl">
+                        <div className="flex items-center gap-3.5">
+                            <div className="p-2.5 bg-gradient-to-tr from-indigo-600/20 to-fuchsia-600/20 border border-indigo-500/30 rounded-xl text-indigo-400 shadow-inner">
+                                <TargetIcon className="w-5 h-5 text-indigo-400" />
                             </div>
                             <div>
-                                <h3 className="text-sm font-black text-white uppercase italic tracking-tight">
-                                    Perfil Estratégico 360° • <span className="text-indigo-400">{profile.brandName || 'Marca DIIC'}</span>
-                                </h3>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                                    Identidad nuclear, propuesta de valor y mapeo de mercado
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-sm font-black text-white uppercase italic tracking-tight">
+                                        Perfil Estratégico 360° • <span className="text-indigo-400">{profile.brandName || 'Marca DIIC'}</span>
+                                    </h3>
+                                    <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[8px] font-bold text-emerald-400 uppercase tracking-widest">
+                                        Ecosistema Activo
+                                    </span>
+                                </div>
+                                <p className="text-[10px] text-gray-400 font-medium">
+                                    Identidad nuclear, propuesta de valor, público objetivo y mapeo de mercado
                                 </p>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end">
                             {/* Toggle Edit vs Report View */}
                             <div className="flex bg-black/60 border border-white/10 rounded-xl p-1">
                                 <button
                                     type="button"
                                     onClick={() => setViewMode('edit')}
-                                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                                    className={`px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
                                         viewMode === 'edit'
                                             ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                                             : 'text-gray-400 hover:text-white'
@@ -1975,7 +1973,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 <button
                                     type="button"
                                     onClick={() => setViewMode('report')}
-                                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                                    className={`px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
                                         viewMode === 'report'
                                             ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                                             : 'text-gray-400 hover:text-white'
@@ -1985,12 +1983,22 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 </button>
                             </div>
 
+                            {/* Mapa Mental Launcher Button */}
+                            <button
+                                type="button"
+                                onClick={() => setIsMindMapModalOpen(true)}
+                                className="px-3.5 py-2 bg-gradient-to-r from-indigo-600/20 to-fuchsia-600/20 hover:from-indigo-600/30 hover:to-fuchsia-600/30 border border-indigo-500/40 text-indigo-200 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all active:scale-95 shadow-md group"
+                            >
+                                <Brain className="w-3.5 h-3.5 text-fuchsia-400 group-hover:rotate-12 transition-transform" />
+                                <span>Mapa Mental</span>
+                            </button>
+
                             <button
                                 type="button"
                                 onClick={handleDownloadReport}
-                                className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all active:scale-95"
+                                className="px-3.5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all active:scale-95"
                             >
-                                <FileUp className="w-3.5 h-3.5" />
+                                <FileUp className="w-3.5 h-3.5 text-indigo-400" />
                                 <span>Exportar PDF</span>
                             </button>
 
@@ -1999,7 +2007,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     type="button"
                                     onClick={() => handleConfirm()}
                                     disabled={isSaving}
-                                    className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
+                                    className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
                                 >
                                     {isSaving ? (
                                         <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -3062,6 +3070,14 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Modal de Mapa Mental Estratégico */}
+            <StrategicMindMapModal
+                isOpen={isMindMapModalOpen}
+                onClose={() => setIsMindMapModalOpen(false)}
+                profile={profile}
+                onOpenBrainWithPrompt={onOpenBrainChat}
+            />
 
             {/* Modal para Guardar Investigación */}
             <SavedResearchesModal
