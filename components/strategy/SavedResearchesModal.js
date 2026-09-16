@@ -130,7 +130,7 @@ export default function SavedResearchesModal({
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                placeholder="Ej. Auditoría Traumatología y Dolores de Rodilla"
+                                placeholder="Ej. Auditoría de Nicho y Competencia"
                                 className="w-full bg-[#080918]/80 border border-white/10 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition-all"
                                 required
                             />

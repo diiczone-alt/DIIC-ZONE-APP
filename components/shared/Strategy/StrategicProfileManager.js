@@ -94,6 +94,24 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
         }
     };
 
+    const handleProfileUpdate = (updatedProfile) => {
+        if (!updatedProfile) return;
+        setClientData(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                name: updatedProfile.brandName || prev.name,
+                onboarding_data: {
+                    ...(prev.onboarding_data || {}),
+                    strategic: {
+                        ...(prev.onboarding_data?.strategic || {}),
+                        ...updatedProfile
+                    }
+                }
+            };
+        });
+    };
+
     const navItems = [
         {
             id: 'search',
@@ -240,6 +258,7 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
                                 }}
                                 onOpenBrainChat={() => setIsBrainChatOpen(true)}
                                 onResearchesChange={(updated) => setSavedResearches(updated)}
+                                onProfileUpdate={handleProfileUpdate}
                             />
                         )}
 
@@ -253,6 +272,7 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
                                 }}
                                 onOpenBrainChat={() => setIsBrainChatOpen(true)}
                                 onResearchesChange={(updated) => setSavedResearches(updated)}
+                                onProfileUpdate={handleProfileUpdate}
                             />
                         )}
 
@@ -266,6 +286,7 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
                                 }}
                                 onOpenBrainChat={() => setIsBrainChatOpen(true)}
                                 onResearchesChange={(updated) => setSavedResearches(updated)}
+                                onProfileUpdate={handleProfileUpdate}
                             />
                         )}
 

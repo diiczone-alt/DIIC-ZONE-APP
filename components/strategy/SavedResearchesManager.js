@@ -19,7 +19,7 @@ export default function SavedResearchesManager({
     onDeleteFolder = () => {},
     onLoadIntoProfile = () => {},
     onConsolidateWithAI = () => {},
-    clientName = 'Dr. Oscar Cujilema'
+    clientName = 'Marca DIIC'
 }) {
     const [selectedFolderId, setSelectedFolderId] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');

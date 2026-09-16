@@ -23,7 +23,7 @@ export default function StrategicMindMapModal({
         profile.brandName || 
         profile.leadership || 
         clientData?.name || 
-        'Dr. Oscar Cujilema'
+        'Marca DIIC'
     ).replace(/[-_\s]+workspace\s*$/i, '').trim();
 
     const handleCopy = (text) => {
@@ -34,69 +34,56 @@ export default function StrategicMindMapModal({
     };
 
     const mindMapData = useMemo(() => {
-        const whatItDoes = profile.whatItDoes || 'Especialista en Traumatología y Cirugía Artroscópica Mínimamente Invasiva';
-        const problemSolved = profile.problemSolved || 'Dolor articular severo, lesiones deportivas, desgaste de meniscos y manguito rotador.';
-        const valueProp = profile.valueProp || 'Cirugías de alta precisión sin dolor prolongado ni internaciones innecesarias.';
-        const targetAudience = profile.targetAudience || 'Adultos 30+ y deportistas activos que buscan volver a su vida sin limitaciones.';
+        const whatItDoes = profile.whatItDoes || 'Actividad principal y especialidad estratégica de la marca.';
+        const whatItOffers = profile.whatItOffers || 'Catálogo de servicios, productos y soluciones de alto valor.';
+        const problemSolved = profile.problemSolved || 'Dolores, miedos, necesidades y puntos de fricción que resuelve.';
+        const valueProp = profile.valueProp || 'Propuesta Única de Valor diferencial frente al mercado.';
+        const targetAudience = profile.targetAudience || 'Perfil demográfico y psicográfico del cliente o consumidor ideal.';
+
+        const splitItems = (text, fallbackList) => {
+            if (!text) return fallbackList;
+            const items = text.split(/[\n,;•]+/).map(s => s.trim()).filter(s => s.length > 5);
+            return items.length > 0 ? items.slice(0, 4) : [text];
+        };
 
         return {
             center: {
                 title: clientName,
-                subtitle: whatItDoes.slice(0, 75) + (whatItDoes.length > 75 ? '...' : ''),
+                subtitle: whatItDoes.slice(0, 80) + (whatItDoes.length > 80 ? '...' : ''),
                 tag: 'NODO CENTRAL • AUTORIDAD'
             },
             branches: [
                 {
-                    id: 'especialidad',
-                    title: 'Especialidad & Estudios',
+                    id: 'actividad',
+                    title: 'Actividad & Oferta',
                     color: 'indigo',
                     icon: ShieldCheck,
-                    badge: 'Formación',
-                    items: [
-                        whatItDoes,
-                        'Cirugía Artroscópica Mínimamente Invasiva',
-                        'Reemplazos Articulares & Prótesis Avanzadas',
-                        'Terapias Biológicas & Viscosuplementación'
-                    ]
+                    badge: 'Core Business',
+                    items: splitItems(whatItOffers, [whatItDoes, 'Portafolio Principal', 'Soluciones Clave'])
                 },
                 {
-                    id: 'patologias',
-                    title: 'Dolores & Patologías',
+                    id: 'problemas',
+                    title: 'Dolores & Fricciones',
                     color: 'fuchsia',
                     icon: Target,
-                    badge: 'Problema',
-                    items: [
-                        problemSolved,
-                        'Lesiones de Meniscos y Ligamento Cruzado (LCA)',
-                        'Manguito Rotador & Inestabilidad de Hombro',
-                        'Artrosis & Desgaste Articular Limitante'
-                    ]
+                    badge: 'Problema Resuelto',
+                    items: splitItems(problemSolved, ['Puntos de dolor del cliente', 'Objeciones comunes', 'Fricciones de compra'])
                 },
                 {
                     id: 'propuesta',
-                    title: 'Propuesta de Valor Única',
+                    title: 'Propuesta Única de Valor',
                     color: 'emerald',
                     icon: Zap,
                     badge: 'Diferencial',
-                    items: [
-                        valueProp,
-                        'Mínima invasión con pronta reincorporación',
-                        'Trato humano, personalizado y seguimiento continuo',
-                        'Diagnóstico certero con tecnología de punta'
-                    ]
+                    items: splitItems(valueProp, ['Ventaja competitiva', 'Calidad y confianza', 'Resultados garantizados'])
                 },
                 {
                     id: 'audiencia',
                     title: 'Audiencia & Captación',
                     color: 'amber',
                     icon: MessageSquare,
-                    badge: 'Mercado',
-                    items: [
-                        targetAudience,
-                        'Pacientes privados que valoran la rapidez y calidad',
-                        'Ganchos para Reels: Casos clínicos reales y mitos de salud',
-                        'Conversión: WhatsApp directo a agendamiento con triage'
-                    ]
+                    badge: 'Mercado Ideal',
+                    items: splitItems(targetAudience, ['Clientes ideales del nicho', 'Ganchos de contenido viral', 'Canal de conversión directa'])
                 }
             ]
         };

@@ -3,7 +3,7 @@
 import React from 'react';
 import { Printer, Download, FileText, Sparkles, CheckCircle2, ShieldAlert, Zap } from 'lucide-react';
 
-export const generateResearchPdf = (research, clientName = 'Dr. Oscar Cujilema') => {
+export const generateResearchPdf = (research, clientName = 'Marca DIIC') => {
     if (!research) return;
 
     const printWindow = window.open('', '_blank');

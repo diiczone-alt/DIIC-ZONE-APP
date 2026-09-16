@@ -10,7 +10,7 @@ import {
 import { toast } from 'sonner';
 
 export default function StrategicBrainChat({
-    clientName = 'Dr. Oscar Cujilema',
+    clientName = 'Marca DIIC',
     profile = {},
     researches = [],
     folders = []
@@ -19,7 +19,7 @@ export default function StrategicBrainChat({
         {
             id: 'welcome',
             sender: 'ai',
-            text: `¡Hola! Soy tu **Cerebro Estratégico DIIC Brain** para **${clientName}**.\n\nTengo cargadas **${researches.length} investigaciones estratégicas** y el **Perfil Estratégico 360°** de la marca.\n\n¿En qué podemos trabajar hoy? Puedes pedirme análisis de dolores, ideas de guiones virales, copys para Meta Ads o respuestas a objeciones de pacientes.`,
+            text: `¡Hola! Soy tu **Cerebro Estratégico DIIC Brain** para **${clientName}**.\n\nTengo cargadas **${researches.length} investigaciones estratégicas** y el **Perfil Estratégico 360°** de la marca.\n\n¿En qué podemos trabajar hoy? Puedes pedirme análisis de dolores, ideas de guiones virales, copys para Meta Ads o respuestas a objeciones de clientes.`,
             createdAt: new Date().toISOString()
         }
     ]);
@@ -38,11 +38,11 @@ export default function StrategicBrainChat({
     }, [messages, isLoading]);
 
     const quickPills = [
-        { label: '💡 Ganchos virales para Reels', query: 'Genera 5 ganchos irresistibles (0 a 3 seg) para Reels sobre los dolores de rodilla y artrosis más frecuentes en las investigaciones.' },
-        { label: '🎯 Plan de Contenidos Mensual', query: 'Diseña un calendario de contenidos semanal estructurado en 4 pilares basado en las investigaciones guardadas.' },
-        { label: '⚔️ Ventajas vs Competencia', query: 'Compara nuestra propuesta de valor frente a la competencia de la zona y dime qué ángulos no están explotando.' },
-        { label: '💬 Respuestas para WhatsApp', query: 'Crea 3 respuestas persuasivas y empáticas para cerrar citas médicas en WhatsApp cuando el paciente duda por el costo.' },
-        { label: '🚀 Copys para Meta Ads', query: 'Escribe 2 copys publicitarios de alta conversión para Meta Ads dirigidos a personas de 40+ con dolor articular.' }
+        { label: '💡 Ganchos virales para Reels', query: `Genera 5 ganchos irresistibles (0 a 3 seg) para Reels sobre los dolores y deseos más frecuentes de los clientes de ${clientName}.` },
+        { label: '🎯 Plan de Contenidos Mensual', query: `Diseña un calendario de contenidos semanal estructurado en 4 pilares basado en las investigaciones de ${clientName}.` },
+        { label: '⚔️ Ventajas vs Competencia', query: `Compara la propuesta de valor de ${clientName} frente a la competencia y dime qué ángulos no están explotando.` },
+        { label: '💬 Respuestas para WhatsApp', query: `Crea 3 respuestas persuasivas y empáticas para cerrar ventas o citas en WhatsApp para ${clientName}.` },
+        { label: '🚀 Copys para Meta Ads', query: `Escribe 2 copys publicitarios de alta conversión para Meta Ads dirigidos al público objetivo de ${clientName}.` }
     ];
 
     const handleSendMessage = async (textToSend) => {

@@ -32,14 +32,14 @@ export default function StrategicBrainStudio({
         safeProfile.brandName || 
         safeProfile.leadership || 
         clientData?.name || 
-        'Dr. Oscar Cujilema'
+        'Marca DIIC'
     ).replace(/[-_\s]+workspace\s*$/i, '').trim();
 
     const [messages, setMessages] = useState([
         {
             id: 'welcome',
             sender: 'ai',
-            text: `¡Bienvenido al **Cerebro Estratégico 360°** de **${clientName}**!\n\nEstoy conectado a las **fuentes clínicas, redes auditadas e investigaciones de mercado** guardadas. \n\nPuedes preguntarme sobre dudas de pacientes, ganchos para Reels, objeciones médicas o explorar el **Mapa Mental** a la derecha.`,
+            text: `¡Bienvenido al **Cerebro Estratégico 360°** de **${clientName}**!\n\nEstoy conectado a las **fuentes de mercado, redes auditadas e investigaciones estratégicas** guardadas. \n\nPuedes preguntarme sobre objeciones de clientes, ganchos para Reels, ventajas competitivas o explorar el **Mapa Mental** a la derecha.`,
             createdAt: new Date().toISOString()
         }
     ]);
@@ -66,8 +66,8 @@ export default function StrategicBrainStudio({
                 type: 'profile',
                 icon: ShieldCheck,
                 badge: 'Identidad 360°',
-                desc: typeof safeProfile.whatItDoes === 'string' && safeProfile.whatItDoes ? safeProfile.whatItDoes : 'Especialista en Traumatología y Cirugía Artroscópica',
-                tags: ['Traumatología', 'Artroscopia', 'Rodilla & Hombro']
+                desc: typeof safeProfile.whatItDoes === 'string' && safeProfile.whatItDoes ? safeProfile.whatItDoes : 'Actividad principal y propuesta de valor de la marca',
+                tags: ['Estrategia', 'Identidad', 'Propuesta de Valor']
             }
         ];
 
@@ -159,10 +159,10 @@ export default function StrategicBrainStudio({
 
     // Quick Prompts
     const promptChips = [
-        { label: '🩺 Objeciones de Pacientes', query: '¿Cuáles son los 3 mayores miedos u objeciones que tienen los pacientes antes de realizarse una artroscopia o tratamiento articular y cómo responderles?' },
-        { label: '🔥 5 Ganchos para Reels', query: 'Genera 5 ganchos de alta retención (0-3 segundos) para Reels sobre dolor de rodilla, meniscos y manguito rotador, usando un tono médico empático.' },
-        { label: '💎 Propuesta Única de Valor', query: 'Resume en 3 líneas contundentes por qué operarse o tratarse con el Dr. Oscar Cujilema es superior a someterse a cirugías abiertas tradicionales.' },
-        { label: '💬 Guion de Cierre WhatsApp', query: 'Escribe una secuencia de 3 mensajes persuasivos para la secretaria en WhatsApp cuando un paciente pregunta el costo de la consulta o cirugía.' }
+        { label: '🎯 Objeciones de Clientes', query: `¿Cuáles son los 3 mayores miedos u objeciones que tienen los clientes antes de comprar o contratar en ${clientName} y cómo responderles estratégicamente?` },
+        { label: '🔥 5 Ganchos para Reels', query: `Genera 5 ganchos de alta retención (0-3 segundos) para Reels adaptados a la propuesta de valor de ${clientName}.` },
+        { label: '💎 Propuesta Única de Valor', query: `Resume en 3 líneas contundentes por qué elegir a ${clientName} es superior a las alternativas de la competencia.` },
+        { label: '💬 Guion de Cierre WhatsApp', query: `Escribe una secuencia de 3 mensajes persuasivos para WhatsApp de ${clientName} cuando un prospecto solicita precios o información.` }
     ];
 
     // Handle Send Message

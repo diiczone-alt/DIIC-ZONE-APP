@@ -454,7 +454,7 @@ const isValidSocialUrl = (url) => {
     return domainRegex.test(cleanUrl);
 };
 
-export default function ClientStrategicProfile({ forcedViewMode, activeTab, clientId: propClientId, onOpenSaveModal, onOpenBrainChat, onResearchesChange }) {
+export default function ClientStrategicProfile({ forcedViewMode, activeTab, clientId: propClientId, onOpenSaveModal, onOpenBrainChat, onResearchesChange, onProfileUpdate }) {
     const { user } = useAuth();
     const [activeClientId, setActiveClientId] = useState(propClientId || user?.client_id || null);
 
@@ -712,19 +712,72 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
     const handleLoadResearchIntoProfile = (research) => {
         if (!research) return;
         const d = research.data || {};
+        
+        let newWhatItDoes = profile.whatItDoes;
+        let newWhatItOffers = profile.whatItOffers;
+        let newTargetAudience = profile.targetAudience;
+        let newProblemSolved = profile.problemSolved;
+        let newValueProp = profile.valueProp;
+        let newTone = profile.tone;
+        let newMainGoal = profile.mainGoal;
+        let newMarketContext = profile.marketContext;
+        let newSocialAudit = profile.socialAudit;
+        let newLeadership = profile.leadership;
+        let newCompetitors = profile.competitors;
+
+        if (d.whatItDoes) newWhatItDoes = d.whatItDoes;
+        if (d.whatItOffers) newWhatItOffers = d.whatItOffers;
+        if (d.targetAudience) newTargetAudience = d.targetAudience;
+        if (d.problemSolved) newProblemSolved = d.problemSolved;
+        if (d.valueProp) newValueProp = d.valueProp;
+        if (d.tone) newTone = d.tone;
+        if (d.mainGoal) newMainGoal = d.mainGoal;
+        if (d.marketContext) newMarketContext = d.marketContext;
+        if (d.socialAudit) newSocialAudit = d.socialAudit;
+        if (d.leadership) newLeadership = d.leadership;
+
+        // Categorías específicas
+        if (research.category === 'Análisis de Competencia' || d.competitors) {
+            if (Array.isArray(d.competitors)) newCompetitors = d.competitors;
+        } else if (research.category === 'Puntos de Fricción & Objeciones' || research.category === 'Puntos de Fricción CRO') {
+            if (d.insight || typeof d === 'string') {
+                newProblemSolved = d.insight || d;
+            } else if (d.summary) {
+                newProblemSolved = d.summary;
+            }
+        } else if (research.category === 'Auditoría de Redes Sociales') {
+            if (d.insight || typeof d === 'string') {
+                newSocialAudit = d.insight || d;
+            }
+        } else if (research.category === 'Plan de Mejora Estratégico' || research.category === 'Auditoría de Tráfico B2B') {
+            if (d.insight || typeof d === 'string') {
+                newMarketContext = d.insight || d;
+            }
+        } else if (research.summary && !d.whatItDoes) {
+            newWhatItDoes = research.summary;
+        }
+
         const updatedProfile = {
             ...profile,
-            whatItDoes: d.whatItDoes || profile.whatItDoes || (typeof d === 'string' ? d.substring(0, 300) : ''),
-            whatItOffers: d.whatItOffers || profile.whatItOffers,
-            targetAudience: d.targetAudience || profile.targetAudience,
-            problemSolved: d.problemSolved || profile.problemSolved || (Array.isArray(d.frictionPoints) ? d.frictionPoints.map(f => typeof f === 'object' ? f.pain || f.title : f).join(', ') : profile.problemSolved),
-            valueProp: d.valueProp || profile.valueProp,
-            tone: d.tone || profile.tone,
-            mainGoal: d.mainGoal || profile.mainGoal
+            brandName: research.brandName || profile.brandName,
+            leadership: newLeadership,
+            whatItDoes: newWhatItDoes,
+            whatItOffers: newWhatItOffers,
+            targetAudience: newTargetAudience,
+            problemSolved: newProblemSolved,
+            valueProp: newValueProp,
+            tone: newTone,
+            mainGoal: newMainGoal,
+            marketContext: newMarketContext,
+            socialAudit: newSocialAudit,
+            competitors: newCompetitors
         };
+
         setProfile(updatedProfile);
+        setSyncCount(c => c + 1);
         handleConfirm(updatedProfile);
-        toast.success('Datos de "' + research.title + '" transferidos al Perfil Estratégico.');
+        if (onProfileUpdate) onProfileUpdate(updatedProfile);
+        toast.success(`Datos de "${research.title}" transferidos al Perfil Estratégico.`);
     };
 
     const handleConsolidateResearchesWithAI = async (selectedItems) => {
@@ -735,7 +788,8 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'consolidate_profile',
-                    clientName: profile.brandName || user?.user_metadata?.brand || 'Dr. Oscar Cujilema',
+                    clientName: profile.brandName || user?.user_metadata?.brand || 'Marca DIIC',
+                    profile: profile,
                     researches: selectedItems
                 })
             });
@@ -746,6 +800,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             const updatedProfile = {
                 ...profile,
                 brandName: c.brandName || profile.brandName,
+                leadership: (c.leadership !== undefined && c.leadership !== '') ? c.leadership : profile.leadership,
                 whatItDoes: c.whatItDoes || profile.whatItDoes,
                 whatItOffers: c.whatItOffers || profile.whatItOffers,
                 targetAudience: c.targetAudience || profile.targetAudience,
@@ -753,11 +808,15 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 valueProp: c.valueProp || profile.valueProp,
                 tone: c.tone || profile.tone,
                 mainGoal: c.mainGoal || profile.mainGoal,
-                marketContext: c.executiveSummary || profile.marketContext
+                marketContext: c.marketContext || c.executiveSummary || profile.marketContext,
+                socialAudit: c.socialAudit || profile.socialAudit,
+                dynamicButtons: Array.isArray(c.dynamicButtons) && c.dynamicButtons.length > 0 ? c.dynamicButtons : profile.dynamicButtons
             };
             setProfile(updatedProfile);
+            setSyncCount(c => c + 1);
             await handleConfirm(updatedProfile);
-            toast.success('íPerfil Estratégico 360° consolidado y guardado!', { id: toastId });
+            if (onProfileUpdate) onProfileUpdate(updatedProfile);
+            toast.success('¡Perfil Estratégico 360° consolidado y guardado con datos reales!', { id: toastId });
         } catch (err) {
             toast.error('Error al consolidar con IA: ' + err.message, { id: toastId });
         }
@@ -2036,16 +2095,16 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 </AnimatePresence>
 
             <div key={`sync-grid-${syncCount}`} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative mt-16 w-full">
-                    <div className="relative z-10">{renderInput('NOMBRE DE MARCA', 'brandName', Tag, user?.user_metadata?.brand || 'Ej. DIIC ZONE INC.')}</div>
-                    <div className="relative z-10">{renderInput('LIDERAZGO / FUNDADORES', 'leadership', ShieldCheck, 'Ej. Ing. Mauro Borja - CEO...')}</div>
-                    <div className="relative z-10">{renderInput('┐QUÉ HACE?', 'whatItDoes', Network, 'Ej. Consultoría en Inteligencia Artificial...')}</div>
-                    <div className="relative z-10">{renderInput('┐QUÉ OFRECE?', 'whatItOffers', Zap, 'Ej. Asesorías High-Ticket, Cursos, SaaS...', true)}</div>
-                    <div className="relative z-10">{renderInput('PÚBLICO OBJETIVO', 'targetAudience', Users, 'Ej. Dueños de negocios B2B, edad 30-45...', true)}</div>
-                    <div className="relative z-10">{renderInput('PROBLEMA QUE RESUELVE', 'problemSolved', Search, 'Ej. Falta de tiempo, procesos manuales lentos...', true)}</div>
-                    <div className="relative z-10">{renderInput('PROPUESTA DE VALOR', 'valueProp', TargetIcon, 'Ej. Aumentamos tus ventas un 30% usando automatizaciones en 30 días.', true)}</div>
-                    <div className="relative z-10">{renderInput('CONTEXTO DE MERCADO', 'marketContext', Globe, 'Ej. Líderes en el sector agropecuario de Ecuador...', true)}</div>
-                    <div className="relative z-10">{renderInput('TONO DE COMUNICACIÓN', 'tone', Heart, 'Ej. Profesional, directo, corporativo, disruptivo...')}</div>
-                    <div className="relative z-10">{renderInput('OBJETIVO PRINCIPAL', 'mainGoal', Target, 'Ej. Lograr $100K MRR para Q3 2024.', true)}</div>
+                    <div className="relative z-10">{renderInput('NOMBRE DE MARCA', 'brandName', Tag, user?.user_metadata?.brand || 'Ej. Nombre de la Marca')}</div>
+                    <div className="relative z-10">{renderInput('LIDERAZGO / FUNDADORES', 'leadership', ShieldCheck, 'Ej. Nombre del Fundador o Director...')}</div>
+                    <div className="relative z-10">{renderInput('¿QUÉ HACE?', 'whatItDoes', Network, 'Ej. Actividad principal y sector de especialidad...')}</div>
+                    <div className="relative z-10">{renderInput('¿QUÉ OFRECE?', 'whatItOffers', Zap, 'Ej. Catálogo de productos, servicios y soluciones...', true)}</div>
+                    <div className="relative z-10">{renderInput('PÚBLICO OBJETIVO', 'targetAudience', Users, 'Ej. Perfil demográfico y psicográfico del cliente ideal...', true)}</div>
+                    <div className="relative z-10">{renderInput('PROBLEMA QUE RESUELVE', 'problemSolved', Search, 'Ej. Dolores, miedos, necesidades y fricciones que mitiga...', true)}</div>
+                    <div className="relative z-10">{renderInput('PROPUESTA DE VALOR', 'valueProp', TargetIcon, 'Ej. Propuesta Única de Valor diferencial frente a la competencia...', true)}</div>
+                    <div className="relative z-10">{renderInput('CONTEXTO DE MERCADO', 'marketContext', Globe, 'Ej. Ubicación geográfica, mercado y entorno competitivo...', true)}</div>
+                    <div className="relative z-10">{renderInput('TONO DE COMUNICACIÓN', 'tone', Heart, 'Ej. Profesional, cercano, empático, disruptivo...')}</div>
+                    <div className="relative z-10">{renderInput('OBJETIVO PRINCIPAL', 'mainGoal', Target, 'Ej. Meta comercial y de posicionamiento...', true)}</div>
                     <div className="relative z-10">{renderInput('AUDITORÍA DE REDES SOCIALES', 'socialAudit', Bot, 'Análisis y diagnóstico profundo de la huella digital en redes sociales del cliente...', true)}</div>
                     
                     {/* Strategic Recording Formats Card */}
