@@ -473,8 +473,16 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
         { id: 'f_objeciones', name: 'Objeciones & Fricción', color: 'amber' }
     ]);
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-    const [capa1ActiveTab, setCapa1ActiveTab] = useState('search'); // 'search' | 'saved'
+    const [capa1ActiveTab, setCapa1ActiveTab] = useState(activeTab === 'saved' ? 'saved' : 'search'); // 'search' | 'saved'
     const [capa2ActiveTab, setCapa2ActiveTab] = useState('profile'); // 'profile' | 'brain' | 'saved_sources'
+
+    useEffect(() => {
+        if (activeTab === 'saved') {
+            setCapa1ActiveTab('saved');
+        } else if (activeTab === 'search') {
+            setCapa1ActiveTab('search');
+        }
+    }, [activeTab]);
 
     const [profile, setProfile] = useState({
         brandName: (user?.user_metadata?.brand || '').replace(/[-_\s]+workspace\s*$/i, '').trim(),
