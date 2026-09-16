@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Helper to format relative time or dates
 function formatRelativeDate(dateStr) {
@@ -19,22 +20,68 @@ function formatRelativeDate(dateStr) {
     }
 }
 
-// Generate intelligent contextual AI diagnosis based on the doctor's actual post text
+// Deep Gemini AI Script & Retention Analysis for Each Individual Video
+async function analyzePostsWithAI(posts = [], clientName = 'Dr. Oscar Cujilema') {
+    if (!posts || posts.length === 0) return posts;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return posts;
+
+    try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-2.5-flash',
+            generationConfig: { responseMimeType: 'application/json' }
+        });
+
+        const payload = posts.slice(0, 16).map(p => ({
+            id: p.id,
+            title: p.title,
+            caption: (p.fullCaption || '').substring(0, 280)
+        }));
+
+        const prompt = `Eres el Director de Estrategia Médica y Retención Audiovisual de DIIC ZONE para ${clientName}.
+Analiza los siguientes posts/reels médicos reales:
+${JSON.stringify(payload)}
+
+Para CADA post (usando su id exacto como clave), genera un diagnóstico de éxito y retención de guion ÚNICO y personalizado en 1 frase potente (15 a 30 palabras).
+Explica la razón clínica, psicológica y el gancho por el cual ese video retiene al paciente (menciona específicamente si es rodilla, hombro, mito educativo, cirugía o recuperación según corresponda en su texto).
+Devuelve un JSON con este formato exacto:
+{
+  "[id_del_post]": "Diagnóstico específico para este video..."
+}`;
+
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+        const diagnosisMap = JSON.parse(responseText || '{}');
+
+        return posts.map(p => {
+            if (diagnosisMap[p.id]) {
+                return { ...p, aiDiagnosis: diagnosisMap[p.id] };
+            }
+            return p;
+        });
+    } catch (e) {
+        console.warn('[meta/insights] Gemini post analysis error:', e.message);
+        return posts;
+    }
+}
+
+// Generate intelligent contextual AI diagnosis fallback
 function generateAiDiagnosisForPost(caption = '', type = 'REEL') {
     const text = caption.toLowerCase();
-    if (text.includes('manguito rotador') || text.includes('hombro')) {
-        return 'El gancho sobre dolor y movilidad de hombro activó alta retención en pacientes con patología articular. Generó consultas directas para valoración quirúrgica.';
+    if (text.includes('manguito rotador') || (text.includes('hombro') && !text.includes('rodilla'))) {
+        return 'Gancho enfocado en movilidad de hombro y dolor nocturno. Provoca autodiagnóstico inmediato y deriva a valoración quirúrgica.';
     }
-    if (text.includes('rodilla') || text.includes('artrosis') || text.includes('menisco') || text.includes('cartílago')) {
-        return 'El formato enfocado en rodilla y recuperación de marcha conectó con pacientes adultos. Muy alta tasa de consulta para infiltraciones y artroscopía.';
+    if (text.includes('rodilla') || text.includes('menisco') || text.includes('artrosis') || text.includes('cartílago')) {
+        return 'Valida el dolor al caminar y subir gradas. Muy alta retención al ofrecer soluciones no invasivas como infiltraciones y artroscopía.';
     }
     if (text.includes('mito') || text.includes('verdad') || text.includes('creencia')) {
-        return 'El formato educativo desmintiendo mitos médicos generó alta confianza profesional y redujo la fricción para agendar cita presencial.';
+        return 'El formato de mito vs realidad genera curiosidad en los primeros 3 segundos y posiciona al médico como la autoridad científica confiable.';
     }
-    if (text.includes('cirug') || text.includes('operar') || text.includes('artroscop') || text.includes('avance')) {
-        return 'Explicar el procedimiento quirúrgico y recuperación transmite seguridad médica y aumenta la tasa de conversión a WhatsApp.';
+    if (text.includes('cirug') || text.includes('operar') || text.includes('avance') || text.includes('paciente')) {
+        return 'Prueba social y caso postoperatorio real. Reduce el temor a la cirugía y demuestra recuperación funcional de la movilidad.';
     }
-    return 'Contenido médico de alto valor con excelente autoridad profesional. Convierte espectadores en pacientes listos para consulta médica.';
+    return 'Contenido médico de alto valor que responde a una necesidad del paciente y fomenta el contacto directo por WhatsApp.';
 }
 
 function determineTag(caption = '', likes = 0, comments = 0, type = 'REEL') {
@@ -292,6 +339,13 @@ export async function POST(req) {
                     patientInquiries: 28
                 }
             ];
+        }
+
+        // Apply Gemini AI Script and Retention Diagnosis to all posts
+        try {
+            realPosts = await analyzePostsWithAI(realPosts, pageName);
+        } catch (aiErr) {
+            console.warn('[meta/insights] Gemini post processing skipped:', aiErr.message);
         }
 
         // Compute Aggregated KPIs from real items
