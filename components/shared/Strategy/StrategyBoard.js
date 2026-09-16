@@ -33,7 +33,7 @@ import {
     Settings2, Sparkles, Binary, Target,
     Maximize2, Calendar, Box, BarChart3, Filter, Table, List, 
     Plus, Minus, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
-    CheckCircle2, Search, CalendarDays
+    CheckCircle2, Search, CalendarDays, GripVertical
 } from 'lucide-react';
 
 const initialStrategyData = {
@@ -1080,16 +1080,30 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
 
     return (
         <div className={`${isSubcomponent ? 'relative flex-1' : 'relative h-full z-[50]'} w-full flex flex-col overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-[#F1F5F9]'}`}>
-            {/* FLOATING GLASS NAVIGATION DOCK */}
-            <aside className={`fixed left-3 md:left-4 top-1/2 -translate-y-1/2 z-[100] flex flex-col items-center py-3 px-2 gap-2 rounded-2xl backdrop-blur-2xl border transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.6)] ${
-                theme === 'dark' 
-                    ? 'bg-[#080914]/90 border-white/10 text-white' 
-                    : 'bg-white/95 border-slate-200 shadow-xl text-slate-800'
-            }`}>
+            {/* FLOATING DRAGGABLE GLASS NAVIGATION DOCK */}
+            <motion.aside 
+                drag
+                dragMomentum={false}
+                dragElastic={0.05}
+                whileDrag={{ scale: 1.04, cursor: 'grabbing', zIndex: 120 }}
+                className={`fixed left-3 md:left-4 top-1/3 z-[100] flex flex-col items-center py-2.5 px-2 gap-2 rounded-2xl backdrop-blur-2xl border transition-colors duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.65)] select-none cursor-default ${
+                    theme === 'dark' 
+                        ? 'bg-[#080914]/90 border-white/10 text-white' 
+                        : 'bg-white/95 border-slate-200 shadow-xl text-slate-800'
+                }`}
+            >
+                {/* Drag Handle */}
+                <div 
+                    className="w-full flex items-center justify-center py-1 cursor-grab active:cursor-grabbing text-gray-500 hover:text-indigo-400 transition-colors group mb-0.5"
+                    title="Arrastra para mover la barra"
+                >
+                    <GripVertical className="w-4 h-4 text-white/30 group-hover:text-indigo-400 transition-colors" />
+                </div>
+
                 {onClose && (
                     <button
                         onClick={onClose}
-                        className="p-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all mb-1 group relative"
+                        className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all mb-1 group relative"
                         title="Cerrar / Volver"
                     >
                         <ChevronLeft className="w-5 h-5" />
@@ -1133,7 +1147,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                         </div>
                     </button>
                 </div>
-            </aside>
+            </motion.aside>
 
             {/* CORE CONTENT AREA */}
             <div className="flex-1 flex relative overflow-hidden">
