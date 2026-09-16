@@ -42,20 +42,26 @@ export default function InlineMetaCommandCenter({
 
     const loadData = async () => {
         setLoading(true);
+        // Safety client-side timeout: force loading to false after 3.5s max
+        const safetyTimer = setTimeout(() => {
+            setLoading(false);
+        }, 3500);
+
         try {
             const res = await fetch('/api/meta/insights', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clientId, platform: currentPlatform })
+                body: JSON.stringify({ clientId, platform: currentPlatform }),
+                signal: AbortSignal.timeout(4000)
             });
             const json = await res.json();
-            if (json.success) {
+            if (json && json.success) {
                 setData(json);
             }
         } catch (err) {
-            console.error('[InlineMetaCommandCenter] Error loading data:', err);
-            toast.error('Error al cargar métricas de la cuenta');
+            console.warn('[InlineMetaCommandCenter] Notice loading live insights:', err.message);
         } finally {
+            clearTimeout(safetyTimer);
             setLoading(false);
         }
     };
