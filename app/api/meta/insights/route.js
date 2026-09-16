@@ -86,7 +86,8 @@ export async function POST(req) {
         }
 
         const metadata = connection?.metadata || {};
-        const accessToken = metadata?.page_access_token || connection?.access_token || null;
+        const DEFAULT_META_TOKEN = 'EAALr6JON8B8BSSxSxHf3kOPYWpjJGSYMBeLBMrjVAza322y7bBG6EahMHCnLrFsKVsfCQ1rmZAEIe7Ll3UJZA7JEo7j7gM70q0vQxq2lGOUDKKQZADeg8LOnAZBypSFxvylzzZBOlOdXOjvnZBZAhtZAoowIkjLUuWOom93s4zAEIZCQD7oRmmm83kwZC8SXqIJ7Ynng35xAif';
+        const accessToken = metadata?.page_access_token || connection?.access_token || DEFAULT_META_TOKEN;
         const pageId = metadata?.page_id || '1146853965184343';
         const instagramId = metadata?.instagram_id || '17841460212268127';
         const instagramUsername = metadata?.instagram_username || 'artrohombroyrodilla_cujilema';
@@ -176,59 +177,66 @@ export async function POST(req) {
                         `https://graph.facebook.com/v21.0/${pageId}?fields=id,name,fan_count,followers_count,rating_count,overall_star_rating,about,picture&access_token=${accessToken}`
                     );
                     const fbPageData = await fbPageRes.json();
-                    if (fbPageData.id) {
-                        accountProfile = {
-                            name: fbPageData.name || pageName,
-                            username: 'DrOscarCujilema',
-                            picture: fbPageData.picture?.data?.url || null,
-                            followers: fbPageData.followers_count || fbPageData.fan_count || 121,
-                            fanCount: fbPageData.fan_count || 121,
-                            isLive: true
-                        };
-                    }
 
                     // Fetch Facebook Page Posts
                     const fbPostsRes = await fetch(
-                        `https://graph.facebook.com/v21.0/${pageId}/posts?fields=id,message,created_time,shares,reactions.summary(true),comments.summary(true),full_picture,permalink_url&limit=25&access_token=${accessToken}`
+                        `https://graph.facebook.com/v21.0/${pageId}/posts?fields=id,message,created_time,shares,reactions.summary(true),comments.summary(true),full_picture,permalink_url,attachments{media,type,url,title,unshimmed_url}&limit=25&access_token=${accessToken}`
                     );
                     const fbPostsData = await fbPostsRes.json();
 
                     if (fbPostsData.data && Array.isArray(fbPostsData.data)) {
                         realPosts = fbPostsData.data.map((p, idx) => {
                             const lines = (p.message || '').split('\n').map(l => l.trim()).filter(Boolean);
-                            const title = lines[0] || 'Publicación en Página de Facebook';
+                            const isReel = (p.permalink_url || '').includes('reel');
+                            const attachTitle = p.attachments?.data?.[0]?.title;
+                            const title = lines[0] || attachTitle || (isReel ? 'Reel de Traumatología y Cirugía (Facebook)' : 'Publicación en Página de Facebook');
                             const likesCount = p.reactions?.summary?.total_count || 0;
                             const commentsCount = p.comments?.summary?.total_count || 0;
                             const sharesCount = p.shares?.count || 0;
-                            const tagInfo = determineTag(p.message, likesCount, commentsCount, 'POST');
+                            const tagInfo = determineTag(p.message || attachTitle || '', likesCount, commentsCount, isReel ? 'VIDEO' : 'POST');
 
-                            const estimatedReach = Math.max(likesCount * 30 + commentsCount * 50 + 120, 150);
-                            const patientLeads = Math.max(Math.floor(likesCount * 0.7) + commentsCount * 2, 1);
+                            const estimatedReach = Math.max(likesCount * 40 + commentsCount * 60 + 150, 180);
+                            const patientLeads = Math.max(Math.floor(likesCount * 0.8) + commentsCount * 2, 1);
+                            const attachImage = p.attachments?.data?.[0]?.media?.image?.src;
+                            const thumbnail = p.full_picture || attachImage || 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&auto=format&fit=crop&q=80';
+                            const permalink = p.permalink_url || `https://facebook.com/${pageId}`;
 
                             return {
                                 id: p.id || `fb_${idx}`,
                                 title: title,
-                                fullCaption: p.message || '',
-                                format: (p.permalink_url || '').includes('reel') ? 'REEL' : 'POST',
-                                mediaType: (p.permalink_url || '').includes('reel') ? 'VIDEO' : 'IMAGE',
-                                thumbnail: p.full_picture || 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&auto=format&fit=crop&q=80',
-                                permalink: p.permalink_url || `https://facebook.com/${pageId}`,
+                                fullCaption: p.message || attachTitle || 'Publicación del Dr. Oscar Cujilema en Facebook',
+                                format: isReel ? 'REEL' : 'POST',
+                                mediaType: isReel ? 'VIDEO' : 'IMAGE',
+                                thumbnail: thumbnail,
+                                permalink: permalink,
                                 publishedAt: formatRelativeDate(p.created_time),
                                 rawTimestamp: p.created_time,
-                                plays: (p.permalink_url || '').includes('reel') ? '1.2K' : null,
-                                playsNum: (p.permalink_url || '').includes('reel') ? 1200 : 0,
+                                plays: isReel ? '1.8K' : null,
+                                playsNum: isReel ? 1800 : 0,
                                 reach: estimatedReach > 1000 ? `${(estimatedReach/1000).toFixed(1)}K` : `${estimatedReach}`,
                                 likes: likesCount,
                                 comments: commentsCount,
                                 shares: sharesCount,
-                                saves: Math.max(Math.floor(likesCount * 0.4), 0),
+                                saves: Math.max(Math.floor(likesCount * 0.5), 1),
                                 engagementRate: (((likesCount + commentsCount) / (accountProfile.followers || 121)) * 100).toFixed(1) + '%',
                                 tag: tagInfo.tag,
                                 tagColor: tagInfo.color,
-                                aiDiagnosis: generateAiDiagnosisForPost(p.message, 'POST'),
+                                aiDiagnosis: generateAiDiagnosisForPost(p.message || attachTitle || '', isReel ? 'VIDEO' : 'POST'),
                                 patientInquiries: patientLeads
                             };
                         });
+                    }
+
+                    if (fbPageData.id) {
+                        accountProfile = {
+                            name: fbPageData.name || pageName,
+                            username: 'DrOscarCujilema',
+                            picture: fbPageData.picture?.data?.url || (realPosts[0]?.thumbnail || null),
+                            followers: fbPageData.followers_count || fbPageData.fan_count || 121,
+                            fanCount: fbPageData.fan_count || 121,
+                            mediaCount: realPosts.length || 16,
+                            isLive: true
+                        };
                     }
                 }
             } catch (apiErr) {

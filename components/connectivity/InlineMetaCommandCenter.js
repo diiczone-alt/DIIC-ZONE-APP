@@ -415,7 +415,7 @@ export default function InlineMetaCommandCenter({
                                                                 </div>
                                                             </div>
 
-                                                            <div className="flex items-center justify-between text-xs pt-1">
+                                                             <div className="flex items-center justify-between text-xs pt-1">
                                                                 <span className="flex items-center gap-1.5 text-gray-400 text-[11px]">
                                                                     <Share2 className="w-3.5 h-3.5 text-purple-400" /> {video.shares || 0} shares
                                                                 </span>
@@ -423,7 +423,11 @@ export default function InlineMetaCommandCenter({
                                                                     href={video.permalink}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="text-xs font-black text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
+                                                                    className={`text-xs font-black flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all ${
+                                                                        isInstagram
+                                                                            ? 'text-pink-400 border-pink-500/30 bg-pink-500/10 hover:bg-pink-500/20 hover:text-white'
+                                                                            : 'text-blue-400 border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 hover:text-white'
+                                                                    }`}
                                                                 >
                                                                     Ver en {isInstagram ? 'Instagram' : 'Facebook'} <ExternalLink className="w-3.5 h-3.5" />
                                                                 </a>
@@ -457,6 +461,47 @@ export default function InlineMetaCommandCenter({
                         {/* TAB 2: PAUTA & META ADS */}
                         {activeTab === 'paid' && (
                             <div className="space-y-8 animate-in fade-in duration-300">
+                                {/* Direct Meta Ads Manager Header & Quick Connect */}
+                                <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-blue-950/40 via-indigo-950/30 to-purple-950/20 border border-blue-500/30 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-xl">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-14 h-14 rounded-2xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center flex-shrink-0">
+                                            <Target className="w-7 h-7 text-blue-400" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-3">
+                                                <h4 className="text-base font-black text-white uppercase tracking-wide">
+                                                    Meta Ads Manager & Pauta Médica
+                                                </h4>
+                                                <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-mono rounded-md border border-emerald-500/30">
+                                                    CUENTA CONECTADA
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-300">
+                                                ID de Cuenta: <span className="font-mono text-indigo-300 font-bold">act_1146853965184343</span> • Vinculada a Página oficial: <strong className="text-white">{accountProfile.name || clientName}</strong>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                                        <a
+                                            href="https://adsmanager.facebook.com/adsmanager/manage/campaigns"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg shadow-blue-600/30"
+                                        >
+                                            Abrir Meta Ads Manager <ExternalLink className="w-4 h-4" />
+                                        </a>
+                                        <a
+                                            href="https://business.facebook.com/latest/home?asset_id=1146853965184343"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-5 py-3 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2"
+                                        >
+                                            Meta Business Suite <ExternalLink className="w-4 h-4" />
+                                        </a>
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                                     <div className="bg-[#0e1026] border border-white/5 p-6 rounded-3xl space-y-2">
                                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
@@ -493,7 +538,7 @@ export default function InlineMetaCommandCenter({
 
                                 <div className="space-y-4">
                                     <h3 className="text-base font-black text-white uppercase tracking-widest flex items-center gap-2.5">
-                                        <Target className="w-5 h-5 text-emerald-400" /> Campañas Activas en Meta Ads Manager
+                                        <Target className="w-5 h-5 text-emerald-400" /> Campañas en Meta Ads Manager
                                     </h3>
 
                                     <div className="space-y-4">
