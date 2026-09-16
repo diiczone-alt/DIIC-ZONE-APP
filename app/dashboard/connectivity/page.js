@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import IntegrationModal from '@/components/connectivity/IntegrationModal';
 import AccountAnalyticsModal from '@/components/connectivity/AccountAnalyticsModal';
+import InlineMetaCommandCenter from '@/components/connectivity/InlineMetaCommandCenter';
 import WhatsAppMedicalModal from '@/components/connectivity/WhatsAppMedicalModal';
 import GoogleBusinessModal from '@/components/connectivity/GoogleBusinessModal';
 import AutomationModal from '@/components/connectivity/AutomationModal';
@@ -30,6 +31,7 @@ function ConnectivityContent() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
+    const [activeInlinePlatform, setActiveInlinePlatform] = useState('instagram');
     const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
     const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
     const [isAutomationModalOpen, setIsAutomationModalOpen] = useState(false);
@@ -345,8 +347,11 @@ function ConnectivityContent() {
             return;
         }
         if (p.status === 'CONNECTED' && (p.id === 'instagram' || p.id === 'facebook')) {
-            setSelectedAnalyticsPlatform(p.id);
-            setIsAnalyticsModalOpen(true);
+            setActiveInlinePlatform(p.id);
+            const el = document.getElementById('inline-meta-command-center');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
             return;
         }
         setSelectedPlatform(p.provider);
@@ -370,7 +375,7 @@ function ConnectivityContent() {
     };
 
     return (
-        <main className="min-h-screen bg-[#050510] text-white p-8 md:p-16 space-y-12">
+        <main className="min-h-screen bg-[#050510] text-white p-6 md:p-14 space-y-12">
             <IntegrationModal 
                 isOpen={isModalOpen}
                 onClose={() => {
@@ -399,14 +404,14 @@ function ConnectivityContent() {
                 isOpen={isWhatsAppModalOpen}
                 onClose={() => setIsWhatsAppModalOpen(false)}
                 clientName={activeClient?.name || (user?.full_name ? user.full_name : 'Dr. Oscar Cujilema')}
-                phoneNumber={clientSocial.whatsapp || activeClient?.whatsapp_number || '+593 98 765 4321'}
+                phoneNumber={clientSocial.whatsapp || activeClient?.whatsapp_number || '+593 99 170 9717'}
             />
 
             <GoogleBusinessModal 
                 isOpen={isGoogleModalOpen}
                 onClose={() => setIsGoogleModalOpen(false)}
                 clientName={activeClient?.name ? `${activeClient.name} - Traumatología` : 'Dr. Oscar Cujilema - Traumatología & Artroscopía'}
-                location={activeClient?.city ? `${activeClient.city}, Ecuador` : 'Riobamba, Ecuador'}
+                location={activeClient?.city ? `${activeClient.city}, Ecuador` : 'Santo Domingo / Quito, Ecuador'}
             />
 
             <AutomationModal 
@@ -454,117 +459,157 @@ function ConnectivityContent() {
             <div className="space-y-16">
                 {/* Social Ecosystem */}
                 <div className="space-y-8">
-                    <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em] flex items-center gap-4 ml-4">
-                        <div className="w-10 h-[1px] bg-white/10" /> Ecosistema de Redes Sociales
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                        {socialPlatforms.map((p, i) => (
-                            <motion.div 
-                                key={p.id}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: i * 0.05 }}
-                                onClick={() => {
-                                    if (p.status === 'CONNECTED' && (p.id === 'instagram' || p.id === 'facebook')) {
-                                        setSelectedAnalyticsPlatform(p.id);
-                                        setIsAnalyticsModalOpen(true);
-                                    }
-                                }}
-                                className={`bg-[#0b0c1e]/80 border border-white/10 hover:border-white/25 rounded-[2rem] p-7 space-y-6 relative overflow-hidden group transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-indigo-500/10 backdrop-blur-xl flex flex-col justify-between ${
-                                    p.status === 'CONNECTED' && (p.id === 'instagram' || p.id === 'facebook') ? 'cursor-pointer hover:border-indigo-500/40' : ''
-                                }`}
-                            >
-                                <div className={`absolute -top-24 -right-24 w-48 h-48 blur-[90px] rounded-full opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity`} style={{ backgroundColor: p.accentColor }} />
-                                
-                                <div className="space-y-5 relative z-10">
-                                    <div className="flex justify-between items-start">
-                                        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-tr ${p.gradient} p-[1px] shadow-lg shadow-black/40 group-hover:scale-105 transition-transform`}>
-                                            <div className="w-full h-full bg-[#08081a]/80 backdrop-blur-md rounded-2xl flex items-center justify-center">
-                                                {p.iconType === 'instagram' && (
-                                                    <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-                                                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                                                        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-                                                    </svg>
-                                                )}
-                                                {p.iconType === 'facebook' && (
-                                                    <svg className="w-7 h-7 text-[#1877F2] fill-current" viewBox="0 0 24 24">
-                                                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                                                    </svg>
-                                                )}
-                                                {p.iconType === 'tiktok' && (
-                                                    <svg className="w-7 h-7 text-[#00F2FE] fill-current drop-shadow-[2px_0_0_#FE0979]" viewBox="0 0 24 24">
-                                                        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.24 1.07-.14 1.61.24 1.64 1.82 2.89 3.5 2.72 1.34-.07 2.53-.94 2.95-2.21.23-.72.24-1.48.24-2.23V.02z"/>
-                                                    </svg>
-                                                )}
-                                                {p.iconType === 'youtube' && (
-                                                    <svg className="w-7 h-7 text-[#FF0000] fill-current" viewBox="0 0 24 24">
-                                                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                                                    </svg>
+                    <div className="flex items-center justify-between ml-4">
+                        <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em] flex items-center gap-4">
+                            <div className="w-10 h-[1px] bg-white/10" /> Ecosistema de Redes Sociales
+                        </h2>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hidden sm:inline">
+                            Haz clic en un canal conectado para inspeccionar abajo 👇
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+                        {socialPlatforms.map((p, i) => {
+                            const isSelectedInline = (p.id === activeInlinePlatform) && p.status === 'CONNECTED';
+                            return (
+                                <motion.div 
+                                    key={p.id}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: i * 0.05 }}
+                                    onClick={() => {
+                                        if (p.status === 'CONNECTED') {
+                                            setActiveInlinePlatform(p.id);
+                                            const el = document.getElementById('inline-meta-command-center');
+                                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        } else {
+                                            handleConfigure(p);
+                                        }
+                                    }}
+                                    className={`border rounded-[2rem] p-7 space-y-6 relative overflow-hidden group transition-all duration-300 shadow-xl hover:shadow-2xl backdrop-blur-xl flex flex-col justify-between cursor-pointer ${
+                                        isSelectedInline 
+                                            ? 'bg-[#10122e] border-indigo-500 shadow-indigo-500/20 ring-2 ring-indigo-500/50 scale-[1.02]' 
+                                            : 'bg-[#0b0c1e]/80 border-white/10 hover:border-white/25 hover:shadow-indigo-500/10'
+                                    }`}
+                                >
+                                    <div className={`absolute -top-24 -right-24 w-48 h-48 blur-[90px] rounded-full opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity`} style={{ backgroundColor: p.accentColor }} />
+                                    
+                                    <div className="space-y-5 relative z-10">
+                                        <div className="flex justify-between items-start">
+                                            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-tr ${p.gradient} p-[1px] shadow-lg shadow-black/40 group-hover:scale-105 transition-transform`}>
+                                                <div className="w-full h-full bg-[#08081a]/80 backdrop-blur-md rounded-2xl flex items-center justify-center">
+                                                    {p.iconType === 'instagram' && (
+                                                        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                                                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                                                            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                                                        </svg>
+                                                    )}
+                                                    {p.iconType === 'facebook' && (
+                                                        <svg className="w-7 h-7 text-[#1877F2] fill-current" viewBox="0 0 24 24">
+                                                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                                        </svg>
+                                                    )}
+                                                    {p.iconType === 'tiktok' && (
+                                                        <svg className="w-7 h-7 text-[#00F2FE] fill-current drop-shadow-[2px_0_0_#FE0979]" viewBox="0 0 24 24">
+                                                            <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.24 1.07-.14 1.61.24 1.64 1.82 2.89 3.5 2.72 1.34-.07 2.53-.94 2.95-2.21.23-.72.24-1.48.24-2.23V.02z"/>
+                                                        </svg>
+                                                    )}
+                                                    {p.iconType === 'youtube' && (
+                                                        <svg className="w-7 h-7 text-[#FF0000] fill-current" viewBox="0 0 24 24">
+                                                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className={`px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
+                                                p.status === 'CONNECTED' 
+                                                    ? (isSelectedInline ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300 ring-1 ring-indigo-500/30' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400') 
+                                                    : 'bg-white/5 border-white/10 text-gray-400'
+                                            }`}>
+                                                {p.status === 'CONNECTED' ? (
+                                                    <>
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${isSelectedInline ? 'bg-indigo-400' : 'bg-emerald-400'} animate-pulse`} />
+                                                        {isSelectedInline ? 'ACTIVO ABAJO' : 'CONECTADO'}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />
+                                                        PENDIENTE
+                                                    </>
                                                 )}
                                             </div>
                                         </div>
-                                        
-                                        <div className={`px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${p.status === 'CONNECTED' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>
+
+                                        <div className="space-y-1">
+                                            <h3 className="text-lg font-black text-white italic uppercase tracking-tight">{p.name}</h3>
+                                            <p className="text-[10px] text-gray-500 font-semibold">{p.subtitle}</p>
+                                            <div className="pt-2 space-y-1.5">
+                                                <p className="text-xs font-bold text-indigo-300 tracking-wide truncate bg-white/[0.03] px-3 py-1.5 rounded-xl border border-white/5">
+                                                    {p.handle}
+                                                </p>
+                                                {p.metricsBadge && (
+                                                    <div className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+                                                        <p className="text-[10px] font-black text-indigo-300 truncate">
+                                                            {p.metricsBadge}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-5 border-t border-white/5 flex items-center justify-between relative z-10">
+                                        <div className="flex items-center gap-1.5">
                                             {p.status === 'CONNECTED' ? (
-                                                <>
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                                    CONECTADO
+                                                 <>
+                                                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                                                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-wider">
+                                                        {isSelectedInline ? 'INSPECCIONANDO' : 'SINCRONIZADO'}
+                                                    </span>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />
-                                                    PENDIENTE
+                                                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">SIN VINCULAR</span>
                                                 </>
                                             )}
                                         </div>
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleConfigure(p);
+                                            }}
+                                            className={`text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-xl transition-all active:scale-95 ${
+                                                p.status === 'CONNECTED'
+                                                    ? 'bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 hover:border-white/20'
+                                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30'
+                                            }`}
+                                        >
+                                            {p.status === 'CONNECTED' ? 'Ver Métricas' : 'Vincular'}
+                                        </button>
                                     </div>
-
-                                    <div className="space-y-1">
-                                        <h3 className="text-lg font-black text-white italic uppercase tracking-tight">{p.name}</h3>
-                                        <p className="text-[10px] text-gray-500 font-semibold">{p.subtitle}</p>
-                                        <div className="pt-2 space-y-1.5">
-                                            <p className="text-xs font-bold text-indigo-300 tracking-wide truncate bg-white/[0.03] px-3 py-1.5 rounded-xl border border-white/5">
-                                                {p.handle}
-                                            </p>
-                                            {p.metricsBadge && (
-                                                <div className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
-                                                    <p className="text-[10px] font-black text-indigo-300 truncate">
-                                                        {p.metricsBadge}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="pt-5 border-t border-white/5 flex items-center justify-between relative z-10">
-                                    <div className="flex items-center gap-1.5">
-                                        {p.status === 'CONNECTED' ? (
-                                             <>
-                                                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                                                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-wider">SINCRONIZADO</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">SIN VINCULAR</span>
-                                            </>
-                                        )}
-                                    </div>
-                                    <button 
-                                        onClick={() => handleConfigure(p)}
-                                        className={`text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-xl transition-all active:scale-95 ${
-                                            p.status === 'CONNECTED'
-                                                ? 'bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 hover:border-white/20'
-                                                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30'
-                                        }`}
-                                    >
-                                        {p.status === 'CONNECTED' ? 'Gestionar' : 'Vincular'}
-                                    </button>
-                                </div>
-                            </motion.div>
-                        ))}
+                                </motion.div>
+                            );
+                        })}
                     </div>
+                </div>
+
+                {/* INLINE COMMAND CENTER: META BUSINESS, REELS GANADORES & METAS ADS */}
+                <div id="inline-meta-command-center" className="space-y-6 pt-2">
+                    <div className="flex items-center justify-between ml-4">
+                        <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] flex items-center gap-4">
+                            <div className="w-10 h-[1px] bg-indigo-500/30" /> Centro de Mando en Vivo (Meta Business & Contenidos)
+                        </h2>
+                    </div>
+
+                    <InlineMetaCommandCenter
+                        platform={activeInlinePlatform}
+                        clientName={activeClient?.name || (user?.full_name ? user.full_name : 'Dr. Oscar Cujilema')}
+                        clientId={clientId || activeClient?.id || 'C-OSCAR--562'}
+                        handle={activeInlinePlatform === 'instagram' ? '@artrohombroyrodilla_cujilema' : (metaMetadata?.page_name || 'Dr. Oscar Cujilema')}
+                        onPlatformChange={(p) => setActiveInlinePlatform(p)}
+                    />
                 </div>
 
                 {/* API & Communication Infrastructure */}
