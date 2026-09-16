@@ -218,8 +218,6 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     }, [strategyData, isInitialLoad, propClientId, clientId, user?.client_id, discoveredClientId]);
 
     // --- AUTO-LAYOUT LOGIC: INTELLIGENT STRATEGIC MAPPING ---
-    const layoutRef = useRef({}); // Track which campaigns have been auto-laid out
-
     useEffect(() => {
         if (!strategyData.activeCampaignId) return;
         
