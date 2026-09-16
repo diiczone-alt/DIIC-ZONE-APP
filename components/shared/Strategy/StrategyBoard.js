@@ -84,6 +84,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     const [strategyData, setStrategyData] = useState(initialStrategyData);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [discoveredClientId, setDiscoveredClientId] = useState(null);
+    const activeClientId = propClientId || clientId || discoveredClientId || user?.client_id;
     const dragControls = useDragControls();
     const boardContainerRef = useRef(null);
     const layoutRef = useRef({}); // Track which campaigns have been auto-laid out
