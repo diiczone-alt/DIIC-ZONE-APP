@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import SavedResearchesModal from '@/components/strategy/SavedResearchesModal';
 import SavedResearchesManager from '@/components/strategy/SavedResearchesManager';
 import StrategicBrainChat from '@/components/strategy/StrategicBrainChat';
+import StrategicBrainStudio from '@/components/strategy/StrategicBrainStudio';
 import { generateResearchPdf } from '@/components/strategy/ResearchPdfExporter';
 
 // Helper to decode HTML entities from titles
@@ -1932,7 +1933,16 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             {/* 3. PERFIL ESTRATÉGICO 360° TAB */}
             {activeTab === 'profile' && (
                 <div className="space-y-8 animate-in fade-in duration-300">
-                    {/* Top Strategic Toolbar */}
+                    {/* 3-COLUMN STRATEGIC BRAIN STUDIO (NOTEBOOKLM STYLE) */}
+                    <StrategicBrainStudio 
+                        profile={profile}
+                        savedResearches={savedResearches}
+                        researchFolders={researchFolders}
+                        clientData={clientData}
+                        onUpdateProfile={(updated) => setProfile(prev => ({ ...prev, ...updated }))}
+                    />
+
+                    {/* Ficha Nuclear de Identidad 360° (Sección Inferior / Resumen Maestro) */}
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-[#080914]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-xl">
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-400">
