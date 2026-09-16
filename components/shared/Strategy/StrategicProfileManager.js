@@ -134,94 +134,88 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
 
     return (
         <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar pl-16 md:pl-20 pr-4 md:pr-8 py-6">
-            {/* UNIFIED EXECUTIVE COMMAND BAR */}
-            <div className="mb-8 p-4 md:p-5 bg-[#080914]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] shadow-2xl relative overflow-hidden">
-                {/* Ambient glowing accent */}
-                <div className="absolute top-0 right-1/4 w-96 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
-                <div className="absolute bottom-0 left-1/4 w-96 h-32 bg-fuchsia-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
-
-                <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-                    {/* Brand & AI Status Badge */}
-                    <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start">
-                        <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white shrink-0">
-                                <Bot className="w-6 h-6 animate-pulse" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-base md:text-lg font-black text-white uppercase italic tracking-tight">
-                                        Ecosistema <span className="bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">Estratégico 360°</span>
-                                    </h2>
-                                    <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[9px] font-black text-emerald-400 uppercase tracking-widest">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                                        IA Activa
-                                    </span>
-                                </div>
-                                <p className="text-[11px] text-gray-400 font-bold truncate max-w-[280px]">
-                                    {clientName} • Diagnóstico & Inteligencia
-                                </p>
-                            </div>
+            {/* SEPARATED MINIMALIST EXECUTIVE HEADER */}
+            <div className="mb-6 flex flex-col lg:flex-row items-center justify-between gap-4 w-full">
+                {/* 1. BRAND & IA STATUS PILL */}
+                <div className="flex items-center gap-3 px-4 py-2.5 bg-[#0A0A14]/70 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg w-full lg:w-auto justify-between lg:justify-start">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-fuchsia-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
+                            <Bot className="w-4 h-4" />
                         </div>
-
-                        {/* Mobile AI Quick Launch */}
-                        <button
-                            onClick={() => setIsBrainChatOpen(true)}
-                            className="lg:hidden p-2.5 bg-gradient-to-r from-indigo-600 to-fuchsia-600 rounded-xl text-white shadow-lg"
-                        >
-                            <Brain className="w-5 h-5" />
-                        </button>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-xs font-bold text-white tracking-wide">
+                                    {clientName}
+                                </h2>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[8px] font-bold text-emerald-400 uppercase tracking-widest">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    IA Activa
+                                </span>
+                            </div>
+                            <p className="text-[10px] text-gray-400 font-medium">
+                                Inteligencia & Perfil Estratégico 360°
+                            </p>
+                        </div>
                     </div>
 
-                    {/* Executive Navigation Strip */}
-                    <div className="flex items-center gap-1.5 p-1.5 bg-black/60 border border-white/10 rounded-[24px] shadow-inner overflow-x-auto max-w-full custom-scrollbar">
-                        {navItems.map(item => {
-                            const Icon = item.icon;
-                            const isActive = activeTab === item.id;
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => setActiveTab(item.id)}
-                                    type="button"
-                                    className={`flex items-center gap-2.5 px-4 md:px-5 py-2.5 rounded-[18px] text-xs font-black uppercase tracking-wider transition-all duration-300 whitespace-nowrap relative group ${
-                                        isActive
-                                            ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-fuchsia-600 text-white shadow-[0_4px_20px_rgba(99,102,241,0.4)]'
-                                            : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                    }`}
-                                >
-                                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-indigo-400'} transition-colors`} />
-                                    <span>{item.label}</span>
-                                    {item.badge !== null && (
-                                        <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
-                                            isActive 
-                                                ? 'bg-white/20 text-white' 
-                                                : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                                        }`}>
-                                            {item.badge}
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
+                    {/* Mobile Brain Quick Launch */}
+                    <button
+                        onClick={() => setIsBrainChatOpen(true)}
+                        className="lg:hidden p-2 bg-gradient-to-r from-indigo-600 to-fuchsia-600 rounded-xl text-white shadow-md"
+                    >
+                        <Brain className="w-4 h-4" />
+                    </button>
+                </div>
 
-                    {/* Executive Actions (Right Side) */}
-                    <div className="hidden lg:flex items-center gap-3">
-                        <button
-                            onClick={() => setIsBrainChatOpen(true)}
-                            className="px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg hover:shadow-indigo-500/10 transition-all active:scale-95 group"
-                        >
-                            <Sparkles className="w-4 h-4 text-indigo-400 group-hover:rotate-12 transition-transform" />
-                            <span>DIIC Brain IA</span>
-                        </button>
+                {/* 2. MINIMALIST SEGMENTED NAVIGATION TABS */}
+                <nav className="flex items-center gap-1 p-1 bg-[#0A0A14]/70 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg max-w-full overflow-x-auto custom-scrollbar">
+                    {navItems.map(item => {
+                        const Icon = item.icon;
+                        const isActive = activeTab === item.id;
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => setActiveTab(item.id)}
+                                type="button"
+                                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 whitespace-nowrap ${
+                                    isActive
+                                        ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-fuchsia-600 text-white shadow-[0_2px_12px_rgba(99,102,241,0.35)]'
+                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                }`}
+                            >
+                                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
+                                <span>{item.label}</span>
+                                {item.badge !== null && (
+                                    <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
+                                        isActive 
+                                            ? 'bg-white/25 text-white' 
+                                            : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                                    }`}>
+                                        {item.badge}
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })}
+                </nav>
 
-                        <button
-                            onClick={() => setIsSaveModalOpen(true)}
-                            className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
-                        >
-                            <Bookmark className="w-4 h-4" />
-                            <span>Guardar Investigación</span>
-                        </button>
-                    </div>
+                {/* 3. MINIMALIST EXECUTIVE ACTIONS */}
+                <div className="hidden lg:flex items-center gap-2.5">
+                    <button
+                        onClick={() => setIsBrainChatOpen(true)}
+                        className="px-3.5 py-2 bg-[#0A0A14]/70 hover:bg-indigo-500/10 border border-white/10 hover:border-indigo-500/30 text-indigo-300 rounded-2xl text-xs font-semibold tracking-wide flex items-center gap-2 shadow-lg transition-all active:scale-95 group"
+                    >
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-400 group-hover:rotate-12 transition-transform" />
+                        <span>DIIC Brain IA</span>
+                    </button>
+
+                    <button
+                        onClick={() => setIsSaveModalOpen(true)}
+                        className="px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white rounded-2xl text-xs font-semibold tracking-wide flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                    >
+                        <Bookmark className="w-3.5 h-3.5" />
+                        <span>Guardar</span>
+                    </button>
                 </div>
             </div>
 

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Network, Tag, Target, Users, Search, Target as TargetIcon, Zap, Heart, Link as LinkIcon, Globe, Image as ImageIcon, CheckCircle2, ShieldAlert, Crosshair, Plus, Trash2, ShieldCheck, Activity, Bot, Sparkles, Database, Command, Maximize2, Wand2, Edit3, Paperclip, Mic, FileUp, Facebook, Instagram, Linkedin, Camera, Smartphone, Monitor, Layout, Layers, Video, X, MapPin, FolderOpen, Bookmark, Folder, FolderPlus, Printer, ArrowUpRight } from 'lucide-react';
@@ -59,11 +59,11 @@ const ClaudeStyleMarkdownViewer = ({ content }) => {
 
                 // 1. Alert boxes / Blockquotes (either starts with > or matches warning trigger pattern)
                 const isWarningTrigger = trimmed.startsWith('>') || 
-                                         /^(es importante se├▒alar|nota|atenci├│n|advertencia|importante|cuidado):/i.test(trimmed);
+                                         /^(es importante señalar|nota|atención|advertencia|importante|cuidado):/i.test(trimmed);
 
                 if (isWarningTrigger) {
                     const cleanText = trimmed.startsWith('>') ? trimmed.slice(1).trim() : trimmed;
-                    const isImportantOrWarning = /^(es importante se├▒alar|atenci├│n|advertencia|importante)/i.test(cleanText);
+                    const isImportantOrWarning = /^(es importante señalar|atención|advertencia|importante)/i.test(cleanText);
                     
                     return (
                         <div 
@@ -83,7 +83,7 @@ const ClaudeStyleMarkdownViewer = ({ content }) => {
                             </div>
                             <div className="space-y-1 flex-1">
                                 <span className="text-[9px] font-black uppercase tracking-widest opacity-60">
-                                    {isImportantOrWarning ? 'Nota Estrat├®gica / Alerta' : 'Sugerencia de Investigaci├│n'}
+                                    {isImportantOrWarning ? 'Nota Estratégica / Alerta' : 'Sugerencia de Investigación'}
                                 </span>
                                 <p className="text-[11px] md:text-xs font-medium leading-relaxed">
                                     {cleanText.split('**').map((part, i) => (
@@ -116,13 +116,13 @@ const ClaudeStyleMarkdownViewer = ({ content }) => {
 
                 // 3. Lists (lines starting with *, -, or numbers)
                 const lines = trimmed.split('\n');
-                const isList = lines.every(line => /^\s*([\*\-\ÔÇó]|\d+\.)\s+/.test(line));
+                const isList = lines.every(line => /^\s*([\*\-\•]|\d+\.)\s+/.test(line));
 
                 if (isList) {
                     return (
                         <ul key={bIdx} className="space-y-2.5 pl-1 my-2.5">
                             {lines.map((line, lIdx) => {
-                                const cleanLine = line.replace(/^\s*([\*\-\ÔÇó]|\d+\.)\s+/, '').trim();
+                                const cleanLine = line.replace(/^\s*([\*\-\•]|\d+\.)\s+/, '').trim();
                                 return (
                                     <li key={lIdx} className="flex gap-2.5 text-[11px] md:text-xs text-gray-300 font-medium group">
                                         <div className="w-4 h-4 shrink-0 rounded-md bg-indigo-500/10 border border-white/5 flex items-center justify-center text-indigo-400 group-hover:border-indigo-500/30 transition-colors mt-0.5">
@@ -256,9 +256,9 @@ const getStrategicIdea = (formatId, profile) => {
     const audience = profile.targetAudience || 'tu audiencia';
     
     const ideas = {
-        historias: `Historias de "Detr├ís de C├ímara" en ${brand}: Muestra la preparaci├│n de una consulta o el unboxing de un nuevo equipo m├®dico. Habla de la importancia del cuidado preventivo y pide a ${audience} que compartan sus dudas por DM.`,
-        reels: `Tip R├ípido de Salud: Crea un Reel de 15s con 3 mitos comunes en el sector de la urolog├¡a que afectan a ${audience}. Usa un gancho visual fuerte y m├║sica en tendencia para posicionar a ${brand} como autoridad disruptiva.`,
-        podcast: `Entrevista Especial: Invita a un colega para hablar sobre c├│mo la tecnolog├¡a de DIIC ZONE est├í revolucionando el tratamiento de pacientes. Enf├│cate en el beneficio a largo plazo y la confianza m├®dica.`
+        historias: `Historias de "Detrás de Cámara" en ${brand}: Muestra la preparación de una consulta o el unboxing de un nuevo equipo médico. Habla de la importancia del cuidado preventivo y pide a ${audience} que compartan sus dudas por DM.`,
+        reels: `Tip Rápido de Salud: Crea un Reel de 15s con 3 mitos comunes en el sector de la urología que afectan a ${audience}. Usa un gancho visual fuerte y música en tendencia para posicionar a ${brand} como autoridad disruptiva.`,
+        podcast: `Entrevista Especial: Invita a un colega para hablar sobre cómo la tecnología de DIIC ZONE está revolucionando el tratamiento de pacientes. Enfócate en el beneficio a largo plazo y la confianza médica.`
     };
     
     return ideas[formatId] || null;
@@ -273,16 +273,16 @@ const RECORDING_FORMATS = [
         color: 'from-pink-500 to-rose-400',
         strategy: 'Hablar de beneficios y cuidados. Nosotros como estrategas solicitamos las historias para conectar.',
         focus: 'Vida Diaria & Autenticidad',
-        aiPrompt: 'Generar historias de lifestyle m├®dico'
+        aiPrompt: 'Generar historias de lifestyle médico'
     },
     {
         id: 'reels',
         label: 'Reels / Viral',
         icon: Video,
         color: 'from-indigo-500 to-purple-500',
-        strategy: 'Informativo y estrat├®gico. Usar entretenimiento con moderaci├│n sin abusar del formato.',
+        strategy: 'Informativo y estratégico. Usar entretenimiento con moderación sin abusar del formato.',
         focus: 'Crecimiento & Virilidad',
-        aiPrompt: 'Dise├▒ar reels educativos disruptivos'
+        aiPrompt: 'Diseñar reels educativos disruptivos'
     },
     {
         id: 'podcast',
@@ -324,9 +324,9 @@ const RecordingFormatsModal = ({ isOpen, onClose, profile }) => {
 
                         <div className="p-8 md:p-12 pb-4 sticky top-0 bg-[#0A0A0F]/80 backdrop-blur-md z-20 border-b border-white/5 flex items-center justify-between no-print">
                             <div className="space-y-1">
-                                <h3 className="text-2xl md:text-4xl font-black text-white uppercase italic tracking-tighter">Configuraci├│n de <span className="text-indigo-500">Producci├│n</span></h3>
+                                <h3 className="text-2xl md:text-4xl font-black text-white uppercase italic tracking-tighter">Configuración de <span className="text-indigo-500">Producción</span></h3>
                                 <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-[0.4em] flex items-center gap-2">
-                                    <Activity size={10} className="text-indigo-500" /> Est├índares de Calidad DIIC Zone v2.0
+                                    <Activity size={10} className="text-indigo-500" /> Estándares de Calidad DIIC Zone v2.0
                                 </p>
                             </div>
                             <div className="flex items-center gap-4">
@@ -376,7 +376,7 @@ const RecordingFormatsModal = ({ isOpen, onClose, profile }) => {
                                                 <div className="p-6 md:p-8 rounded-[2.5rem] bg-indigo-500/5 border border-indigo-500/10 border-dashed animate-in fade-in slide-in-from-top-2 duration-700">
                                                     <div className="flex items-center gap-3 mb-4">
                                                         <Sparkles size={16} className="text-indigo-400 animate-pulse" />
-                                                        <span className="text-[11px] font-black uppercase text-indigo-400 tracking-widest">Inteligencia Estrat├®gica IA</span>
+                                                        <span className="text-[11px] font-black uppercase text-indigo-400 tracking-widest">Inteligencia Estratégica IA</span>
                                                     </div>
                                                     <p className="text-sm text-gray-200 font-medium leading-relaxed">
                                                         {getStrategicIdea(format.id, profile)}
@@ -470,7 +470,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
     const [researchFolders, setResearchFolders] = useState([
         { id: 'f_nicho', name: 'Nicho & Pacientes', color: 'indigo' },
         { id: 'f_competencia', name: 'Competencia', color: 'fuchsia' },
-        { id: 'f_objeciones', name: 'Objeciones & Fricci├│n', color: 'amber' }
+        { id: 'f_objeciones', name: 'Objeciones & Fricción', color: 'amber' }
     ]);
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
     const [capa1ActiveTab, setCapa1ActiveTab] = useState('search'); // 'search' | 'saved'
@@ -502,7 +502,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             resolution: '4K',
             fps: 30
         },
-        insights: {}, // Para guardar reportes de tr├ífico, fricci├│n, etc.
+        insights: {}, // Para guardar reportes de tráfico, fricción, etc.
         goals: [],
         dynamicButtons: []
     });
@@ -721,11 +721,11 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
         };
         setProfile(updatedProfile);
         handleConfirm(updatedProfile);
-        toast.success('Datos de "' + research.title + '" transferidos al Perfil Estrat├®gico.');
+        toast.success('Datos de "' + research.title + '" transferidos al Perfil Estratégico.');
     };
 
     const handleConsolidateResearchesWithAI = async (selectedItems) => {
-        const toastId = toast.loading('Consolidando investigaciones con Inteligencia Estrat├®gica...');
+        const toastId = toast.loading('Consolidando investigaciones con Inteligencia Estratégica...');
         try {
             const res = await fetch('/api/ai/strategy/brain', {
                 method: 'POST',
@@ -754,7 +754,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             };
             setProfile(updatedProfile);
             await handleConfirm(updatedProfile);
-            toast.success('┬íPerfil Estrat├®gico 360┬░ consolidado y guardado!', { id: toastId });
+            toast.success('íPerfil Estratégico 360° consolidado y guardado!', { id: toastId });
         } catch (err) {
             toast.error('Error al consolidar con IA: ' + err.message, { id: toastId });
         }
@@ -838,7 +838,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             }
 
             if (!currentClientId) {
-                toast.error("Error: No se encontr├│ la sesi├│n del cliente.");
+                toast.error("Error: No se encontró la sesión del cliente.");
                 setIsSaving(false);
                 return;
             }
@@ -846,7 +846,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             // Strip out non-strategic keys to avoid large/circular payloads
             const { id, created_at, metadata, onboarding_data, editor, filmmaker, ...strategicData } = targetProfile;
 
-            // Limpiamos referencias circulares o data inv├ílida de onboarding_data actual
+            // Limpiamos referencias circulares o data inválida de onboarding_data actual
             const safeOnboardingData = onboarding_data ? JSON.parse(JSON.stringify(onboarding_data)) : {};
 
             const updatePayload = {
@@ -870,17 +870,17 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 }
             };
 
-            // Sanitizaci├│n absoluta: Supabase-js puede congelarse (hang) si intentamos pasarle objetos
+            // Sanitización absoluta: Supabase-js puede congelarse (hang) si intentamos pasarle objetos
             // con referencias circulares complejas (ej. Eventos de React) que escapen al safeOnboardingData.
             const ultraSafePayload = JSON.parse(JSON.stringify(updatePayload));
 
             const updatePromise = agencyService.updateClient(currentClientId, ultraSafePayload);
 
             // Esperamos que termine el guardado sin forzar un timeout artificial.
-            // Si el servidor de Supabase est├í despertando (Cold Boot), puede tomar hasta 2 minutos.
+            // Si el servidor de Supabase está despertando (Cold Boot), puede tomar hasta 2 minutos.
             await updatePromise;
             setIsSaving(false);
-            toast.success("┬íEcosistema Estrat├®gico sincronizado con ├®xito!", { id: 'save-toast' });
+            toast.success("íEcosistema Estratégico sincronizado con éxito!", { id: 'save-toast' });
             setIsPreviewMode(false);
         } catch (error) {
             console.error("Strategic Profile save error:", error);
@@ -890,7 +890,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
     };
 
     const handleSaveSnapshot = () => {
-        setTempSnapshotName(`Investigaci├│n ${new Date().toLocaleDateString()}`);
+        setTempSnapshotName(`Investigación ${new Date().toLocaleDateString()}`);
         setIsSnapshotModalOpen(true);
     };
 
@@ -928,7 +928,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
     };
 
     const handleApplySnapshot = (snapshot) => {
-        if (!confirm(`┬┐Est├ís seguro de activar "${snapshot.name}"? Esto reemplazar├í los datos actuales de la cuadr├¡cula.`)) return;
+        if (!confirm(`┐Estás seguro de activar "${snapshot.name}"? Esto reemplazará los datos actuales de la cuadrícula.`)) return;
 
         setProfile(prev => ({
             ...prev,
@@ -959,12 +959,12 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                             profile.linkedinUrl;
 
         if (!primaryUrl) {
-            toast.error("Ingresa al menos una URL para iniciar la investigaci├│n");
+            toast.error("Ingresa al menos una URL para iniciar la investigación");
             return;
         }
 
         try {
-            console.log("!!! INICIANDO INVESTIGACI├ôN OMNINIVEL - DIIC ZONE !!!");
+            console.log("!!! INICIANDO INVESTIGACIÓN OMNINIVEL - DIIC ZONE !!!");
             setIsSimulatingScrape(true);
             setIsPreviewMode(true);
             
@@ -1018,16 +1018,16 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             const updatedProfile = {
                 ...profile,
                 brandName: d.brandName || profile.brandName,
-                leadership: d.leadership || "Datos no hallados en el footprint p├║blico.",
-                whatItDoes: d.whatItDoes || "Informaci├│n pendiente de extracci├│n profunda.",
+                leadership: d.leadership || "Datos no hallados en el footprint público.",
+                whatItDoes: d.whatItDoes || "Información pendiente de extracción profunda.",
                 whatItOffers: d.whatItOffers || "Servicios/Productos no detectados.",
-                targetAudience: d.targetAudience || "P├║blico general del sector.",
+                targetAudience: d.targetAudience || "Público general del sector.",
                 problemSolved: d.problemSolved || "Problemas comunes de la industria.",
-                valueProp: d.valueProp || "Propuesta en fase de definici├│n.",
+                valueProp: d.valueProp || "Propuesta en fase de definición.",
                 tone: d.tone || "Profesional",
                 mainGoal: d.mainGoal || "Ventas y Autoridad",
-                marketContext: d.marketContext || "Contexto de mercado est├índar.",
-                socialAudit: d.socialAudit || "Auditor├¡a de canales sociales no disponible.",
+                marketContext: d.marketContext || "Contexto de mercado estándar.",
+                socialAudit: d.socialAudit || "Auditoría de canales sociales no disponible.",
                 dynamicButtons: d.dynamicButtons || []
             };
 
@@ -1036,7 +1036,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
 
             // DYNAMIC PROGRESS STEPS BASED ON ENTERED URLS
             const displaySteps = [
-                { msg: 'Activando motores de b├║squeda y rastreo...', icon: 'Target' }
+                { msg: 'Activando motores de búsqueda y rastreo...', icon: 'Target' }
             ];
             
             if (profile.websiteUrl) {
@@ -1060,8 +1060,8 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             
             displaySteps.push(
                 { msg: 'Detectando competidores y brechas de mercado...', icon: 'Search' },
-                { msg: 'Sintetizando inteligencia estrat├®gica real...', icon: 'Zap' },
-                { msg: 'Generando recomendaciones de producci├│n...', icon: 'Camera' },
+                { msg: 'Sintetizando inteligencia estratégica real...', icon: 'Zap' },
+                { msg: 'Generando recomendaciones de producción...', icon: 'Camera' },
                 { msg: 'Compilando reporte de ecosistema omni-nivel...', icon: 'Database' }
             );
 
@@ -1071,13 +1071,13 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             }
             
             setHasUnsyncedUrl(false);
-            toast.success("Investigaci├│n Omni-Nivel completada con ├®xito. Guardando...");
+            toast.success("Investigación Omni-Nivel completada con éxito. Guardando...");
             handleConfirm(updatedProfile);
 
         } catch (error) {
             console.error("AI Analysis error:", error);
             // HONEST ERROR FEEDBACK
-            toast.error(error.message || "Fallo en la investigaci├│n estrat├®gica");
+            toast.error(error.message || "Fallo en la investigación estratégica");
             
             // Reset fields to avoid showing 'Analizando...' if it failed
             setProfile(p => ({
@@ -1113,16 +1113,16 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 improvement_plan: 'general'
             };
             const categoryMap = {
-                competitors: 'An├ílisis de Competencia',
-                friction: 'Puntos de Fricci├│n & Objeciones',
-                traffic: 'Auditor├¡a de Tr├ífico B2B',
-                social_audit: 'Auditor├¡a de Redes Sociales',
-                improvement_plan: 'Plan de Mejora Estrat├®gico'
+                competitors: 'Análisis de Competencia',
+                friction: 'Puntos de Fricción & Objeciones',
+                traffic: 'Auditoría de Tráfico B2B',
+                social_audit: 'Auditoría de Redes Sociales',
+                improvement_plan: 'Plan de Mejora Estratégico'
             };
             const tagMap = {
                 competitors: ['Competencia', 'Mercado', 'Benchmarking'],
-                friction: ['Fricci├│n', 'Objeciones', 'Dolores', 'CRO'],
-                traffic: ['Tr├ífico', 'Captaci├│n', 'Funnels', 'B2B'],
+                friction: ['Fricción', 'Objeciones', 'Dolores', 'CRO'],
+                traffic: ['Tráfico', 'Captación', 'Funnels', 'B2B'],
                 social_audit: ['RedesSociales', 'Instagram', 'Facebook', 'Engagement'],
                 improvement_plan: ['Estrategia', 'PlanDeMejora', 'Crecimiento']
             };
@@ -1140,11 +1140,11 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     compList.map((c, i) => `* **${c.name || 'Competidor ' + (i+1)}:** ${c.url ? `[${c.url}](${c.url})` : ''} ${c.location ? `(${c.location})` : ''} - ${c.strengthsWeaknesses || ''}`).join('\n');
 
                 researchData = {
-                    summary: `Mapeo estrat├®gico de ${compList.length} competidores directos en el mercado.`,
+                    summary: `Mapeo estratégico de ${compList.length} competidores directos en el mercado.`,
                     competitors: compList
                 };
             } else {
-                formattedContent = res.insight || 'No se recibieron datos de la investigaci├│n.';
+                formattedContent = res.insight || 'No se recibieron datos de la investigación.';
                 researchData = {
                     summary: typeof res.insight === 'string' ? res.insight.substring(0, 300) : title,
                     insight: res.insight
@@ -1165,7 +1165,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             const newQuickResearch = {
                 id: `res_${mode}_${Date.now()}`,
                 title: `${title} - ${profile.brandName || 'Marca'}`,
-                category: categoryMap[mode] || 'Auditor├¡a Estrat├®gica',
+                category: categoryMap[mode] || 'Auditoría Estratégica',
                 folderId: folderMap[mode] || 'general',
                 tags: tagMap[mode] || ['Estrategia'],
                 createdAt: new Date().toISOString(),
@@ -1183,26 +1183,26 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 savedResearch: newQuickResearch 
             });
 
-            toast.success(`Ô£ô "${title}" guardado en el Repositorio de Marca`);
+            toast.success(`✓ "${title}" guardado en el Repositorio de Marca`);
 
         } catch (error) {
             console.error("Quick Insight Error:", error);
-            setInsightData({ title, content: 'Ocurri├│ un error en la infiltraci├│n: ' + (error.message || 'Error de red'), mode, loading: false });
-            toast.error("Fallo al ejecutar la investigaci├│n estrat├®gica");
+            setInsightData({ title, content: 'Ocurrió un error en la infiltración: ' + (error.message || 'Error de red'), mode, loading: false });
+            toast.error("Fallo al ejecutar la investigación estratégica");
         } finally {
             setActiveInsightBtn(null);
         }
     };
 
     const handleDownloadReport = () => {
-        const toastId = toast.loading("Compilando Reporte Estrat├®gico Omni-Nivel...");
+        const toastId = toast.loading("Compilando Reporte Estratégico Omni-Nivel...");
         
         // Gather full intelligence context
         const reportTitle = profile.brandName || 'Marca No Identificada';
         console.log(`[DIIC EXPORT] Generando reporte para: ${reportTitle}`);
 
         setTimeout(() => {
-            toast.success("Reporte compilado. Preparando vista de impresi├│n...", { id: toastId });
+            toast.success("Reporte compilado. Preparando vista de impresión...", { id: toastId });
             window.print();
         }, 1500);
     };
@@ -1276,7 +1276,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             if (response.ok && data.insight) {
                 setChatMessages([...newMessages, { role: 'assistant', content: data.insight }]);
             } else {
-                toast.error(data.error || "Fallo en chat de investigaci├│n");
+                toast.error(data.error || "Fallo en chat de investigación");
             }
         } catch (error) {
             console.error("Chat Error:", error);
@@ -1292,7 +1292,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
     const handleFieldAIAction = async (field, action) => {
         const url = profile.websiteUrl || profile.instagramUrl;
         if (!url) {
-            toast.error("Detecto que no hay una URL web para investigar. Por favor ingr├®sala.");
+            toast.error("Detecto que no hay una URL web para investigar. Por favor ingrésala.");
             return;
         }
 
@@ -1317,17 +1317,17 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             const data = await response.json();
             if (response.ok && data.insight) {
                 setProfile(prev => ({ ...prev, [field]: data.insight }));
-                toast.success("┬íContenido optimizado!", { id: toastId });
+                toast.success("íContenido optimizado!", { id: toastId });
                 // If it's expanded, update the expanded view value too if we need to
                 if (expandedField && expandedField.field === field) {
                     setExpandedField({ ...expandedField, value: data.insight });
                 }
             } else {
-                toast.error("La IA tuvo una interferencia. Int├®ntalo de nuevo.", { id: toastId });
+                toast.error("La IA tuvo una interferencia. Inténtalo de nuevo.", { id: toastId });
             }
         } catch (error) {
             console.error("Field AI Error:", error);
-            toast.error("Error de conexi├│n con el sat├®lite DIIC.", { id: toastId });
+            toast.error("Error de conexión con el satélite DIIC.", { id: toastId });
         } finally {
             setIsFieldLoading(false);
         }
@@ -1347,7 +1347,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     {/* Deep dive expansion anchor */}
                     <button 
                         onClick={() => setExpandedField({ label, field, icon, value: profile[field] })} 
-                        className="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-gray-400 hover:text-white" title="Expandir M├│dulo"
+                        className="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-gray-400 hover:text-white" title="Expandir Módulo"
                     >
                         <Maximize2 className="w-4 h-4" />
                     </button>
@@ -1388,16 +1388,16 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                         <div className="absolute bottom-0 left-0 w-80 h-80 bg-fuchsia-500/10 rounded-full blur-[100px] pointer-events-none -z-10" />
 
                         {/* HUD Header */}
-                        <div className="flex flex-col items-center mb-6 z-10">
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-3">
-                                <Sparkles className="w-3.5 h-3.5 animate-pulse text-indigo-400" />
-                                <span>Terminal de Diagn├│stico & Huella Digital</span>
+                        <div className="flex flex-col items-center mb-5 z-10 text-center">
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase tracking-wider mb-2.5">
+                                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                                <span>Terminal de Diagnóstico & Huella Digital</span>
                             </div>
-                            <h3 className="text-2xl md:text-4xl font-black text-white uppercase italic tracking-tight">
-                                Auditor├¡a Omnicanal & <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Ecosistema Digital</span>
+                            <h3 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tight">
+                                Auditoría Omnicanal & <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Ecosistema Digital</span>
                             </h3>
-                            <p className="text-gray-400 text-xs md:text-sm font-medium mt-1.5 max-w-xl">
-                                Escanea sitios web, perfiles sociales y competidores para extraer insights estrat├®gicos en tiempo real con DIIC IA.
+                            <p className="text-gray-400 text-xs font-medium mt-1 max-w-lg">
+                                Escanea sitios web, perfiles sociales y competidores para extraer insights estratégicos en tiempo real con DIIC IA.
                             </p>
                         </div>
 
@@ -1503,7 +1503,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     {profile.tiktokUrl && <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />}
                                 </button>
 
-                                {/* M├ís Redes Dropdown */}
+                                {/* Más Redes Dropdown */}
                                 <div className="relative">
                                     <button
                                         type="button"
@@ -1515,7 +1515,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         } border`}
                                     >
                                         <Plus size={12} />
-                                        <span>M├ís</span>
+                                        <span>Más</span>
                                     </button>
                                     
                                     <AnimatePresence>
@@ -1670,7 +1670,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                             <div className="flex items-center justify-between mb-4 px-1">
                                 <span className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-400 flex items-center gap-2">
                                     <Zap className="w-3.5 h-3.5 text-indigo-400" />
-                                    Auditor├¡as R├ípidas de Alto Impacto
+                                    Auditorías Rápidas de Alto Impacto
                                 </span>
                                 <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest hidden sm:inline">
                                     Autoguardado en Repositorio
@@ -1696,10 +1696,10 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <p className="text-[10px] text-gray-400 font-medium leading-snug">Mapeo directo y ventajas de mercado</p>
                                 </button>
 
-                                {/* 2. Fricci├│n CRO */}
+                                {/* 2. Fricción CRO */}
                                 <button 
                                     disabled={activeInsightBtn === 'friction'}
-                                    onClick={() => handleQuickInsight('friction', 'Puntos de Fricci├│n CRO')}
+                                    onClick={() => handleQuickInsight('friction', 'Puntos de Fricción CRO')}
                                     type="button"
                                     className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
                                         activeInsightBtn === 'friction'
@@ -1710,14 +1710,14 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <div className="w-9 h-9 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 mb-2.5 group-hover:scale-110 transition-transform">
                                         {activeInsightBtn === 'friction' ? <Activity size={16} className="animate-spin text-pink-400" /> : <TargetIcon size={16} />}
                                     </div>
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Fricci├│n CRO</h4>
-                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Detecci├│n de fugas en la conversi├│n</p>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Fricción CRO</h4>
+                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Detección de fugas en la conversión</p>
                                 </button>
 
-                                {/* 3. Tr├ífico B2B */}
+                                {/* 3. Tráfico B2B */}
                                 <button 
                                     disabled={activeInsightBtn === 'traffic'}
-                                    onClick={() => handleQuickInsight('traffic', 'Rutas de Tr├ífico B2B')}
+                                    onClick={() => handleQuickInsight('traffic', 'Rutas de Tráfico B2B')}
                                     type="button"
                                     className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
                                         activeInsightBtn === 'traffic'
@@ -1728,14 +1728,14 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-2.5 group-hover:scale-110 transition-transform">
                                         {activeInsightBtn === 'traffic' ? <Activity size={16} className="animate-spin text-emerald-400" /> : <Activity size={16} />}
                                     </div>
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Tr├ífico B2B</h4>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Tráfico B2B</h4>
                                     <p className="text-[10px] text-gray-400 font-medium leading-snug">Rutas y procedencia de prospectos</p>
                                 </button>
 
-                                {/* 4. Auditor├¡a Redes */}
+                                {/* 4. Auditoría Redes */}
                                 <button 
                                     disabled={activeInsightBtn === 'social_audit'}
-                                    onClick={() => handleQuickInsight('social_audit', 'Auditor├¡a de Redes Sociales')}
+                                    onClick={() => handleQuickInsight('social_audit', 'Auditoría de Redes Sociales')}
                                     type="button"
                                     className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
                                         activeInsightBtn === 'social_audit'
@@ -1746,14 +1746,14 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2.5 group-hover:scale-110 transition-transform">
                                         {activeInsightBtn === 'social_audit' ? <Activity size={16} className="animate-spin text-indigo-400" /> : <Bot size={16} />}
                                     </div>
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Auditor├¡a Redes</h4>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Auditoría Redes</h4>
                                     <p className="text-[10px] text-gray-400 font-medium leading-snug">Alcance, engagement y huella digital</p>
                                 </button>
 
                                 {/* 5. Plan de Mejora */}
                                 <button 
                                     disabled={activeInsightBtn === 'improvement_plan'}
-                                    onClick={() => handleQuickInsight('improvement_plan', 'Plan de Mejora Estrat├®gico')}
+                                    onClick={() => handleQuickInsight('improvement_plan', 'Plan de Mejora Estratégico')}
                                     type="button"
                                     className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
                                         activeInsightBtn === 'improvement_plan'
@@ -1765,7 +1765,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         {activeInsightBtn === 'improvement_plan' ? <Activity size={16} className="animate-spin text-amber-400" /> : <Wand2 size={16} />}
                                     </div>
                                     <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Plan de Mejora</h4>
-                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Hoja de ruta t├íctica a 30 d├¡as</p>
+                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Hoja de ruta táctica a 30 días</p>
                                 </button>
                             </div>
                         </div>
@@ -1782,7 +1782,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     >
                         <div className="bg-indigo-500/10 px-6 py-3 border-b border-indigo-500/20 flex items-center justify-between">
                             <span className="text-xs font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2">
-                                <Bot size={14} /> Investigaci├│n Continua
+                                <Bot size={14} /> Investigación Continua
                             </span>
                             {chatMessages.length > 0 && (
                                 <button onClick={() => setChatMessages([])} className="text-xs text-gray-500 hover:text-white uppercase tracking-widest font-bold">Limpiar</button>
@@ -1792,7 +1792,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                         <div className="p-4 md:p-6 min-h-[150px] max-h-[300px] overflow-y-auto space-y-4 text-left custom-scrollbar">
                             {chatMessages.length === 0 ? (
                                 <div className="h-full flex items-center justify-center text-center opacity-50 py-8">
-                                    <p className="text-sm text-gray-400 font-medium">Chatea con el esc├íner. Ej: "┬┐Qu├® cursos de ganader├¡a tienen y cu├índo inician?"</p>
+                                    <p className="text-sm text-gray-400 font-medium">Chatea con el escáner. Ej: "┐Qué cursos de ganadería tienen y cuándo inician?"</p>
                                 </div>
                             ) : (
                                 chatMessages.map((msg, i) => (
@@ -1869,7 +1869,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     onChange={(e) => {
                                         if (e.target.files?.[0]) {
                                             setSelectedFile(e.target.files[0]);
-                                            toast.success(`Archivo cargado: ${e.target.files[0].name}`, { icon: '­ƒôÄ' });
+                                            toast.success(`Archivo cargado: ${e.target.files[0].name}`, { icon: '📌' });
                                         }
                                     }}
                                 />
@@ -1883,7 +1883,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 </button>
                                 <button 
                                     type="button"
-                                    onClick={() => toast.info('Grabaci├│n de voz pr├│ximamente disponible')}
+                                    onClick={() => toast.info('Grabación de voz próximamente disponible')}
                                     className="p-3 text-gray-500 hover:text-rose-400 hover:bg-white/5 rounded-xl transition-all"
                                     title="Enviar audio"
                                 >
@@ -1893,7 +1893,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 <input 
                                     type="text" 
                                     className="flex-1 bg-transparent border-none text-sm text-white px-2 py-3 focus:outline-none placeholder:text-gray-600"
-                                    placeholder="Preg├║ntale algo profundo al investigador..."
+                                    placeholder="Pregúntale algo profundo al investigador..."
                                     value={chatInput}
                                     onChange={e => setChatInput(e.target.value)}
                                     disabled={isChatting}
@@ -2020,15 +2020,15 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             <div key={`sync-grid-${syncCount}`} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative mt-16 w-full">
                     <div className="relative z-10">{renderInput('NOMBRE DE MARCA', 'brandName', Tag, user?.user_metadata?.brand || 'Ej. DIIC ZONE INC.')}</div>
                     <div className="relative z-10">{renderInput('LIDERAZGO / FUNDADORES', 'leadership', ShieldCheck, 'Ej. Ing. Mauro Borja - CEO...')}</div>
-                    <div className="relative z-10">{renderInput('┬┐QU├ë HACE?', 'whatItDoes', Network, 'Ej. Consultor├¡a en Inteligencia Artificial...')}</div>
-                    <div className="relative z-10">{renderInput('┬┐QU├ë OFRECE?', 'whatItOffers', Zap, 'Ej. Asesor├¡as High-Ticket, Cursos, SaaS...', true)}</div>
-                    <div className="relative z-10">{renderInput('P├ÜBLICO OBJETIVO', 'targetAudience', Users, 'Ej. Due├▒os de negocios B2B, edad 30-45...', true)}</div>
+                    <div className="relative z-10">{renderInput('┐QUÉ HACE?', 'whatItDoes', Network, 'Ej. Consultoría en Inteligencia Artificial...')}</div>
+                    <div className="relative z-10">{renderInput('┐QUÉ OFRECE?', 'whatItOffers', Zap, 'Ej. Asesorías High-Ticket, Cursos, SaaS...', true)}</div>
+                    <div className="relative z-10">{renderInput('PÚBLICO OBJETIVO', 'targetAudience', Users, 'Ej. Dueños de negocios B2B, edad 30-45...', true)}</div>
                     <div className="relative z-10">{renderInput('PROBLEMA QUE RESUELVE', 'problemSolved', Search, 'Ej. Falta de tiempo, procesos manuales lentos...', true)}</div>
-                    <div className="relative z-10">{renderInput('PROPUESTA DE VALOR', 'valueProp', TargetIcon, 'Ej. Aumentamos tus ventas un 30% usando automatizaciones en 30 d├¡as.', true)}</div>
-                    <div className="relative z-10">{renderInput('CONTEXTO DE MERCADO', 'marketContext', Globe, 'Ej. L├¡deres en el sector agropecuario de Ecuador...', true)}</div>
-                    <div className="relative z-10">{renderInput('TONO DE COMUNICACI├ôN', 'tone', Heart, 'Ej. Profesional, directo, corporativo, disruptivo...')}</div>
+                    <div className="relative z-10">{renderInput('PROPUESTA DE VALOR', 'valueProp', TargetIcon, 'Ej. Aumentamos tus ventas un 30% usando automatizaciones en 30 días.', true)}</div>
+                    <div className="relative z-10">{renderInput('CONTEXTO DE MERCADO', 'marketContext', Globe, 'Ej. Líderes en el sector agropecuario de Ecuador...', true)}</div>
+                    <div className="relative z-10">{renderInput('TONO DE COMUNICACIÓN', 'tone', Heart, 'Ej. Profesional, directo, corporativo, disruptivo...')}</div>
                     <div className="relative z-10">{renderInput('OBJETIVO PRINCIPAL', 'mainGoal', Target, 'Ej. Lograr $100K MRR para Q3 2024.', true)}</div>
-                    <div className="relative z-10">{renderInput('AUDITOR├ìA DE REDES SOCIALES', 'socialAudit', Bot, 'An├ílisis y diagn├│stico profundo de la huella digital en redes sociales del cliente...', true)}</div>
+                    <div className="relative z-10">{renderInput('AUDITORÍA DE REDES SOCIALES', 'socialAudit', Bot, 'Análisis y diagnóstico profundo de la huella digital en redes sociales del cliente...', true)}</div>
                     
                     {/* Strategic Recording Formats Card */}
                     <div className="bg-[#0A0A0F] border border-white/5 rounded-[32px] p-6 space-y-4 hover:border-indigo-500/30 transition-all duration-300 group relative shadow-lg hover:shadow-indigo-500/10 flex flex-col h-full">
@@ -2037,7 +2037,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 group-hover:scale-110 transition-transform">
                                     <Activity className="w-5 h-5" />
                                 </div>
-                                <label className="text-sm font-black text-white uppercase italic tracking-widest">Formatos de Grabaci├│n</label>
+                                <label className="text-sm font-black text-white uppercase italic tracking-widest">Formatos de Grabación</label>
                             </div>
                             <button 
                                 onClick={() => setShowFormats(true)}
@@ -2063,7 +2063,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                             onClick={() => setShowFormats(true)}
                             className="w-full py-2.5 bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
                         >
-                            Ver Configuraci├│n Completa
+                            Ver Configuración Completa
                         </button>
                     </div>
 
@@ -2128,12 +2128,12 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                         <div className="pt-2 border-t border-white/5 flex flex-wrap gap-1.5 justify-start">
                             {profile.country && (
                                 <span className="px-2 py-1 bg-white/5 rounded-md text-[8px] font-bold text-gray-400 uppercase tracking-wide">
-                                    ­ƒôì {profile.country}
+                                    📍 {profile.country}
                                 </span>
                             )}
                             {(profile.industry || profile.marketing_type) && (
                                 <span className="px-2 py-1 bg-white/5 rounded-md text-[8px] font-bold text-gray-400 uppercase tracking-wide">
-                                    ­ƒÆ╝ {profile.industry || profile.marketing_type}
+                                    💼 {profile.industry || profile.marketing_type}
                                 </span>
                             )}
                         </div>
@@ -2155,7 +2155,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                             </div>
                             <div>
                                 <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Competidores</h3>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">An├ílisis de Mercado Directo</p>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Análisis de Mercado Directo</p>
                             </div>
                         </div>
                         <button 
@@ -2184,7 +2184,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <input type="text" placeholder="Sitio Web (URL)" value={comp?.url || ''} onChange={(e) => handleArrayChange('competitors', idx, 'url', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
-                                    <input type="text" placeholder="Ubicaci├│n / Alcance" value={comp?.location || ''} onChange={(e) => handleArrayChange('competitors', idx, 'location', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
+                                    <input type="text" placeholder="Ubicación / Alcance" value={comp?.location || ''} onChange={(e) => handleArrayChange('competitors', idx, 'location', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <input type="text" placeholder="Redes Sociales" value={comp?.social || ''} onChange={(e) => handleArrayChange('competitors', idx, 'social', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
@@ -2196,7 +2196,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     </button>
                                 </div>
                                 <textarea 
-                                    placeholder="An├ílisis Estrat├®gico (Fortalezas vs Debilidades)..." 
+                                    placeholder="Análisis Estratégico (Fortalezas vs Debilidades)..." 
                                     value={comp?.strengthsWeaknesses || comp?.reviews || ''} 
                                     onChange={(e) => handleArrayChange('competitors', idx, 'strengthsWeaknesses', e.target.value)} 
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors resize-none h-24 italic leading-relaxed" 
@@ -2206,7 +2206,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                             <div className="text-center py-8 opacity-50 border border-dashed border-rose-500/20 rounded-3xl bg-rose-500/5">
                                 <Search className="w-8 h-8 text-rose-500/50 mx-auto mb-2" />
                                 <p className="text-[10px] text-rose-400/80 uppercase font-black tracking-widest">Sin competidores registrados</p>
-                                <p className="text-[9px] text-gray-500 mt-1 font-medium">A├▒ade o deja que la IA investigue simulados</p>
+                                <p className="text-[9px] text-gray-500 mt-1 font-medium">Añade o deja que la IA investigue simulados</p>
                             </div>
                         )}
                     </div>
@@ -2223,7 +2223,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 <ShieldAlert className="w-6 h-6 text-blue-500" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Aliados Estrat├®gicos</h3>
+                                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Aliados Estratégicos</h3>
                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Partners & Proveedores Clave</p>
                             </div>
                         </div>
@@ -2255,13 +2255,13 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <input type="text" placeholder="Sitio Web (URL)" value={ally?.url || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'url', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
                                     <input type="text" placeholder="Redes (Para Etiquetar)" value={ally?.social || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'social', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
                                 </div>
-                                <input type="text" placeholder="┬┐Por qu├® etiquetarlos? (Ej. Proveedor de Software...)" value={ally?.tagReason || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'tagReason', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
+                                <input type="text" placeholder="┐Por qué etiquetarlos? (Ej. Proveedor de Software...)" value={ally?.tagReason || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'tagReason', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
                             </div>
                         ))) : (
                             <div className="text-center py-8 opacity-50 border border-dashed border-blue-500/20 rounded-3xl bg-blue-500/5">
                                 <Network className="w-8 h-8 text-blue-500/50 mx-auto mb-2" />
                                 <p className="text-[10px] text-blue-400/80 uppercase font-black tracking-widest">Sin aliados registrados</p>
-                                <p className="text-[9px] text-gray-500 mt-1 font-medium">A├▒ade marcas amigas para tu ecosistema de networking</p>
+                                <p className="text-[9px] text-gray-500 mt-1 font-medium">Añade marcas amigas para tu ecosistema de networking</p>
                             </div>
                         )}
                     </div>
@@ -2278,7 +2278,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                         </div>
                         <div>
                             <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Investigaciones Guardadas</h3>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">Snapshot Estrat├®gico de Identidad</p>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">Snapshot Estratégico de Identidad</p>
                         </div>
                     </div>
                     <button 
@@ -2299,7 +2299,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <div>
                                         <h4 className="text-xs font-black text-white uppercase tracking-widest">{snapshot.name || 'Snapshot'}</h4>
                                         <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1">
-                                            {formatDateSafe(snapshot.date)} ÔÇó {formatTimeSafe(snapshot.date)}
+                                            {formatDateSafe(snapshot.date)} • {formatTimeSafe(snapshot.date)}
                                         </p>
                                     </div>
                                     <button 
@@ -2312,7 +2312,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
 
                                 <div className="space-y-3 mb-6 min-h-[60px]">
                                     <p className="text-xs text-gray-400 font-medium leading-relaxed italic">
-                                        {snapshot.brandName ? `Configuraci├│n estrat├®gica optimizada para ${snapshot.brandName}.` : 'Respaldo integral de identidad, mercado y metas principales para blindaje de marca.'}
+                                        {snapshot.brandName ? `Configuración estratégica optimizada para ${snapshot.brandName}.` : 'Respaldo integral de identidad, mercado y metas principales para blindaje de marca.'}
                                     </p>
                                     <div className="flex flex-wrap gap-2">
                                         <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-md text-[8px] font-black text-indigo-400 uppercase tracking-widest">Estrategia Activa</span>
@@ -2324,7 +2324,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     onClick={() => handleApplySnapshot(snapshot)}
                                     className="w-full py-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all flex items-center justify-center gap-2 mb-2"
                                 >
-                                    <CheckCircle2 size={14} /> Activar Investigaci├│n
+                                    <CheckCircle2 size={14} /> Activar Investigación
                                 </button>
 
                                 <div className="flex gap-2">
@@ -2349,7 +2349,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     </div>
                 ) : (
                     <div className="py-20 text-center border border-dashed border-white/5 rounded-[40px] bg-white/[0.01]">
-                        <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.4em]">No hay investigaciones guardadas a├║n</p>
+                        <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.4em]">No hay investigaciones guardadas aún</p>
                         <p className="text-xs text-gray-500 mt-2 font-medium">Guarda versiones de tu perfil para comparar estrategias</p>
                     </div>
                 )}
@@ -2392,11 +2392,11 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 
                                 <div className="space-y-3 mb-6 min-h-[70px]">
                                     <p className="text-xs text-gray-300 font-medium leading-relaxed line-clamp-3">
-                                        {data.content ? data.content.substring(0, 160).replace(/[#*]/g, '') + '...' : 'An├ílisis profundo de mercado, detecci├│n de fricciones UX y optimizaci├│n de activos digitales en tiempo real.'}
+                                        {data.content ? data.content.substring(0, 160).replace(/[#*]/g, '') + '...' : 'Análisis profundo de mercado, detección de fricciones UX y optimización de activos digitales en tiempo real.'}
                                     </p>
                                     <div className="flex flex-wrap gap-2 pt-1">
                                         <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 rounded-md text-[8px] font-black text-rose-400 uppercase tracking-widest">Inteligencia IA</span>
-                                        <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-md text-[8px] font-black text-indigo-400 uppercase tracking-widest">Optimizaci├│n Omni</span>
+                                        <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-md text-[8px] font-black text-indigo-400 uppercase tracking-widest">Optimización Omni</span>
                                     </div>
                                 </div>
 
@@ -2433,7 +2433,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     className="px-8 py-5 bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 active:scale-95 transition-all flex items-center gap-3"
                 >
                     <Database className="w-5 h-5 text-gray-400" />
-                    Guardar Investigaci├│n
+                    Guardar Investigación
                  </button>
 
                  <button 
@@ -2466,8 +2466,8 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         <FileUp size={24} />
                                     </div>
                                     <div>
-                                        <h4 className="text-white font-black text-sm uppercase tracking-widest">Reporte Estrat├®gico Profesional</h4>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Optimizado para impresi├│n DIIC Zone</p>
+                                        <h4 className="text-white font-black text-sm uppercase tracking-widest">Reporte Estratégico Profesional</h4>
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Optimizado para impresión DIIC Zone</p>
                                     </div>
                                 </div>
                                 <button 
@@ -2489,7 +2489,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 </div>
                                 <div className="p-6 bg-white/5 border border-white/10 rounded-3xl text-center min-w-[200px]">
                                     <p className="text-[9px] text-indigo-400 font-black uppercase tracking-[0.2em] mb-1">Status Operativo</p>
-                                    <p className="text-sm text-white font-black uppercase italic tracking-widest">Optimizaci├│n IA</p>
+                                    <p className="text-sm text-white font-black uppercase italic tracking-widest">Optimización IA</p>
                                 </div>
                             </div>
 
@@ -2498,11 +2498,11 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 {[
                                     { label: 'Liderazgo', val: profile.leadership, icon: ShieldCheck },
                                     { label: 'Core del Negocio', val: profile.whatItDoes, icon: Network },
-                                    { label: 'Oferta Estrat├®gica', val: profile.whatItOffers, icon: Zap },
-                                    { label: 'P├║blico Objetivo', val: profile.targetAudience, icon: Users },
+                                    { label: 'Oferta Estratégica', val: profile.whatItOffers, icon: Zap },
+                                    { label: 'Público Objetivo', val: profile.targetAudience, icon: Users },
                                     { label: 'Propuesta de Valor', val: profile.valueProp, icon: TargetIcon },
                                     { label: 'Meta Principal', val: profile.mainGoal, icon: Target },
-                                    { label: 'Auditor├¡a de Redes', val: profile.socialAudit, icon: Bot }
+                                    { label: 'Auditoría de Redes', val: profile.socialAudit, icon: Bot }
                                 ].map((item, i) => (
                                     <div key={i} className="space-y-4 group">
                                         <div className="flex items-center gap-3">
@@ -2510,7 +2510,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                             <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em]">{item.label}</h4>
                                         </div>
                                         <p className="text-lg font-medium text-gray-300 leading-relaxed border-l-2 border-indigo-500/20 pl-6 group-hover:border-indigo-500 transition-colors">
-                                            {item.val || 'Informaci├│n no definida'}
+                                            {item.val || 'Información no definida'}
                                         </p>
                                     </div>
                                 ))}
@@ -2525,8 +2525,8 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <div className="flex flex-wrap gap-3">
                                         {profile.goals.map((gId) => {
                                             const goalMap = {
-                                                clients: 'Conseguir m├ís clientes',
-                                                sales: 'Vender m├ís',
+                                                clients: 'Conseguir más clientes',
+                                                sales: 'Vender más',
                                                 authority: 'Posicionarme como experto',
                                                 automate: 'Automatizar mi negocio',
                                                 scale: 'Escalar mi marca'
@@ -2613,10 +2613,10 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                             </div>
                                         )}
 
-                                        {/* Ubicaci├│n / Direcci├│n */}
+                                        {/* Ubicación / Dirección */}
                                         {(profile.country || profile.city || profile.location) && (
                                             <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Ubicaci├│n</span>
+                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Ubicación</span>
                                                 <p className="text-xs font-bold text-white truncate">
                                                     {[profile.city || profile.location, profile.country].filter(Boolean).join(', ')}
                                                 </p>
@@ -2629,7 +2629,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         {/* Birth Date */}
                                         {profile.birth_date && formatDateSafe(profile.birth_date) && (
                                             <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Fecha de Fundaci├│n</span>
+                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Fecha de Fundación</span>
                                                 <p className="text-xs font-bold text-white">
                                                     {formatDateSafe(profile.birth_date, { day: 'numeric', month: 'long', year: 'numeric' })}
                                                 </p>
@@ -2642,7 +2642,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                             {/* Production Strategy Section */}
                             <div className="pt-12 border-t border-white/5 space-y-12 text-left">
                                 <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-3">
-                                    <Activity className="w-6 h-6 text-indigo-500" /> Estrategia de Producci├│n
+                                    <Activity className="w-6 h-6 text-indigo-500" /> Estrategia de Producción
                                 </h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -2700,14 +2700,14 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                                     </div>
                                                 ))
                                             ) : (
-                                                <p className="text-xs text-gray-600 font-medium italic">No se han registrado competidores estrat├®gicos.</p>
+                                                <p className="text-xs text-gray-600 font-medium italic">No se han registrado competidores estratégicos.</p>
                                             )}
                                         </div>
                                     </div>
 
                                     {/* Allies List */}
                                     <div className="space-y-6">
-                                        <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em]">Aliados Estrat├®gicos</h4>
+                                        <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em]">Aliados Estratégicos</h4>
                                         <div className="space-y-4">
                                             {Array.isArray(profile.strategicAllies) && profile.strategicAllies.length > 0 ? (
                                                 profile.strategicAllies.map((a, i) => (
@@ -2720,7 +2720,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                                     </div>
                                                 ))
                                             ) : (
-                                                <p className="text-xs text-gray-600 font-medium italic">No se han registrado aliados estrat├®gicos.</p>
+                                                <p className="text-xs text-gray-600 font-medium italic">No se han registrado aliados estratégicos.</p>
                                             )}
                                         </div>
                                     </div>
@@ -2729,7 +2729,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
 
                             {/* Final Footnote */}
                             <div className="pt-12 border-t border-white/5 flex flex-col items-center gap-4 opacity-30">
-                                <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.5em]">DIIC ZONE ÔÇó ESTRATEGIA OMNI-NIVEL 2026</p>
+                                <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.5em]">DIIC ZONE • ESTRATEGIA OMNI-NIVEL 2026</p>
                                 <div className="flex gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                                     <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
@@ -2766,8 +2766,8 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center mx-auto text-indigo-400 mb-4">
                                         <Database size={32} />
                                     </div>
-                                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Guardar Investigaci├│n</h3>
-                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em]">Asigna un nombre para este snapshot estrat├®gico</p>
+                                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Guardar Investigación</h3>
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em]">Asigna un nombre para este snapshot estratégico</p>
                                 </div>
 
                                 <div className="relative">
@@ -2777,7 +2777,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         value={tempSnapshotName}
                                         onChange={(e) => setTempSnapshotName(e.target.value)}
                                         className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-white font-bold text-lg focus:outline-none focus:border-indigo-500/50 transition-all placeholder:text-gray-700"
-                                        placeholder="Ej. An├ílisis de Mercado Q4..."
+                                        placeholder="Ej. Análisis de Mercado Q4..."
                                     />
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-indigo-500/30">
                                         <Edit3 size={20} />
@@ -2824,7 +2824,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">{selectedSnapshotForPreview.name || 'Snapshot'}</h3>
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">Snapshot Hist├│rico ÔÇó {formatDateSafe(selectedSnapshotForPreview.date)}</p>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">Snapshot Histórico • {formatDateSafe(selectedSnapshotForPreview.date)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -2850,7 +2850,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         { label: 'Liderazgo', field: 'leadership', icon: ShieldCheck },
                                         { label: 'Actividad', field: 'whatItDoes', icon: Network },
                                         { label: 'Oferta', field: 'whatItOffers', icon: Zap },
-                                        { label: 'P├║blico', field: 'targetAudience', icon: Users },
+                                        { label: 'Público', field: 'targetAudience', icon: Users },
                                         { label: 'Problema', field: 'problemSolved', icon: Search },
                                         { label: 'Propuesta de Valor', field: 'valueProp', icon: TargetIcon },
                                         { label: 'Mercado', field: 'marketContext', icon: Globe },
@@ -2863,14 +2863,14 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                                 <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{item.label}</span>
                                             </div>
                                             <p className="text-sm text-gray-200 font-medium leading-relaxed italic">
-                                                {selectedSnapshotForPreview?.data?.[item.field] || 'Dato no registrado en esta versi├│n.'}
+                                                {selectedSnapshotForPreview?.data?.[item.field] || 'Dato no registrado en esta versión.'}
                                             </p>
                                         </div>
                                     ))}
                                 </div>
 
                                 <div className="pt-12 border-t border-white/5 text-center opacity-30">
-                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.5em]">DIIC ZONE ÔÇó ECOSISTEMA ESTRAT├ëGICO SEGURO</p>
+                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.5em]">DIIC ZONE • ECOSISTEMA ESTRATÉGICO SEGURO</p>
                                 </div>
                             </div>
                         </motion.div>
@@ -2931,7 +2931,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                             </div>
                                             <div>
                                                 <p className="text-lg font-black uppercase tracking-widest text-white italic">Investigando profundamente...</p>
-                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-2">Midiendo rutas de mercado y fricci├│n UX</p>
+                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-2">Midiendo rutas de mercado y fricción UX</p>
                                             </div>
                                         </div>
                                     ) : (
@@ -2959,7 +2959,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                             </button>
                                             <button 
                                                 onClick={() => {
-                                                    toast.success("Investigaci├│n asegurada en tu base de datos");
+                                                    toast.success("Investigación asegurada en tu base de datos");
                                                     setInsightModalOpen(false);
                                                 }}
                                                 className="flex-2 w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 print:hidden"
@@ -3001,7 +3001,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         <div>
                                             <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">{expandedField.label}</h3>
                                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] flex items-center gap-2">
-                                                <Activity size={10} className="text-indigo-500" /> Modo Profundidad Estrat├®gica
+                                                <Activity size={10} className="text-indigo-500" /> Modo Profundidad Estratégica
                                             </p>
                                         </div>
                                     </div>
@@ -3020,7 +3020,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                             value={profile[expandedField.field] || ''}
                                             onChange={(e) => handleChange(expandedField.field, e.target.value)}
                                             className="w-full min-h-[350px] bg-[#0F0F1A] border border-white/10 rounded-3xl p-8 text-xl text-gray-300 font-medium leading-relaxed focus:outline-none focus:border-indigo-500/50 transition-all custom-scrollbar"
-                                            placeholder="Desarrolla aqu├¡ la idea profunda..."
+                                            placeholder="Desarrolla aquí la idea profunda..."
                                         />
                                     </div>
 
@@ -3039,12 +3039,12 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                             className="flex-1 py-5 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 group"
                                         >
                                             <Sparkles className="w-5 h-5 text-emerald-400 group-hover:animate-pulse" />
-                                            Optimizar Copy Estrat├®gico
+                                            Optimizar Copy Estratégico
                                         </button>
                                     </div>
                                     
                                     <p className="text-[10px] text-gray-600 text-center font-bold uppercase tracking-widest pt-4">
-                                        Los cambios se guardan autom├íticamente en tu perfil estrat├®gico local.
+                                        Los cambios se guardan automáticamente en tu perfil estratégico local.
                                     </p>
                                 </div>
                             </div>
@@ -3053,7 +3053,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 )}
             </AnimatePresence>
 
-            {/* Modal para Guardar Investigaci├│n */}
+            {/* Modal para Guardar Investigación */}
             <SavedResearchesModal
                 isOpen={isSaveModalOpen}
                 onClose={() => setIsSaveModalOpen(false)}
@@ -3068,7 +3068,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     valueProp: profile.valueProp,
                     tone: profile.tone,
                     frictionPoints: (profile.problemSolved ? profile.problemSolved.split('.').filter(Boolean) : []),
-                    summary: profile.whatItDoes || profile.valueProp || 'Investigaci├│n estrat├®gica de marca'
+                    summary: profile.whatItDoes || profile.valueProp || 'Investigación estratégica de marca'
                 }}
                 folders={researchFolders}
                 onCreateFolder={handleCreateFolder}
