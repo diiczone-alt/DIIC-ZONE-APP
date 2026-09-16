@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Network, Tag, Target, Users, Search, Target as TargetIcon, Zap, Heart, Link as LinkIcon, Globe, Image as ImageIcon, CheckCircle2, ShieldAlert, Crosshair, Plus, Trash2, ShieldCheck, Activity, Bot, Sparkles, Database, Command, Maximize2, Wand2, Edit3, Paperclip, Mic, FileUp, Facebook, Instagram, Linkedin, Camera, Smartphone, Monitor, Layout, Layers, Video, X, MapPin, FolderOpen, Bookmark, Folder, FolderPlus, Printer, ArrowUpRight } from 'lucide-react';
@@ -59,11 +59,11 @@ const ClaudeStyleMarkdownViewer = ({ content }) => {
 
                 // 1. Alert boxes / Blockquotes (either starts with > or matches warning trigger pattern)
                 const isWarningTrigger = trimmed.startsWith('>') || 
-                                         /^(es importante señalar|nota|atención|advertencia|importante|cuidado):/i.test(trimmed);
+                                         /^(es importante se├▒alar|nota|atenci├│n|advertencia|importante|cuidado):/i.test(trimmed);
 
                 if (isWarningTrigger) {
                     const cleanText = trimmed.startsWith('>') ? trimmed.slice(1).trim() : trimmed;
-                    const isImportantOrWarning = /^(es importante señalar|atención|advertencia|importante)/i.test(cleanText);
+                    const isImportantOrWarning = /^(es importante se├▒alar|atenci├│n|advertencia|importante)/i.test(cleanText);
                     
                     return (
                         <div 
@@ -83,7 +83,7 @@ const ClaudeStyleMarkdownViewer = ({ content }) => {
                             </div>
                             <div className="space-y-1 flex-1">
                                 <span className="text-[9px] font-black uppercase tracking-widest opacity-60">
-                                    {isImportantOrWarning ? 'Nota Estratégica / Alerta' : 'Sugerencia de Investigación'}
+                                    {isImportantOrWarning ? 'Nota Estrat├®gica / Alerta' : 'Sugerencia de Investigaci├│n'}
                                 </span>
                                 <p className="text-[11px] md:text-xs font-medium leading-relaxed">
                                     {cleanText.split('**').map((part, i) => (
@@ -116,13 +116,13 @@ const ClaudeStyleMarkdownViewer = ({ content }) => {
 
                 // 3. Lists (lines starting with *, -, or numbers)
                 const lines = trimmed.split('\n');
-                const isList = lines.every(line => /^\s*([\*\-\•]|\d+\.)\s+/.test(line));
+                const isList = lines.every(line => /^\s*([\*\-\ÔÇó]|\d+\.)\s+/.test(line));
 
                 if (isList) {
                     return (
                         <ul key={bIdx} className="space-y-2.5 pl-1 my-2.5">
                             {lines.map((line, lIdx) => {
-                                const cleanLine = line.replace(/^\s*([\*\-\•]|\d+\.)\s+/, '').trim();
+                                const cleanLine = line.replace(/^\s*([\*\-\ÔÇó]|\d+\.)\s+/, '').trim();
                                 return (
                                     <li key={lIdx} className="flex gap-2.5 text-[11px] md:text-xs text-gray-300 font-medium group">
                                         <div className="w-4 h-4 shrink-0 rounded-md bg-indigo-500/10 border border-white/5 flex items-center justify-center text-indigo-400 group-hover:border-indigo-500/30 transition-colors mt-0.5">
@@ -256,9 +256,9 @@ const getStrategicIdea = (formatId, profile) => {
     const audience = profile.targetAudience || 'tu audiencia';
     
     const ideas = {
-        historias: `Historias de "Detrás de Cámara" en ${brand}: Muestra la preparación de una consulta o el unboxing de un nuevo equipo médico. Habla de la importancia del cuidado preventivo y pide a ${audience} que compartan sus dudas por DM.`,
-        reels: `Tip Rápido de Salud: Crea un Reel de 15s con 3 mitos comunes en el sector de la urología que afectan a ${audience}. Usa un gancho visual fuerte y música en tendencia para posicionar a ${brand} como autoridad disruptiva.`,
-        podcast: `Entrevista Especial: Invita a un colega para hablar sobre cómo la tecnología de DIIC ZONE está revolucionando el tratamiento de pacientes. Enfócate en el beneficio a largo plazo y la confianza médica.`
+        historias: `Historias de "Detr├ís de C├ímara" en ${brand}: Muestra la preparaci├│n de una consulta o el unboxing de un nuevo equipo m├®dico. Habla de la importancia del cuidado preventivo y pide a ${audience} que compartan sus dudas por DM.`,
+        reels: `Tip R├ípido de Salud: Crea un Reel de 15s con 3 mitos comunes en el sector de la urolog├¡a que afectan a ${audience}. Usa un gancho visual fuerte y m├║sica en tendencia para posicionar a ${brand} como autoridad disruptiva.`,
+        podcast: `Entrevista Especial: Invita a un colega para hablar sobre c├│mo la tecnolog├¡a de DIIC ZONE est├í revolucionando el tratamiento de pacientes. Enf├│cate en el beneficio a largo plazo y la confianza m├®dica.`
     };
     
     return ideas[formatId] || null;
@@ -273,16 +273,16 @@ const RECORDING_FORMATS = [
         color: 'from-pink-500 to-rose-400',
         strategy: 'Hablar de beneficios y cuidados. Nosotros como estrategas solicitamos las historias para conectar.',
         focus: 'Vida Diaria & Autenticidad',
-        aiPrompt: 'Generar historias de lifestyle médico'
+        aiPrompt: 'Generar historias de lifestyle m├®dico'
     },
     {
         id: 'reels',
         label: 'Reels / Viral',
         icon: Video,
         color: 'from-indigo-500 to-purple-500',
-        strategy: 'Informativo y estratégico. Usar entretenimiento con moderación sin abusar del formato.',
+        strategy: 'Informativo y estrat├®gico. Usar entretenimiento con moderaci├│n sin abusar del formato.',
         focus: 'Crecimiento & Virilidad',
-        aiPrompt: 'Diseñar reels educativos disruptivos'
+        aiPrompt: 'Dise├▒ar reels educativos disruptivos'
     },
     {
         id: 'podcast',
@@ -324,9 +324,9 @@ const RecordingFormatsModal = ({ isOpen, onClose, profile }) => {
 
                         <div className="p-8 md:p-12 pb-4 sticky top-0 bg-[#0A0A0F]/80 backdrop-blur-md z-20 border-b border-white/5 flex items-center justify-between no-print">
                             <div className="space-y-1">
-                                <h3 className="text-2xl md:text-4xl font-black text-white uppercase italic tracking-tighter">Configuración de <span className="text-indigo-500">Producción</span></h3>
+                                <h3 className="text-2xl md:text-4xl font-black text-white uppercase italic tracking-tighter">Configuraci├│n de <span className="text-indigo-500">Producci├│n</span></h3>
                                 <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-[0.4em] flex items-center gap-2">
-                                    <Activity size={10} className="text-indigo-500" /> Estándares de Calidad DIIC Zone v2.0
+                                    <Activity size={10} className="text-indigo-500" /> Est├índares de Calidad DIIC Zone v2.0
                                 </p>
                             </div>
                             <div className="flex items-center gap-4">
@@ -376,7 +376,7 @@ const RecordingFormatsModal = ({ isOpen, onClose, profile }) => {
                                                 <div className="p-6 md:p-8 rounded-[2.5rem] bg-indigo-500/5 border border-indigo-500/10 border-dashed animate-in fade-in slide-in-from-top-2 duration-700">
                                                     <div className="flex items-center gap-3 mb-4">
                                                         <Sparkles size={16} className="text-indigo-400 animate-pulse" />
-                                                        <span className="text-[11px] font-black uppercase text-indigo-400 tracking-widest">Inteligencia Estratégica IA</span>
+                                                        <span className="text-[11px] font-black uppercase text-indigo-400 tracking-widest">Inteligencia Estrat├®gica IA</span>
                                                     </div>
                                                     <p className="text-sm text-gray-200 font-medium leading-relaxed">
                                                         {getStrategicIdea(format.id, profile)}
@@ -470,19 +470,11 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
     const [researchFolders, setResearchFolders] = useState([
         { id: 'f_nicho', name: 'Nicho & Pacientes', color: 'indigo' },
         { id: 'f_competencia', name: 'Competencia', color: 'fuchsia' },
-        { id: 'f_objeciones', name: 'Objeciones & Fricción', color: 'amber' }
+        { id: 'f_objeciones', name: 'Objeciones & Fricci├│n', color: 'amber' }
     ]);
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-    const [capa1ActiveTab, setCapa1ActiveTab] = useState(activeTab === 'saved' ? 'saved' : 'search'); // 'search' | 'saved'
+    const [capa1ActiveTab, setCapa1ActiveTab] = useState('search'); // 'search' | 'saved'
     const [capa2ActiveTab, setCapa2ActiveTab] = useState('profile'); // 'profile' | 'brain' | 'saved_sources'
-
-    useEffect(() => {
-        if (activeTab === 'saved') {
-            setCapa1ActiveTab('saved');
-        } else if (activeTab === 'search') {
-            setCapa1ActiveTab('search');
-        }
-    }, [activeTab]);
 
     const [profile, setProfile] = useState({
         brandName: (user?.user_metadata?.brand || '').replace(/[-_\s]+workspace\s*$/i, '').trim(),
@@ -510,7 +502,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             resolution: '4K',
             fps: 30
         },
-        insights: {}, // Para guardar reportes de tráfico, fricción, etc.
+        insights: {}, // Para guardar reportes de tr├ífico, fricci├│n, etc.
         goals: [],
         dynamicButtons: []
     });
@@ -729,11 +721,11 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
         };
         setProfile(updatedProfile);
         handleConfirm(updatedProfile);
-        toast.success('Datos de "' + research.title + '" transferidos al Perfil Estratégico.');
+        toast.success('Datos de "' + research.title + '" transferidos al Perfil Estrat├®gico.');
     };
 
     const handleConsolidateResearchesWithAI = async (selectedItems) => {
-        const toastId = toast.loading('Consolidando investigaciones con Inteligencia Estratégica...');
+        const toastId = toast.loading('Consolidando investigaciones con Inteligencia Estrat├®gica...');
         try {
             const res = await fetch('/api/ai/strategy/brain', {
                 method: 'POST',
@@ -762,7 +754,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             };
             setProfile(updatedProfile);
             await handleConfirm(updatedProfile);
-            toast.success('¡Perfil Estratégico 360° consolidado y guardado!', { id: toastId });
+            toast.success('┬íPerfil Estrat├®gico 360┬░ consolidado y guardado!', { id: toastId });
         } catch (err) {
             toast.error('Error al consolidar con IA: ' + err.message, { id: toastId });
         }
@@ -846,7 +838,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             }
 
             if (!currentClientId) {
-                toast.error("Error: No se encontró la sesión del cliente.");
+                toast.error("Error: No se encontr├│ la sesi├│n del cliente.");
                 setIsSaving(false);
                 return;
             }
@@ -854,7 +846,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             // Strip out non-strategic keys to avoid large/circular payloads
             const { id, created_at, metadata, onboarding_data, editor, filmmaker, ...strategicData } = targetProfile;
 
-            // Limpiamos referencias circulares o data inválida de onboarding_data actual
+            // Limpiamos referencias circulares o data inv├ílida de onboarding_data actual
             const safeOnboardingData = onboarding_data ? JSON.parse(JSON.stringify(onboarding_data)) : {};
 
             const updatePayload = {
@@ -878,17 +870,17 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 }
             };
 
-            // Sanitización absoluta: Supabase-js puede congelarse (hang) si intentamos pasarle objetos
+            // Sanitizaci├│n absoluta: Supabase-js puede congelarse (hang) si intentamos pasarle objetos
             // con referencias circulares complejas (ej. Eventos de React) que escapen al safeOnboardingData.
             const ultraSafePayload = JSON.parse(JSON.stringify(updatePayload));
 
             const updatePromise = agencyService.updateClient(currentClientId, ultraSafePayload);
 
             // Esperamos que termine el guardado sin forzar un timeout artificial.
-            // Si el servidor de Supabase está despertando (Cold Boot), puede tomar hasta 2 minutos.
+            // Si el servidor de Supabase est├í despertando (Cold Boot), puede tomar hasta 2 minutos.
             await updatePromise;
             setIsSaving(false);
-            toast.success("¡Ecosistema Estratégico sincronizado con éxito!", { id: 'save-toast' });
+            toast.success("┬íEcosistema Estrat├®gico sincronizado con ├®xito!", { id: 'save-toast' });
             setIsPreviewMode(false);
         } catch (error) {
             console.error("Strategic Profile save error:", error);
@@ -898,7 +890,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
     };
 
     const handleSaveSnapshot = () => {
-        setTempSnapshotName(`Investigación ${new Date().toLocaleDateString()}`);
+        setTempSnapshotName(`Investigaci├│n ${new Date().toLocaleDateString()}`);
         setIsSnapshotModalOpen(true);
     };
 
@@ -936,7 +928,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
     };
 
     const handleApplySnapshot = (snapshot) => {
-        if (!confirm(`¿Estás seguro de activar "${snapshot.name}"? Esto reemplazará los datos actuales de la cuadrícula.`)) return;
+        if (!confirm(`┬┐Est├ís seguro de activar "${snapshot.name}"? Esto reemplazar├í los datos actuales de la cuadr├¡cula.`)) return;
 
         setProfile(prev => ({
             ...prev,
@@ -967,12 +959,12 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                             profile.linkedinUrl;
 
         if (!primaryUrl) {
-            toast.error("Ingresa al menos una URL para iniciar la investigación");
+            toast.error("Ingresa al menos una URL para iniciar la investigaci├│n");
             return;
         }
 
         try {
-            console.log("!!! INICIANDO INVESTIGACIÓN OMNINIVEL - DIIC ZONE !!!");
+            console.log("!!! INICIANDO INVESTIGACI├ôN OMNINIVEL - DIIC ZONE !!!");
             setIsSimulatingScrape(true);
             setIsPreviewMode(true);
             
@@ -1026,16 +1018,16 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             const updatedProfile = {
                 ...profile,
                 brandName: d.brandName || profile.brandName,
-                leadership: d.leadership || "Datos no hallados en el footprint público.",
-                whatItDoes: d.whatItDoes || "Información pendiente de extracción profunda.",
+                leadership: d.leadership || "Datos no hallados en el footprint p├║blico.",
+                whatItDoes: d.whatItDoes || "Informaci├│n pendiente de extracci├│n profunda.",
                 whatItOffers: d.whatItOffers || "Servicios/Productos no detectados.",
-                targetAudience: d.targetAudience || "Público general del sector.",
+                targetAudience: d.targetAudience || "P├║blico general del sector.",
                 problemSolved: d.problemSolved || "Problemas comunes de la industria.",
-                valueProp: d.valueProp || "Propuesta en fase de definición.",
+                valueProp: d.valueProp || "Propuesta en fase de definici├│n.",
                 tone: d.tone || "Profesional",
                 mainGoal: d.mainGoal || "Ventas y Autoridad",
-                marketContext: d.marketContext || "Contexto de mercado estándar.",
-                socialAudit: d.socialAudit || "Auditoría de canales sociales no disponible.",
+                marketContext: d.marketContext || "Contexto de mercado est├índar.",
+                socialAudit: d.socialAudit || "Auditor├¡a de canales sociales no disponible.",
                 dynamicButtons: d.dynamicButtons || []
             };
 
@@ -1044,7 +1036,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
 
             // DYNAMIC PROGRESS STEPS BASED ON ENTERED URLS
             const displaySteps = [
-                { msg: 'Activando motores de búsqueda y rastreo...', icon: 'Target' }
+                { msg: 'Activando motores de b├║squeda y rastreo...', icon: 'Target' }
             ];
             
             if (profile.websiteUrl) {
@@ -1068,8 +1060,8 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             
             displaySteps.push(
                 { msg: 'Detectando competidores y brechas de mercado...', icon: 'Search' },
-                { msg: 'Sintetizando inteligencia estratégica real...', icon: 'Zap' },
-                { msg: 'Generando recomendaciones de producción...', icon: 'Camera' },
+                { msg: 'Sintetizando inteligencia estrat├®gica real...', icon: 'Zap' },
+                { msg: 'Generando recomendaciones de producci├│n...', icon: 'Camera' },
                 { msg: 'Compilando reporte de ecosistema omni-nivel...', icon: 'Database' }
             );
 
@@ -1079,13 +1071,13 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             }
             
             setHasUnsyncedUrl(false);
-            toast.success("Investigación Omni-Nivel completada con éxito. Guardando...");
+            toast.success("Investigaci├│n Omni-Nivel completada con ├®xito. Guardando...");
             handleConfirm(updatedProfile);
 
         } catch (error) {
             console.error("AI Analysis error:", error);
             // HONEST ERROR FEEDBACK
-            toast.error(error.message || "Fallo en la investigación estratégica");
+            toast.error(error.message || "Fallo en la investigaci├│n estrat├®gica");
             
             // Reset fields to avoid showing 'Analizando...' if it failed
             setProfile(p => ({
@@ -1121,16 +1113,16 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 improvement_plan: 'general'
             };
             const categoryMap = {
-                competitors: 'Análisis de Competencia',
-                friction: 'Puntos de Fricción & Objeciones',
-                traffic: 'Auditoría de Tráfico B2B',
-                social_audit: 'Auditoría de Redes Sociales',
-                improvement_plan: 'Plan de Mejora Estratégico'
+                competitors: 'An├ílisis de Competencia',
+                friction: 'Puntos de Fricci├│n & Objeciones',
+                traffic: 'Auditor├¡a de Tr├ífico B2B',
+                social_audit: 'Auditor├¡a de Redes Sociales',
+                improvement_plan: 'Plan de Mejora Estrat├®gico'
             };
             const tagMap = {
                 competitors: ['Competencia', 'Mercado', 'Benchmarking'],
-                friction: ['Fricción', 'Objeciones', 'Dolores', 'CRO'],
-                traffic: ['Tráfico', 'Captación', 'Funnels', 'B2B'],
+                friction: ['Fricci├│n', 'Objeciones', 'Dolores', 'CRO'],
+                traffic: ['Tr├ífico', 'Captaci├│n', 'Funnels', 'B2B'],
                 social_audit: ['RedesSociales', 'Instagram', 'Facebook', 'Engagement'],
                 improvement_plan: ['Estrategia', 'PlanDeMejora', 'Crecimiento']
             };
@@ -1148,11 +1140,11 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     compList.map((c, i) => `* **${c.name || 'Competidor ' + (i+1)}:** ${c.url ? `[${c.url}](${c.url})` : ''} ${c.location ? `(${c.location})` : ''} - ${c.strengthsWeaknesses || ''}`).join('\n');
 
                 researchData = {
-                    summary: `Mapeo estratégico de ${compList.length} competidores directos en el mercado.`,
+                    summary: `Mapeo estrat├®gico de ${compList.length} competidores directos en el mercado.`,
                     competitors: compList
                 };
             } else {
-                formattedContent = res.insight || 'No se recibieron datos de la investigación.';
+                formattedContent = res.insight || 'No se recibieron datos de la investigaci├│n.';
                 researchData = {
                     summary: typeof res.insight === 'string' ? res.insight.substring(0, 300) : title,
                     insight: res.insight
@@ -1173,7 +1165,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             const newQuickResearch = {
                 id: `res_${mode}_${Date.now()}`,
                 title: `${title} - ${profile.brandName || 'Marca'}`,
-                category: categoryMap[mode] || 'Auditoría Estratégica',
+                category: categoryMap[mode] || 'Auditor├¡a Estrat├®gica',
                 folderId: folderMap[mode] || 'general',
                 tags: tagMap[mode] || ['Estrategia'],
                 createdAt: new Date().toISOString(),
@@ -1191,26 +1183,26 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 savedResearch: newQuickResearch 
             });
 
-            toast.success(`✓ "${title}" guardado en el Repositorio de Marca`);
+            toast.success(`Ô£ô "${title}" guardado en el Repositorio de Marca`);
 
         } catch (error) {
             console.error("Quick Insight Error:", error);
-            setInsightData({ title, content: 'Ocurrió un error en la infiltración: ' + (error.message || 'Error de red'), mode, loading: false });
-            toast.error("Fallo al ejecutar la investigación estratégica");
+            setInsightData({ title, content: 'Ocurri├│ un error en la infiltraci├│n: ' + (error.message || 'Error de red'), mode, loading: false });
+            toast.error("Fallo al ejecutar la investigaci├│n estrat├®gica");
         } finally {
             setActiveInsightBtn(null);
         }
     };
 
     const handleDownloadReport = () => {
-        const toastId = toast.loading("Compilando Reporte Estratégico Omni-Nivel...");
+        const toastId = toast.loading("Compilando Reporte Estrat├®gico Omni-Nivel...");
         
         // Gather full intelligence context
         const reportTitle = profile.brandName || 'Marca No Identificada';
         console.log(`[DIIC EXPORT] Generando reporte para: ${reportTitle}`);
 
         setTimeout(() => {
-            toast.success("Reporte compilado. Preparando vista de impresión...", { id: toastId });
+            toast.success("Reporte compilado. Preparando vista de impresi├│n...", { id: toastId });
             window.print();
         }, 1500);
     };
@@ -1284,7 +1276,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             if (response.ok && data.insight) {
                 setChatMessages([...newMessages, { role: 'assistant', content: data.insight }]);
             } else {
-                toast.error(data.error || "Fallo en chat de investigación");
+                toast.error(data.error || "Fallo en chat de investigaci├│n");
             }
         } catch (error) {
             console.error("Chat Error:", error);
@@ -1300,7 +1292,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
     const handleFieldAIAction = async (field, action) => {
         const url = profile.websiteUrl || profile.instagramUrl;
         if (!url) {
-            toast.error("Detecto que no hay una URL web para investigar. Por favor ingrésala.");
+            toast.error("Detecto que no hay una URL web para investigar. Por favor ingr├®sala.");
             return;
         }
 
@@ -1325,17 +1317,17 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             const data = await response.json();
             if (response.ok && data.insight) {
                 setProfile(prev => ({ ...prev, [field]: data.insight }));
-                toast.success("¡Contenido optimizado!", { id: toastId });
+                toast.success("┬íContenido optimizado!", { id: toastId });
                 // If it's expanded, update the expanded view value too if we need to
                 if (expandedField && expandedField.field === field) {
                     setExpandedField({ ...expandedField, value: data.insight });
                 }
             } else {
-                toast.error("La IA tuvo una interferencia. Inténtalo de nuevo.", { id: toastId });
+                toast.error("La IA tuvo una interferencia. Int├®ntalo de nuevo.", { id: toastId });
             }
         } catch (error) {
             console.error("Field AI Error:", error);
-            toast.error("Error de conexión con el satélite DIIC.", { id: toastId });
+            toast.error("Error de conexi├│n con el sat├®lite DIIC.", { id: toastId });
         } finally {
             setIsFieldLoading(false);
         }
@@ -1355,7 +1347,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     {/* Deep dive expansion anchor */}
                     <button 
                         onClick={() => setExpandedField({ label, field, icon, value: profile[field] })} 
-                        className="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-gray-400 hover:text-white" title="Expandir Módulo"
+                        className="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-gray-400 hover:text-white" title="Expandir M├│dulo"
                     >
                         <Maximize2 className="w-4 h-4" />
                     </button>
@@ -1386,466 +1378,9 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
 
     return (
         <div className="animate-in fade-in duration-500 pb-16 main-strategic-profile-container">
-            <div className="space-y-4 text-center pb-8 border-b border-white/5 mb-12">
-                <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[9px] font-black text-indigo-400 uppercase tracking-widest">
-                    {viewMode === 'edit' ? 'Capa 1: Búsqueda Estratégica' : 'Capa 2: Perfil Estratégico'}
-                </span>
-                <h2 className="text-5xl md:text-6xl font-black text-white uppercase italic tracking-tighter">
-                    {viewMode === 'edit' ? (
-                        <>Búsqueda <span className="text-indigo-500">Estratégica</span></>
-                    ) : (
-                        <>Perfil <span className="text-indigo-500">Estratégico</span></>
-                    )}
-                </h2>
-                <p className="text-gray-500 text-sm font-bold uppercase tracking-[0.2em] max-w-2xl mx-auto">
-                    {viewMode === 'edit' 
-                        ? 'Investiga tu huella digital y define las bases estratégicas de tu negocio. Conecta tus redes y web para iniciar la auditoría IA.'
-                        : 'Consulta el diagnóstico y reporte final de tu marca optimizado por Inteligencia Artificial.'
-                    }
-                </p>
-                <div className="flex justify-center items-center gap-6 mt-6 print:hidden">
-                    {!forcedViewMode && (
-                        <div className="flex bg-[#0A0A0F] border border-white/5 rounded-2xl p-1 p-1">
-                            <button 
-                                onClick={() => setViewMode('edit')}
-                                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'edit' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                            >
-                                Modo Edición
-                            </button>
-                            <button 
-                                onClick={() => setViewMode('report')}
-                                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'report' ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                            >
-                                Vista de Reporte
-                            </button>
-                        </div>
-                    )}
-                    {(!forcedViewMode || viewMode === 'report') && (
-                        <button 
-                            onClick={handleDownloadReport}
-                            className="px-6 py-2.5 bg-indigo-600 border border-indigo-400/50 rounded-xl text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all flex items-center gap-2 transform active:scale-95"
-                        >
-                            <FileUp size={14} className="animate-bounce" /> Descargar Reporte (PDF)
-                        </button>
-                    )}
-                {/* Print Styles - Ultra Optimized for PDF */}
-            <style jsx global>{`
-                @media print {
-                    @page { margin: 1cm; size: auto; }
-                    body { 
-                        background: white !important; 
-                        color: black !important; 
-                        margin: 0 !important; 
-                        padding: 0 !important;
-                    }
-                    /* Hide EVERYTHING except the report content */
-                    nav, aside, header, footer, .print\:hidden, [role="status"], .toaster, .Toastify { 
-                        display: none !important; 
-                    }
-                    
-                    /* Force visibility of the main report container */
-                    .bg-[#0A0A0F], .bg-[#0A0A12], .bg-[#11111E] { 
-                        background: white !important; 
-                        border: 1px solid #ddd !important;
-                        box-shadow: none !important;
-                        margin: 0 !important;
-                        padding: 20px !important;
-                        width: 100% !important;
-                        display: block !important;
-                        position: relative !important;
-                    }
-
-                    /* Hide the main profile page content when printing a modal preview */
-                    body:has(.print-modal-container) .main-strategic-profile-container > *:not(:has(.print-modal-container)):not(.print-modal-container) {
-                        display: none !important;
-                    }
-
-                    /* Print Modal Container Customization */
-                    .print-modal-container {
-                        position: absolute !important;
-                        top: 0 !important;
-                        left: 0 !important;
-                        width: 100% !important;
-                        height: auto !important;
-                        min-height: 100% !important;
-                        overflow: visible !important;
-                        display: block !important;
-                        background: white !important;
-                        padding: 0 !important;
-                        z-index: 9999 !important;
-                    }
-                    .print-modal-content {
-                        max-height: none !important;
-                        height: auto !important;
-                        overflow: visible !important;
-                        border: none !important;
-                        box-shadow: none !important;
-                        background: white !important;
-                        width: 100% !important;
-                        max-width: 100% !important;
-                        padding: 0 !important;
-                        margin: 0 !important;
-                        display: block !important;
-                    }
-                    .print-modal-body {
-                        overflow: visible !important;
-                        height: auto !important;
-                        max-height: none !important;
-                        padding: 0 !important;
-                        display: block !important;
-                    }
-
-                    /* Text Contrast */
-                    h2, h3, h4, h5, label, p, span, div { 
-                        color: black !important; 
-                        text-shadow: none !important;
-                    }
-                    .text-indigo-500, .text-indigo-400, .text-rose-500, .text-blue-500 { 
-                        color: #1a1a1a !important; 
-                        font-weight: bold !important;
-                        border-bottom: 2px solid #eee !important;
-                        display: inline-block;
-                        width: 100%;
-                        margin-bottom: 10px;
-                    }
-
-                    /* Grid Optimization */
-                    .grid { 
-                        display: block !important; 
-                        width: 100% !important;
-                    }
-                    .grid > div { 
-                        margin-bottom: 30px !important; 
-                        page-break-inside: avoid !important;
-                        width: 100% !important;
-                        border: 1px solid #eee !important;
-                        padding: 15px !important;
-                        border-radius: 8px !important;
-                    }
-
-                    /* Remove all high-end effects for clean PDF */
-                    .animate-in, .animate-pulse, .shadow-2xl, .shadow-lg, .blur-xl, .opacity-10 { 
-                        animation: none !important; 
-                        box-shadow: none !important; 
-                        filter: none !important;
-                        opacity: 1 !important;
-                    }
-
-                    /* Content Spacing */
-                    .space-y-20 > * + * { margin-top: 40px !important; }
-                    .pl-6 { border-left: 3px solid #eee !important; padding-left: 20px !important; }
-                }
-            `}</style>
-                </div>
-            </div>
-
-            {viewMode === 'report' ? (
-                <div className="mt-12 space-y-16 animate-in fade-in zoom-in-95 duration-500">
-                    {/* Professional Report Layout */}
-                    <div className="bg-[#0A0A0F] border border-white/5 rounded-[48px] p-12 md:p-20 relative overflow-hidden shadow-2xl">
-                        <div className="absolute top-0 right-0 p-20 opacity-[0.02] pointer-events-none no-print">
-                            <ShieldCheck className="w-[500px] h-[500px] text-white" />
-                        </div>
-
-                        <div className="relative z-10 space-y-20">
-                            {/* PDF Export Controls (Internal Only) */}
-                            <div className="flex items-center justify-between no-print mb-8 border-b border-white/5 pb-8">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400">
-                                        <FileUp size={24} />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-white font-black text-sm uppercase tracking-widest">Reporte Estratégico Profesional</h4>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Optimizado para impresión DIIC Zone</p>
-                                    </div>
-                                </div>
-                                <button 
-                                    onClick={handleDownloadReport}
-                                    className="px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-3xl font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_rgba(79,70,229,0.3)] transition-all flex items-center gap-3 active:scale-95 group"
-                                >
-                                    <FileUp className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                                    <span>DESCARGAR REPORTE (PDF)</span>
-                                </button>
-                            </div>
-                            {/* Brand Header */}
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 border-b border-white/5 pb-12">
-                                <div className="space-y-4 text-left">
-                                    <h3 className="text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter">{profile.brandName || 'Marca Diic Zone'}</h3>
-                                    <div className="flex items-center gap-4">
-                                        <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[10px] font-black text-indigo-400 uppercase tracking-widest">Estrategia Activa</span>
-                                        <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Generado: {new Date().toLocaleDateString()}</span>
-                                    </div>
-                                </div>
-                                <div className="p-6 bg-white/5 border border-white/10 rounded-3xl text-center min-w-[200px]">
-                                    <p className="text-[9px] text-indigo-400 font-black uppercase tracking-[0.2em] mb-1">Status Operativo</p>
-                                    <p className="text-sm text-white font-black uppercase italic tracking-widest">Optimización IA</p>
-                                </div>
-                            </div>
-
-                            {/* Core Strategy Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-left">
-                                {[
-                                    { label: 'Liderazgo', val: profile.leadership, icon: ShieldCheck },
-                                    { label: 'Core del Negocio', val: profile.whatItDoes, icon: Network },
-                                    { label: 'Oferta Estratégica', val: profile.whatItOffers, icon: Zap },
-                                    { label: 'Público Objetivo', val: profile.targetAudience, icon: Users },
-                                    { label: 'Propuesta de Valor', val: profile.valueProp, icon: TargetIcon },
-                                    { label: 'Meta Principal', val: profile.mainGoal, icon: Target },
-                                    { label: 'Auditoría de Redes', val: profile.socialAudit, icon: Bot }
-                                ].map((item, i) => (
-                                    <div key={i} className="space-y-4 group">
-                                        <div className="flex items-center gap-3">
-                                            <item.icon className="w-5 h-5 text-indigo-500" />
-                                            <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em]">{item.label}</h4>
-                                        </div>
-                                        <p className="text-lg font-medium text-gray-300 leading-relaxed border-l-2 border-indigo-500/20 pl-6 group-hover:border-indigo-500 transition-colors">
-                                            {item.val || 'Información no definida'}
-                                        </p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Onboarding Goals */}
-                            {Array.isArray(profile.goals) && profile.goals.length > 0 && (
-                                <div className="mt-12 p-8 rounded-[2rem] bg-indigo-500/5 border border-indigo-500/10 space-y-4 text-left w-full">
-                                    <div className="flex items-center gap-3 text-indigo-400 font-black uppercase tracking-widest text-[10px]">
-                                        <TargetIcon className="w-5 h-5 text-indigo-500 animate-pulse" /> Objetivos de Onboarding
-                                    </div>
-                                    <div className="flex flex-wrap gap-3">
-                                        {profile.goals.map((gId) => {
-                                            const goalMap = {
-                                                clients: 'Conseguir más clientes',
-                                                sales: 'Vender más',
-                                                authority: 'Posicionarme como experto',
-                                                automate: 'Automatizar mi negocio',
-                                                scale: 'Escalar mi marca'
-                                            };
-                                            return (
-                                                <span key={gId} className="px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-300 uppercase tracking-wider">
-                                                    {goalMap[gId] || gId}
-                                                </span>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Brand Assets & Onboarding Details */}
-                            {(profile.website || profile.websiteUrl || profile.brochure_url || profile.google_drive_folder_id || profile.drive_root_link || profile.country || profile.address || profile.industry || profile.marketing_type || profile.birth_date) && (
-                                <div className="mt-12 p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 space-y-6 text-left w-full">
-                                    <div className="flex items-center gap-3 text-indigo-400 font-black uppercase tracking-widest text-[10px]">
-                                        <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" /> Activos y Datos de Onboarding
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {/* Website */}
-                                        {(profile.website || profile.websiteUrl) && (
-                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex flex-col justify-between space-y-2">
-                                                <div>
-                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Sitio Web</span>
-                                                    <p className="text-xs font-bold text-white truncate">{profile.website || profile.websiteUrl}</p>
-                                                </div>
-                                                <a 
-                                                    href={profile.website || profile.websiteUrl} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 text-[10px] font-black text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors pt-2"
-                                                >
-                                                    <Globe className="w-3.5 h-3.5" /> Visitar Sitio Web
-                                                </a>
-                                            </div>
-                                        )}
-
-                                        {/* Brochure */}
-                                        {profile.brochure_url && (
-                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex flex-col justify-between space-y-2">
-                                                <div>
-                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Brochure de Marca</span>
-                                                    <p className="text-xs font-bold text-white truncate">Archivo adjunto disponible</p>
-                                                </div>
-                                                <a 
-                                                    href={profile.brochure_url} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 text-[10px] font-black text-rose-400 hover:text-rose-300 uppercase tracking-wider transition-colors pt-2"
-                                                >
-                                                    <FileUp className="w-3.5 h-3.5" /> Descargar Brochure
-                                                </a>
-                                            </div>
-                                        )}
-
-                                        {/* Google Drive Workspace */}
-                                        {(profile.drive_root_link || profile.google_drive_folder_id) && (
-                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex flex-col justify-between space-y-2">
-                                                <div>
-                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Workspace Cloud</span>
-                                                    <p className="text-xs font-bold text-white truncate">Google Drive Sincronizado</p>
-                                                </div>
-                                                <a 
-                                                    href={profile.drive_root_link || `https://drive.google.com/drive/folders/${profile.google_drive_folder_id}`} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-400 hover:text-emerald-300 uppercase tracking-wider transition-colors pt-2"
-                                                >
-                                                    <FolderOpen className="w-3.5 h-3.5" /> Abrir Carpeta Drive
-                                                </a>
-                                            </div>
-                                        )}
-
-                                        {/* Sector / Nicho */}
-                                        {(profile.industry || profile.marketing_type) && (
-                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Sector / Nicho</span>
-                                                <p className="text-xs font-bold text-white uppercase tracking-wide">
-                                                    {profile.industry || profile.marketing_type} 
-                                                    {profile.specialty ? ` - ${profile.specialty}` : ''}
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Ubicación / Dirección */}
-                                        {(profile.country || profile.city || profile.location) && (
-                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Ubicación</span>
-                                                <p className="text-xs font-bold text-white truncate">
-                                                    {[profile.city || profile.location, profile.country].filter(Boolean).join(', ')}
-                                                </p>
-                                                {profile.address && (
-                                                    <p className="text-[10px] text-gray-400 truncate">{profile.address}</p>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* Birth Date */}
-                                        {profile.birth_date && formatDateSafe(profile.birth_date) && (
-                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
-                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Fecha de Fundación</span>
-                                                <p className="text-xs font-bold text-white">
-                                                    {formatDateSafe(profile.birth_date, { day: 'numeric', month: 'long', year: 'numeric' })}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Production Strategy Section */}
-                            <div className="pt-12 border-t border-white/5 space-y-12 text-left">
-                                <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-3">
-                                    <Activity className="w-6 h-6 text-indigo-500" /> Estrategia de Producción
-                                </h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                    {RECORDING_FORMATS.map(f => (
-                                        <div key={f.id} className="space-y-6 group p-8 bg-white/[0.02] border border-white/5 rounded-[40px] hover:border-indigo-500/30 transition-all">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`p-4 bg-gradient-to-br ${f.color} rounded-3xl text-white shadow-xl`}>
-                                                    <f.icon className="w-6 h-6" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <h4 className="text-sm font-black text-white uppercase tracking-wider">{f.label}</h4>
-                                                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{f.focus}</span>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-4">
-                                                <p className="text-[13px] font-medium text-gray-400 leading-relaxed italic border-l-2 border-indigo-500/20 pl-6 group-hover:border-indigo-500 transition-colors">
-                                                    "{f.strategy}"
-                                                </p>
-                                                {profile.brandName && (
-                                                    <div className="mt-4 p-5 rounded-3xl bg-indigo-500/5 border border-indigo-500/10 border-dashed">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <Sparkles size={12} className="text-indigo-400" />
-                                                            <span className="text-[9px] font-black uppercase text-indigo-400 tracking-widest">Sugerencia IA</span>
-                                                        </div>
-                                                        <p className="text-[11px] text-gray-300 font-medium leading-relaxed">
-                                                            {getStrategicIdea(f.id, profile)}
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Market Intelligence Section */}
-                            <div className="pt-12 border-t border-white/5 space-y-12">
-                                <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-3">
-                                    <Globe className="w-6 h-6 text-indigo-500" /> Inteligencia de Mercado
-                                </h3>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                                    {/* Competitors List */}
-                                    <div className="space-y-6">
-                                        <h4 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em]">Mapeo de Competidores</h4>
-                                        <div className="space-y-4">
-                                            {Array.isArray(profile.competitors) && profile.competitors.length > 0 ? (
-                                                profile.competitors.map((c, i) => (
-                                                    <div key={i} className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col gap-3">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-sm font-black text-white uppercase italic">{c?.name || 'Competidor'}</span>
-                                                            <span className="text-[9px] text-rose-400 font-bold uppercase tracking-widest">{c?.location || ''}</span>
-                                                        </div>
-                                                        <p className="text-[11px] text-gray-500 italic leading-relaxed">{c?.strengthsWeaknesses || ''}</p>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <p className="text-xs text-gray-600 font-medium italic">No se han registrado competidores estratégicos.</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Allies List */}
-                                    <div className="space-y-6">
-                                        <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em]">Aliados Estratégicos</h4>
-                                        <div className="space-y-4">
-                                            {Array.isArray(profile.strategicAllies) && profile.strategicAllies.length > 0 ? (
-                                                profile.strategicAllies.map((a, i) => (
-                                                    <div key={i} className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col gap-3">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-sm font-black text-white uppercase italic">{a?.name || 'Aliado'}</span>
-                                                            <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest">Partner</span>
-                                                        </div>
-                                                        <p className="text-[11px] text-gray-500 italic leading-relaxed">{a?.tagReason || ''}</p>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <p className="text-xs text-gray-600 font-medium italic">No se han registrado aliados estratégicos.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Final Footnote */}
-                            <div className="pt-12 border-t border-white/5 flex flex-col items-center gap-4 opacity-30">
-                                <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.5em]">DIIC ZONE • ESTRATEGIA OMNI-NIVEL 2026</p>
-                                <div className="flex gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <>
-                {/* MEGA MODO IA: SEARCH ENGINE */}
-            {capa1ActiveTab === 'saved' ? (
-                <div className="space-y-6">
-                    <SavedResearchesManager
-                        researches={savedResearches}
-                        folders={researchFolders}
-                        onDeleteResearch={handleDeleteResearch}
-                        onCreateFolder={handleCreateFolder}
-                        onDeleteFolder={handleDeleteFolder}
-                        onLoadIntoProfile={handleLoadResearchIntoProfile}
-                        onConsolidateWithAI={handleConsolidateResearchesWithAI}
-                        clientName={profile.brandName || 'Dr. Oscar Cujilema'}
-                    />
-                </div>
-            ) : (
-                <div className="space-y-8">
+            {/* 1. BÚSQUEDA & AUDITORÍA TAB */}
+            {activeTab === 'search' && (
+                <div className="space-y-8 animate-in fade-in duration-300">
                     {/* LUXURY CYBERPUNK HUD SEARCH TERMINAL */}
                     <div className="bg-[#080914]/90 backdrop-blur-2xl border border-indigo-500/20 rounded-[36px] p-6 md:p-10 relative overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.06)] text-center flex flex-col items-center justify-center">
                         {/* Ambient Neon Highlights */}
@@ -1856,13 +1391,13 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                         <div className="flex flex-col items-center mb-6 z-10">
                             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-3">
                                 <Sparkles className="w-3.5 h-3.5 animate-pulse text-indigo-400" />
-                                <span>Terminal de Diagnóstico & Huella Digital</span>
+                                <span>Terminal de Diagn├│stico & Huella Digital</span>
                             </div>
                             <h3 className="text-2xl md:text-4xl font-black text-white uppercase italic tracking-tight">
-                                Auditoría Omnicanal & <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Ecosistema Digital</span>
+                                Auditor├¡a Omnicanal & <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">Ecosistema Digital</span>
                             </h3>
                             <p className="text-gray-400 text-xs md:text-sm font-medium mt-1.5 max-w-xl">
-                                Escanea sitios web, perfiles sociales y competidores para extraer insights estratégicos en tiempo real con DIIC IA.
+                                Escanea sitios web, perfiles sociales y competidores para extraer insights estrat├®gicos en tiempo real con DIIC IA.
                             </p>
                         </div>
 
@@ -1968,7 +1503,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     {profile.tiktokUrl && <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />}
                                 </button>
 
-                                {/* Más Redes Dropdown */}
+                                {/* M├ís Redes Dropdown */}
                                 <div className="relative">
                                     <button
                                         type="button"
@@ -1980,7 +1515,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         } border`}
                                     >
                                         <Plus size={12} />
-                                        <span>Más</span>
+                                        <span>M├ís</span>
                                     </button>
                                     
                                     <AnimatePresence>
@@ -2135,7 +1670,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                             <div className="flex items-center justify-between mb-4 px-1">
                                 <span className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-400 flex items-center gap-2">
                                     <Zap className="w-3.5 h-3.5 text-indigo-400" />
-                                    Auditorías Rápidas de Alto Impacto
+                                    Auditor├¡as R├ípidas de Alto Impacto
                                 </span>
                                 <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest hidden sm:inline">
                                     Autoguardado en Repositorio
@@ -2161,10 +1696,10 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <p className="text-[10px] text-gray-400 font-medium leading-snug">Mapeo directo y ventajas de mercado</p>
                                 </button>
 
-                                {/* 2. Fricción CRO */}
+                                {/* 2. Fricci├│n CRO */}
                                 <button 
                                     disabled={activeInsightBtn === 'friction'}
-                                    onClick={() => handleQuickInsight('friction', 'Puntos de Fricción CRO')}
+                                    onClick={() => handleQuickInsight('friction', 'Puntos de Fricci├│n CRO')}
                                     type="button"
                                     className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
                                         activeInsightBtn === 'friction'
@@ -2175,14 +1710,14 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <div className="w-9 h-9 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 mb-2.5 group-hover:scale-110 transition-transform">
                                         {activeInsightBtn === 'friction' ? <Activity size={16} className="animate-spin text-pink-400" /> : <TargetIcon size={16} />}
                                     </div>
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Fricción CRO</h4>
-                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Detección de fugas en la conversión</p>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Fricci├│n CRO</h4>
+                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Detecci├│n de fugas en la conversi├│n</p>
                                 </button>
 
-                                {/* 3. Tráfico B2B */}
+                                {/* 3. Tr├ífico B2B */}
                                 <button 
                                     disabled={activeInsightBtn === 'traffic'}
-                                    onClick={() => handleQuickInsight('traffic', 'Rutas de Tráfico B2B')}
+                                    onClick={() => handleQuickInsight('traffic', 'Rutas de Tr├ífico B2B')}
                                     type="button"
                                     className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
                                         activeInsightBtn === 'traffic'
@@ -2193,14 +1728,14 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-2.5 group-hover:scale-110 transition-transform">
                                         {activeInsightBtn === 'traffic' ? <Activity size={16} className="animate-spin text-emerald-400" /> : <Activity size={16} />}
                                     </div>
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Tráfico B2B</h4>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Tr├ífico B2B</h4>
                                     <p className="text-[10px] text-gray-400 font-medium leading-snug">Rutas y procedencia de prospectos</p>
                                 </button>
 
-                                {/* 4. Auditoría Redes */}
+                                {/* 4. Auditor├¡a Redes */}
                                 <button 
                                     disabled={activeInsightBtn === 'social_audit'}
-                                    onClick={() => handleQuickInsight('social_audit', 'Auditoría de Redes Sociales')}
+                                    onClick={() => handleQuickInsight('social_audit', 'Auditor├¡a de Redes Sociales')}
                                     type="button"
                                     className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
                                         activeInsightBtn === 'social_audit'
@@ -2211,14 +1746,14 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2.5 group-hover:scale-110 transition-transform">
                                         {activeInsightBtn === 'social_audit' ? <Activity size={16} className="animate-spin text-indigo-400" /> : <Bot size={16} />}
                                     </div>
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Auditoría Redes</h4>
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Auditor├¡a Redes</h4>
                                     <p className="text-[10px] text-gray-400 font-medium leading-snug">Alcance, engagement y huella digital</p>
                                 </button>
 
                                 {/* 5. Plan de Mejora */}
                                 <button 
                                     disabled={activeInsightBtn === 'improvement_plan'}
-                                    onClick={() => handleQuickInsight('improvement_plan', 'Plan de Mejora Estratégico')}
+                                    onClick={() => handleQuickInsight('improvement_plan', 'Plan de Mejora Estrat├®gico')}
                                     type="button"
                                     className={`p-4 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
                                         activeInsightBtn === 'improvement_plan'
@@ -2230,14 +1765,13 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         {activeInsightBtn === 'improvement_plan' ? <Activity size={16} className="animate-spin text-amber-400" /> : <Wand2 size={16} />}
                                     </div>
                                     <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">Plan de Mejora</h4>
-                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Hoja de ruta táctica a 30 días</p>
+                                    <p className="text-[10px] text-gray-400 font-medium leading-snug">Hoja de ruta t├íctica a 30 d├¡as</p>
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-            
+                
+
             {/* Inline Research Chat - Activated once a URL is typed */}
             <AnimatePresence>
             {profile.websiteUrl && (
@@ -2248,7 +1782,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     >
                         <div className="bg-indigo-500/10 px-6 py-3 border-b border-indigo-500/20 flex items-center justify-between">
                             <span className="text-xs font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2">
-                                <Bot size={14} /> Investigación Continua
+                                <Bot size={14} /> Investigaci├│n Continua
                             </span>
                             {chatMessages.length > 0 && (
                                 <button onClick={() => setChatMessages([])} className="text-xs text-gray-500 hover:text-white uppercase tracking-widest font-bold">Limpiar</button>
@@ -2258,7 +1792,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                         <div className="p-4 md:p-6 min-h-[150px] max-h-[300px] overflow-y-auto space-y-4 text-left custom-scrollbar">
                             {chatMessages.length === 0 ? (
                                 <div className="h-full flex items-center justify-center text-center opacity-50 py-8">
-                                    <p className="text-sm text-gray-400 font-medium">Chatea con el escáner. Ej: "¿Qué cursos de ganadería tienen y cuándo inician?"</p>
+                                    <p className="text-sm text-gray-400 font-medium">Chatea con el esc├íner. Ej: "┬┐Qu├® cursos de ganader├¡a tienen y cu├índo inician?"</p>
                                 </div>
                             ) : (
                                 chatMessages.map((msg, i) => (
@@ -2335,7 +1869,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     onChange={(e) => {
                                         if (e.target.files?.[0]) {
                                             setSelectedFile(e.target.files[0]);
-                                            toast.success(`Archivo cargado: ${e.target.files[0].name}`, { icon: '📎' });
+                                            toast.success(`Archivo cargado: ${e.target.files[0].name}`, { icon: '­ƒôÄ' });
                                         }
                                     }}
                                 />
@@ -2349,7 +1883,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 </button>
                                 <button 
                                     type="button"
-                                    onClick={() => toast.info('Grabación de voz próximamente disponible')}
+                                    onClick={() => toast.info('Grabaci├│n de voz pr├│ximamente disponible')}
                                     className="p-3 text-gray-500 hover:text-rose-400 hover:bg-white/5 rounded-xl transition-all"
                                     title="Enviar audio"
                                 >
@@ -2359,7 +1893,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 <input 
                                     type="text" 
                                     className="flex-1 bg-transparent border-none text-sm text-white px-2 py-3 focus:outline-none placeholder:text-gray-600"
-                                    placeholder="Pregúntale algo profundo al investigador..."
+                                    placeholder="Preg├║ntale algo profundo al investigador..."
                                     value={chatInput}
                                     onChange={e => setChatInput(e.target.value)}
                                     disabled={isChatting}
@@ -2376,9 +1910,102 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     </motion.div>
                 )}
                 </AnimatePresence>
+                </div>
+            )}
 
+            {/* 2. REPOSITORIO & DOSSIER TAB */}
+            {activeTab === 'saved' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    <SavedResearchesManager
+                        researches={savedResearches}
+                        folders={researchFolders}
+                        onDeleteResearch={handleDeleteResearch}
+                        onCreateFolder={handleCreateFolder}
+                        onDeleteFolder={handleDeleteFolder}
+                        onLoadIntoProfile={handleLoadResearchIntoProfile}
+                        onConsolidateWithAI={handleConsolidateResearchesWithAI}
+                        clientName={profile.brandName || 'Dr. Oscar Cujilema'}
+                    />
+                </div>
+            )}
 
-            {/* Tactical Grid Container */}
+            {/* 3. PERFIL ESTRATÉGICO 360° TAB */}
+            {activeTab === 'profile' && (
+                <div className="space-y-8 animate-in fade-in duration-300">
+                    {/* Top Strategic Toolbar */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-[#080914]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-xl">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-400">
+                                <TargetIcon className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black text-white uppercase italic tracking-tight">
+                                    Perfil Estratégico 360° • <span className="text-indigo-400">{profile.brandName || 'Marca DIIC'}</span>
+                                </h3>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                    Identidad nuclear, propuesta de valor y mapeo de mercado
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                            {/* Toggle Edit vs Report View */}
+                            <div className="flex bg-black/60 border border-white/10 rounded-xl p-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('edit')}
+                                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                                        viewMode === 'edit'
+                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    Modo Edición
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('report')}
+                                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                                        viewMode === 'report'
+                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    Vista Reporte
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleDownloadReport}
+                                className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all active:scale-95"
+                            >
+                                <FileUp className="w-3.5 h-3.5" />
+                                <span>Exportar PDF</span>
+                            </button>
+
+                            {viewMode === 'edit' && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleConfirm()}
+                                    disabled={isSaving}
+                                    className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {isSaving ? (
+                                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                    )}
+                                    <span>{isSaving ? 'Guardando...' : 'Guardar Perfil'}</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* View Switch */}
+                    {viewMode === 'edit' ? (
+                        <div className="space-y-8">
+                            {/* Tactical Grid Container */}
                 {/* Visual feedback if fields are filled by system */}
                 <AnimatePresence>
                     {isPreviewMode && (
@@ -2393,15 +2020,15 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
             <div key={`sync-grid-${syncCount}`} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative mt-16 w-full">
                     <div className="relative z-10">{renderInput('NOMBRE DE MARCA', 'brandName', Tag, user?.user_metadata?.brand || 'Ej. DIIC ZONE INC.')}</div>
                     <div className="relative z-10">{renderInput('LIDERAZGO / FUNDADORES', 'leadership', ShieldCheck, 'Ej. Ing. Mauro Borja - CEO...')}</div>
-                    <div className="relative z-10">{renderInput('¿QUÉ HACE?', 'whatItDoes', Network, 'Ej. Consultoría en Inteligencia Artificial...')}</div>
-                    <div className="relative z-10">{renderInput('¿QUÉ OFRECE?', 'whatItOffers', Zap, 'Ej. Asesorías High-Ticket, Cursos, SaaS...', true)}</div>
-                    <div className="relative z-10">{renderInput('PÚBLICO OBJETIVO', 'targetAudience', Users, 'Ej. Dueños de negocios B2B, edad 30-45...', true)}</div>
+                    <div className="relative z-10">{renderInput('┬┐QU├ë HACE?', 'whatItDoes', Network, 'Ej. Consultor├¡a en Inteligencia Artificial...')}</div>
+                    <div className="relative z-10">{renderInput('┬┐QU├ë OFRECE?', 'whatItOffers', Zap, 'Ej. Asesor├¡as High-Ticket, Cursos, SaaS...', true)}</div>
+                    <div className="relative z-10">{renderInput('P├ÜBLICO OBJETIVO', 'targetAudience', Users, 'Ej. Due├▒os de negocios B2B, edad 30-45...', true)}</div>
                     <div className="relative z-10">{renderInput('PROBLEMA QUE RESUELVE', 'problemSolved', Search, 'Ej. Falta de tiempo, procesos manuales lentos...', true)}</div>
-                    <div className="relative z-10">{renderInput('PROPUESTA DE VALOR', 'valueProp', TargetIcon, 'Ej. Aumentamos tus ventas un 30% usando automatizaciones en 30 días.', true)}</div>
-                    <div className="relative z-10">{renderInput('CONTEXTO DE MERCADO', 'marketContext', Globe, 'Ej. Líderes en el sector agropecuario de Ecuador...', true)}</div>
-                    <div className="relative z-10">{renderInput('TONO DE COMUNICACIÓN', 'tone', Heart, 'Ej. Profesional, directo, corporativo, disruptivo...')}</div>
+                    <div className="relative z-10">{renderInput('PROPUESTA DE VALOR', 'valueProp', TargetIcon, 'Ej. Aumentamos tus ventas un 30% usando automatizaciones en 30 d├¡as.', true)}</div>
+                    <div className="relative z-10">{renderInput('CONTEXTO DE MERCADO', 'marketContext', Globe, 'Ej. L├¡deres en el sector agropecuario de Ecuador...', true)}</div>
+                    <div className="relative z-10">{renderInput('TONO DE COMUNICACI├ôN', 'tone', Heart, 'Ej. Profesional, directo, corporativo, disruptivo...')}</div>
                     <div className="relative z-10">{renderInput('OBJETIVO PRINCIPAL', 'mainGoal', Target, 'Ej. Lograr $100K MRR para Q3 2024.', true)}</div>
-                    <div className="relative z-10">{renderInput('AUDITORÍA DE REDES SOCIALES', 'socialAudit', Bot, 'Análisis y diagnóstico profundo de la huella digital en redes sociales del cliente...', true)}</div>
+                    <div className="relative z-10">{renderInput('AUDITOR├ìA DE REDES SOCIALES', 'socialAudit', Bot, 'An├ílisis y diagn├│stico profundo de la huella digital en redes sociales del cliente...', true)}</div>
                     
                     {/* Strategic Recording Formats Card */}
                     <div className="bg-[#0A0A0F] border border-white/5 rounded-[32px] p-6 space-y-4 hover:border-indigo-500/30 transition-all duration-300 group relative shadow-lg hover:shadow-indigo-500/10 flex flex-col h-full">
@@ -2410,7 +2037,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 group-hover:scale-110 transition-transform">
                                     <Activity className="w-5 h-5" />
                                 </div>
-                                <label className="text-sm font-black text-white uppercase italic tracking-widest">Formatos de Grabación</label>
+                                <label className="text-sm font-black text-white uppercase italic tracking-widest">Formatos de Grabaci├│n</label>
                             </div>
                             <button 
                                 onClick={() => setShowFormats(true)}
@@ -2436,7 +2063,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                             onClick={() => setShowFormats(true)}
                             className="w-full py-2.5 bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
                         >
-                            Ver Configuración Completa
+                            Ver Configuraci├│n Completa
                         </button>
                     </div>
 
@@ -2501,12 +2128,12 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                         <div className="pt-2 border-t border-white/5 flex flex-wrap gap-1.5 justify-start">
                             {profile.country && (
                                 <span className="px-2 py-1 bg-white/5 rounded-md text-[8px] font-bold text-gray-400 uppercase tracking-wide">
-                                    📍 {profile.country}
+                                    ­ƒôì {profile.country}
                                 </span>
                             )}
                             {(profile.industry || profile.marketing_type) && (
                                 <span className="px-2 py-1 bg-white/5 rounded-md text-[8px] font-bold text-gray-400 uppercase tracking-wide">
-                                    💼 {profile.industry || profile.marketing_type}
+                                    ­ƒÆ╝ {profile.industry || profile.marketing_type}
                                 </span>
                             )}
                         </div>
@@ -2528,7 +2155,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                             </div>
                             <div>
                                 <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Competidores</h3>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Análisis de Mercado Directo</p>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">An├ílisis de Mercado Directo</p>
                             </div>
                         </div>
                         <button 
@@ -2557,7 +2184,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <input type="text" placeholder="Sitio Web (URL)" value={comp?.url || ''} onChange={(e) => handleArrayChange('competitors', idx, 'url', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
-                                    <input type="text" placeholder="Ubicación / Alcance" value={comp?.location || ''} onChange={(e) => handleArrayChange('competitors', idx, 'location', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
+                                    <input type="text" placeholder="Ubicaci├│n / Alcance" value={comp?.location || ''} onChange={(e) => handleArrayChange('competitors', idx, 'location', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <input type="text" placeholder="Redes Sociales" value={comp?.social || ''} onChange={(e) => handleArrayChange('competitors', idx, 'social', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
@@ -2569,7 +2196,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     </button>
                                 </div>
                                 <textarea 
-                                    placeholder="Análisis Estratégico (Fortalezas vs Debilidades)..." 
+                                    placeholder="An├ílisis Estrat├®gico (Fortalezas vs Debilidades)..." 
                                     value={comp?.strengthsWeaknesses || comp?.reviews || ''} 
                                     onChange={(e) => handleArrayChange('competitors', idx, 'strengthsWeaknesses', e.target.value)} 
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors resize-none h-24 italic leading-relaxed" 
@@ -2579,7 +2206,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                             <div className="text-center py-8 opacity-50 border border-dashed border-rose-500/20 rounded-3xl bg-rose-500/5">
                                 <Search className="w-8 h-8 text-rose-500/50 mx-auto mb-2" />
                                 <p className="text-[10px] text-rose-400/80 uppercase font-black tracking-widest">Sin competidores registrados</p>
-                                <p className="text-[9px] text-gray-500 mt-1 font-medium">Añade o deja que la IA investigue simulados</p>
+                                <p className="text-[9px] text-gray-500 mt-1 font-medium">A├▒ade o deja que la IA investigue simulados</p>
                             </div>
                         )}
                     </div>
@@ -2596,7 +2223,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 <ShieldAlert className="w-6 h-6 text-blue-500" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Aliados Estratégicos</h3>
+                                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Aliados Estrat├®gicos</h3>
                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Partners & Proveedores Clave</p>
                             </div>
                         </div>
@@ -2628,13 +2255,13 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <input type="text" placeholder="Sitio Web (URL)" value={ally?.url || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'url', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
                                     <input type="text" placeholder="Redes (Para Etiquetar)" value={ally?.social || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'social', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
                                 </div>
-                                <input type="text" placeholder="¿Por qué etiquetarlos? (Ej. Proveedor de Software...)" value={ally?.tagReason || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'tagReason', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
+                                <input type="text" placeholder="┬┐Por qu├® etiquetarlos? (Ej. Proveedor de Software...)" value={ally?.tagReason || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'tagReason', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
                             </div>
                         ))) : (
                             <div className="text-center py-8 opacity-50 border border-dashed border-blue-500/20 rounded-3xl bg-blue-500/5">
                                 <Network className="w-8 h-8 text-blue-500/50 mx-auto mb-2" />
                                 <p className="text-[10px] text-blue-400/80 uppercase font-black tracking-widest">Sin aliados registrados</p>
-                                <p className="text-[9px] text-gray-500 mt-1 font-medium">Añade marcas amigas para tu ecosistema de networking</p>
+                                <p className="text-[9px] text-gray-500 mt-1 font-medium">A├▒ade marcas amigas para tu ecosistema de networking</p>
                             </div>
                         )}
                     </div>
@@ -2651,7 +2278,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                         </div>
                         <div>
                             <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Investigaciones Guardadas</h3>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">Snapshot Estratégico de Identidad</p>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1">Snapshot Estrat├®gico de Identidad</p>
                         </div>
                     </div>
                     <button 
@@ -2672,7 +2299,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <div>
                                         <h4 className="text-xs font-black text-white uppercase tracking-widest">{snapshot.name || 'Snapshot'}</h4>
                                         <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1">
-                                            {formatDateSafe(snapshot.date)} • {formatTimeSafe(snapshot.date)}
+                                            {formatDateSafe(snapshot.date)} ÔÇó {formatTimeSafe(snapshot.date)}
                                         </p>
                                     </div>
                                     <button 
@@ -2685,7 +2312,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
 
                                 <div className="space-y-3 mb-6 min-h-[60px]">
                                     <p className="text-xs text-gray-400 font-medium leading-relaxed italic">
-                                        {snapshot.brandName ? `Configuración estratégica optimizada para ${snapshot.brandName}.` : 'Respaldo integral de identidad, mercado y metas principales para blindaje de marca.'}
+                                        {snapshot.brandName ? `Configuraci├│n estrat├®gica optimizada para ${snapshot.brandName}.` : 'Respaldo integral de identidad, mercado y metas principales para blindaje de marca.'}
                                     </p>
                                     <div className="flex flex-wrap gap-2">
                                         <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-md text-[8px] font-black text-indigo-400 uppercase tracking-widest">Estrategia Activa</span>
@@ -2697,7 +2324,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     onClick={() => handleApplySnapshot(snapshot)}
                                     className="w-full py-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all flex items-center justify-center gap-2 mb-2"
                                 >
-                                    <CheckCircle2 size={14} /> Activar Investigación
+                                    <CheckCircle2 size={14} /> Activar Investigaci├│n
                                 </button>
 
                                 <div className="flex gap-2">
@@ -2722,7 +2349,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     </div>
                 ) : (
                     <div className="py-20 text-center border border-dashed border-white/5 rounded-[40px] bg-white/[0.01]">
-                        <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.4em]">No hay investigaciones guardadas aún</p>
+                        <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.4em]">No hay investigaciones guardadas a├║n</p>
                         <p className="text-xs text-gray-500 mt-2 font-medium">Guarda versiones de tu perfil para comparar estrategias</p>
                     </div>
                 )}
@@ -2765,11 +2392,11 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                 
                                 <div className="space-y-3 mb-6 min-h-[70px]">
                                     <p className="text-xs text-gray-300 font-medium leading-relaxed line-clamp-3">
-                                        {data.content ? data.content.substring(0, 160).replace(/[#*]/g, '') + '...' : 'Análisis profundo de mercado, detección de fricciones UX y optimización de activos digitales en tiempo real.'}
+                                        {data.content ? data.content.substring(0, 160).replace(/[#*]/g, '') + '...' : 'An├ílisis profundo de mercado, detecci├│n de fricciones UX y optimizaci├│n de activos digitales en tiempo real.'}
                                     </p>
                                     <div className="flex flex-wrap gap-2 pt-1">
                                         <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 rounded-md text-[8px] font-black text-rose-400 uppercase tracking-widest">Inteligencia IA</span>
-                                        <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-md text-[8px] font-black text-indigo-400 uppercase tracking-widest">Optimización Omni</span>
+                                        <span className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-md text-[8px] font-black text-indigo-400 uppercase tracking-widest">Optimizaci├│n Omni</span>
                                     </div>
                                 </div>
 
@@ -2806,7 +2433,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     className="px-8 py-5 bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 active:scale-95 transition-all flex items-center gap-3"
                 >
                     <Database className="w-5 h-5 text-gray-400" />
-                    Guardar Investigación
+                    Guardar Investigaci├│n
                  </button>
 
                  <button 
@@ -2822,9 +2449,301 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                      {isSaving ? 'Guardando...' : 'Confirmar Identidad'}
                  </button>
             </div>
-                </>
+                        </div>
+                    ) : (
+                        <div className="space-y-16 animate-in fade-in zoom-in-95 duration-500">
+                            {/* Professional Report Layout */}
+                    <div className="bg-[#0A0A0F] border border-white/5 rounded-[48px] p-12 md:p-20 relative overflow-hidden shadow-2xl">
+                        <div className="absolute top-0 right-0 p-20 opacity-[0.02] pointer-events-none no-print">
+                            <ShieldCheck className="w-[500px] h-[500px] text-white" />
+                        </div>
+
+                        <div className="relative z-10 space-y-20">
+                            {/* PDF Export Controls (Internal Only) */}
+                            <div className="flex items-center justify-between no-print mb-8 border-b border-white/5 pb-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400">
+                                        <FileUp size={24} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-white font-black text-sm uppercase tracking-widest">Reporte Estrat├®gico Profesional</h4>
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Optimizado para impresi├│n DIIC Zone</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={handleDownloadReport}
+                                    className="px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-3xl font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_rgba(79,70,229,0.3)] transition-all flex items-center gap-3 active:scale-95 group"
+                                >
+                                    <FileUp className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                    <span>DESCARGAR REPORTE (PDF)</span>
+                                </button>
+                            </div>
+                            {/* Brand Header */}
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 border-b border-white/5 pb-12">
+                                <div className="space-y-4 text-left">
+                                    <h3 className="text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter">{profile.brandName || 'Marca Diic Zone'}</h3>
+                                    <div className="flex items-center gap-4">
+                                        <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[10px] font-black text-indigo-400 uppercase tracking-widest">Estrategia Activa</span>
+                                        <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Generado: {new Date().toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                                <div className="p-6 bg-white/5 border border-white/10 rounded-3xl text-center min-w-[200px]">
+                                    <p className="text-[9px] text-indigo-400 font-black uppercase tracking-[0.2em] mb-1">Status Operativo</p>
+                                    <p className="text-sm text-white font-black uppercase italic tracking-widest">Optimizaci├│n IA</p>
+                                </div>
+                            </div>
+
+                            {/* Core Strategy Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-left">
+                                {[
+                                    { label: 'Liderazgo', val: profile.leadership, icon: ShieldCheck },
+                                    { label: 'Core del Negocio', val: profile.whatItDoes, icon: Network },
+                                    { label: 'Oferta Estrat├®gica', val: profile.whatItOffers, icon: Zap },
+                                    { label: 'P├║blico Objetivo', val: profile.targetAudience, icon: Users },
+                                    { label: 'Propuesta de Valor', val: profile.valueProp, icon: TargetIcon },
+                                    { label: 'Meta Principal', val: profile.mainGoal, icon: Target },
+                                    { label: 'Auditor├¡a de Redes', val: profile.socialAudit, icon: Bot }
+                                ].map((item, i) => (
+                                    <div key={i} className="space-y-4 group">
+                                        <div className="flex items-center gap-3">
+                                            <item.icon className="w-5 h-5 text-indigo-500" />
+                                            <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.3em]">{item.label}</h4>
+                                        </div>
+                                        <p className="text-lg font-medium text-gray-300 leading-relaxed border-l-2 border-indigo-500/20 pl-6 group-hover:border-indigo-500 transition-colors">
+                                            {item.val || 'Informaci├│n no definida'}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Onboarding Goals */}
+                            {Array.isArray(profile.goals) && profile.goals.length > 0 && (
+                                <div className="mt-12 p-8 rounded-[2rem] bg-indigo-500/5 border border-indigo-500/10 space-y-4 text-left w-full">
+                                    <div className="flex items-center gap-3 text-indigo-400 font-black uppercase tracking-widest text-[10px]">
+                                        <TargetIcon className="w-5 h-5 text-indigo-500 animate-pulse" /> Objetivos de Onboarding
+                                    </div>
+                                    <div className="flex flex-wrap gap-3">
+                                        {profile.goals.map((gId) => {
+                                            const goalMap = {
+                                                clients: 'Conseguir m├ís clientes',
+                                                sales: 'Vender m├ís',
+                                                authority: 'Posicionarme como experto',
+                                                automate: 'Automatizar mi negocio',
+                                                scale: 'Escalar mi marca'
+                                            };
+                                            return (
+                                                <span key={gId} className="px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                                                    {goalMap[gId] || gId}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Brand Assets & Onboarding Details */}
+                            {(profile.website || profile.websiteUrl || profile.brochure_url || profile.google_drive_folder_id || profile.drive_root_link || profile.country || profile.address || profile.industry || profile.marketing_type || profile.birth_date) && (
+                                <div className="mt-12 p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 space-y-6 text-left w-full">
+                                    <div className="flex items-center gap-3 text-indigo-400 font-black uppercase tracking-widest text-[10px]">
+                                        <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" /> Activos y Datos de Onboarding
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {/* Website */}
+                                        {(profile.website || profile.websiteUrl) && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex flex-col justify-between space-y-2">
+                                                <div>
+                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Sitio Web</span>
+                                                    <p className="text-xs font-bold text-white truncate">{profile.website || profile.websiteUrl}</p>
+                                                </div>
+                                                <a 
+                                                    href={profile.website || profile.websiteUrl} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-[10px] font-black text-indigo-400 hover:text-indigo-300 uppercase tracking-wider transition-colors pt-2"
+                                                >
+                                                    <Globe className="w-3.5 h-3.5" /> Visitar Sitio Web
+                                                </a>
+                                            </div>
+                                        )}
+
+                                        {/* Brochure */}
+                                        {profile.brochure_url && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex flex-col justify-between space-y-2">
+                                                <div>
+                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Brochure de Marca</span>
+                                                    <p className="text-xs font-bold text-white truncate">Archivo adjunto disponible</p>
+                                                </div>
+                                                <a 
+                                                    href={profile.brochure_url} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-[10px] font-black text-rose-400 hover:text-rose-300 uppercase tracking-wider transition-colors pt-2"
+                                                >
+                                                    <FileUp className="w-3.5 h-3.5" /> Descargar Brochure
+                                                </a>
+                                            </div>
+                                        )}
+
+                                        {/* Google Drive Workspace */}
+                                        {(profile.drive_root_link || profile.google_drive_folder_id) && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 flex flex-col justify-between space-y-2">
+                                                <div>
+                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Workspace Cloud</span>
+                                                    <p className="text-xs font-bold text-white truncate">Google Drive Sincronizado</p>
+                                                </div>
+                                                <a 
+                                                    href={profile.drive_root_link || `https://drive.google.com/drive/folders/${profile.google_drive_folder_id}`} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-400 hover:text-emerald-300 uppercase tracking-wider transition-colors pt-2"
+                                                >
+                                                    <FolderOpen className="w-3.5 h-3.5" /> Abrir Carpeta Drive
+                                                </a>
+                                            </div>
+                                        )}
+
+                                        {/* Sector / Nicho */}
+                                        {(profile.industry || profile.marketing_type) && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Sector / Nicho</span>
+                                                <p className="text-xs font-bold text-white uppercase tracking-wide">
+                                                    {profile.industry || profile.marketing_type} 
+                                                    {profile.specialty ? ` - ${profile.specialty}` : ''}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Ubicaci├│n / Direcci├│n */}
+                                        {(profile.country || profile.city || profile.location) && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Ubicaci├│n</span>
+                                                <p className="text-xs font-bold text-white truncate">
+                                                    {[profile.city || profile.location, profile.country].filter(Boolean).join(', ')}
+                                                </p>
+                                                {profile.address && (
+                                                    <p className="text-[10px] text-gray-400 truncate">{profile.address}</p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Birth Date */}
+                                        {profile.birth_date && formatDateSafe(profile.birth_date) && (
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
+                                                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Fecha de Fundaci├│n</span>
+                                                <p className="text-xs font-bold text-white">
+                                                    {formatDateSafe(profile.birth_date, { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Production Strategy Section */}
+                            <div className="pt-12 border-t border-white/5 space-y-12 text-left">
+                                <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-3">
+                                    <Activity className="w-6 h-6 text-indigo-500" /> Estrategia de Producci├│n
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                                    {RECORDING_FORMATS.map(f => (
+                                        <div key={f.id} className="space-y-6 group p-8 bg-white/[0.02] border border-white/5 rounded-[40px] hover:border-indigo-500/30 transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`p-4 bg-gradient-to-br ${f.color} rounded-3xl text-white shadow-xl`}>
+                                                    <f.icon className="w-6 h-6" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <h4 className="text-sm font-black text-white uppercase tracking-wider">{f.label}</h4>
+                                                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{f.focus}</span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <p className="text-[13px] font-medium text-gray-400 leading-relaxed italic border-l-2 border-indigo-500/20 pl-6 group-hover:border-indigo-500 transition-colors">
+                                                    "{f.strategy}"
+                                                </p>
+                                                {profile.brandName && (
+                                                    <div className="mt-4 p-5 rounded-3xl bg-indigo-500/5 border border-indigo-500/10 border-dashed">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <Sparkles size={12} className="text-indigo-400" />
+                                                            <span className="text-[9px] font-black uppercase text-indigo-400 tracking-widest">Sugerencia IA</span>
+                                                        </div>
+                                                        <p className="text-[11px] text-gray-300 font-medium leading-relaxed">
+                                                            {getStrategicIdea(f.id, profile)}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Market Intelligence Section */}
+                            <div className="pt-12 border-t border-white/5 space-y-12">
+                                <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter flex items-center gap-3">
+                                    <Globe className="w-6 h-6 text-indigo-500" /> Inteligencia de Mercado
+                                </h3>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                                    {/* Competitors List */}
+                                    <div className="space-y-6">
+                                        <h4 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em]">Mapeo de Competidores</h4>
+                                        <div className="space-y-4">
+                                            {Array.isArray(profile.competitors) && profile.competitors.length > 0 ? (
+                                                profile.competitors.map((c, i) => (
+                                                    <div key={i} className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col gap-3">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm font-black text-white uppercase italic">{c?.name || 'Competidor'}</span>
+                                                            <span className="text-[9px] text-rose-400 font-bold uppercase tracking-widest">{c?.location || ''}</span>
+                                                        </div>
+                                                        <p className="text-[11px] text-gray-500 italic leading-relaxed">{c?.strengthsWeaknesses || ''}</p>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-xs text-gray-600 font-medium italic">No se han registrado competidores estrat├®gicos.</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Allies List */}
+                                    <div className="space-y-6">
+                                        <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em]">Aliados Estrat├®gicos</h4>
+                                        <div className="space-y-4">
+                                            {Array.isArray(profile.strategicAllies) && profile.strategicAllies.length > 0 ? (
+                                                profile.strategicAllies.map((a, i) => (
+                                                    <div key={i} className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col gap-3">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm font-black text-white uppercase italic">{a?.name || 'Aliado'}</span>
+                                                            <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest">Partner</span>
+                                                        </div>
+                                                        <p className="text-[11px] text-gray-500 italic leading-relaxed">{a?.tagReason || ''}</p>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-xs text-gray-600 font-medium italic">No se han registrado aliados estrat├®gicos.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Final Footnote */}
+                            <div className="pt-12 border-t border-white/5 flex flex-col items-center gap-4 opacity-30">
+                                <p className="text-[10px] text-gray-600 font-black uppercase tracking-[0.5em]">DIIC ZONE ÔÇó ESTRATEGIA OMNI-NIVEL 2026</p>
+                                <div className="flex gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                        </div>
+                    )}
+                </div>
             )}
 
+            {/* MODALS & POPUPS */}
             {/* CUSTOM SNAPSHOT NAME MODAL */}
             <AnimatePresence>
                 {isSnapshotModalOpen && (
@@ -2847,8 +2766,8 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center mx-auto text-indigo-400 mb-4">
                                         <Database size={32} />
                                     </div>
-                                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Guardar Investigación</h3>
-                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em]">Asigna un nombre para este snapshot estratégico</p>
+                                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Guardar Investigaci├│n</h3>
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em]">Asigna un nombre para este snapshot estrat├®gico</p>
                                 </div>
 
                                 <div className="relative">
@@ -2858,7 +2777,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         value={tempSnapshotName}
                                         onChange={(e) => setTempSnapshotName(e.target.value)}
                                         className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-white font-bold text-lg focus:outline-none focus:border-indigo-500/50 transition-all placeholder:text-gray-700"
-                                        placeholder="Ej. Análisis de Mercado Q4..."
+                                        placeholder="Ej. An├ílisis de Mercado Q4..."
                                     />
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-indigo-500/30">
                                         <Edit3 size={20} />
@@ -2905,7 +2824,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">{selectedSnapshotForPreview.name || 'Snapshot'}</h3>
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">Snapshot Histórico • {formatDateSafe(selectedSnapshotForPreview.date)}</p>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">Snapshot Hist├│rico ÔÇó {formatDateSafe(selectedSnapshotForPreview.date)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -2931,7 +2850,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         { label: 'Liderazgo', field: 'leadership', icon: ShieldCheck },
                                         { label: 'Actividad', field: 'whatItDoes', icon: Network },
                                         { label: 'Oferta', field: 'whatItOffers', icon: Zap },
-                                        { label: 'Público', field: 'targetAudience', icon: Users },
+                                        { label: 'P├║blico', field: 'targetAudience', icon: Users },
                                         { label: 'Problema', field: 'problemSolved', icon: Search },
                                         { label: 'Propuesta de Valor', field: 'valueProp', icon: TargetIcon },
                                         { label: 'Mercado', field: 'marketContext', icon: Globe },
@@ -2944,14 +2863,14 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                                 <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{item.label}</span>
                                             </div>
                                             <p className="text-sm text-gray-200 font-medium leading-relaxed italic">
-                                                {selectedSnapshotForPreview?.data?.[item.field] || 'Dato no registrado en esta versión.'}
+                                                {selectedSnapshotForPreview?.data?.[item.field] || 'Dato no registrado en esta versi├│n.'}
                                             </p>
                                         </div>
                                     ))}
                                 </div>
 
                                 <div className="pt-12 border-t border-white/5 text-center opacity-30">
-                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.5em]">DIIC ZONE • ECOSISTEMA ESTRATÉGICO SEGURO</p>
+                                    <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.5em]">DIIC ZONE ÔÇó ECOSISTEMA ESTRAT├ëGICO SEGURO</p>
                                 </div>
                             </div>
                         </motion.div>
@@ -3012,7 +2931,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                             </div>
                                             <div>
                                                 <p className="text-lg font-black uppercase tracking-widest text-white italic">Investigando profundamente...</p>
-                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-2">Midiendo rutas de mercado y fricción UX</p>
+                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-2">Midiendo rutas de mercado y fricci├│n UX</p>
                                             </div>
                                         </div>
                                     ) : (
@@ -3040,7 +2959,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                             </button>
                                             <button 
                                                 onClick={() => {
-                                                    toast.success("Investigación asegurada en tu base de datos");
+                                                    toast.success("Investigaci├│n asegurada en tu base de datos");
                                                     setInsightModalOpen(false);
                                                 }}
                                                 className="flex-2 w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 print:hidden"
@@ -3082,7 +3001,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                         <div>
                                             <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">{expandedField.label}</h3>
                                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] flex items-center gap-2">
-                                                <Activity size={10} className="text-indigo-500" /> Modo Profundidad Estratégica
+                                                <Activity size={10} className="text-indigo-500" /> Modo Profundidad Estrat├®gica
                                             </p>
                                         </div>
                                     </div>
@@ -3101,7 +3020,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                             value={profile[expandedField.field] || ''}
                                             onChange={(e) => handleChange(expandedField.field, e.target.value)}
                                             className="w-full min-h-[350px] bg-[#0F0F1A] border border-white/10 rounded-3xl p-8 text-xl text-gray-300 font-medium leading-relaxed focus:outline-none focus:border-indigo-500/50 transition-all custom-scrollbar"
-                                            placeholder="Desarrolla aquí la idea profunda..."
+                                            placeholder="Desarrolla aqu├¡ la idea profunda..."
                                         />
                                     </div>
 
@@ -3120,12 +3039,12 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                                             className="flex-1 py-5 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 group"
                                         >
                                             <Sparkles className="w-5 h-5 text-emerald-400 group-hover:animate-pulse" />
-                                            Optimizar Copy Estratégico
+                                            Optimizar Copy Estrat├®gico
                                         </button>
                                     </div>
                                     
                                     <p className="text-[10px] text-gray-600 text-center font-bold uppercase tracking-widest pt-4">
-                                        Los cambios se guardan automáticamente en tu perfil estratégico local.
+                                        Los cambios se guardan autom├íticamente en tu perfil estrat├®gico local.
                                     </p>
                                 </div>
                             </div>
@@ -3134,7 +3053,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 )}
             </AnimatePresence>
 
-            {/* Modal para Guardar Investigación */}
+            {/* Modal para Guardar Investigaci├│n */}
             <SavedResearchesModal
                 isOpen={isSaveModalOpen}
                 onClose={() => setIsSaveModalOpen(false)}
@@ -3149,7 +3068,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                     valueProp: profile.valueProp,
                     tone: profile.tone,
                     frictionPoints: (profile.problemSolved ? profile.problemSolved.split('.').filter(Boolean) : []),
-                    summary: profile.whatItDoes || profile.valueProp || 'Investigación estratégica de marca'
+                    summary: profile.whatItDoes || profile.valueProp || 'Investigaci├│n estrat├®gica de marca'
                 }}
                 folders={researchFolders}
                 onCreateFolder={handleCreateFolder}
@@ -3161,6 +3080,7 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
                 onClose={() => setShowFormats(false)} 
                 profile={profile}
             />
+
             {/* Floating Action Button for Save (Visible only in Edit Mode) */}
             {!isPreviewMode && (
                 <div className="fixed bottom-8 right-8 z-[100] animate-in fade-in slide-in-from-bottom-8 duration-1000">
@@ -3181,4 +3101,3 @@ export default function ClientStrategicProfile({ forcedViewMode, activeTab, clie
         </div>
     );
 }
-

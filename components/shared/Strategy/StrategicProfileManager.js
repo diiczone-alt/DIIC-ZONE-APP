@@ -238,7 +238,6 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
                     >
                         {activeTab === 'search' && (
                             <ClientStrategicProfile 
-                                forcedViewMode="edit" 
                                 activeTab="search" 
                                 clientId={clientId}
                                 onOpenSaveModal={(draft) => {
@@ -252,7 +251,6 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
 
                         {activeTab === 'saved' && (
                             <ClientStrategicProfile 
-                                forcedViewMode="edit" 
                                 activeTab="saved" 
                                 clientId={clientId}
                                 onOpenSaveModal={(draft) => {
@@ -266,7 +264,6 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
 
                         {activeTab === 'profile' && (
                             <ClientStrategicProfile 
-                                forcedViewMode="report" 
                                 activeTab="profile" 
                                 clientId={clientId}
                                 onOpenSaveModal={(draft) => {
