@@ -452,7 +452,7 @@ const isValidSocialUrl = (url) => {
     return domainRegex.test(cleanUrl);
 };
 
-export default function ClientStrategicProfile({ forcedViewMode, clientId: propClientId }) {
+export default function ClientStrategicProfile({ forcedViewMode, activeTab, clientId: propClientId, onOpenSaveModal, onOpenBrainChat, onResearchesChange }) {
     const { user } = useAuth();
     const [activeClientId, setActiveClientId] = useState(propClientId || user?.client_id || null);
 
@@ -653,6 +653,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
     const handleSaveNewResearch = (newResearch) => {
         const updated = [newResearch, ...savedResearches];
         setSavedResearches(updated);
+        if (onResearchesChange) onResearchesChange(updated);
         if (typeof window !== 'undefined' && activeClientId) {
             try {
                 localStorage.setItem('diic_saved_researches_' + activeClientId, JSON.stringify(updated));

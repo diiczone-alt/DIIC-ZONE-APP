@@ -1,71 +1,368 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Network, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+    Search, Folder, Target, TrendingUp, Sparkles, Brain, Bot, 
+    Activity, Layers, Bookmark, FileText, CheckCircle2, X,
+    Network, ShieldCheck, Zap, ArrowUpRight
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ClientIdentityWrapper from '../../profile/ClientIdentityWrapper';
+import ClientStrategicProfile from '../../profile/ClientStrategicProfile';
+import ClientGrowthLevel from '../../profile/ClientGrowthLevel';
 import ClientServiceCatalog from '../../profile/ClientServiceCatalog';
+import StrategicBrainChat from '@/components/strategy/StrategicBrainChat';
+import SavedResearchesModal from '@/components/strategy/SavedResearchesModal';
+import { agencyService } from '@/services/agencyService';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
-    const [subTab, setSubTab] = useState('identity'); // 'identity', 'catalog'
+    const { user } = useAuth();
+    // Unified navigation: 'search' | 'saved' | 'profile' | 'level' | 'catalog'
+    const [activeTab, setActiveTab] = useState('search');
+    const [isBrainChatOpen, setIsBrainChatOpen] = useState(false);
+    const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+    
+    // Client profile & researches metadata for top bar
+    const [clientData, setClientData] = useState(null);
+    const [savedResearches, setSavedResearches] = useState([]);
+    const [researchFolders, setResearchFolders] = useState([
+        { id: 'f_nicho', name: 'Nicho & Pacientes', color: 'indigo' },
+        { id: 'f_competencia', name: 'Competencia', color: 'fuchsia' },
+        { id: 'f_objeciones', name: 'Objeciones & Fricción', color: 'amber' }
+    ]);
+    const [currentResearchDraft, setCurrentResearchDraft] = useState(null);
+
+    const clientName = (
+        clientData?.onboarding_data?.strategic?.brandName ||
+        clientData?.name ||
+        user?.user_metadata?.brand ||
+        'Marca DIIC'
+    ).replace(/[-_\s]+workspace\s*$/i, '').trim();
+
+    // Fetch client metadata & saved researches count
+    useEffect(() => {
+        const fetchClientInfo = async () => {
+            if (!clientId) return;
+            try {
+                const client = await agencyService.getClientById(clientId);
+                if (client) {
+                    setClientData(client);
+                    const rawRes = client.onboarding_data?.saved_researches || [];
+                    const rawFolders = client.onboarding_data?.research_folders || [];
+                    if (Array.isArray(rawRes) && rawRes.length > 0) {
+                        setSavedResearches(rawRes);
+                    } else if (typeof window !== 'undefined') {
+                        try {
+                            const localRes = localStorage.getItem('diic_saved_researches_' + clientId);
+                            if (localRes) setSavedResearches(JSON.parse(localRes));
+                        } catch(e) {}
+                    }
+                    if (Array.isArray(rawFolders) && rawFolders.length > 0) {
+                        setResearchFolders(rawFolders);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching client info in StrategicProfileManager:", err);
+            }
+        };
+        fetchClientInfo();
+    }, [clientId]);
+
+    const handleSaveNewResearch = async (newResearch) => {
+        const updated = [newResearch, ...savedResearches];
+        setSavedResearches(updated);
+        if (typeof window !== 'undefined' && clientId) {
+            try {
+                localStorage.setItem('diic_saved_researches_' + clientId, JSON.stringify(updated));
+            } catch(e) {}
+        }
+        if (clientId) {
+            try {
+                const existing = await agencyService.getClientById(clientId);
+                const prevOnboarding = existing?.onboarding_data || {};
+                await agencyService.updateClient(clientId, {
+                    onboarding_data: {
+                        ...prevOnboarding,
+                        saved_researches: updated,
+                        research_folders: researchFolders
+                    }
+                });
+            } catch (e) {
+                console.error("Error saving research to client:", e);
+            }
+        }
+    };
+
+    const navItems = [
+        {
+            id: 'search',
+            label: 'Búsqueda & Auditoría',
+            icon: Search,
+            badge: null,
+            desc: 'Escáner Omnicanal & Huella Digital'
+        },
+        {
+            id: 'saved',
+            label: 'Repositorio & Dossier',
+            icon: Folder,
+            badge: savedResearches.length > 0 ? savedResearches.length : null,
+            desc: 'Investigaciones Guardadas & PDF'
+        },
+        {
+            id: 'profile',
+            label: 'Perfil Estratégico 360°',
+            icon: Target,
+            badge: null,
+            desc: 'Identidad, Valor & Competencia'
+        },
+        {
+            id: 'level',
+            label: 'Madurez & Nivel',
+            icon: TrendingUp,
+            badge: null,
+            desc: 'Crecimiento de Negocio'
+        },
+        {
+            id: 'catalog',
+            label: 'Catálogo de Servicios',
+            icon: Zap,
+            badge: null,
+            desc: 'Oferta High-Ticket'
+        }
+    ];
 
     return (
-        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar px-8 py-8">
-            {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">
-                    Ecosistema <span className="text-indigo-500">Estratégico</span>
-                </h1>
-                <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mt-2">
-                    Mapea la identidad, los entregables de valor y la madurez del negocio.
-                </p>
-            </div>
+        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar px-4 md:px-8 py-6">
+            {/* UNIFIED EXECUTIVE COMMAND BAR */}
+            <div className="mb-8 p-4 md:p-5 bg-[#080914]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] shadow-2xl relative overflow-hidden">
+                {/* Ambient glowing accent */}
+                <div className="absolute top-0 right-1/4 w-96 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+                <div className="absolute bottom-0 left-1/4 w-96 h-32 bg-fuchsia-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-            {/* Sub-Navigation */}
-            <div className="flex justify-start mb-10">
-                <div className="inline-flex p-1.5 bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[28px] shadow-2xl">
-                    <button
-                        onClick={() => setSubTab('identity')}
-                        type="button"
-                        className={`flex items-center gap-2.5 px-8 py-3.5 rounded-[22px] text-xs font-black uppercase tracking-[0.15em] transition-all duration-500 relative group overflow-hidden ${
-                            subTab === 'identity'
-                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]'
-                                : 'text-gray-500 hover:text-white hover:bg-white/5'
-                        }`}
-                    >
-                        <Network className={`w-4 h-4 relative z-10 ${subTab === 'identity' ? 'animate-pulse' : 'text-gray-600 group-hover:text-gray-300'}`} />
-                        <span className="relative z-10">Identidad</span>
-                    </button>
-                    <button
-                        onClick={() => setSubTab('catalog')}
-                        type="button"
-                        className={`flex items-center gap-2.5 px-8 py-3.5 rounded-[22px] text-xs font-black uppercase tracking-[0.15em] transition-all duration-500 relative group overflow-hidden ${
-                            subTab === 'catalog'
-                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]'
-                                : 'text-gray-500 hover:text-white hover:bg-white/5'
-                        }`}
-                    >
-                        <TrendingUp className={`w-4 h-4 relative z-10 ${subTab === 'catalog' ? 'animate-pulse' : 'text-gray-600 group-hover:text-gray-300'}`} />
-                        <span className="relative z-10">Catálogo de Servicios</span>
-                    </button>
+                <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+                    {/* Brand & AI Status Badge */}
+                    <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white shrink-0">
+                                <Bot className="w-6 h-6 animate-pulse" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-base md:text-lg font-black text-white uppercase italic tracking-tight">
+                                        Ecosistema <span className="bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">Estratégico 360°</span>
+                                    </h2>
+                                    <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[9px] font-black text-emerald-400 uppercase tracking-widest">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                        IA Activa
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-gray-400 font-bold truncate max-w-[280px]">
+                                    {clientName} • Diagnóstico & Inteligencia
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Mobile AI Quick Launch */}
+                        <button
+                            onClick={() => setIsBrainChatOpen(true)}
+                            className="lg:hidden p-2.5 bg-gradient-to-r from-indigo-600 to-fuchsia-600 rounded-xl text-white shadow-lg"
+                        >
+                            <Brain className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Executive Navigation Strip */}
+                    <div className="flex items-center gap-1.5 p-1.5 bg-black/60 border border-white/10 rounded-[24px] shadow-inner overflow-x-auto max-w-full custom-scrollbar">
+                        {navItems.map(item => {
+                            const Icon = item.icon;
+                            const isActive = activeTab === item.id;
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setActiveTab(item.id)}
+                                    type="button"
+                                    className={`flex items-center gap-2.5 px-4 md:px-5 py-2.5 rounded-[18px] text-xs font-black uppercase tracking-wider transition-all duration-300 whitespace-nowrap relative group ${
+                                        isActive
+                                            ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-fuchsia-600 text-white shadow-[0_4px_20px_rgba(99,102,241,0.4)]'
+                                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                                >
+                                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-indigo-400'} transition-colors`} />
+                                    <span>{item.label}</span>
+                                    {item.badge !== null && (
+                                        <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
+                                            isActive 
+                                                ? 'bg-white/20 text-white' 
+                                                : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                                        }`}>
+                                            {item.badge}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Executive Actions (Right Side) */}
+                    <div className="hidden lg:flex items-center gap-3">
+                        <button
+                            onClick={() => setIsBrainChatOpen(true)}
+                            className="px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg hover:shadow-indigo-500/10 transition-all active:scale-95 group"
+                        >
+                            <Sparkles className="w-4 h-4 text-indigo-400 group-hover:rotate-12 transition-transform" />
+                            <span>DIIC Brain IA</span>
+                        </button>
+
+                        <button
+                            onClick={() => setIsSaveModalOpen(true)}
+                            className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                        >
+                            <Bookmark className="w-4 h-4" />
+                            <span>Guardar Investigación</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Content Area */}
+            {/* MAIN CONTENT VIEWER */}
             <div className="flex-1 min-h-0">
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={subTab}
-                        initial={{ opacity: 0, y: 10 }}
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
+                        exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.2 }}
+                        className="w-full"
                     >
-                        {subTab === 'identity' && <ClientIdentityWrapper clientId={clientId} />}
-                        {subTab === 'catalog' && <ClientServiceCatalog clientId={clientId} />}
+                        {activeTab === 'search' && (
+                            <ClientStrategicProfile 
+                                forcedViewMode="edit" 
+                                activeTab="search" 
+                                clientId={clientId}
+                                onOpenSaveModal={(draft) => {
+                                    setCurrentResearchDraft(draft);
+                                    setIsSaveModalOpen(true);
+                                }}
+                                onOpenBrainChat={() => setIsBrainChatOpen(true)}
+                                onResearchesChange={(updated) => setSavedResearches(updated)}
+                            />
+                        )}
+
+                        {activeTab === 'saved' && (
+                            <ClientStrategicProfile 
+                                forcedViewMode="edit" 
+                                activeTab="saved" 
+                                clientId={clientId}
+                                onOpenSaveModal={(draft) => {
+                                    setCurrentResearchDraft(draft);
+                                    setIsSaveModalOpen(true);
+                                }}
+                                onOpenBrainChat={() => setIsBrainChatOpen(true)}
+                                onResearchesChange={(updated) => setSavedResearches(updated)}
+                            />
+                        )}
+
+                        {activeTab === 'profile' && (
+                            <ClientStrategicProfile 
+                                forcedViewMode="report" 
+                                activeTab="profile" 
+                                clientId={clientId}
+                                onOpenSaveModal={(draft) => {
+                                    setCurrentResearchDraft(draft);
+                                    setIsSaveModalOpen(true);
+                                }}
+                                onOpenBrainChat={() => setIsBrainChatOpen(true)}
+                                onResearchesChange={(updated) => setSavedResearches(updated)}
+                            />
+                        )}
+
+                        {activeTab === 'level' && (
+                            <div className="space-y-6">
+                                <ClientGrowthLevel clientId={clientId} />
+                            </div>
+                        )}
+
+                        {activeTab === 'catalog' && (
+                            <div className="space-y-6">
+                                <ClientServiceCatalog clientId={clientId} />
+                            </div>
+                        )}
                     </motion.div>
                 </AnimatePresence>
             </div>
+
+            {/* DIIC BRAIN AI CHAT MODAL / DRAWER */}
+            <AnimatePresence>
+                {isBrainChatOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl"
+                        onClick={() => setIsBrainChatOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="w-full max-w-4xl h-[85vh] bg-[#0A0A12] border border-indigo-500/30 rounded-[36px] shadow-2xl overflow-hidden flex flex-col relative"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="px-6 py-4 bg-[#0E0E1A] border-b border-white/10 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+                                        <Brain className="w-5 h-5 animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-black text-white uppercase italic tracking-tight">
+                                            DIIC Brain • <span className="text-indigo-400">Asistente Estratégico IA</span>
+                                        </h3>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                            Memoria contextual: {savedResearches.length} investigaciones + Perfil 360°
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsBrainChatOpen(false)}
+                                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* Brain Chat Component */}
+                            <div className="flex-1 min-h-0">
+                                <StrategicBrainChat
+                                    clientName={clientName}
+                                    profile={clientData?.onboarding_data?.strategic || {}}
+                                    researches={savedResearches}
+                                    folders={researchFolders}
+                                />
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* SAVED RESEARCHES MODAL */}
+            <SavedResearchesModal
+                isOpen={isSaveModalOpen}
+                onClose={() => {
+                    setIsSaveModalOpen(false);
+                    setCurrentResearchDraft(null);
+                }}
+                folders={researchFolders}
+                initialData={currentResearchDraft || {
+                    title: 'Auditoría Estratégica - ' + clientName,
+                    query: 'Investigación General Omnicanal',
+                    content: 'Análisis estratégico consolidado para ' + clientName + '.',
+                    category: 'Auditoría de Nicho'
+                }}
+                onSave={handleSaveNewResearch}
+            />
         </div>
     );
 }
