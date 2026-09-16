@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Film, Target, Users, Bot, Settings, Sparkles, Play,
     TrendingUp, Eye, MessageCircle, Bookmark, Share2, Heart,
     DollarSign, MousePointer2, ArrowUpRight, CheckCircle2,
     Calendar, MapPin, Clock, ShieldCheck, RefreshCw, Zap,
-    ExternalLink, ChevronRight, Copy, ArrowRight, Layers
+    ExternalLink, ChevronRight, Copy, ArrowRight, Layers,
+    Filter, ArrowUpDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -23,6 +24,8 @@ export default function InlineMetaCommandCenter({
     const [currentPlatform, setCurrentPlatform] = useState(platform);
     const [activeTab, setActiveTab] = useState('organic'); // 'organic' | 'paid' | 'audience' | 'automation' | 'settings'
     const [videoFilter, setVideoFilter] = useState('all'); // 'all' | 'viral' | 'patients' | 'saves'
+    const [selectedMonth, setSelectedMonth] = useState('all'); // 'all' | 'YYYY-MM'
+    const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'oldest' | 'likes' | 'comments'
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState(null);
     const [expandedPostId, setExpandedPostId] = useState(null);
@@ -68,12 +71,67 @@ export default function InlineMetaCommandCenter({
         : 'from-[#1877F2] to-[#0D59C7]';
 
     const rawVideos = data?.organic?.topVideos || [];
-    const filteredVideos = rawVideos.filter(v => {
-        if (videoFilter === 'viral') return (parseInt(v.likes) >= 5 || (v.playsNum && v.playsNum > 20000));
-        if (videoFilter === 'patients') return v.patientInquiries >= 10 || (v.fullCaption && v.fullCaption.toLowerCase().includes('cita'));
-        if (videoFilter === 'saves') return parseInt(v.saves) >= 5 || parseInt(v.likes) >= 4;
-        return true;
-    });
+
+    // Extract unique available months from the real posts
+    const availableMonths = useMemo(() => {
+        const monthsMap = new Map();
+        rawVideos.forEach(v => {
+            if (v.rawTimestamp) {
+                try {
+                    const d = new Date(v.rawTimestamp);
+                    if (!isNaN(d.getTime())) {
+                        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                        const label = d.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
+                        const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
+                        if (!monthsMap.has(key)) {
+                            monthsMap.set(key, { key, label: capitalizedLabel, count: 0 });
+                        }
+                        monthsMap.get(key).count += 1;
+                    }
+                } catch (e) {}
+            }
+        });
+        return Array.from(monthsMap.values()).sort((a, b) => b.key.localeCompare(a.key));
+    }, [rawVideos]);
+
+    // Filter and sort publications by month, category, and order
+    const filteredVideos = useMemo(() => {
+        let result = rawVideos.filter(v => {
+            // Month / Date Filter
+            if (selectedMonth !== 'all' && v.rawTimestamp) {
+                try {
+                    const d = new Date(v.rawTimestamp);
+                    const postMonthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    if (postMonthKey !== selectedMonth) return false;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            // Category Filter
+            if (videoFilter === 'viral') return (parseInt(v.likes) >= 5 || (v.playsNum && v.playsNum > 20000));
+            if (videoFilter === 'patients') return v.patientInquiries >= 10 || (v.fullCaption && v.fullCaption.toLowerCase().includes('cita'));
+            if (videoFilter === 'saves') return parseInt(v.saves) >= 5 || parseInt(v.likes) >= 4;
+            return true;
+        });
+
+        // Sorting
+        return result.sort((a, b) => {
+            if (sortBy === 'newest') {
+                return new Date(b.rawTimestamp || 0) - new Date(a.rawTimestamp || 0);
+            }
+            if (sortBy === 'oldest') {
+                return new Date(a.rawTimestamp || 0) - new Date(b.rawTimestamp || 0);
+            }
+            if (sortBy === 'likes') {
+                return (parseInt(b.likes) || 0) - (parseInt(a.likes) || 0);
+            }
+            if (sortBy === 'comments') {
+                return (parseInt(b.comments) || 0) - (parseInt(a.comments) || 0);
+            }
+            return 0;
+        });
+    }, [rawVideos, selectedMonth, videoFilter, sortBy]);
 
     const accountProfile = data?.accountProfile || {};
     const displayHandle = isInstagram 
@@ -300,37 +358,125 @@ export default function InlineMetaCommandCenter({
 
                                 {/* Video Grid Section */}
                                 <div className="space-y-6">
-                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                        <div>
+                                    <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-[#050612]/70 p-5 rounded-3xl border border-white/5">
+                                        <div className="space-y-1">
                                             <h3 className="text-base font-black text-white uppercase tracking-widest flex items-center gap-2.5">
-                                                <Film className="w-5 h-5 text-indigo-400" /> Ranking de Publicaciones Extraídas ({filteredVideos.length})
+                                                <Film className="w-5 h-5 text-indigo-400" /> Ranking de Publicaciones ({filteredVideos.length})
                                             </h3>
-                                            <p className="text-xs text-gray-500 font-semibold mt-0.5">Extraídos en tiempo real desde la API oficial de Meta</p>
+                                            <p className="text-xs text-gray-400 font-medium">
+                                                {selectedMonth === 'all' ? 'Mostrando todo el historial de publicaciones' : `Filtrado por: ${availableMonths.find(m => m.key === selectedMonth)?.label || selectedMonth}`}
+                                            </p>
                                         </div>
 
-                                        {/* Filter Buttons */}
-                                        <div className="flex flex-wrap gap-2">
-                                            {[
-                                                { id: 'all', label: 'Todos' },
-                                                { id: 'viral', label: '🔥 Más Vistos / Destacados' },
-                                                { id: 'patients', label: '💬 Consultas Médicas' },
-                                                { id: 'saves', label: '📌 Mayor Interacción' }
-                                            ].map(f => (
-                                                <button
-                                                    key={f.id}
-                                                    onClick={() => setVideoFilter(f.id)}
-                                                    className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                                                        videoFilter === f.id
-                                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                                                            : 'bg-white/5 hover:bg-white/10 text-gray-400'
-                                                    }`}
+                                        {/* Date and Month Selector Controls */}
+                                        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                                            {/* Month Dropdown */}
+                                            <div className="flex items-center gap-2 bg-[#0e1026] border border-white/10 px-3.5 py-2 rounded-2xl hover:border-indigo-500/40 transition-all flex-1 sm:flex-initial">
+                                                <Calendar className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                                                <select
+                                                    value={selectedMonth}
+                                                    onChange={(e) => setSelectedMonth(e.target.value)}
+                                                    className="bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer pr-2"
                                                 >
-                                                    {f.label}
-                                                </button>
-                                            ))}
+                                                    <option value="all" className="bg-[#0b0c1e] text-white">
+                                                        📅 Todos los Meses ({rawVideos.length})
+                                                    </option>
+                                                    {availableMonths.map((m) => (
+                                                        <option key={m.key} value={m.key} className="bg-[#0b0c1e] text-white">
+                                                            {m.label} ({m.count})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            {/* Sort Order Dropdown */}
+                                            <div className="flex items-center gap-2 bg-[#0e1026] border border-white/10 px-3.5 py-2 rounded-2xl hover:border-indigo-500/40 transition-all flex-1 sm:flex-initial">
+                                                <ArrowUpDown className="w-4 h-4 text-pink-400 flex-shrink-0" />
+                                                <select
+                                                    value={sortBy}
+                                                    onChange={(e) => setSortBy(e.target.value)}
+                                                    className="bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer pr-2"
+                                                >
+                                                    <option value="newest" className="bg-[#0b0c1e] text-white">Más recientes primero</option>
+                                                    <option value="oldest" className="bg-[#0b0c1e] text-white">Más antiguos primero</option>
+                                                    <option value="likes" className="bg-[#0b0c1e] text-white">Mayor interacción (Likes)</option>
+                                                    <option value="comments" className="bg-[#0b0c1e] text-white">Mayor cantidad de consultas</option>
+                                                </select>
+                                            </div>
+
+                                            {/* Filter Type Pills */}
+                                            <div className="flex flex-wrap gap-1.5 bg-[#0e1026] border border-white/10 p-1 rounded-2xl w-full sm:w-auto">
+                                                {[
+                                                    { id: 'all', label: 'Todos' },
+                                                    { id: 'viral', label: '🔥 Destacados' },
+                                                    { id: 'patients', label: '💬 Consultas' },
+                                                    { id: 'saves', label: '📌 Interacción' }
+                                                ].map(f => (
+                                                    <button
+                                                        key={f.id}
+                                                        onClick={() => setVideoFilter(f.id)}
+                                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                                            videoFilter === f.id
+                                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                                                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                                        }`}
+                                                    >
+                                                        {f.label}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
 
+                                    {/* Quick Month Filter Pills if multiple months exist */}
+                                    {availableMonths.length > 1 && (
+                                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest whitespace-nowrap pl-1">
+                                                Filtrar por Mes:
+                                            </span>
+                                            <button
+                                                onClick={() => setSelectedMonth('all')}
+                                                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                                    selectedMonth === 'all'
+                                                        ? 'bg-white/15 text-white border border-white/20'
+                                                        : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                                                }`}
+                                            >
+                                                Todos ({rawVideos.length})
+                                            </button>
+                                            {availableMonths.map((m) => (
+                                                <button
+                                                    key={m.key}
+                                                    onClick={() => setSelectedMonth(m.key)}
+                                                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                                                        selectedMonth === m.key
+                                                            ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                                                            : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                                                    }`}
+                                                >
+                                                    <span>{m.label}</span>
+                                                    <span className="text-[10px] px-1.5 py-0.2 bg-white/10 rounded-full font-mono font-normal">
+                                                        {m.count}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {filteredVideos.length === 0 ? (
+                                        <div className="py-16 bg-[#0e1026]/50 border border-white/5 rounded-3xl text-center space-y-3">
+                                            <Calendar className="w-10 h-10 text-gray-500 mx-auto opacity-50" />
+                                            <p className="text-sm font-bold text-gray-300">
+                                                No se encontraron publicaciones para el mes o filtro seleccionado.
+                                            </p>
+                                            <button
+                                                onClick={() => { setSelectedMonth('all'); setVideoFilter('all'); }}
+                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all"
+                                            >
+                                                Ver todas las publicaciones
+                                            </button>
+                                        </div>
+                                    ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {filteredVideos.map((video) => {
                                             const isExpanded = expandedPostId === video.id;
@@ -454,6 +600,7 @@ export default function InlineMetaCommandCenter({
                                             );
                                         })}
                                     </div>
+                                )}
                                 </div>
                             </div>
                         )}

@@ -18,6 +18,29 @@ const decodeEntities = (text) => {
     return temp.value;
 };
 
+// Safe date and time helpers
+const formatDateSafe = (dateVal, options, fallback = '') => {
+    if (!dateVal) return fallback;
+    try {
+        const d = new Date(dateVal);
+        if (isNaN(d.getTime())) return fallback;
+        return options ? d.toLocaleDateString('es-ES', options) : d.toLocaleDateString();
+    } catch {
+        return fallback;
+    }
+};
+
+const formatTimeSafe = (dateVal, fallback = '') => {
+    if (!dateVal) return fallback;
+    try {
+        const d = new Date(dateVal);
+        if (isNaN(d.getTime())) return fallback;
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+        return fallback;
+    }
+};
+
 // Helper component for Claude-style professional markdown rendering
 const ClaudeStyleMarkdownViewer = ({ content }) => {
     if (!content) return null;
@@ -570,9 +593,15 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                         ...prev,
                         ...client,
                         brandName: cleanBrandName,
-                        goals: client.goals || client.onboarding_data?.goals || prev.goals || [],
+                        goals: Array.isArray(strategic.goals) ? strategic.goals : (Array.isArray(client.goals) ? client.goals : (Array.isArray(client.onboarding_data?.goals) ? client.onboarding_data.goals : (Array.isArray(prev.goals) ? prev.goals : []))),
                         ...strategic,
                         brandName: cleanBrandName,
+                        goals: Array.isArray(strategic.goals) ? strategic.goals : (Array.isArray(client.goals) ? client.goals : (Array.isArray(client.onboarding_data?.goals) ? client.onboarding_data.goals : (Array.isArray(prev.goals) ? prev.goals : []))),
+                        competitors: Array.isArray(strategic.competitors) ? strategic.competitors : (Array.isArray(client.competitors) ? client.competitors : (Array.isArray(prev.competitors) ? prev.competitors : [])),
+                        strategicAllies: Array.isArray(strategic.strategicAllies) ? strategic.strategicAllies : (Array.isArray(client.strategicAllies) ? client.strategicAllies : (Array.isArray(prev.strategicAllies) ? prev.strategicAllies : [])),
+                        snapshots: Array.isArray(strategic.snapshots) ? strategic.snapshots : (Array.isArray(client.snapshots) ? client.snapshots : (Array.isArray(prev.snapshots) ? prev.snapshots : [])),
+                        dynamicButtons: Array.isArray(strategic.dynamicButtons) ? strategic.dynamicButtons : (Array.isArray(prev.dynamicButtons) ? prev.dynamicButtons : []),
+                        insights: (strategic.insights && typeof strategic.insights === 'object') ? strategic.insights : (prev.insights && typeof prev.insights === 'object' ? prev.insights : {}),
                         websiteUrl: strategic.websiteUrl || (social.instagram ? (social.instagram.startsWith('http') ? social.instagram : `https://instagram.com/${social.instagram.replace(/^@/, '')}`) : prev.websiteUrl),
                         instagramUrl: strategic.instagramUrl || (social.instagram ? (social.instagram.startsWith('http') ? social.instagram : `https://instagram.com/${social.instagram.replace(/^@/, '')}`) : prev.instagramUrl),
                         facebookUrl: strategic.facebookUrl || (social.facebook ? (social.facebook.startsWith('http') ? social.facebook : `https://facebook.com/${social.facebook}`) : prev.facebookUrl),
@@ -1377,7 +1406,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                             </div>
 
                             {/* Onboarding Goals */}
-                            {profile.goals && profile.goals.length > 0 && (
+                            {Array.isArray(profile.goals) && profile.goals.length > 0 && (
                                 <div className="mt-12 p-8 rounded-[2rem] bg-indigo-500/5 border border-indigo-500/10 space-y-4 text-left w-full">
                                     <div className="flex items-center gap-3 text-indigo-400 font-black uppercase tracking-widest text-[10px]">
                                         <TargetIcon className="w-5 h-5 text-indigo-500 animate-pulse" /> Objetivos de Onboarding
@@ -1487,11 +1516,11 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                                         )}
 
                                         {/* Birth Date */}
-                                        {profile.birth_date && (
+                                        {profile.birth_date && formatDateSafe(profile.birth_date) && (
                                             <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1">
                                                 <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Fecha de Fundación</span>
                                                 <p className="text-xs font-bold text-white">
-                                                    {new Date(profile.birth_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                    {formatDateSafe(profile.birth_date, { day: 'numeric', month: 'long', year: 'numeric' })}
                                                 </p>
                                             </div>
                                         )}
@@ -1549,16 +1578,17 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                                     <div className="space-y-6">
                                         <h4 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em]">Mapeo de Competidores</h4>
                                         <div className="space-y-4">
-                                            {profile.competitors?.map((c, i) => (
-                                                <div key={i} className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col gap-3">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm font-black text-white uppercase italic">{c.name}</span>
-                                                        <span className="text-[9px] text-rose-400 font-bold uppercase tracking-widest">{c.location}</span>
+                                            {Array.isArray(profile.competitors) && profile.competitors.length > 0 ? (
+                                                profile.competitors.map((c, i) => (
+                                                    <div key={i} className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col gap-3">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm font-black text-white uppercase italic">{c?.name || 'Competidor'}</span>
+                                                            <span className="text-[9px] text-rose-400 font-bold uppercase tracking-widest">{c?.location || ''}</span>
+                                                        </div>
+                                                        <p className="text-[11px] text-gray-500 italic leading-relaxed">{c?.strengthsWeaknesses || ''}</p>
                                                     </div>
-                                                    <p className="text-[11px] text-gray-500 italic leading-relaxed">{c.strengthsWeaknesses}</p>
-                                                </div>
-                                            ))}
-                                            {(!profile.competitors || profile.competitors.length === 0) && (
+                                                ))
+                                            ) : (
                                                 <p className="text-xs text-gray-600 font-medium italic">No se han registrado competidores estratégicos.</p>
                                             )}
                                         </div>
@@ -1568,16 +1598,17 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                                     <div className="space-y-6">
                                         <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em]">Aliados Estratégicos</h4>
                                         <div className="space-y-4">
-                                            {profile.strategicAllies?.map((a, i) => (
-                                                <div key={i} className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col gap-3">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm font-black text-white uppercase italic">{a.name}</span>
-                                                        <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest">Partner</span>
+                                            {Array.isArray(profile.strategicAllies) && profile.strategicAllies.length > 0 ? (
+                                                profile.strategicAllies.map((a, i) => (
+                                                    <div key={i} className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col gap-3">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm font-black text-white uppercase italic">{a?.name || 'Aliado'}</span>
+                                                            <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest">Partner</span>
+                                                        </div>
+                                                        <p className="text-[11px] text-gray-500 italic leading-relaxed">{a?.tagReason || ''}</p>
                                                     </div>
-                                                    <p className="text-[11px] text-gray-500 italic leading-relaxed">{a.tagReason}</p>
-                                                </div>
-                                            ))}
-                                            {(!profile.strategicAllies || profile.strategicAllies.length === 0) && (
+                                                ))
+                                            ) : (
                                                 <p className="text-xs text-gray-600 font-medium italic">No se han registrado aliados estratégicos.</p>
                                             )}
                                         </div>
@@ -2122,7 +2153,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
 
                         <div className="p-3 border-t border-white/5 bg-black/40">
                             {/* Dynamic Suggested Question Chips */}
-                            {profile.dynamicButtons && profile.dynamicButtons.length > 0 && (
+                            {Array.isArray(profile.dynamicButtons) && profile.dynamicButtons.length > 0 && (
                                 <div className="flex flex-wrap gap-2 px-1 pb-3 pt-1 border-b border-white/5 mb-3">
                                     <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest w-full mb-1 flex items-center gap-1">
                                         <Sparkles size={10} className="animate-pulse" /> Investigaciones Sugeridas:
@@ -2374,13 +2405,14 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                     </div>
 
                     <div className="space-y-4 relative z-10">
-                        {profile.competitors?.map((comp, idx) => (
+                        {Array.isArray(profile.competitors) && profile.competitors.length > 0 ? (
+                            profile.competitors.map((comp, idx) => (
                             <div key={idx} className="bg-black/50 border border-white/5 rounded-2xl p-5 space-y-4 shadow-xl">
                                 <div className="flex justify-between items-center bg-white/5 rounded-xl p-2 border border-white/5 focus-within:border-rose-500/30 transition-colors">
                                     <input 
                                         type="text" 
                                         placeholder="Nombre del Competidor..." 
-                                        value={comp.name || ''}
+                                        value={comp?.name || ''}
                                         onChange={(e) => handleArrayChange('competitors', idx, 'name', e.target.value)}
                                         className="bg-transparent border-none text-white font-black text-sm uppercase px-3 focus:outline-none flex-1"
                                     />
@@ -2389,11 +2421,11 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input type="text" placeholder="Sitio Web (URL)" value={comp.url || ''} onChange={(e) => handleArrayChange('competitors', idx, 'url', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
-                                    <input type="text" placeholder="Ubicación / Alcance" value={comp.location || ''} onChange={(e) => handleArrayChange('competitors', idx, 'location', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
+                                    <input type="text" placeholder="Sitio Web (URL)" value={comp?.url || ''} onChange={(e) => handleArrayChange('competitors', idx, 'url', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
+                                    <input type="text" placeholder="Ubicación / Alcance" value={comp?.location || ''} onChange={(e) => handleArrayChange('competitors', idx, 'location', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input type="text" placeholder="Redes Sociales" value={comp.social || ''} onChange={(e) => handleArrayChange('competitors', idx, 'social', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
+                                    <input type="text" placeholder="Redes Sociales" value={comp?.social || ''} onChange={(e) => handleArrayChange('competitors', idx, 'social', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors" />
                                     <button 
                                         onClick={() => handleQuickInsight('competitors', 'Detective de Competencia')}
                                         className="bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 flex items-center justify-center gap-2 hover:bg-rose-500/20 transition-all text-[10px] font-black uppercase tracking-widest text-rose-400"
@@ -2403,13 +2435,12 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                                 </div>
                                 <textarea 
                                     placeholder="Análisis Estratégico (Fortalezas vs Debilidades)..." 
-                                    value={comp.strengthsWeaknesses || comp.reviews || ''} 
+                                    value={comp?.strengthsWeaknesses || comp?.reviews || ''} 
                                     onChange={(e) => handleArrayChange('competitors', idx, 'strengthsWeaknesses', e.target.value)} 
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-medium text-xs focus:outline-none focus:border-rose-500/50 transition-colors resize-none h-24 italic leading-relaxed" 
                                 />
                             </div>
-                        ))}
-                        {(!profile.competitors || profile.competitors.length === 0) && (
+                        ))) : (
                             <div className="text-center py-8 opacity-50 border border-dashed border-rose-500/20 rounded-3xl bg-rose-500/5">
                                 <Search className="w-8 h-8 text-rose-500/50 mx-auto mb-2" />
                                 <p className="text-[10px] text-rose-400/80 uppercase font-black tracking-widest">Sin competidores registrados</p>
@@ -2443,13 +2474,14 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                     </div>
 
                     <div className="space-y-4 relative z-10">
-                        {profile.strategicAllies?.map((ally, idx) => (
+                        {Array.isArray(profile.strategicAllies) && profile.strategicAllies.length > 0 ? (
+                            profile.strategicAllies.map((ally, idx) => (
                             <div key={idx} className="bg-black/50 border border-white/5 rounded-2xl p-5 space-y-4 shadow-xl">
                                 <div className="flex justify-between items-center bg-white/5 rounded-xl p-2 border border-white/5 focus-within:border-blue-500/30 transition-colors">
                                     <input 
                                         type="text" 
                                         placeholder="Nombre del Aliado..." 
-                                        value={ally.name || ''}
+                                        value={ally?.name || ''}
                                         onChange={(e) => handleArrayChange('strategicAllies', idx, 'name', e.target.value)}
                                         className="bg-transparent border-none text-white font-black text-sm uppercase px-3 focus:outline-none flex-1"
                                     />
@@ -2458,13 +2490,12 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <input type="text" placeholder="Sitio Web (URL)" value={ally.url || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'url', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
-                                    <input type="text" placeholder="Redes (Para Etiquetar)" value={ally.social || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'social', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
+                                    <input type="text" placeholder="Sitio Web (URL)" value={ally?.url || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'url', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
+                                    <input type="text" placeholder="Redes (Para Etiquetar)" value={ally?.social || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'social', e.target.value)} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-300 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
                                 </div>
-                                <input type="text" placeholder="¿Por qué etiquetarlos? (Ej. Proveedor de Software...)" value={ally.tagReason || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'tagReason', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
+                                <input type="text" placeholder="¿Por qué etiquetarlos? (Ej. Proveedor de Software...)" value={ally?.tagReason || ''} onChange={(e) => handleArrayChange('strategicAllies', idx, 'tagReason', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-medium text-xs focus:outline-none focus:border-blue-500/50 transition-colors" />
                             </div>
-                        ))}
-                        {(!profile.strategicAllies || profile.strategicAllies.length === 0) && (
+                        ))) : (
                             <div className="text-center py-8 opacity-50 border border-dashed border-blue-500/20 rounded-3xl bg-blue-500/5">
                                 <Network className="w-8 h-8 text-blue-500/50 mx-auto mb-2" />
                                 <p className="text-[10px] text-blue-400/80 uppercase font-black tracking-widest">Sin aliados registrados</p>
@@ -2496,17 +2527,17 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                     </button>
                 </div>
 
-                {profile.snapshots && profile.snapshots.length > 0 ? (
+                {Array.isArray(profile.snapshots) && profile.snapshots.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {profile.snapshots.map((snapshot) => (
-                            <div key={snapshot.id} className="bg-[#0A0A0F] border border-white/5 rounded-[32px] p-6 space-y-6 hover:border-emerald-500/30 transition-all group relative overflow-hidden">
+                            <div key={snapshot.id || Math.random()} className="bg-[#0A0A0F] border border-white/5 rounded-[32px] p-6 space-y-6 hover:border-emerald-500/30 transition-all group relative overflow-hidden">
                                 <div className="absolute -top-4 -right-4 w-24 h-24 bg-emerald-500/5 blur-3xl rounded-full" />
                                 
                                 <div className="flex justify-between items-start relative z-10">
                                     <div>
-                                        <h4 className="text-xs font-black text-white uppercase tracking-widest">{snapshot.name}</h4>
+                                        <h4 className="text-xs font-black text-white uppercase tracking-widest">{snapshot.name || 'Snapshot'}</h4>
                                         <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1">
-                                            {new Date(snapshot.date).toLocaleDateString()} • {new Date(snapshot.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {formatDateSafe(snapshot.date)} • {formatTimeSafe(snapshot.date)}
                                         </p>
                                     </div>
                                     <button 
@@ -2563,7 +2594,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
             </div>
 
             {/* AI Generated Insights Section (Saved in DB) */}
-            {profile.insights && Object.keys(profile.insights).length > 0 && (
+            {profile.insights && typeof profile.insights === 'object' && Object.keys(profile.insights).length > 0 && (
                 <div className="mt-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="flex items-center gap-4 border-b border-white/5 pb-4">
                         <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
@@ -2573,12 +2604,14 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {Object.entries(profile.insights).map(([key, data]) => (
+                        {Object.entries(profile.insights).map(([key, data]) => {
+                            if (!data) return null;
+                            return (
                             <div key={key} className="bg-[#0A0A0F] border border-white/5 rounded-[32px] p-8 hover:border-indigo-500/30 transition-all flex flex-col justify-between">
                                 <div className="flex justify-between items-start mb-6">
                                     <div>
-                                        <h4 className="text-sm font-black text-white uppercase tracking-widest italic">{data.title}</h4>
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Generado el {new Date(data.date).toLocaleDateString()}</p>
+                                        <h4 className="text-sm font-black text-white uppercase tracking-widest italic">{data.title || 'Reporte de Inteligencia'}</h4>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Generado el {formatDateSafe(data.date)}</p>
                                     </div>
                                     <button 
                                         onClick={() => {
@@ -2627,7 +2660,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                                     </button>
                                 </div>
                             </div>
-                        ))}
+                        )})}
                     </div>
                 </div>
             )}
@@ -2736,8 +2769,8 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                                         <Database size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">{selectedSnapshotForPreview.name}</h3>
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">Snapshot Histórico • {new Date(selectedSnapshotForPreview.date).toLocaleDateString()}</p>
+                                        <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">{selectedSnapshotForPreview.name || 'Snapshot'}</h3>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">Snapshot Histórico • {formatDateSafe(selectedSnapshotForPreview.date)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -2776,7 +2809,7 @@ export default function ClientStrategicProfile({ forcedViewMode, clientId: propC
                                                 <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{item.label}</span>
                                             </div>
                                             <p className="text-sm text-gray-200 font-medium leading-relaxed italic">
-                                                {selectedSnapshotForPreview.data[item.field] || 'Dato no registrado en esta versión.'}
+                                                {selectedSnapshotForPreview?.data?.[item.field] || 'Dato no registrado en esta versión.'}
                                             </p>
                                         </div>
                                     ))}
