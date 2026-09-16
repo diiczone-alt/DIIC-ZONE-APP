@@ -86,6 +86,51 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     const [discoveredClientId, setDiscoveredClientId] = useState(null);
     const dragControls = useDragControls();
     const boardContainerRef = useRef(null);
+    const layoutRef = useRef({}); // Track which campaigns have been auto-laid out
+
+    // Strategy Navigation State
+    const [activeFlow, setActiveFlow] = useState('campañas'); // 'campañas', 'pizarra', 'planner', 'nodos', 'analitica'
+    const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
+    const [isConfiguring, setIsConfiguring] = useState(false);
+    const [activeTool, setActiveTool] = useState('select');
+    const [selectedParrillaCampaignId, setSelectedParrillaCampaignId] = useState(null);
+
+    // Drawing & Interaction States (Restored)
+    const [drawings, setDrawings] = useState([]);
+    const [penSettings, setPenSettings] = useState({ color: '#6366f1', width: 3, opacity: 1 });
+    const [contextMenu, setContextMenu] = useState(null);
+
+    // Canvas interaction State
+    const [view, setView] = useState({ x: 100, y: 100, scale: 0.85 });
+    const [selectedNodeId, setSelectedNodeId] = useState(null);
+    const [selectedEdgeId, setSelectedEdgeId] = useState(null);
+    const [isOutlinerCollapsed, setIsOutlinerCollapsed] = useState(false);
+    const [isPropertyPanelCollapsed, setIsPropertyPanelCollapsed] = useState(false);
+    const [isMemoryPickerOpen, setIsMemoryPickerOpen] = useState(false);
+    const [memoryTargetNodeId, setMemoryTargetNodeId] = useState(null);
+    const [isCompactMode, setIsCompactMode] = useState(false);
+    const [viewMode, setViewMode] = useState('tactical'); 
+    const [theme, setTheme] = useState('dark'); // 'dark' | 'light'
+
+    // AI Analysis & Reports
+    const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+    const [reportProgress, setReportProgress] = useState(0);
+    const [analysisLogs, setAnalysisLogs] = useState([]);
+    const [reportData, setReportData] = useState(null);
+
+    // Planner & Optimization States
+    const [isStrategySaved, setIsStrategySaved] = useState(true);
+    const [isProcessingPlanner, setIsProcessingPlanner] = useState(false);
+    const [hasContentPlan, setHasContentPlan] = useState(false);
+    const [isAILoading, setIsAILoading] = useState(false);
+    const [isFunnelOpen, setIsFunnelOpen] = useState(false);
+    const [isAuditorActive, setIsAuditorActive] = useState(false);
+    const [activePropertyTab, setActivePropertyTab] = useState('general');
+    const [propertyPanelSize, setPropertyPanelSize] = useState({ width: 320, height: 750 });
+    
+    // Helper state for connection
+    const [connectionStart, setConnectionStart] = useState(null);
+    const [squadMembers, setSquadMembers] = useState([]);
 
     // --- RECOVERY ON MOUNT (DEATH TO DATA LOSS) ---
     useEffect(() => {
@@ -292,91 +337,13 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
         }
     }, [strategyData.activeCampaignId, strategyData.campaigns]);
 
-    // Strategy Navigation State
-    const [activeFlow, setActiveFlow] = useState('campañas'); // 'campañas', 'pizarra', 'planner', 'nodos', 'analitica'
 
-    // Sync Strategy Data with HQ Client Record & Load Persistent Strategy
-    useEffect(() => {
-        const fetchPersistentData = async () => {
-            const finalClientId = propClientId || clientId || user?.client_id || discoveredClientId;
-            if (finalClientId) {
-                // 1. Fetch Client Profile for Context
-                const client = await agencyService.getClientById(finalClientId);
-                if (client) {
-                    setStrategyData(prev => ({
-                        ...prev,
-                        projectName: client.name,
-                        profile: {
-                            ...prev.profile,
-                            brandName: client.name,
-                            targetAudience: client.target || prev.profile.targetAudience
-                        }
-                    }));
-                }
-
-                // 2. Fetch Persistent Strategy from DB
-                const savedStrategy = await agencyService.loadStrategy(finalClientId);
-                if (savedStrategy && savedStrategy.data) {
-                    // Si hay datos reales, los cargamos directamente
-                    setStrategyData(savedStrategy.data);
-                    setIsStrategySaved(true);
-                } else if (client && client.plan?.toLowerCase() === 'authority') {
-                    // Fallback: Si no hay estrategia pero es Nivel Autoridad, sugerimos la plantilla
-                    console.log("Sugerencia: Aplicar plantilla Nivel Autoridad para nuevo cliente.");
-                }
-            }
-        };
-        fetchPersistentData();
-    }, [clientId, propClientId, user?.client_id, discoveredClientId]);
-    const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
-    const [isConfiguring, setIsConfiguring] = useState(false);
-    const [activeTool, setActiveTool] = useState('select');
-    const [selectedParrillaCampaignId, setSelectedParrillaCampaignId] = useState(null);
-
-    // Drawing & Interaction States (Restored)
-    const [drawings, setDrawings] = useState([]);
-    const [penSettings, setPenSettings] = useState({ color: '#6366f1', width: 3, opacity: 1 });
-    const [contextMenu, setContextMenu] = useState(null);
-
-    // Canvas interaction State
-    const [view, setView] = useState({ x: 100, y: 100, scale: 0.85 });
-    const [selectedNodeId, setSelectedNodeId] = useState(null);
-    const [selectedEdgeId, setSelectedEdgeId] = useState(null);
-    const [isOutlinerCollapsed, setIsOutlinerCollapsed] = useState(false);
-    const [isPropertyPanelCollapsed, setIsPropertyPanelCollapsed] = useState(false);
 
     useEffect(() => {
         if (selectedNodeId || selectedEdgeId) {
             setIsPropertyPanelCollapsed(false);
         }
     }, [selectedNodeId, selectedEdgeId]);
-
-    const [isMemoryPickerOpen, setIsMemoryPickerOpen] = useState(false);
-    const [memoryTargetNodeId, setMemoryTargetNodeId] = useState(null);
-    const [isCompactMode, setIsCompactMode] = useState(false);
-    const [viewMode, setViewMode] = useState('tactical'); 
-    const [theme, setTheme] = useState('dark'); // 'dark' | 'light'
-
-    // AI Analysis & Reports
-    const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-    const [reportProgress, setReportProgress] = useState(0);
-    const [analysisLogs, setAnalysisLogs] = useState([]);
-    const [reportData, setReportData] = useState(null);
-
-    // Planner & Optimization States
-    const [isStrategySaved, setIsStrategySaved] = useState(true);
-    const [isProcessingPlanner, setIsProcessingPlanner] = useState(false);
-    const [hasContentPlan, setHasContentPlan] = useState(false);
-    const [isAILoading, setIsAILoading] = useState(false);
-    const [isFunnelOpen, setIsFunnelOpen] = useState(false);
-    const [isAuditorActive, setIsAuditorActive] = useState(false);
-    const [activePropertyTab, setActivePropertyTab] = useState('general');
-    const [propertyPanelSize, setPropertyPanelSize] = useState({ width: 320, height: 750 });
-    
-    // Helper state for connection
-    const [connectionStart, setConnectionStart] = useState(null);
-
-    const [squadMembers, setSquadMembers] = useState([]);
 
     // Fetch squad members or fallback to full team
     useEffect(() => {
