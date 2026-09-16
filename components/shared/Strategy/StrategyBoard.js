@@ -1080,75 +1080,63 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
 
     return (
         <div className={`${isSubcomponent ? 'relative flex-1' : 'relative h-full z-[50]'} w-full flex flex-col overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-[#F1F5F9]'}`}>
-            {/* 1. TOP BAR */}
-            <StrategyTopBar
-                strategyName={strategyData.name}
-                strategyStatus={strategyData.status}
-                projectName={strategyData.projectName}
-                onSave={handleSaveStrategy}
-                campaigns={strategyData.campaigns}
-                activeCampaignId={strategyData.activeCampaignId}
-                strategyHealth={strategyHealth}
-                onSelectCampaign={(id) => setStrategyData(prev => ({ ...prev, activeCampaignId: id }))}
-                onCreateCampaign={() => {
-                    setIsCreatingCampaign(true);
-                    setActiveFlow('campañas');
-                }}
-                onGenerateAISuggestion={() => setIsFunnelOpen(true)}
-                onSendToPlanner={() => setActiveFlow('planner')}
-                isStrategySaved={isStrategySaved}
-                hasContentPlan={hasContentPlan}
-                isProcessingPlanner={isProcessingPlanner}
-                onSendToCreativeStudio={handleSendToCreativeStudio}
-                onOpenFolder={() => setActiveFlow('campañas')}
-                view={view}
-                onViewChange={setView}
-                handleZoomIn={handleZoomIn}
-                handleZoomOut={handleZoomOut}
-                handleZoomReset={handleZoomReset}
-                handlePan={handlePan}
-                activeFlow={activeFlow}
-                isCompactMode={isCompactMode}
-                onToggleCompactMode={() => setIsCompactMode(!isCompactMode)}
-                theme={theme}
-                onToggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-                onClose={onClose}
-                onApplyTemplate={handleApplyTemplate}
-                onAddProduct={handleAddProduct}
-                onExportPDF={handleExport}
-            />
+            {/* FLOATING GLASS NAVIGATION DOCK */}
+            <aside className={`fixed left-3 md:left-4 top-1/2 -translate-y-1/2 z-[100] flex flex-col items-center py-3 px-2 gap-2 rounded-2xl backdrop-blur-2xl border transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.6)] ${
+                theme === 'dark' 
+                    ? 'bg-[#080914]/90 border-white/10 text-white' 
+                    : 'bg-white/95 border-slate-200 shadow-xl text-slate-800'
+            }`}>
+                {onClose && (
+                    <button
+                        onClick={onClose}
+                        className="p-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all mb-1 group relative"
+                        title="Cerrar / Volver"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                        <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-black/90 border border-white/10 rounded-lg opacity-0 translate-x-[-8px] group-hover:opacity-100 group-hover:translate-x-0 transition-all pointer-events-none whitespace-nowrap z-[110]">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-white">Cerrar</p>
+                        </div>
+                    </button>
+                )}
 
-            <div className="flex-1 flex overflow-hidden relative">
-                {/* 2. SIDEBAR NAVIGATION */}
-                <aside className={`w-16 border-r flex flex-col items-center py-6 gap-4 z-[80] transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0A0A0F] border-white/5' : 'bg-white border-slate-300/50 shadow-xl shadow-slate-300/10'}`}>
-                    {menuItems.map((item) => {
-                        const isActive = activeFlow === item.id;
-                        return (
-                            <button
-                                key={item.id}
-                                onClick={() => item.action ? item.action() : setActiveFlow(item.id)}
-                                className={`group relative p-3 rounded-xl transition-all ${isActive
-                                        ? 'bg-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]'
-                                        : 'text-gray-600 hover:text-gray-400 hover:bg-white/5'
-                                    }`}
-                                title={item.label}
-                            >
-                                <item.icon className="w-5 h-5" />
-                                <div className="absolute left-full ml-4 px-3 py-2 bg-black border border-white/10 rounded-xl opacity-0 translate-x-[-10px] group-hover:opacity-100 group-hover:translate-x-0 transition-all pointer-events-none whitespace-nowrap z-[90]">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-white">{item.label}</p>
-                                </div>
-                            </button>
-                        );
-                    })}
-                    <div className="mt-auto pt-6 border-t border-white/5 flex flex-col gap-4">
-                        <button className="p-3 text-gray-700 hover:text-white transition-all">
-                            <Settings2 className="w-5 h-5" />
+                {menuItems.map((item) => {
+                    const isActive = activeFlow === item.id;
+                    const Icon = item.icon;
+                    return (
+                        <button
+                            key={item.id}
+                            onClick={() => item.action ? item.action() : setActiveFlow(item.id)}
+                            className={`group relative p-2.5 rounded-xl transition-all duration-300 flex items-center justify-center ${
+                                isActive
+                                    ? 'bg-gradient-to-tr from-indigo-600 via-indigo-500 to-fuchsia-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.5)] scale-105 ring-1 ring-white/20'
+                                    : 'text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105'
+                            }`}
+                            title={item.label}
+                        >
+                            <Icon className="w-5 h-5" />
+                            <div className="absolute left-full ml-3.5 px-3 py-1.5 bg-[#080914]/95 border border-white/15 rounded-xl opacity-0 translate-x-[-8px] group-hover:opacity-100 group-hover:translate-x-0 transition-all pointer-events-none whitespace-nowrap z-[110] shadow-2xl backdrop-blur-md">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-white">{item.label}</p>
+                            </div>
                         </button>
-                    </div>
-                </aside>
+                    );
+                })}
 
-                {/* 3. CORE CONTENT AREA */}
-                <div className="flex-1 flex relative overflow-hidden">
+                <div className="pt-2 border-t border-white/10 flex flex-col gap-2 mt-1">
+                    <button 
+                        onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                        className="p-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all group relative"
+                        title="Cambiar Tema"
+                    >
+                        <Settings2 className="w-5 h-5" />
+                        <div className="absolute left-full ml-3.5 px-3 py-1.5 bg-[#080914]/95 border border-white/15 rounded-xl opacity-0 translate-x-[-8px] group-hover:opacity-100 group-hover:translate-x-0 transition-all pointer-events-none whitespace-nowrap z-[110] shadow-2xl backdrop-blur-md">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-white">Tema: {theme === 'dark' ? 'Oscuro' : 'Claro'}</p>
+                        </div>
+                    </button>
+                </div>
+            </aside>
+
+            {/* CORE CONTENT AREA */}
+            <div className="flex-1 flex relative overflow-hidden">
                     {activeTool === 'folder' && <StrategyFolderPanel 
                         onClose={() => setActiveTool('select')}
                         onSave={handleSaveStrategy}
@@ -1380,7 +1368,6 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
                         )}
                     </div>
                 </div>
-            </div>
 
             <AnimatePresence>
                 {isFunnelOpen && (

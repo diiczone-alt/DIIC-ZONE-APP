@@ -133,7 +133,7 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
     ];
 
     return (
-        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar px-4 md:px-8 py-6">
+        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar pl-16 md:pl-20 pr-4 md:pr-8 py-6">
             {/* UNIFIED EXECUTIVE COMMAND BAR */}
             <div className="mb-8 p-4 md:p-5 bg-[#080914]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] shadow-2xl relative overflow-hidden">
                 {/* Ambient glowing accent */}
