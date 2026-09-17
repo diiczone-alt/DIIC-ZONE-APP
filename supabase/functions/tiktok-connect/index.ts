@@ -1,8 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const CLIENT_KEY = Deno.env.get("TIKTOK_CLIENT_KEY")!;
-const CLIENT_SECRET = Deno.env.get("TIKTOK_CLIENT_SECRET")!;
+const CLIENT_KEY = Deno.env.get("TIKTOK_CLIENT_KEY") || "awdkr5njbpbmfwbd";
+const CLIENT_SECRET = Deno.env.get("TIKTOK_CLIENT_SECRET") || "w2GxDDjGHWbypiVyFPrC58OdcZ9DhOgx";
 const REDIRECT_URI = "https://diiczone.com/auth/callback/tiktok";
 
 Deno.serve(async (req) => {
