@@ -123,59 +123,80 @@ INSTRUCCIONES CRÍTICAS DE RESPUESTA:
                 return NextResponse.json({ success: false, error: 'No se seleccionaron investigaciones para consolidar' }, { status: 400 });
             }
 
+            const preparedResearches = researchesToConsolidate.map((r, i) => {
+                let fullText = '';
+                if (typeof r.data === 'string') {
+                    fullText = r.data;
+                } else if (r.data && typeof r.data === 'object') {
+                    fullText = r.data.insight || r.data.content || r.data.summary || JSON.stringify(r.data);
+                } else {
+                    fullText = r.summary || r.content || '';
+                }
+
+                return {
+                    docIndex: i + 1,
+                    title: r.title,
+                    category: r.category || r.type || 'Auditoría',
+                    tags: r.tags || [],
+                    contentDetails: fullText,
+                    competitorsList: r.data?.competitors || []
+                };
+            });
+
             const prompt = `Eres el Director Supremo de Inteligencia y Estrategia de Crecimiento de DIIC ZONE (DIIC AI Brain).
-Tu objetivo es consolidar y sintetizar con total precisión, fidelidad y rigor los siguientes ${researchesToConsolidate.length} documentos/investigaciones para generar el Perfil Estratégico 360° unificado de la marca "${safeBrandName}".
+Tu objetivo es consolidar y sintetizar de forma exhaustiva, profesional y con total rigor los siguientes ${preparedResearches.length} documentos/investigaciones para generar el Perfil Estratégico 360° unificado de la marca "${safeBrandName}".
 
-DOCUMENTOS E INVESTIGACIONES DISPONIBLES:
-${JSON.stringify(researchesToConsolidate.map(r => ({
-    id: r.id,
-    title: r.title,
-    category: r.category || r.type,
-    tags: r.tags || [],
-    content: r.data || r.summary || r.content
-})), null, 2)}
+DOCUMENTOS E INVESTIGACIONES COMPLETAS DISPONIBLES:
+${JSON.stringify(preparedResearches, null, 2)}
 
-INSTRUCCIONES CRÍTICAS DE PRECISIÓN Y REALIDAD:
-1. Extrae y compila ÚNICAMENTE datos 100% REALES basados en el contenido de las investigaciones provistas.
-2. ADAPTA TODO al nicho y sector comercial REAL que aparece en los documentos (por ejemplo: si las investigaciones son sobre un restaurante, pizzería, comercio, agencia, software o empresa de servicios, TODO el análisis debe pertenecer exclusivamente a esa industria).
-3. PROHIBICIÓN ABSOLUTA: NO inventes servicios médicos, traumatología ni dolores articulares salvo que los documentos sean explícitamente sobre una clínica médica.
-4. Si las investigaciones contienen el nombre comercial del negocio (ejemplo: "Vito's Pizza of Mechanicsburg"), utilízalo en "brandName" si es más específico que el nombre genérico.
-5. Identifica el liderazgo real si aparece en las investigaciones (o déjalo vacío si no se menciona, sin inventar nombres falsos).
-6. Extrae los dolores, puntos de fricción, público objetivo, propuesta de valor y ganchos reales detectados en los estudios.
+REGLAS DE ORO DE PRECISIÓN Y REALIDAD:
+1. Extrae y consolida TODA la información real contenida en los documentos anteriores (público objetivo real, productos y platos o servicios reales, propuesta de valor real, dolores del cliente y puntos de fricción reales, competidores reales, canales sociales auditados).
+2. ADAPTA el perfil 100% al nicho de mercado y sector comercial real identificado en los documentos (por ejemplo: si es un restaurante, pizzería, consultoría, e-commerce, gimnasio o clínica, TODA la información debe pertenecer exclusivamente a esa realidad).
+3. PROHIBICIÓN TOTAL DE DATOS FICTICIOS: No inventes especialidades médicas, dolores físicos ni tratamientos de salud si el negocio no es del sector médico.
+4. Si en los documentos aparece el nombre comercial real del negocio (ejemplo: "Vito's Pizza of Mechanicsburg"), colócalo en "brandName".
+5. Si los documentos mencionan fundadores, directores o liderazgo, inclúyelos en "leadership" (o déjalo vacío si no se especifica, sin inventar nombres).
+6. Si en los documentos se encontraron competidores, inclúyelos en la lista "competitors" con su nombre y análisis.
 
 Devuelve OBLIGATORIAMENTE un JSON con esta estructura exacta:
 {
-  "brandName": "Nombre real y exacto de la marca analizada",
-  "leadership": "Liderazgo, fundadores o directores reales identificados (o dejar vacío si no se halló)",
-  "whatItDoes": "Descripción ejecutiva, clara y detallada de la actividad principal del negocio, nicho y especialidad",
-  "whatItOffers": "Catálogo sintetizado de productos, servicios y soluciones reales que ofrece",
-  "targetAudience": "Perfil demográfico y psicográfico detallado del cliente/consumidor ideal",
-  "problemSolved": "Matriz de problemas reales, dolores, fricciones y necesidades que resuelve para sus clientes",
-  "valueProp": "Propuesta Única de Valor (UVP) y diferencial competitivo real frente a la competencia",
-  "tone": "Tono de comunicación y personalidad de la marca (ej. cercano, formal, familiar, disruptivo, etc.)",
-  "mainGoal": "Objetivo comercial y estratégico principal",
-  "marketContext": "Ubicación geográfica, entorno de mercado, competidores y contexto detectado",
-  "socialAudit": "Resumen diagnóstico de la presencia en redes sociales y canales digitales",
+  "brandName": "Nombre real y exacto del negocio o marca",
+  "leadership": "Fundadores, directores o líderes reales hallados (o vacío si no se halló)",
+  "whatItDoes": "Descripción detallada y ejecutiva de la actividad principal, especialidad y nicho del negocio",
+  "whatItOffers": "Catálogo completo y sintetizado de productos, servicios, menú o soluciones reales",
+  "targetAudience": "Perfil demográfico y psicográfico detallado del cliente o consumidor ideal",
+  "problemSolved": "Matriz profunda de problemas reales, dolores, necesidades, objeciones y fricciones que resuelve",
+  "valueProp": "Propuesta Única de Valor (UVP) y factor diferencial clave frente a la competencia",
+  "tone": "Tono de comunicación, arquetipo y personalidad de marca real",
+  "mainGoal": "Objetivo comercial y estratégico de crecimiento detectado",
+  "marketContext": "Ubicación geográfica, entorno competitivo y contexto de mercado",
+  "socialAudit": "Diagnóstico y auditoría de la presencia en redes sociales (Instagram, Facebook, TikTok, etc.) y oportunidades de mejora",
+  "competitors": [
+    {
+      "name": "Nombre de competidor 1",
+      "url": "URL o ubicación",
+      "strengthsWeaknesses": "Fortalezas y debilidades frente a nuestra marca"
+    }
+  ],
   "contentPillars": [
-    "Pilar 1 relevante para su industria real",
-    "Pilar 2 relevante para su industria real",
-    "Pilar 3 relevante para su industria real",
-    "Pilar 4 relevante para su industria real"
+    "Pilar 1 adaptado a su negocio real",
+    "Pilar 2 adaptado a su negocio real",
+    "Pilar 3 adaptado a su negocio real",
+    "Pilar 4 adaptado a su negocio real"
   ],
   "frictionPoints": [
     "Punto de fricción o dolor real 1",
     "Punto de fricción o dolor real 2"
   ],
   "winningHooks": [
-    "Gancho de alta retención 1 adaptado a su negocio",
-    "Gancho de alta retención 2 adaptado a su negocio"
+    "Gancho de alta conversión 1",
+    "Gancho de alta conversión 2"
   ],
   "dynamicButtons": [
-    "Pregunta de investigación estratégica relevante 1",
-    "Pregunta de investigación estratégica relevante 2",
-    "Pregunta de investigación estratégica relevante 3"
+    "Búsqueda o pregunta estratégica sugerida 1",
+    "Búsqueda o pregunta estratégica sugerida 2",
+    "Búsqueda o pregunta estratégica sugerida 3"
   ],
-  "executiveSummary": "Resumen ejecutivo de 2 a 3 párrafos sobre la estrategia global y oportunidades de crecimiento"
+  "executiveSummary": "Resumen ejecutivo de 2 a 3 párrafos sobre la estrategia global, ventajas competitivas y plan de crecimiento"
 }`;
 
             const responseRaw = await generateWithFallback(prompt, true);
@@ -193,6 +214,78 @@ Devuelve OBLIGATORIAMENTE un JSON con esta estructura exacta:
             return NextResponse.json({
                 success: true,
                 consolidatedProfile
+            });
+        }
+
+        // ACTION 3: COPILOT SEARCH & ENRICHMENT (Profile Copilot Bar)
+        if (action === 'copilot_search') {
+            if (!message) {
+                return NextResponse.json({ success: false, error: 'Pregunta o consulta requerida' }, { status: 400 });
+            }
+
+            const relevantResearches = researches || [];
+            const researchesContext = relevantResearches.map((r, idx) => `
+--- INVESTIGACIÓN #${idx + 1}: ${r.title || 'Dossier'} ---
+Categoría: ${r.category || 'General'}
+Contenido: ${typeof r.data === 'string' ? r.data : JSON.stringify(r.data || r.summary || '').substring(0, 1200)}
+`).join('\n');
+
+            const prompt = `Eres el Copiloto de Inteligencia Estratégica y Consultor de Crecimiento de DIIC ZONE para la marca "${safeBrandName}".
+El usuario está visualizando el "Perfil Estratégico 360°" de su negocio y necesita responder una duda, investigar datos faltantes, evaluar el mercado o enriquecer campos estratégicos.
+
+CONTEXTO ACTUAL DEL PERFIL DE LA MARCA:
+- Nombre de Marca: ${safeBrandName}
+- Liderazgo / Fundador: ${profile.leadership || 'No especificado'}
+- Qué Hace (Actividad / Nicho): ${profile.whatItDoes || 'No especificado'}
+- Qué Ofrece (Servicios / Menú / Productos): ${profile.whatItOffers || 'No especificado'}
+- Público Objetivo / Avatar: ${profile.targetAudience || 'No especificado'}
+- Problemas / Dolores que Resuelve: ${profile.problemSolved || 'No especificado'}
+- Propuesta de Valor (UVP): ${profile.valueProp || 'No especificado'}
+- Tono de Comunicación: ${profile.tone || 'No especificado'}
+- Objetivo Comercial: ${profile.mainGoal || 'No especificado'}
+- Contexto de Mercado / Geografía: ${profile.marketContext || 'No especificado'}
+- Auditoría Redes: ${profile.socialAudit || 'No especificado'}
+- Competidores Registrados: ${JSON.stringify(profile.competitors || [])}
+
+INVESTIGACIONES GUARDADAS DISPONIBLES EN EL DOSSIER (${relevantResearches.length} documentos):
+${researchesContext || 'No hay investigaciones previas guardadas. Usa el contexto del perfil y el conocimiento general del nicho del cliente.'}
+
+CONSULTA O PREGUNTA DEL ESTRATEGA / USUARIO:
+"${message}"
+
+INSTRUCCIONES CRÍTICAS:
+1. Responde de forma analítica, estructurada y persuasiva usando Markdown elegante (listas, negritas, bullets, citas >).
+2. Si la consulta pide completar, deducir o mejorar campos del perfil (por ejemplo: propuesta de valor, dolores/problemas resueltos, competidores, público objetivo, liderazgo, oferta, tono), genera datos pertinentes y realistas adaptados 100% al nicho de "${safeBrandName}".
+3. En "suggestedUpdates", devuelve un objeto con los campos del perfil sugeridos para actualizar (claves válidas: brandName, leadership, whatItDoes, whatItOffers, targetAudience, problemSolved, valueProp, tone, mainGoal, marketContext, socialAudit, competitors). Si no aplica actualizar ningún campo, devuelve null.
+4. En "summary", devuelve un titular/resumen de 1 línea para guardar en el repositorio de investigaciones.
+
+Devuelve OBLIGATORIAMENTE un JSON con esta estructura exacta:
+{
+  "reply": "Respuesta completa y profunda en formato Markdown...",
+  "suggestedUpdates": {
+    "problemSolved": "Texto enriquecido o nuevo..."
+  },
+  "summary": "Resumen conciso del hallazgo..."
+}`;
+
+            const responseRaw = await generateWithFallback(prompt, true);
+            let parsed = {};
+            try {
+                parsed = JSON.parse(responseRaw || '{}');
+            } catch (pErr) {
+                const jsonMatch = responseRaw.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    parsed = JSON.parse(jsonMatch[0]);
+                } else {
+                    parsed = { reply: responseRaw, suggestedUpdates: null, summary: message };
+                }
+            }
+
+            return NextResponse.json({
+                success: true,
+                reply: parsed.reply || responseRaw,
+                suggestedUpdates: parsed.suggestedUpdates || null,
+                summary: parsed.summary || message
             });
         }
 

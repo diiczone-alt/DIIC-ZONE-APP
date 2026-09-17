@@ -90,11 +90,21 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
     const layoutRef = useRef({}); // Track which campaigns have been auto-laid out
 
     // Strategy Navigation State
-    const [activeFlow, setActiveFlow] = useState('campañas'); // 'campañas', 'pizarra', 'planner', 'nodos', 'analitica'
+    const flowParam = searchParams.get('flow');
+    const tabParam = searchParams.get('tab');
+    const [activeFlow, setActiveFlow] = useState(() => flowParam || (tabParam ? 'perfil' : 'campañas'));
     const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
     const [isConfiguring, setIsConfiguring] = useState(false);
     const [activeTool, setActiveTool] = useState('select');
     const [selectedParrillaCampaignId, setSelectedParrillaCampaignId] = useState(null);
+
+    useEffect(() => {
+        if (flowParam) {
+            setActiveFlow(flowParam);
+        } else if (tabParam) {
+            setActiveFlow('perfil');
+        }
+    }, [flowParam, tabParam]);
 
     // Drawing & Interaction States (Restored)
     const [drawings, setDrawings] = useState([]);
@@ -1158,7 +1168,7 @@ export default function StrategyBoard({ role, onClose, isSubcomponent = false, c
 
                     <div className={`flex-1 flex flex-col min-h-0 relative overflow-hidden transition-colors duration-700 ${theme === 'dark' ? 'bg-[#050511]' : 'bg-[#F1F5F9]'}`}>
                         {activeFlow === 'perfil' && (
-                            <StrategicProfileManager clientId={activeClientId} theme={theme} />
+                            <StrategicProfileManager clientId={activeClientId} theme={theme} initialTab={tabParam} />
                         )}
 
                         {activeFlow === 'campañas' && (

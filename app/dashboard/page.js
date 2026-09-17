@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 import { agencyService } from '@/services/agencyService';
 import { extractDominantColors } from '@/lib/colorUtils';
 import { getChecklistItems, calculateActivationProgress } from '@/lib/clientProgress';
+import { NICHE_DETAILS, mapIndustryToNicheKey, getPlanPrice } from '@/lib/nicheDetails';
 
 // Fallback City Centers for Ecuador
 const CITY_COORDS = {
@@ -1958,7 +1959,7 @@ function DashboardContent() {
                 type="button"
                 onClick={() => {
                   setActiveDrawer(null);
-                  router.push(`/dashboard/strategy${clientData?.id ? `?client=${clientData.id}` : ''}`);
+                  router.push(`/dashboard/strategy?flow=perfil&tab=search${clientData?.id ? `&client=${clientData.id}` : ''}`);
                 }}
                 className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 active:scale-95"
               >
@@ -2639,41 +2640,131 @@ function DashboardContent() {
         );
 
       case 'growth':
-        const levels = [
-          { name: 'Presencia Digital', price: 250, desc: 'Ideal para iniciar la digitalización de tu consultorio o marca. CRM + Pauta Básica.' },
-          { name: 'Crecimiento', price: 500, desc: 'Expansión de canales y automatizaciones avanzadas. Recomendado para marcas medianas.' },
-          { name: 'Autoridad', price: 700, desc: 'Posicionamiento estratégico, pauta optimizada y contenido multiplataforma Premium.' },
-          { name: 'Escalamiento', price: 1000, desc: 'Estrategia omnicanal masiva, embudos avanzados e integraciones profundas.' },
-          { name: 'Dominio de Mercado', price: 'Personalizado', desc: 'Desarrollo corporativo customizado con soporte prioritario 24/7.' }
-        ];
+        const detectedNicheKey = mapIndustryToNicheKey(clientData?.industry || clientData?.specialty || clientData?.niche || getNicheFromClient(clientData));
+        const nicheData = NICHE_DETAILS[detectedNicheKey] || NICHE_DETAILS.general;
+        const nichePlans = nicheData?.plans || NICHE_DETAILS.general.plans;
+
+        const nicheLabelsMap = {
+          'medical': 'Marketing Médico & Salud',
+          'doctor': 'Marketing Médico & Especialidades',
+          'health': 'Marketing Hospitalario & Clínicas',
+          'agro': 'Sector Agropecuario & Ganadería',
+          'horeca': 'Gastronomía & Restaurantes',
+          'legal': 'Sector Jurídico & Despachos',
+          'realestate': 'Bienes Raíces & Inmobiliarias',
+          'education': 'Educación & Academias',
+          'tech': 'Empresas Tech & SaaS',
+          'general': 'Marcas & Empresas Generales'
+        };
+
+        const currentNicheLabel = nicheLabelsMap[detectedNicheKey] || nicheLabelsMap['general'];
+
+        const dynamicLevels = Object.entries(nichePlans).map(([key, plan]) => ({
+          id: key,
+          name: plan.name,
+          price: plan.price === '0' || !plan.price ? 'Personalizado' : (isNaN(Number(plan.price)) ? plan.price : Number(plan.price)),
+          desc: plan.narrative || plan.enfoque || '',
+          enfoque: plan.enfoque,
+          complexity: plan.complexity || 'Estándar',
+          features: plan.features || [],
+          deliverables: plan.deliverables,
+          filmmaker: plan.filmmaker
+        }));
+
         return (
-          <div className="space-y-6">
+          <div className="space-y-5 pb-4">
+            {/* Header con Nicho Detectado */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-pink-500/15 border border-indigo-500/30 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-indigo-400">
+                  <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-white">Nicho Especializado</span>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 text-[9px] font-black uppercase tracking-widest">
+                  {currentNicheLabel}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                Tarifas, entregables y complejidad calibrados para maximizar la captación y reputación en tu sector.
+              </p>
+            </div>
+
+            {/* Lista de Niveles Dinámicos */}
             <div className="space-y-3">
-              {levels.map((lvl) => {
-                const isSelected = clientData?.plan === lvl.name;
+              {dynamicLevels.map((lvl) => {
+                const isSelected = clientData?.plan === lvl.name || clientData?.growth_level?.plan === lvl.name;
                 return (
                   <div
-                    key={lvl.name}
+                    key={lvl.id}
                     onClick={() => handleSaveModule('growth', {
                       growth_level: {
+                        id: lvl.id,
                         plan: lvl.name,
                         price: lvl.price
                       },
+                      plan: lvl.name,
+                      plan_price: typeof lvl.price === 'number' ? lvl.price : 0,
                       growth_level_completed: true
                     })}
-                    className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
+                    className={`p-4 md:p-5 rounded-2xl border text-left cursor-pointer transition-all duration-300 relative overflow-hidden group ${
                       isSelected
-                        ? 'bg-indigo-600/10 border-indigo-500 shadow-md'
-                        : 'bg-[#111126] border-white/5 hover:border-white/10'
+                        ? 'bg-gradient-to-tr from-indigo-950/80 via-[#101026] to-purple-950/80 border-indigo-500 shadow-[0_0_25px_rgba(99,102,241,0.25)] ring-1 ring-indigo-500/50'
+                        : 'bg-[#111126] border-white/5 hover:border-white/15 hover:bg-[#151530]'
                     }`}
                   >
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-black text-white uppercase tracking-wider">{lvl.name}</span>
-                      <span className="text-xs font-black text-indigo-400">
-                        {typeof lvl.price === 'number' ? `$${lvl.price}/mes` : lvl.price}
-                      </span>
+                    {/* Header del Nivel */}
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-black uppercase tracking-wider ${isSelected ? 'text-white' : 'text-gray-200'}`}>
+                            {lvl.name}
+                          </span>
+                          {isSelected && (
+                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[8px] font-black text-emerald-400 uppercase tracking-widest">
+                              <CheckCircle2 className="w-2.5 h-2.5" /> Activo
+                            </span>
+                          )}
+                        </div>
+                        {lvl.enfoque && (
+                          <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+                            Enfoque: {lvl.enfoque}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="text-sm font-black text-indigo-400 block tracking-tight">
+                          {typeof lvl.price === 'number' ? `$${lvl.price}/mes` : lvl.price}
+                        </span>
+                        {lvl.complexity && (
+                          <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">
+                            Comp: {lvl.complexity}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">{lvl.desc}</p>
+
+                    {/* Descripción Narrativa */}
+                    <p className="text-[10px] text-gray-400 mt-2.5 leading-relaxed font-medium">
+                      {lvl.desc}
+                    </p>
+
+                    {/* Entregables y Filmmaker si existen */}
+                    {(lvl.deliverables || lvl.filmmaker) && (
+                      <div className="mt-3 pt-3 border-t border-white/5 flex flex-wrap items-center gap-3 text-[9px] font-bold text-gray-400">
+                        {lvl.deliverables && (
+                          <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 text-gray-300">
+                            <Video className="w-3 h-3 text-indigo-400" />
+                            {lvl.deliverables.videos} Videos + {lvl.deliverables.posts} Posts/mes
+                          </span>
+                        )}
+                        {lvl.filmmaker && (
+                          <span className="flex items-center gap-1 text-gray-400">
+                            🎬 {lvl.filmmaker}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -2797,7 +2888,20 @@ function DashboardContent() {
                           </div>
                           <div>
                               <p className="text-[8px] font-black text-gray-500 uppercase tracking-wider">Costo Mensual</p>
-                              <p className="text-xs font-black text-white">$70 / mes (Uso de App)</p>
+                              <p className="text-xs font-black text-white">
+                                  {clientData?.plan_price 
+                                      ? `$${clientData.plan_price} / mes`
+                                      : (clientData?.growth_level?.price 
+                                          ? (typeof clientData.growth_level.price === 'number' ? `$${clientData.growth_level.price} / mes` : clientData.growth_level.price)
+                                          : (clientData?.plan 
+                                              ? `$${getPlanPrice(clientData.plan, clientData.industry || clientData.specialty)} / mes` 
+                                              : '$70 / mes (Uso de App)'))}
+                              </p>
+                              {clientData?.plan && (
+                                  <span className="text-[8px] font-bold text-indigo-400 block truncate max-w-[130px] mt-0.5" title={clientData.plan}>
+                                      {clientData.plan}
+                                  </span>
+                              )}
                           </div>
                       </div>
                   </div>

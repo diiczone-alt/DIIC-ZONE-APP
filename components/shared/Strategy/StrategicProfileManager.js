@@ -16,12 +16,18 @@ import { agencyService } from '@/services/agencyService';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
-export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
+export default function StrategicProfileManager({ clientId, theme = 'dark', initialTab = 'search' }) {
     const { user } = useAuth();
     // Unified navigation: 'search' | 'saved' | 'profile' | 'level' | 'catalog'
-    const [activeTab, setActiveTab] = useState('search');
+    const [activeTab, setActiveTab] = useState(initialTab || 'search');
     const [isBrainChatOpen, setIsBrainChatOpen] = useState(false);
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (initialTab) {
+            setActiveTab(initialTab);
+        }
+    }, [initialTab]);
     
     // Client profile & researches metadata for top bar
     const [clientData, setClientData] = useState(null);
@@ -252,6 +258,7 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
                             <ClientStrategicProfile 
                                 activeTab="search" 
                                 clientId={clientId}
+                                onNavigateTab={(tab) => setActiveTab(tab)}
                                 onOpenSaveModal={(draft) => {
                                     setCurrentResearchDraft(draft);
                                     setIsSaveModalOpen(true);
@@ -266,6 +273,7 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
                             <ClientStrategicProfile 
                                 activeTab="saved" 
                                 clientId={clientId}
+                                onNavigateTab={(tab) => setActiveTab(tab)}
                                 onOpenSaveModal={(draft) => {
                                     setCurrentResearchDraft(draft);
                                     setIsSaveModalOpen(true);
@@ -280,6 +288,7 @@ export default function StrategicProfileManager({ clientId, theme = 'dark' }) {
                             <ClientStrategicProfile 
                                 activeTab="profile" 
                                 clientId={clientId}
+                                onNavigateTab={(tab) => setActiveTab(tab)}
                                 onOpenSaveModal={(draft) => {
                                     setCurrentResearchDraft(draft);
                                     setIsSaveModalOpen(true);

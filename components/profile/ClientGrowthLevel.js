@@ -1,116 +1,86 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Leaf, Compass, Star, Zap, Rocket, CheckCircle2, Target } from 'lucide-react';
+import { Leaf, Compass, Star, Zap, Rocket, CheckCircle2, Target, Video, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { agencyService } from '@/services/agencyService';
+import { NICHE_DETAILS, mapIndustryToNicheKey } from '@/lib/nicheDetails';
 import { toast } from 'sonner';
-
-const LEVELS = [
-    {
-        id: 'presencia',
-        title: 'Presencia Digital',
-        icon: Leaf,
-        color: 'text-emerald-400',
-        bg: 'bg-emerald-500/10',
-        border: 'border-emerald-500/20',
-        desc: 'Para quienes inician. Objetivo: Dar a conocer tu oferta rápidamente y generar confianza básica.',
-        content: 'Frecuencia alta, Reels virales, Carruseles educativos simples.',
-        complexity: 'Baja',
-        focusAreas: [
-            'Construcción de Autoridad Base', 
-            'Optimización de Perfiles Sociales', 
-            'Estrategia de Contenido Viral', 
-            'Prueba Social y Casos Iniciales'
-        ]
-    },
-    {
-        id: 'estrategia',
-        title: 'Estrategia',
-        icon: Compass,
-        color: 'text-blue-400',
-        bg: 'bg-blue-500/10',
-        border: 'border-blue-500/20',
-        desc: 'Construyendo sistemas. Objetivo: Captación de leads (Lead Magnets) y funnels iniciales.',
-        content: 'Frecuencia media, Masterclasses, Casos de estudio, PDFs.',
-        complexity: 'Media',
-        focusAreas: [
-            'Diseño de Embudos (Funnels)', 
-            'Creación de Lead Magnets', 
-            'Nutrición de Base de Datos', 
-            'Estructuración de Oferta Irresistible'
-        ]
-    },
-    {
-        id: 'marca',
-        title: 'Marca',
-        icon: Star,
-        color: 'text-purple-400',
-        bg: 'bg-purple-500/10',
-        border: 'border-purple-500/20',
-        desc: 'Consolidando autoridad. Objetivo: Vender High Ticket y posicionar como el #1 del nicho.',
-        content: 'Frecuencia estratégica, Eventos VSL, Documentales, PR digital.',
-        complexity: 'Alta',
-        focusAreas: [
-            'Posicionamiento High-Ticket', 
-            'Relaciones Públicas Digitales', 
-            'Eventos VSL y Lanzamientos', 
-            'Autoridad de Nicho Dominante'
-        ]
-    },
-    {
-        id: 'automatizacion',
-        title: 'Automatización',
-        icon: Zap,
-        color: 'text-amber-400',
-        bg: 'bg-amber-500/10',
-        border: 'border-amber-500/20',
-        desc: 'Delegando al sistema. Objetivo: Reducir costo de adquisición con IA y flujos automáticos.',
-        content: 'Anuncios perennes, Bots integrados, Secuencias automatizadas.',
-        complexity: 'Avanzada',
-        focusAreas: [
-            'Sistemas Perennes de Venta', 
-            'Agentes IA de Calificación', 
-            'Automatización de Email Marketing', 
-            'Optimización de CAC (Costo de Adquisición)'
-        ]
-    },
-    {
-        id: 'escala',
-        title: 'Escala',
-        icon: Rocket,
-        color: 'text-cyan-400',
-        bg: 'bg-cyan-500/10',
-        border: 'border-cyan-500/20',
-        desc: 'Crecimiento exponencial. Objetivo: Dominar múltiples canales y maximizar LTV (Valor de Vida).',
-        content: 'Contenido Omnicanal, Creación de productos escalables.',
-        complexity: 'Maestro',
-        focusAreas: [
-            'Omnicanalidad Estratégica', 
-            'Delegación de Producción', 
-            'Ecosistema de Múltiples Productos', 
-            'Maximización de LTV (Life-Time Value)'
-        ]
-    }
-];
 
 export default function ClientGrowthLevel({ initialLevel = 'presencia', clientId: propClientId }) {
     const { user } = useAuth();
     const clientId = propClientId || user?.client_id || 1;
     const [currentLevel, setCurrentLevel] = useState(initialLevel);
+    const [clientData, setClientData] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         const loadLevel = async () => {
             if (!clientId) return;
             const client = await agencyService.getClientById(clientId);
-            if (client?.metadata?.maturity_level) {
-                setCurrentLevel(client.metadata.maturity_level);
+            if (client) {
+                setClientData(client);
+                if (client.metadata?.maturity_level) {
+                    setCurrentLevel(client.metadata.maturity_level);
+                } else if (client.plan) {
+                    const p = client.plan.toLowerCase();
+                    if (p.includes('presencia')) setCurrentLevel('presence');
+                    else if (p.includes('estrategia') || p.includes('crecimiento')) setCurrentLevel('growth');
+                    else if (p.includes('marca') || p.includes('autoridad')) setCurrentLevel('authority');
+                    else if (p.includes('automatizacion') || p.includes('control') || p.includes('elite')) setCurrentLevel('elite');
+                    else if (p.includes('escala')) setCurrentLevel('scale');
+                }
             }
         };
         loadLevel();
     }, [clientId]);
+
+    const nicheKey = mapIndustryToNicheKey(clientData?.industry || clientData?.specialty || clientData?.niche);
+    const nicheData = NICHE_DETAILS[nicheKey] || NICHE_DETAILS.general;
+    const nichePlans = nicheData?.plans || NICHE_DETAILS.general.plans;
+
+    const nicheLabels = {
+        'medical': 'Marketing Médico & Salud',
+        'doctor': 'Marketing Médico & Especialidades',
+        'health': 'Marketing Hospitalario & Clínicas',
+        'agro': 'Sector Agropecuario & Ganadería',
+        'horeca': 'Gastronomía & Restaurantes',
+        'legal': 'Sector Jurídico & Despachos',
+        'realestate': 'Bienes Raíces & Inmobiliarias',
+        'education': 'Educación & Academias',
+        'tech': 'Empresas Tech & SaaS',
+        'general': 'Marcas & Empresas Generales'
+    };
+
+    const currentNicheLabel = nicheLabels[nicheKey] || nicheLabels['general'];
+
+    const LEVEL_ICONS = {
+        presence: { icon: Leaf, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+        growth: { icon: Compass, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+        authority: { icon: Star, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+        elite: { icon: Zap, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+        scale: { icon: Rocket, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' }
+    };
+
+    const levelsList = Object.entries(nichePlans).map(([key, plan]) => {
+        const style = LEVEL_ICONS[key] || LEVEL_ICONS.presence;
+        return {
+            id: key,
+            title: plan.name,
+            price: plan.price === '0' || !plan.price ? 'Personalizado' : (isNaN(Number(plan.price)) ? plan.price : Number(plan.price)),
+            icon: style.icon,
+            color: style.color,
+            bg: style.bg,
+            border: style.border,
+            desc: plan.narrative || plan.enfoque || '',
+            enfoque: plan.enfoque || '',
+            complexity: plan.complexity || 'Estándar',
+            filmmaker: plan.filmmaker || '',
+            deliverables: plan.deliverables || null,
+            focusAreas: plan.features || []
+        };
+    });
 
     const handleSelect = async (id) => {
         setCurrentLevel(id);
@@ -119,14 +89,30 @@ export default function ClientGrowthLevel({ initialLevel = 'presencia', clientId
     const handleSaveLevel = async () => {
         setIsSaving(true);
         try {
+            const selectedLevelObj = levelsList.find(l => l.id === currentLevel) || levelsList[0];
+            const planPriceNum = typeof selectedLevelObj.price === 'number' ? selectedLevelObj.price : 0;
+            
             await agencyService.updateClient(clientId, {
                 metadata: {
+                    ...(clientData?.metadata || {}),
                     maturity_level: currentLevel
+                },
+                plan: selectedLevelObj.title,
+                plan_price: planPriceNum,
+                onboarding_data: {
+                    ...(clientData?.onboarding_data || {}),
+                    growth_level_completed: true,
+                    growth_level: {
+                        id: currentLevel,
+                        plan: selectedLevelObj.title,
+                        price: selectedLevelObj.price
+                    }
                 }
             });
-            toast.success("Nivel de crecimiento actualizado");
+            toast.success(`Nivel de crecimiento "${selectedLevelObj.title}" actualizado con éxito`);
         } catch (error) {
-            toast.error("Error al guardar nivel");
+            console.error("Error al guardar nivel:", error);
+            toast.error("Error al guardar nivel: " + error.message);
         } finally {
             setIsSaving(false);
         }
@@ -135,19 +121,25 @@ export default function ClientGrowthLevel({ initialLevel = 'presencia', clientId
     return (
         <div className="animate-in fade-in duration-500 pb-16">
             <div className="space-y-4 text-center pb-8 border-b border-white/5 mb-12">
-                <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-[9px] font-black text-blue-400 uppercase tracking-widest">
-                    Capa 2: Madurez del Negocio
-                </span>
-                <h2 className="text-5xl md:text-6xl font-black text-white uppercase italic tracking-tighter">
-                    Nivel de <span className="text-blue-500">Crecimiento</span>
+                <div className="flex items-center justify-center gap-2">
+                    <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[9px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3 text-indigo-400" />
+                        Capa 2: Madurez & Nivel de Crecimiento
+                    </span>
+                    <span className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-[9px] font-black text-purple-300 uppercase tracking-widest">
+                        {currentNicheLabel}
+                    </span>
+                </div>
+                <h2 className="text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter">
+                    Nivel de <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Crecimiento</span>
                 </h2>
-                <p className="text-gray-500 text-sm font-bold uppercase tracking-[0.2em] max-w-2xl mx-auto">
-                    Selecciona la etapa actual de tu modelo de negocio para que la IA adapte el tipo y la complejidad del contenido sugerido en tus estrategias.
+                <p className="text-gray-400 text-xs font-medium max-w-2xl mx-auto leading-relaxed">
+                    Selecciona el nivel estratégico para tu marca. Los planes, precios y entregables están calibrados específicamente para el sector <strong className="text-white">{currentNicheLabel}</strong>.
                 </p>
             </div>
 
             <div className="grid gap-6">
-                {LEVELS.map((level, idx) => {
+                {levelsList.map((level, idx) => {
                     const isSelected = currentLevel === level.id;
                     return (
                         <motion.div 
@@ -163,58 +155,89 @@ export default function ClientGrowthLevel({ initialLevel = 'presencia', clientId
                             }`}
                         >
                             <div className="flex items-start gap-6 w-full">
-                                <div className={`p-4 rounded-2xl ${isSelected ? level.color : 'text-gray-500 bg-white/5 group-hover:text-white transition-colors'}`}>
+                                <div className={`p-4 rounded-2xl shrink-0 ${isSelected ? level.color : 'text-gray-500 bg-white/5 group-hover:text-white transition-colors'}`}>
                                     <level.icon className="w-8 h-8" />
                                 </div>
-                                <div className="space-y-2 flex-1">
-                                    <div className="flex items-center gap-4">
-                                        <h3 className={`text-2xl font-black uppercase italic tracking-tight ${isSelected ? 'text-white' : 'text-gray-300'}`}>
-                                            {idx + 1}. {level.title}
-                                        </h3>
-                                        {isSelected && <CheckCircle2 className={`w-5 h-5 ${level.color}`} />}
+                                <div className="space-y-3 flex-1">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div className="flex items-center gap-3">
+                                            <h3 className={`text-xl md:text-2xl font-black uppercase italic tracking-tight ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                                                {level.title}
+                                            </h3>
+                                            {isSelected && (
+                                                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[9px] font-black text-emerald-400 uppercase tracking-widest">
+                                                    <CheckCircle2 className="w-3 h-3" /> Activo
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-base font-black text-indigo-400">
+                                                {typeof level.price === 'number' ? `$${level.price}/mes` : level.price}
+                                            </span>
+                                            {level.complexity && (
+                                                <span className="text-[9px] font-black px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 uppercase tracking-wider text-gray-300">
+                                                    {level.complexity}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <p className="text-gray-400 text-sm font-medium max-w-2xl">
+
+                                    {level.enfoque && (
+                                        <p className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
+                                            Enfoque: {level.enfoque}
+                                        </p>
+                                    )}
+
+                                    <p className="text-gray-400 text-sm font-medium max-w-2xl leading-relaxed">
                                         {level.desc}
                                     </p>
                                     
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-                                        <div className="space-y-1">
-                                            <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Contenido Sugerido</div>
-                                            <div className="text-xs font-bold text-gray-300 pr-4">{level.content}</div>
+                                    {(level.deliverables || level.filmmaker) && (
+                                        <div className="flex flex-wrap items-center gap-4 pt-2 text-xs font-bold text-gray-300">
+                                            {level.deliverables && (
+                                                <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/5 border border-white/10">
+                                                    <Video className="w-3.5 h-3.5 text-indigo-400" />
+                                                    {level.deliverables.videos} Videos + {level.deliverables.posts} Posts/mes
+                                                </span>
+                                            )}
+                                            {level.filmmaker && (
+                                                <span className="text-gray-400">
+                                                    🎬 {level.filmmaker}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="space-y-1">
-                                            <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest">Complejidad</div>
-                                            <div className={`text-xs font-black uppercase ${level.color}`}>{level.complexity}</div>
-                                        </div>
-                                    </div>
+                                    )}
                                     
                                     {isSelected && (
                                         <div className="mt-8 space-y-6 animate-in fade-in slide-in-from-top-2 duration-500">
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-2">
-                                                    <Target className="w-4 h-4 text-gray-400" />
-                                                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Enfoque Profesional (Entregables)</h4>
+                                            {level.focusAreas && level.focusAreas.length > 0 && (
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <Target className="w-4 h-4 text-gray-400" />
+                                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Protocolo y Entregables del Plan</h4>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        {level.focusAreas.map((focus, i) => (
+                                                            <div key={i} className="flex items-center gap-3 bg-black/40 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                                                                <CheckCircle2 className={`w-4 h-4 ${level.color} shrink-0`} />
+                                                                <span className="text-xs font-bold text-gray-300">{focus}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                    {level.focusAreas.map((focus, i) => (
-                                                        <div key={i} className="flex items-center gap-3 bg-black/40 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
-                                                            <CheckCircle2 className={`w-4 h-4 ${level.color} shrink-0`} />
-                                                            <span className="text-xs font-bold text-gray-300">{focus}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                            )}
 
-                                            <div className="pt-6 border-t border-white/10 hidden md:block">
+                                            <div className="pt-6 border-t border-white/10">
                                                 <button 
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleSaveLevel();
                                                     }}
                                                     disabled={isSaving}
-                                                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest bg-white/5 border border-white/5 ${level.color} hover:bg-white/10 transition-colors disabled:opacity-50`}
+                                                    className="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50 active:scale-95 flex items-center gap-2"
                                                 >
-                                                    {isSaving ? 'Guardando...' : 'Confirmar Estrategia'}
+                                                    <CheckCircle2 className="w-4 h-4" />
+                                                    <span>{isSaving ? 'Guardando...' : `Confirmar y Activar ${level.title}`}</span>
                                                 </button>
                                             </div>
                                         </div>
